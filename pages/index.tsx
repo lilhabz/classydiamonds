@@ -16,7 +16,7 @@ const Home = () => {
   <div className="h-0" />
 
         {/* Hero Section */}
-        <section className="border border-blue-500 flex flex-col items-center justify-center text-center bg-[#1f2a44] pt-32 pb-20 px-4">
+        <section className="border border-blue-500 flex flex-col items-center justify-center text-center bg-[#1f2a44] -mt-20 pt-32 pb-20 px-4">
           <h1 className="text-4xl md:text-6xl font-bold mb-4 text-[#e0e0e0]">
             Timeless Elegance
           </h1>
