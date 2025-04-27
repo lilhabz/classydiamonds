@@ -1,72 +1,56 @@
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
+import Head from 'next/head';
 
 export default function CustomPage() {
   return (
     <div className="min-h-screen flex flex-col bg-[#1f2a44] text-[#e0e0e0]">
+      <Head>
+        <title>Custom Jewelry Design | Classy Diamonds</title>
+        <meta name="description" content="Work one-on-one with Ned to design and create a unique piece of custom jewelry that tells your story." />
+      </Head>
+
       <Navbar />
 
       {/* Hero Section */}
-      <section className="w-full pt-[120px] pb-16 text-center px-4 -mt-20">
-        <h1 className="text-4xl sm:text-5xl font-serif font-semibold mb-6">
+      <section className="w-full flex flex-col items-center justify-center text-center -mt-20 pt-32 pb-24 px-4">
+        <h1 className="text-4xl sm:text-5xl font-bold mb-6">
           Create Your Dream Piece
         </h1>
-        <p className="text-gray-300 max-w-2xl mx-auto text-base sm:text-lg">
+        <p className="text-lg md:text-xl max-w-2xl text-[#cfd2d6]">
           Work one-on-one with Ned to design a piece that tells your unique story.
         </p>
       </section>
 
       {/* How It Works Section */}
-      <section className="px-6 py-20 max-w-5xl mx-auto">
-        <h2 className="text-3xl font-semibold text-center mb-12">How It Works</h2>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 text-center">
-          {/* Step 1 */}
-          <div className="bg-[#25304f] p-6 rounded-2xl shadow-md hover:shadow-2xl transition-transform duration-300 hover:scale-105">
-            <h3 className="text-xl font-semibold mb-4">1. Consultation</h3>
-            <p className="text-[#cfd2d6] text-base">
-              Meet with Ned to discuss your vision, style, and ideas.
-            </p>
-          </div>
-          {/* Step 2 */}
-          <div className="bg-[#25304f] p-6 rounded-2xl shadow-md hover:shadow-2xl transition-transform duration-300 hover:scale-105">
-            <h3 className="text-xl font-semibold mb-4">2. Design Sketch</h3>
-            <p className="text-[#cfd2d6] text-base">
-              Receive a detailed sketch tailored to your dream piece.
-            </p>
-          </div>
-          {/* Step 3 */}
-          <div className="bg-[#25304f] p-6 rounded-2xl shadow-md hover:shadow-2xl transition-transform duration-300 hover:scale-105">
-            <h3 className="text-xl font-semibold mb-4">3. Crafting</h3>
-            <p className="text-[#cfd2d6] text-base">
-              Watch your vision come to life with masterful craftsmanship.
-            </p>
-          </div>
-          {/* Step 4 */}
-          <div className="bg-[#25304f] p-6 rounded-2xl shadow-md hover:shadow-2xl transition-transform duration-300 hover:scale-105">
-            <h3 className="text-xl font-semibold mb-4">4. Delivery</h3>
-            <p className="text-[#cfd2d6] text-base">
-              Receive your custom piece, crafted to perfection.
-            </p>
-          </div>
+      <section className="px-6 py-20 max-w-7xl mx-auto">
+        <h2 className="text-3xl font-semibold text-center mb-16">How It Works</h2>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+          {[
+            { title: "1. Consultation", desc: "Meet with Ned to discuss your vision, style, and ideas." },
+            { title: "2. Design Sketch", desc: "Receive a detailed sketch tailored to your dream piece." },
+            { title: "3. Crafting", desc: "Watch your vision come to life with masterful craftsmanship." },
+            { title: "4. Delivery", desc: "Receive your custom piece, crafted to perfection." },
+          ].map((step, index) => (
+            <div key={index} className="group bg-[#25304f] rounded-2xl shadow-md hover:shadow-2xl hover:scale-105 transition-all duration-300 p-8 text-center hover:cursor-pointer">
+              <h3 className="text-xl font-semibold mb-4 text-[#cfd2d6] group-hover:text-white transition-colors">{step.title}</h3>
+              <p className="text-[#cfd2d6] group-hover:text-white transition-colors">{step.desc}</p>
+            </div>
+          ))}
         </div>
       </section>
 
       {/* Custom Creations Section */}
       <section className="px-6 py-20 max-w-7xl mx-auto">
-        <h2 className="text-3xl font-semibold text-center mb-12">Custom Creations</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-12">
-          {/* Placeholder 1 */}
-          <div className="group bg-[#25304f] rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl hover:scale-105 transition-transform duration-300 flex items-center justify-center h-80">
-            <p className="text-[#cfd2d6] text-lg">Custom Piece Coming Soon</p>
-          </div>
-          {/* Placeholder 2 */}
-          <div className="group bg-[#25304f] rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl hover:scale-105 transition-transform duration-300 flex items-center justify-center h-80">
-            <p className="text-[#cfd2d6] text-lg">Custom Piece Coming Soon</p>
-          </div>
-          {/* Placeholder 3 */}
-          <div className="group bg-[#25304f] rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl hover:scale-105 transition-transform duration-300 flex items-center justify-center h-80">
-            <p className="text-[#cfd2d6] text-lg">Custom Piece Coming Soon</p>
-          </div>
+        <h2 className="text-3xl font-semibold text-center mb-16">Custom Creations</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="group bg-[#25304f] rounded-2xl shadow-md hover:shadow-2xl hover:scale-105 transition-all duration-300 flex items-center justify-center h-80 hover:cursor-pointer">
+              <p className="text-lg text-[#cfd2d6] group-hover:text-white transition-colors">
+                Custom Piece Coming Soon
+              </p>
+            </div>
+          ))}
         </div>
       </section>
 
@@ -85,8 +69,7 @@ export default function CustomPage() {
           </a>
         </div>
       </section>
-
-      <Footer />
+      
     </div>
   );
 }

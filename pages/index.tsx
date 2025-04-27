@@ -18,30 +18,42 @@ const Home = () => {
         <div className="h-0" />
 
         {/* Hero Section */}
-        <section className="flex flex-col items-center justify-center text-center bg-[#1f2a44] -mt-20 pt-32 pb-24 px-4">
-          <h1 className="text-4xl md:text-6xl font-bold mb-6">
-            Timeless Elegance
-          </h1>
-          <p className="text-lg md:text-xl max-w-2xl text-[#cfd2d6] mb-8">
-            Discover handcrafted engagement rings, wedding bands, and fine jewelry built to last a lifetime.
-          </p>
-          <Link href="/jewelry" className="inline-block">
-            <button className="px-8 py-4 bg-[#e0e0e0] text-[#1f2a44] rounded-full text-lg font-semibold hover:bg-white hover:scale-105 transition-transform duration-300">
-              Shop Now
-            </button>
-          </Link>
-        </section>
+<section className="-mt-20 relative w-full h-[80vh] flex items-center justify-center text-center overflow-hidden">
+  {/* Background Image */}
+  <div className="absolute inset-0">
+    <img
+      src="/hero-home.jpg" // replace this with your image path
+      alt="Hero Background"
+      className="w-full h-full object-cover"
+    />
+    {/* Dark Overlay */}
+    <div className="absolute inset-0 bg-black opacity-50" />
+  </div>
+
+  {/* Hero Content */}
+  <div className="relative z-10 px-4">
+    <h1 className="text-4xl md:text-6xl font-bold mb-6 text-[#e0e0e0]">
+      Timeless Elegance
+    </h1>
+    <p className="text-lg md:text-xl max-w-2xl mx-auto text-[#cfd2d6] mb-8">
+      Discover handcrafted engagement rings, wedding bands, and fine jewelry built to last a lifetime.
+    </p>
+    <Link href="/jewelry" className="inline-block">
+      <button className="px-8 py-4 bg-[#e0e0e0] text-[#1f2a44] rounded-full text-lg font-semibold hover:bg-white hover:scale-105 transition-transform duration-300">
+        Shop Now
+      </button>
+    </Link>
+  </div>
+</section>
+
 
         {/* Featured Products Section */}
         <section className="py-20 px-6 max-w-7xl mx-auto">
           <h2 className="text-3xl font-semibold text-center mb-16">Featured Pieces</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-12">
-            {/* Product Cards */}
-            {[
-              { image: "/ring1.jpg", title: "Diamond Ring", price: "$4,200" },
+            {[{ image: "/ring1.jpg", title: "Diamond Ring", price: "$4,200" },
               { image: "/necklace1.jpg", title: "Sapphire Necklace", price: "$2,500" },
-              { image: "/bracelet1.jpg", title: "Tennis Bracelet", price: "$1,800" },
-            ].map((item, index) => (
+              { image: "/bracelet1.jpg", title: "Tennis Bracelet", price: "$1,800" }].map((item, index) => (
               <div
                 key={index}
                 className="group bg-[#25304f] rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl hover:ring-2 hover:ring-[#e0e0e0] hover:scale-105 transition-all duration-300"
@@ -54,8 +66,8 @@ const Home = () => {
                   />
                 </div>
                 <div className="p-6 text-center">
-                  <h3 className="text-2xl font-semibold">{item.title}</h3>
-                  <p className="mt-2 text-gray-400">{item.price}</p>
+                  <h3 className="text-2xl font-semibold text-[#cfd2d6] group-hover:text-white transition-colors duration-300">{item.title}</h3>
+                  <p className="mt-2 text-gray-400 group-hover:text-white transition-colors duration-300">{item.price}</p>
                 </div>
               </div>
             ))}
@@ -63,39 +75,58 @@ const Home = () => {
         </section>
 
         {/* Shop by Category */}
-        <section className="py-20 px-6 max-w-7xl mx-auto">
-          <h2 className="text-3xl font-semibold text-center mb-16">Shop by Category</h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-8 text-center">
-            {["Engagement", "Wedding Bands", "Rings", "Bracelets", "Necklaces", "Earrings"].map((category) => (
-              <Link
-                key={category}
-                href={`/category/${category.toLowerCase().replace(/\s+/g, "-")}`}
-                className="group bg-[#25304f] rounded-2xl overflow-hidden shadow-md hover:shadow-2xl hover:scale-105 transition-all duration-300 flex items-center justify-center py-10 text-lg font-semibold"
-              >
-                {category}
-              </Link>
-            ))}
-          </div>
-        </section>
-
-        {/* Shop for Him & Her */}
 <section className="py-20 px-6 max-w-7xl mx-auto">
-  <h2 className="text-3xl font-semibold text-center mb-16">Gifts for Him & Her</h2>
-  <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-    <Link href="/category/for-him">
-      <div className="h-64 bg-[#25304f] rounded-2xl shadow-md hover:shadow-2xl flex items-center justify-center text-2xl font-semibold transition-all duration-300 hover:scale-105">
-        Shop for Him
-      </div>
-    </Link>
-    <Link href="/category/for-her">
-      <div className="h-64 bg-[#25304f] rounded-2xl shadow-md hover:shadow-2xl flex items-center justify-center text-2xl font-semibold transition-all duration-300 hover:scale-105">
-        Shop for Her
-      </div>
-    </Link>
+  <h2 className="text-3xl font-semibold text-center mb-16">Shop by Category</h2>
+  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-8 text-center">
+    {[
+      { name: "Engagement", image: "/category/engagement-cat.jpg" },
+      { name: "Wedding Bands", image: "/categories/wedding-bands.jpg" },
+      { name: "Rings", image: "/categories/rings.jpg" },
+      { name: "Bracelets", image: "/categories/bracelets.jpg" },
+      { name: "Necklaces", image: "/categories/necklaces.jpg" },
+      { name: "Earrings", image: "/category/earring-cat.jpg" },
+    ].map((category) => (
+      <Link
+        key={category.name}
+        href={`/category/${category.name.toLowerCase().replace(/\s+/g, "-")}`}
+        className="group relative bg-[#25304f] rounded-2xl overflow-hidden shadow-md hover:shadow-2xl hover:scale-105 transition-all duration-300 flex items-center justify-center h-40"
+      >
+        {/* Background Image */}
+        <div className="absolute inset-0">
+          <img
+            src={category.image}
+            alt={category.name}
+            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+          />
+          {/* Dark Overlay */}
+          <div className="absolute inset-0 bg-black opacity-40" />
+        </div>
+
+        {/* Text */}
+        <span className="relative z-10 text-lg font-semibold text-[#cfd2d6] group-hover:text-white transition-colors">
+          {category.name}
+        </span>
+      </Link>
+    ))}
   </div>
 </section>
 
-
+        {/* Shop for Him & Her */}
+        <section className="py-20 px-6 max-w-7xl mx-auto">
+          <h2 className="text-3xl font-semibold text-center mb-16">Gifts for Him & Her</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
+            <Link href="/category/for-him">
+              <div className="h-64 bg-[#25304f] rounded-2xl shadow-md hover:shadow-2xl flex items-center justify-center text-2xl font-semibold text-[#cfd2d6] hover:text-white transition-colors duration-300 hover:scale-105">
+                Shop for Him
+              </div>
+            </Link>
+            <Link href="/category/for-her">
+              <div className="h-64 bg-[#25304f] rounded-2xl shadow-md flex items-center justify-center text-2xl font-semibold text-[#cfd2d6] hover:text-white transition-colors duration-300 hover:scale-105">
+                Shop for Her
+              </div>
+            </Link>
+          </div>
+        </section>
 
         {/* About Section */}
         <section className="py-20 px-6 bg-[#1f2a44]">
@@ -107,6 +138,27 @@ const Home = () => {
           </div>
         </section>
 
+        {/* Why Choose Us Section */}
+        <section className="py-20 px-6 bg-[#1f2a44]">
+          <div className="max-w-5xl mx-auto text-center">
+            <h2 className="text-4xl font-bold mb-10">Why Choose Classy Diamonds?</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
+              <div className="flex items-center space-x-4">
+                <p className="text-lg text-[#cfd2d6]">30+ Years of Custom Jewelry Expertise</p>
+              </div>
+              <div className="flex items-center space-x-4">
+                <p className="text-lg text-[#cfd2d6]">Independent Custom Jeweler</p>
+              </div>
+              <div className="flex items-center space-x-4">
+                <p className="text-lg text-[#cfd2d6]">One-of-a-Kind Designs</p>
+              </div>
+              <div className="flex items-center space-x-4">
+                <p className="text-lg text-[#cfd2d6]">Trusted Worldwide by Clients from London to Australia</p>
+              </div>
+            </div>
+          </div>
+        </section>
+        
         {/* Custom Work Section */}
         <section className="bg-[#25304f] py-20 px-6">
           <div className="max-w-5xl mx-auto text-center">
