@@ -36,38 +36,29 @@ const Home = () => {
         <section className="py-20 px-6 max-w-7xl mx-auto">
           <h2 className="text-3xl font-semibold text-center mb-16">Featured Pieces</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-12">
-            {/* Product 1 */}
-            <div className="group bg-[#25304f] rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl hover:scale-105 transition-transform duration-300">
-              <div className="w-full h-80 overflow-hidden">
-                <img src="/ring1.jpg" alt="Diamond Ring" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
+            {/* Product Cards */}
+            {[
+              { image: "/ring1.jpg", title: "Diamond Ring", price: "$4,200" },
+              { image: "/necklace1.jpg", title: "Sapphire Necklace", price: "$2,500" },
+              { image: "/bracelet1.jpg", title: "Tennis Bracelet", price: "$1,800" },
+            ].map((item, index) => (
+              <div
+                key={index}
+                className="group bg-[#25304f] rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl hover:ring-2 hover:ring-[#e0e0e0] hover:scale-105 transition-all duration-300"
+              >
+                <div className="w-full h-80 overflow-hidden">
+                  <img
+                    src={item.image}
+                    alt={item.title}
+                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                  />
+                </div>
+                <div className="p-6 text-center">
+                  <h3 className="text-2xl font-semibold">{item.title}</h3>
+                  <p className="mt-2 text-gray-400">{item.price}</p>
+                </div>
               </div>
-              <div className="p-6 text-center">
-                <h3 className="text-2xl font-semibold">Diamond Ring</h3>
-                <p className="mt-2 text-gray-400">$4,200</p>
-              </div>
-            </div>
-
-            {/* Product 2 */}
-            <div className="group bg-[#25304f] rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl hover:scale-105 transition-transform duration-300">
-              <div className="w-full h-80 overflow-hidden">
-                <img src="/necklace1.jpg" alt="Sapphire Necklace" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
-              </div>
-              <div className="p-6 text-center">
-                <h3 className="text-2xl font-semibold">Sapphire Necklace</h3>
-                <p className="mt-2 text-gray-400">$2,500</p>
-              </div>
-            </div>
-
-            {/* Product 3 */}
-            <div className="group bg-[#25304f] rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl hover:scale-105 transition-transform duration-300">
-              <div className="w-full h-80 overflow-hidden">
-                <img src="/bracelet1.jpg" alt="Tennis Bracelet" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
-              </div>
-              <div className="p-6 text-center">
-                <h3 className="text-2xl font-semibold">Tennis Bracelet</h3>
-                <p className="mt-2 text-gray-400">$1,800</p>
-              </div>
-            </div>
+            ))}
           </div>
         </section>
 
@@ -75,18 +66,11 @@ const Home = () => {
         <section className="py-20 px-6 max-w-7xl mx-auto">
           <h2 className="text-3xl font-semibold text-center mb-16">Shop by Category</h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-8 text-center">
-            {[
-              "Engagement",
-              "Wedding Bands",
-              "Rings",
-              "Bracelets",
-              "Necklaces",
-              "Earrings",
-            ].map((category) => (
+            {["Engagement", "Wedding Bands", "Rings", "Bracelets", "Necklaces", "Earrings"].map((category) => (
               <Link
                 key={category}
                 href={`/category/${category.toLowerCase().replace(/\s+/g, "-")}`}
-                className="bg-[#25304f] hover:bg-[#2f3b60] hover:scale-105 transition-transform duration-300 rounded-lg py-6 text-lg font-medium"
+                className="group bg-[#25304f] rounded-2xl overflow-hidden shadow-md hover:shadow-2xl hover:scale-105 transition-all duration-300 flex items-center justify-center py-10 text-lg font-semibold"
               >
                 {category}
               </Link>
@@ -95,30 +79,28 @@ const Home = () => {
         </section>
 
         {/* Shop for Him & Her */}
-        <section className="py-20 px-6 max-w-7xl mx-auto">
-          <h2 className="text-3xl font-semibold text-center mb-16">
-            Gifts for Him & Her
-          </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-            <Link href="/category/for-him" className="relative group">
-              <div className="h-64 bg-[#25304f] rounded-lg flex items-center justify-center text-2xl font-semibold group-hover:bg-[#2f3b60] group-hover:scale-105 transition-transform duration-300">
-                Shop for Him
-              </div>
-            </Link>
-            <Link href="/category/for-her" className="relative group">
-              <div className="h-64 bg-[#25304f] rounded-lg flex items-center justify-center text-2xl font-semibold group-hover:bg-[#2f3b60] group-hover:scale-105 transition-transform duration-300">
-                Shop for Her
-              </div>
-            </Link>
-          </div>
-        </section>
+<section className="py-20 px-6 max-w-7xl mx-auto">
+  <h2 className="text-3xl font-semibold text-center mb-16">Gifts for Him & Her</h2>
+  <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
+    <Link href="/category/for-him">
+      <div className="h-64 bg-[#25304f] rounded-2xl shadow-md hover:shadow-2xl flex items-center justify-center text-2xl font-semibold transition-all duration-300 hover:scale-105">
+        Shop for Him
+      </div>
+    </Link>
+    <Link href="/category/for-her">
+      <div className="h-64 bg-[#25304f] rounded-2xl shadow-md hover:shadow-2xl flex items-center justify-center text-2xl font-semibold transition-all duration-300 hover:scale-105">
+        Shop for Her
+      </div>
+    </Link>
+  </div>
+</section>
+
+
 
         {/* About Section */}
         <section className="py-20 px-6 bg-[#1f2a44]">
           <div className="max-w-4xl mx-auto text-center">
-            <h2 className="text-3xl font-semibold mb-8">
-              Craftsmanship You Can Trust
-            </h2>
+            <h2 className="text-3xl font-semibold mb-8">Craftsmanship You Can Trust</h2>
             <p className="text-lg text-[#cfd2d6]">
               With over 30 years of experience, Classy Diamonds is dedicated to delivering the finest quality jewelry. Every piece is a testament to our passion and precision.
             </p>
@@ -128,9 +110,7 @@ const Home = () => {
         {/* Custom Work Section */}
         <section className="bg-[#25304f] py-20 px-6">
           <div className="max-w-5xl mx-auto text-center">
-            <h2 className="text-4xl font-bold mb-8">
-              Bring Your Vision to Life
-            </h2>
+            <h2 className="text-4xl font-bold mb-8">Bring Your Vision to Life</h2>
             <p className="text-lg text-[#cfd2d6] mb-8">
               With over 30 years of expertise, Ned at Classy Diamonds specializes in crafting breathtaking custom jewelry. Whether it's an engagement ring, a one-of-a-kind pendant, or a meaningful redesign, every piece is made with precision and passion to tell your unique story.
             </p>

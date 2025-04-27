@@ -16,7 +16,7 @@ const products = [
     name: 'Gold Tennis Bracelet',
     price: '$1,800',
     image: '/products/tennis-bracelet.jpg',
-    href: '/product/tennis-bracelet',
+    href: '/product/tennis-tennisbracelet',
   },
   {
     id: 3,
@@ -84,7 +84,7 @@ export default function JewelryPage() {
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-10">
           {products.map((product) => (
             <Link key={product.id} href={product.href} className="group">
-              <div className="overflow-hidden rounded-2xl shadow-lg hover:shadow-2xl hover:scale-105 transition-transform duration-300 bg-[#25304f]">
+              <div className="overflow-hidden rounded-2xl shadow-lg bg-[#25304f] hover:shadow-2xl hover:ring-2 hover:ring-[#e0e0e0] hover:scale-105 transition-all duration-300">
                 <div className="w-full h-80 overflow-hidden">
                   <Image
                     src={product.image}
