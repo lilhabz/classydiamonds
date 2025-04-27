@@ -13,7 +13,7 @@ export default function CustomPage() {
       <Navbar />
 
       {/* Hero Section */}
-      <section className="w-full flex flex-col items-center justify-center text-center -mt-20 pt-32 pb-24 px-4">
+      <section className="-mt-20 w-full flex flex-col items-center justify-center text-center -mt-20 pt-32 pb-24 px-4">
         <h1 className="text-4xl sm:text-5xl font-bold mb-6">
           Create Your Dream Piece
         </h1>

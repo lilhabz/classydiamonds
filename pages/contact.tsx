@@ -8,7 +8,7 @@ export default function ContactPage() {
       <Navbar />
 
       {/* Hero Section */}
-      <section className="w-full pt-[120px] pb-16 text-center px-4 -mt-20">
+      <section className="-mt-20 w-full pt-[120px] pb-16 text-center px-4 -mt-20">
         <h1 className="text-4xl sm:text-5xl font-serif font-semibold mb-6">
           Contact Classy Diamonds
         </h1>
