@@ -20,11 +20,10 @@ export default function ContactPage() {
       {/* About Section */}
       <section className="px-6 py-16 max-w-7xl mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
-          
           {/* Ned's Photo */}
           <div className="w-full h-96 overflow-hidden rounded-2xl shadow-lg">
             <img
-              src="/ned-photo.jpg" // <-- Put Ned's real photo in /public/ and update filename if needed
+              src="/ned-photo.jpg"
               alt="Ned - Classy Diamonds"
               className="w-full h-full object-cover"
             />
@@ -41,14 +40,12 @@ export default function ContactPage() {
               At Classy Diamonds, every piece tells a story — and we look forward to helping you tell yours.
             </p>
           </div>
-
         </div>
       </section>
 
       {/* Contact Info + Map Section */}
       <section className="px-6 py-20 max-w-7xl mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
-          
           {/* Contact Info */}
           <div className="flex flex-col gap-8 text-center md:text-left">
             <div className="flex flex-col items-center md:items-start">
@@ -68,10 +65,93 @@ export default function ContactPage() {
               Google Map Coming Soon
             </p>
           </div>
+        </div>
+      </section>
+
+      {/* Forms Section */}
+      <section className="px-6 py-20 max-w-7xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+          
+          {/* Contact Form */}
+          <div className="bg-[#25304f] p-10 rounded-2xl shadow-lg">
+            <h2 className="text-2xl sm:text-3xl font-serif font-semibold mb-6 text-center">
+              Send Us a Message
+            </h2>
+            <form className="flex flex-col space-y-6">
+              <input
+                type="text"
+                placeholder="Full Name"
+                className="p-4 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
+                required
+              />
+              <input
+                type="email"
+                placeholder="Email Address"
+                className="p-4 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
+                required
+              />
+              <textarea
+                placeholder="Your Message"
+                rows={5}
+                className="p-4 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
+                required
+              ></textarea>
+              <button
+                type="submit"
+                className="bg-white text-[#1f2a36] font-semibold py-4 rounded-xl hover:shadow-lg transition"
+              >
+                Submit
+              </button>
+            </form>
+          </div>
+
+          {/* Custom Jewelry Inquiry Form */}
+          <div className="bg-[#25304f] p-10 rounded-2xl shadow-lg">
+            <h2 className="text-2xl sm:text-3xl font-serif font-semibold mb-6 text-center">
+              Start Your Custom Jewelry Creation
+            </h2>
+            <form className="flex flex-col space-y-6">
+              <input
+                type="text"
+                placeholder="Full Name"
+                className="p-4 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
+                required
+              />
+              <input
+                type="email"
+                placeholder="Email Address"
+                className="p-4 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
+                required
+              />
+              <input
+                type="text"
+                placeholder="Phone Number (optional)"
+                className="p-4 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
+              />
+              <input
+                type="text"
+                placeholder="Type of Jewelry (e.g., Engagement Ring, Necklace)"
+                className="p-4 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
+              />
+              <textarea
+                placeholder="Describe your vision or ideas..."
+                rows={5}
+                className="p-4 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
+                required
+              ></textarea>
+              <button
+                type="submit"
+                className="bg-white text-[#1f2a36] font-semibold py-4 rounded-xl hover:shadow-lg transition"
+              >
+                Submit Custom Request
+              </button>
+            </form>
+          </div>
 
         </div>
       </section>
-      
+
+      <Footer />
     </div>
   );
 }
