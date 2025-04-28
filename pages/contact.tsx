@@ -1,6 +1,6 @@
-import Navbar from '../components/Navbar';
-import Footer from '../components/Footer';
-import { FaPhoneAlt, FaEnvelope } from 'react-icons/fa';
+import Navbar from "../components/Navbar";
+import Footer from "../components/Footer";
+import { FaPhoneAlt, FaEnvelope } from "react-icons/fa";
 
 export default function ContactPage() {
   return (
@@ -8,13 +8,27 @@ export default function ContactPage() {
       <Navbar />
 
       {/* Hero Section */}
-      <section className="-mt-20 w-full pt-[120px] pb-16 text-center px-4 -mt-20">
-        <h1 className="text-4xl sm:text-5xl font-serif font-semibold mb-6">
-          Contact Classy Diamonds
-        </h1>
-        <p className="text-gray-300 max-w-2xl mx-auto text-base sm:text-lg">
-          Turning dreams into reality for nearly 30 years.
-        </p>
+      <section className="relative w-full h-[80vh] flex items-center justify-center text-center overflow-hidden -mt-20">
+        {/* Background Image */}
+        <div className="absolute inset-0">
+          <img
+            src="/hero-contact.jpg" // replace this with your contact page hero image
+            alt="Contact Classy Diamonds Hero Background"
+            className="w-full h-full object-cover"
+          />
+          {/* Dark Overlay */}
+          <div className="absolute inset-0 bg-black opacity-50" />
+        </div>
+
+        {/* Hero Content */}
+        <div className="relative z-10 px-4">
+          <h1 className="text-4xl md:text-6xl font-bold mb-6 text-[#e0e0e0]">
+            Contact Classy Diamonds
+          </h1>
+          <p className="text-lg md:text-xl max-w-2xl mx-auto text-[#cfd2d6]">
+            Turning dreams into reality for nearly 30 years.
+          </p>
+        </div>
       </section>
 
       {/* About Section */}
@@ -33,11 +47,22 @@ export default function ContactPage() {
           <div className="text-center md:text-left">
             <h2 className="text-3xl font-semibold mb-8">About Us</h2>
             <p className="text-lg text-[#cfd2d6] leading-relaxed">
-              For nearly 30 years, Classy Diamonds has been providing superior quality and exceptional customer service to clients around the world. Ned is renowned for his meticulous custom design work, going above and beyond to create detailed, flawless pieces that bring his customers' dreams to life.
-              <br /><br />
-              His passion and dedication for fine craftsmanship are truly remarkable and never go unnoticed. With a global clientele spanning London, Quebec, Europe, and Australia, Ned is proud to build lifelong relationships and craft unforgettable moments through his jewelry.
-              <br /><br />
-              At Classy Diamonds, every piece tells a story — and we look forward to helping you tell yours.
+              For nearly 30 years, Classy Diamonds has been providing superior
+              quality and exceptional customer service to clients around the
+              world. Ned is renowned for his meticulous custom design work,
+              going above and beyond to create detailed, flawless pieces that
+              bring his customers' dreams to life.
+              <br />
+              <br />
+              His passion and dedication for fine craftsmanship are truly
+              remarkable and never go unnoticed. With a global clientele
+              spanning London, Quebec, Europe, and Australia, Ned is proud to
+              build lifelong relationships and craft unforgettable moments
+              through his jewelry.
+              <br />
+              <br />
+              At Classy Diamonds, every piece tells a story — and we look
+              forward to helping you tell yours.
             </p>
           </div>
         </div>
@@ -50,20 +75,20 @@ export default function ContactPage() {
           <div className="flex flex-col gap-8 text-center md:text-left">
             <div className="flex flex-col items-center md:items-start">
               <FaPhoneAlt className="text-3xl mb-2" />
-              <p className="text-lg">+1 (123) 456-7890</p> {/* <-- Replace with real number */}
+              <p className="text-lg">+1 (123) 456-7890</p>{" "}
+              {/* <-- Replace with real number */}
             </div>
             <div className="flex flex-col items-center md:items-start">
               <FaEnvelope className="text-3xl mb-2" />
-              <p className="text-lg">info@classydiamonds.com</p> {/* <-- Replace with real email */}
+              <p className="text-lg">info@classydiamonds.com</p>{" "}
+              {/* <-- Replace with real email */}
             </div>
           </div>
 
           {/* Google Map Placeholder */}
           <div className="w-full h-64 bg-[#25304f] rounded-2xl overflow-hidden flex items-center justify-center">
             {/* TODO: Insert your Google Map iframe here */}
-            <p className="text-[#cfd2d6] text-center">
-              Google Map Coming Soon
-            </p>
+            <p className="text-[#cfd2d6] text-center">Google Map Coming Soon</p>
           </div>
         </div>
       </section>
@@ -71,7 +96,6 @@ export default function ContactPage() {
       {/* Forms Section */}
       <section className="px-6 py-20 max-w-7xl mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-          
           {/* Contact Form */}
           <div className="bg-[#25304f] p-10 rounded-2xl shadow-lg">
             <h2 className="text-2xl sm:text-3xl font-serif font-semibold mb-6 text-center">
@@ -147,7 +171,6 @@ export default function ContactPage() {
               </button>
             </form>
           </div>
-
         </div>
       </section>
 

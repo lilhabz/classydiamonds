@@ -13,14 +13,30 @@ export default function CustomPage() {
       <Navbar />
 
       {/* Hero Section */}
-      <section className="-mt-20 w-full flex flex-col items-center justify-center text-center -mt-20 pt-32 pb-24 px-4">
-        <h1 className="text-4xl sm:text-5xl font-bold mb-6">
-          Create Your Dream Piece
-        </h1>
-        <p className="text-lg md:text-xl max-w-2xl text-[#cfd2d6]">
-          Work one-on-one with Ned to design a piece that tells your unique story.
-        </p>
-      </section>
+<section className="-mt-20 relative w-full h-[80vh] flex items-center justify-center text-center overflow-hidden">
+  
+  {/* Background Image */}
+  <div className="absolute inset-0">
+    <img
+      src="/hero-custom.jpg" // replace this with your custom page hero image
+      alt="Custom Jewelry Hero Background"
+      className="w-full h-full object-cover"
+    />
+    {/* Dark Overlay */}
+    <div className="absolute inset-0 bg-black opacity-50" />
+  </div>
+
+  {/* Hero Content */}
+  <div className="relative z-10 px-4">
+    <h1 className="text-4xl sm:text-5xl font-bold mb-6 text-[#e0e0e0]">
+      Create Your Dream Piece
+    </h1>
+    <p className="text-lg md:text-xl max-w-2xl mx-auto text-[#cfd2d6]">
+      Work one-on-one with Ned to design a piece that tells your unique story.
+    </p>
+  </div>
+
+</section>
 
       {/* How It Works Section */}
       <section className="px-6 py-20 max-w-7xl mx-auto">
