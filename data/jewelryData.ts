@@ -1,0 +1,88 @@
+// 📄 data/jewelryData.ts - Full Jewelry Collection (12 Demo Products)
+
+export const jewelryData = [
+  {
+    id: 1,
+    name: "Diamond Engagement Ring",
+    price: 4200,
+    image: "/products/engagement-ring.jpg",
+    slug: "diamond-engagement-ring",
+  },
+  {
+    id: 2,
+    name: "Gold Tennis Bracelet",
+    price: 1800,
+    image: "/products/tennis-bracelet.jpg",
+    slug: "gold-tennis-bracelet",
+  },
+  {
+    id: 3,
+    name: "Sapphire Pendant Necklace",
+    price: 2500,
+    image: "/products/sapphire-necklace.jpg",
+    slug: "sapphire-pendant-necklace",
+  },
+  {
+    id: 4,
+    name: "Pearl Drop Earrings",
+    price: 950,
+    image: "/products/pearl-earrings.jpg",
+    slug: "pearl-drop-earrings",
+  },
+  {
+    id: 5,
+    name: "Men’s Platinum Wedding Band",
+    price: 1200,
+    image: "/products/mens-platinum-band.jpg",
+    slug: "mens-platinum-wedding-band",
+  },
+  {
+    id: 6,
+    name: "Diamond Halo Pendant",
+    price: 2750,
+    image: "/products/halo-pendant.jpg",
+    slug: "diamond-halo-pendant",
+  },
+  {
+    id: 7,
+    name: "White Gold Hoop Earrings",
+    price: 880,
+    image: "/products/white-gold-hoops.jpg",
+    slug: "white-gold-hoop-earrings",
+  },
+  {
+    id: 8,
+    name: "Emerald Solitaire Ring",
+    price: 3100,
+    image: "/products/emerald-solitaire-ring.jpg",
+    slug: "emerald-solitaire-ring",
+  },
+  {
+    id: 9,
+    name: "Classic Gold Chain",
+    price: 1500,
+    image: "/products/gold-chain.jpg",
+    slug: "classic-gold-chain",
+  },
+  {
+    id: 10,
+    name: "Men’s Diamond Watch",
+    price: 5500,
+    image: "/products/mens-diamond-watch.jpg",
+    slug: "mens-diamond-watch",
+  },
+  {
+    id: 11,
+    name: "Blue Topaz Stud Earrings",
+    price: 620,
+    image: "/products/blue-topaz-earrings.jpg",
+    slug: "blue-topaz-stud-earrings",
+  },
+  {
+    id: 12,
+    name: "Ruby Heart Pendant",
+    price: 2900,
+    image: "/products/ruby-heart-pendant.jpg",
+    slug: "ruby-heart-pendant",
+  },
+];

@@ -4,11 +4,11 @@
 
 import Link from "next/link";
 import Head from "next/head";
-import { useCart } from "@/context/CartContext"; // 🛒 Import Cart Context
-import { productsData } from "@/data/productsData"; // 🛒 Correct product info!
+import { useCart } from "@/context/CartContext"; // 🛒 Cart context
+import { productsData } from "@/data/productsData"; // 💎 Featured products data
 
 const Home = () => {
-  const { addToCart } = useCart(); // 🛒 Hook into Cart
+  const { addToCart } = useCart(); // 🛒 Cart hook
 
   return (
     <>
@@ -26,8 +26,9 @@ const Home = () => {
 
         {/* 🌟 Hero Section */}
         <section className="-mt-20 relative w-full h-[80vh] flex items-center justify-center text-center overflow-hidden">
-          {/* 🖼️ Background Image */}
+          {/* 🖼️ Hero Background Image */}
           <div className="absolute inset-0">
+            {/* // 🖼️ Add hero background image here */}
             <img
               src="/hero-home.jpg"
               alt="Hero Background"
@@ -37,15 +38,18 @@ const Home = () => {
             <div className="absolute inset-0 bg-black opacity-50" />
           </div>
 
-          {/* ✨ Hero Content */}
+          {/* ✨ Hero Text Content */}
           <div className="relative z-10 px-4">
+            {/* // 📝 Edit hero headline here */}
             <h1 className="text-4xl md:text-6xl font-bold mb-6 text-[#e0e0e0]">
               Timeless Elegance
             </h1>
+            {/* // 📝 Edit hero subtext here */}
             <p className="text-lg md:text-xl max-w-2xl mx-auto text-[#cfd2d6] mb-8">
               Discover handcrafted engagement rings, wedding bands, and fine
               jewelry built to last a lifetime.
             </p>
+            {/* // 🛒 Edit hero button link here */}
             <Link href="/jewelry" className="inline-block">
               <button className="px-8 py-4 bg-[#e0e0e0] text-[#1f2a44] rounded-full text-lg font-semibold hover:bg-white hover:scale-105 transition-transform duration-300">
                 Shop Now
@@ -54,11 +58,14 @@ const Home = () => {
           </div>
         </section>
 
-        {/* 💎 Featured Products */}
+        {/* 💎 Featured Products Section */}
         <section className="py-20 px-6 max-w-7xl mx-auto">
+          {/* // 🛒 Featured Products Title */}
           <h2 className="text-3xl font-semibold text-center mb-16">
             Featured Pieces
           </h2>
+
+          {/* // 🛒 Featured Product Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-12">
             {productsData.slice(0, 3).map((item) => (
               <div
@@ -69,6 +76,7 @@ const Home = () => {
                   href={`/product/${item.slug}`}
                   className="flex-1 flex flex-col"
                 >
+                  {/* // 🖼️ Product Image */}
                   <div className="w-full h-80 overflow-hidden">
                     <img
                       src={item.image}
@@ -76,6 +84,8 @@ const Home = () => {
                       className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                     />
                   </div>
+
+                  {/* // 📝 Product Name & Price */}
                   <div className="p-6 text-center flex-1 flex flex-col justify-between">
                     <div>
                       <h3 className="text-2xl font-semibold text-[#cfd2d6] group-hover:text-white transition-colors duration-300">
@@ -88,7 +98,7 @@ const Home = () => {
                   </div>
                 </Link>
 
-                {/* 🛒 Add to Cart Button */}
+                {/* // 🛒 Add to Cart Button */}
                 <div className="p-6 pt-0">
                   <button
                     onClick={() =>
@@ -100,7 +110,7 @@ const Home = () => {
                         quantity: 1,
                       })
                     }
-                    className="w-full px-6 py-3 bg-white text-[#1f2a44] rounded-xl font-semibold hover:bg-gray-100 transition hover:scale-105 cursor-pointer" // ✏️ Added cursor-pointer here
+                    className="w-full px-6 py-3 bg-white text-[#1f2a44] rounded-xl font-semibold hover:bg-gray-100 transition hover:scale-105 cursor-pointer"
                   >
                     Add to Cart
                   </button>
@@ -110,11 +120,14 @@ const Home = () => {
           </div>
         </section>
 
-        {/* 🛍️ Shop by Category */}
+        {/* 🛍️ Shop by Category Section */}
         <section className="py-20 px-6 max-w-7xl mx-auto">
+          {/* // 🛍️ Shop by Category Title */}
           <h2 className="text-3xl font-semibold text-center mb-16">
             Shop by Category
           </h2>
+
+          {/* // 🛍️ Category Cards */}
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-8 text-center">
             {[
               { name: "Engagement", image: "/category/engagement-cat.jpg" },
@@ -132,13 +145,17 @@ const Home = () => {
                 className="group relative bg-[#25304f] rounded-2xl overflow-hidden shadow-md hover:shadow-2xl hover:scale-105 transition-all duration-300 flex items-center justify-center h-40"
               >
                 <div className="absolute inset-0">
+                  {/* // 🖼️ Category Background Image */}
                   <img
                     src={category.image}
                     alt={category.name}
                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                   />
+                  {/* // 🌑 Category Dark Overlay */}
                   <div className="absolute inset-0 bg-black opacity-40" />
                 </div>
+
+                {/* // 📝 Category Label */}
                 <span className="relative z-10 text-lg font-semibold text-[#cfd2d6] group-hover:text-white transition-colors">
                   {category.name}
                 </span>
@@ -147,11 +164,14 @@ const Home = () => {
           </div>
         </section>
 
-        {/* 🎁 Gifts for Him & Her */}
+        {/* 🎁 Gifts for Him & Her Section */}
         <section className="py-20 px-6 max-w-7xl mx-auto">
+          {/* // 🎁 Gifts Title */}
           <h2 className="text-3xl font-semibold text-center mb-16">
             Gifts for Him & Her
           </h2>
+
+          {/* // 🎁 Gift Category Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
             <Link href="/category/for-him">
               <div className="h-64 bg-[#25304f] rounded-2xl shadow-md hover:shadow-2xl flex items-center justify-center text-2xl font-semibold text-[#cfd2d6] hover:text-white transition-colors duration-300 hover:scale-105">
@@ -166,8 +186,9 @@ const Home = () => {
           </div>
         </section>
 
-        {/* 🛠 About Classy Diamonds */}
+        {/* 🛠️ About Section */}
         <section className="py-20 px-6 bg-[#1f2a44]">
+          {/* // 🛠️ About Text */}
           <div className="max-w-4xl mx-auto text-center">
             <h2 className="text-3xl font-semibold mb-8">
               Craftsmanship You Can Trust
@@ -180,8 +201,9 @@ const Home = () => {
           </div>
         </section>
 
-        {/* 💎 Why Choose Us */}
+        {/* 💎 Why Choose Us Section */}
         <section className="py-20 px-6 bg-[#1f2a44]">
+          {/* // 💎 Reasons Grid */}
           <div className="max-w-5xl mx-auto text-center">
             <h2 className="text-4xl font-bold mb-10">
               Why Choose Classy Diamonds?
@@ -201,8 +223,9 @@ const Home = () => {
           </div>
         </section>
 
-        {/* ✍️ Custom Work */}
+        {/* ✍️ Custom Work Section */}
         <section className="bg-[#25304f] py-20 px-6">
+          {/* // ✍️ Custom Work Content */}
           <div className="max-w-5xl mx-auto text-center">
             <h2 className="text-4xl font-bold mb-8">
               Bring Your Vision to Life

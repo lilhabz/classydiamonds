@@ -5,7 +5,7 @@ import Footer from "../components/Footer";
 import Image from "next/image";
 import Link from "next/link";
 import Head from "next/head";
-import { useCart } from "@/context/CartContext"; // 🛒 Hook into Cart
+import { useCart } from "@/context/CartContext"; // 🛒 Cart context
 
 const products = [
   {
@@ -39,7 +39,7 @@ const products = [
 ];
 
 export default function JewelryPage() {
-  const { addToCart } = useCart(); // 🛒 Real Cart Hook
+  const { addToCart } = useCart(); // 🛒 Cart hook
 
   return (
     <div className="min-h-screen flex flex-col bg-[#1f2a44] text-[#e0e0e0]">
@@ -55,8 +55,9 @@ export default function JewelryPage() {
 
       {/* 🌟 Hero Section */}
       <section className="-mt-20 relative w-full h-[80vh] flex items-center justify-center text-center overflow-hidden">
-        {/* 🖼️ Background Image */}
+        {/* 🖼️ Hero Background Image */}
         <div className="absolute inset-0">
+          {/* // 🖼️ Add hero jewelry background image here */}
           <img
             src="/hero-jewelry.jpg"
             alt="Jewelry Hero Background"
@@ -68,9 +69,11 @@ export default function JewelryPage() {
 
         {/* ✨ Hero Content */}
         <div className="relative z-10 px-4">
+          {/* // 📝 Edit hero title here */}
           <h1 className="text-4xl md:text-6xl font-bold mb-6 text-[#e0e0e0]">
             Jewelry Collection
           </h1>
+          {/* // 📝 Edit hero description text here */}
           <p className="text-lg md:text-xl max-w-2xl mx-auto text-[#cfd2d6]">
             Discover timeless pieces designed to capture every moment, crafted
             with passion and precision.
@@ -78,11 +81,14 @@ export default function JewelryPage() {
         </div>
       </section>
 
-      {/* 🛍️ Shop by Category */}
+      {/* 🛍️ Shop by Category Section */}
       <section className="py-20 px-6 max-w-7xl mx-auto">
+        {/* // 🛍️ Shop by Category Title */}
         <h2 className="text-3xl font-semibold text-center mb-16">
           Shop by Category
         </h2>
+
+        {/* // 🛍️ Category Links */}
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-8 text-center">
           {[
             { href: "/engagement-rings", label: "Engagement" },
@@ -97,28 +103,34 @@ export default function JewelryPage() {
               href={category.href}
               className="group bg-[#25304f] rounded-2xl overflow-hidden shadow-md hover:shadow-2xl hover:scale-105 transition-all duration-300 flex items-center justify-center py-10 text-lg font-semibold text-[#cfd2d6] hover:text-white hover:cursor-pointer"
             >
+              {/* // 📝 Edit category labels here */}
               {category.label}
             </Link>
           ))}
         </div>
       </section>
 
-      {/* 💎 Our Jewelry Section */}
+      {/* 💎 Our Jewelry Collection Section */}
       <section className="py-20 px-6 max-w-7xl mx-auto">
+        {/* // 💎 Collection Title */}
         <h2 className="text-3xl font-semibold text-center mb-12">
           Our Jewelry
         </h2>
+
+        {/* // 💎 Collection Description */}
         <p className="text-center text-[#cfd2d6] max-w-2xl mx-auto mb-16 text-lg">
           Browse our exclusive collection of fine jewelry, meticulously crafted
           to celebrate life's most treasured moments.
         </p>
 
+        {/* // 🛒 Product Cards Grid */}
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-10">
           {products.map((product) => (
             <div key={product.id} className="group hover:cursor-pointer">
               <div className="bg-[#25304f] rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl hover:ring-2 hover:ring-[#e0e0e0] hover:scale-105 transition-all duration-300 flex flex-col h-full">
                 <div className="flex-1 flex flex-col">
                   <Link href={product.href} className="flex-1">
+                    {/* // 🖼️ Product Image */}
                     <div className="w-full h-80 overflow-hidden">
                       <Image
                         src={product.image}
@@ -128,6 +140,8 @@ export default function JewelryPage() {
                         className="object-cover w-full h-full group-hover:scale-110 transition-transform duration-300"
                       />
                     </div>
+
+                    {/* // 📝 Product Title & Price */}
                     <div className="p-6 text-center">
                       <h3 className="text-2xl font-semibold text-[#cfd2d6] group-hover:text-white transition-colors duration-300">
                         {product.name}
@@ -139,7 +153,7 @@ export default function JewelryPage() {
                   </Link>
                 </div>
 
-                {/* 🛒 Add to Cart Button */}
+                {/* // 🛒 Add to Cart Button */}
                 <div className="p-6 pt-0">
                   <button
                     onClick={(e) => {
@@ -154,7 +168,7 @@ export default function JewelryPage() {
                         quantity: 1,
                       });
                     }}
-                    className="w-full px-6 py-3 bg-white text-[#1f2a44] rounded-xl font-semibold transition-all duration-300 transform hover:scale-110 hover:bg-gray-200 hover:font-bold cursor-pointer" // ✏️ Added cursor-pointer here
+                    className="w-full px-6 py-3 bg-white text-[#1f2a44] rounded-xl font-semibold transition-all duration-300 transform hover:scale-110 hover:bg-gray-200 hover:font-bold cursor-pointer"
                   >
                     Add to Cart
                   </button>
@@ -165,6 +179,7 @@ export default function JewelryPage() {
         </div>
       </section>
 
+      {/* 🔗 Footer Section */}
       <Footer />
     </div>
   );
