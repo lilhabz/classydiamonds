@@ -1,11 +1,14 @@
 @import "tailwindcss";
 
+/* 🎨 Base Theme Colors */
 :root {
   --background: #1f2a44; /* Classy dark blue */
   --foreground: #ffffff; /* White text */
 }
 
-body, html {
+/* 📜 General Body Styles */
+body,
+html {
   margin: 0;
   padding: 0;
   background: var(--background);
@@ -14,10 +17,28 @@ body, html {
   scroll-behavior: smooth;
 }
 
-/* Dark Mode Preferences (optional) */
+/* 🌑 Optional Dark Mode Support */
 @media (prefers-color-scheme: dark) {
   :root {
     --background: #0a0a0a;
     --foreground: #ededed;
+  }
+}
+
+/* ✨ Custom Animations */
+@layer utilities {
+  .animate-fade-in {
+    animation: fadeIn 0.4s ease-out forwards;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 }

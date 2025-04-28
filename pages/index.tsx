@@ -1,6 +1,9 @@
+"use client";
+
 import Link from "next/link";
 import Head from "next/head";
 import { useCart } from "@/context/CartContext"; // 🛒 Import Cart Context
+import { productsData } from "@/data/productsData"; // 🛒 Correct product info!
 
 const Home = () => {
   const { addToCart } = useCart(); // 🛒 Hook into Cart
@@ -16,23 +19,23 @@ const Home = () => {
       </Head>
 
       <main className="flex flex-col min-h-screen bg-[#1f2a44] text-[#e0e0e0]">
-        {/* Navbar Spacer */}
+        {/* 🧹 Navbar Spacer */}
         <div className="h-0" />
 
-        {/* Hero Section */}
+        {/* 🌟 Hero Section */}
         <section className="-mt-20 relative w-full h-[80vh] flex items-center justify-center text-center overflow-hidden">
-          {/* Background Image */}
+          {/* 🖼️ Background Image */}
           <div className="absolute inset-0">
             <img
               src="/hero-home.jpg"
               alt="Hero Background"
               className="w-full h-full object-cover"
             />
-            {/* Dark Overlay */}
+            {/* 🌑 Dark Overlay */}
             <div className="absolute inset-0 bg-black opacity-50" />
           </div>
 
-          {/* Hero Content */}
+          {/* ✨ Hero Content */}
           <div className="relative z-10 px-4">
             <h1 className="text-4xl md:text-6xl font-bold mb-6 text-[#e0e0e0]">
               Timeless Elegance
@@ -49,64 +52,53 @@ const Home = () => {
           </div>
         </section>
 
-        {/* Featured Products Section */}
+        {/* 💎 Featured Products */}
         <section className="py-20 px-6 max-w-7xl mx-auto">
           <h2 className="text-3xl font-semibold text-center mb-16">
             Featured Pieces
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-12">
-            {[
-              {
-                id: 1,
-                image: "/ring1.jpg",
-                title: "Diamond Ring",
-                price: 4200,
-              },
-              {
-                id: 2,
-                image: "/necklace1.jpg",
-                title: "Sapphire Necklace",
-                price: 2500,
-              },
-              {
-                id: 3,
-                image: "/bracelet1.jpg",
-                title: "Tennis Bracelet",
-                price: 1800,
-              },
-            ].map((item) => (
+            {productsData.slice(0, 3).map((item) => (
               <div
                 key={item.id}
-                className="group bg-[#25304f] rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl hover:ring-2 hover:ring-[#e0e0e0] hover:scale-105 transition-all duration-300 flex flex-col"
+                className="group bg-[#25304f] rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl hover:ring-2 hover:ring-[#e0e0e0] hover:scale-105 transition-all duration-300 flex flex-col cursor-pointer"
               >
-                <div className="w-full h-80 overflow-hidden">
-                  <img
-                    src={item.image}
-                    alt={item.title}
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                  />
-                </div>
-                <div className="p-6 text-center flex-1 flex flex-col justify-between">
-                  <div>
-                    <h3 className="text-2xl font-semibold text-[#cfd2d6] group-hover:text-white transition-colors duration-300">
-                      {item.title}
-                    </h3>
-                    <p className="mt-2 text-gray-400 group-hover:text-white transition-colors duration-300">
-                      ${item.price.toLocaleString()}
-                    </p>
+                <Link
+                  href={`/product/${item.slug}`}
+                  className="flex-1 flex flex-col"
+                >
+                  <div className="w-full h-80 overflow-hidden">
+                    <img
+                      src={item.image}
+                      alt={item.name}
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                    />
                   </div>
-                  {/* Add to Cart Button */}
+                  <div className="p-6 text-center flex-1 flex flex-col justify-between">
+                    <div>
+                      <h3 className="text-2xl font-semibold text-[#cfd2d6] group-hover:text-white transition-colors duration-300">
+                        {item.name}
+                      </h3>
+                      <p className="mt-2 text-gray-400 group-hover:text-white transition-colors duration-300">
+                        ${item.price.toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
+                </Link>
+
+                {/* 🛒 Add to Cart Button */}
+                <div className="p-6 pt-0">
                   <button
                     onClick={() =>
                       addToCart({
                         id: item.id,
-                        name: item.title,
+                        name: item.name,
                         price: item.price,
                         image: item.image,
                         quantity: 1,
                       })
                     }
-                    className="mt-6 px-6 py-3 bg-white text-[#1f2a44] rounded-xl font-semibold hover:bg-gray-100 transition hover:scale-105"
+                    className="w-full px-6 py-3 bg-white text-[#1f2a44] rounded-xl font-semibold hover:bg-gray-100 transition hover:scale-105"
                   >
                     Add to Cart
                   </button>
@@ -116,7 +108,7 @@ const Home = () => {
           </div>
         </section>
 
-        {/* Shop by Category */}
+        {/* 🛍️ Shop by Category */}
         <section className="py-20 px-6 max-w-7xl mx-auto">
           <h2 className="text-3xl font-semibold text-center mb-16">
             Shop by Category
@@ -153,7 +145,7 @@ const Home = () => {
           </div>
         </section>
 
-        {/* Gifts for Him & Her */}
+        {/* 🎁 Gifts for Him & Her */}
         <section className="py-20 px-6 max-w-7xl mx-auto">
           <h2 className="text-3xl font-semibold text-center mb-16">
             Gifts for Him & Her
@@ -172,7 +164,7 @@ const Home = () => {
           </div>
         </section>
 
-        {/* About Section */}
+        {/* 🛠 About Classy Diamonds */}
         <section className="py-20 px-6 bg-[#1f2a44]">
           <div className="max-w-4xl mx-auto text-center">
             <h2 className="text-3xl font-semibold mb-8">
@@ -186,36 +178,28 @@ const Home = () => {
           </div>
         </section>
 
-        {/* Why Choose Us */}
+        {/* 💎 Why Choose Us */}
         <section className="py-20 px-6 bg-[#1f2a44]">
           <div className="max-w-5xl mx-auto text-center">
             <h2 className="text-4xl font-bold mb-10">
               Why Choose Classy Diamonds?
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-              <div className="flex items-center space-x-4">
-                <p className="text-lg text-[#cfd2d6]">
-                  30+ Years of Custom Jewelry Expertise
-                </p>
-              </div>
-              <div className="flex items-center space-x-4">
-                <p className="text-lg text-[#cfd2d6]">
-                  Independent Custom Jeweler
-                </p>
-              </div>
-              <div className="flex items-center space-x-4">
-                <p className="text-lg text-[#cfd2d6]">One-of-a-Kind Designs</p>
-              </div>
-              <div className="flex items-center space-x-4">
-                <p className="text-lg text-[#cfd2d6]">
-                  Trusted Worldwide by Clients from London to Australia
-                </p>
-              </div>
+              {[
+                "30+ Years of Custom Jewelry Expertise",
+                "Independent Custom Jeweler",
+                "One-of-a-Kind Designs",
+                "Trusted Worldwide by Clients from London to Australia",
+              ].map((reason) => (
+                <div key={reason} className="flex items-center space-x-4">
+                  <p className="text-lg text-[#cfd2d6]">{reason}</p>
+                </div>
+              ))}
             </div>
           </div>
         </section>
 
-        {/* Custom Work Section */}
+        {/* ✍️ Custom Work */}
         <section className="bg-[#25304f] py-20 px-6">
           <div className="max-w-5xl mx-auto text-center">
             <h2 className="text-4xl font-bold mb-8">
@@ -223,8 +207,8 @@ const Home = () => {
             </h2>
             <p className="text-lg text-[#cfd2d6] mb-8">
               With over 30 years of expertise, Ned at Classy Diamonds
-              specializes in crafting breathtaking custom jewelry. Whether it's
-              an engagement ring, a one-of-a-kind pendant, or a meaningful
+              specializes in breathtaking custom jewelry. Whether it's an
+              engagement ring, a one-of-a-kind pendant, or a meaningful
               redesign, every piece is made with precision and passion to tell
               your unique story.
             </p>
