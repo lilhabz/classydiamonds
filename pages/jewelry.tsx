@@ -1,45 +1,26 @@
 // 📄 pages/jewelry.tsx - Jewelry Collection Page
 
+"use client";
+
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import Image from "next/image";
 import Link from "next/link";
 import Head from "next/head";
 import { useCart } from "@/context/CartContext"; // 🛒 Cart context
-
-const products = [
-  {
-    id: 1,
-    name: "Diamond Engagement Ring",
-    price: "$4200",
-    image: "/products/engagement-ring.jpg",
-    href: "/product/engagement-ring",
-  },
-  {
-    id: 2,
-    name: "Gold Tennis Bracelet",
-    price: "$1800",
-    image: "/products/tennis-bracelet.jpg",
-    href: "/product/tennis-bracelet",
-  },
-  {
-    id: 3,
-    name: "Sapphire Pendant Necklace",
-    price: "$2500",
-    image: "/products/sapphire-necklace.jpg",
-    href: "/product/sapphire-necklace",
-  },
-  {
-    id: 4,
-    name: "Pearl Drop Earrings",
-    price: "$950",
-    image: "/products/pearl-earrings.jpg",
-    href: "/product/pearl-earrings",
-  },
-];
+import { jewelryData } from "@/data/jewelryData"; // 💎 Full jewelry collection
+import { useState } from "react"; // 🧠 Needed for Load More
 
 export default function JewelryPage() {
   const { addToCart } = useCart(); // 🛒 Cart hook
+
+  // 📦 How many products to show at first
+  const [visibleCount, setVisibleCount] = useState(8);
+
+  // 📦 Load more products when button clicked
+  const handleLoadMore = () => {
+    setVisibleCount((prev) => prev + 4);
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-[#1f2a44] text-[#e0e0e0]">
@@ -125,11 +106,11 @@ export default function JewelryPage() {
 
         {/* // 🛒 Product Cards Grid */}
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-10">
-          {products.map((product) => (
+          {jewelryData.slice(0, visibleCount).map((product) => (
             <div key={product.id} className="group hover:cursor-pointer">
               <div className="bg-[#25304f] rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl hover:ring-2 hover:ring-[#e0e0e0] hover:scale-105 transition-all duration-300 flex flex-col h-full">
                 <div className="flex-1 flex flex-col">
-                  <Link href={product.href} className="flex-1">
+                  <Link href={`/product/${product.slug}`} className="flex-1">
                     {/* // 🖼️ Product Image */}
                     <div className="w-full h-80 overflow-hidden">
                       <Image
@@ -147,7 +128,7 @@ export default function JewelryPage() {
                         {product.name}
                       </h3>
                       <p className="mt-2 text-gray-400 group-hover:text-white transition-colors duration-300">
-                        ${product.price}
+                        ${product.price.toLocaleString()}
                       </p>
                     </div>
                   </Link>
@@ -161,9 +142,7 @@ export default function JewelryPage() {
                       addToCart({
                         id: product.id,
                         name: product.name,
-                        price: Number(
-                          product.price.replace("$", "").replace(",", "")
-                        ),
+                        price: product.price,
                         image: product.image,
                         quantity: 1,
                       });
@@ -177,6 +156,18 @@ export default function JewelryPage() {
             </div>
           ))}
         </div>
+
+        {/* ➕ Load More Button */}
+        {visibleCount < jewelryData.length && (
+          <div className="flex justify-center mt-12">
+            <button
+              onClick={handleLoadMore}
+              className="px-8 py-4 bg-[#e0e0e0] text-[#1f2a44] rounded-full font-semibold text-lg hover:bg-white hover:scale-105 transition-transform duration-300"
+            >
+              Load More
+            </button>
+          </div>
+        )}
       </section>
 
       {/* 🔗 Footer Section */}
