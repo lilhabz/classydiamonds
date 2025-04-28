@@ -1,9 +1,11 @@
+// 📄 pages/jewelry.tsx - Jewelry Collection Page
+
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import Image from "next/image";
 import Link from "next/link";
 import Head from "next/head";
-import { useCart } from "@/context/CartContext"; // <-- Hook into Cart
+import { useCart } from "@/context/CartContext"; // 🛒 Hook into Cart
 
 const products = [
   {
@@ -37,7 +39,7 @@ const products = [
 ];
 
 export default function JewelryPage() {
-  const { addToCart } = useCart(); // <-- Real Cart Hook
+  const { addToCart } = useCart(); // 🛒 Real Cart Hook
 
   return (
     <div className="min-h-screen flex flex-col bg-[#1f2a44] text-[#e0e0e0]">
@@ -51,20 +53,20 @@ export default function JewelryPage() {
 
       <Navbar />
 
-      {/* Hero Section */}
+      {/* 🌟 Hero Section */}
       <section className="-mt-20 relative w-full h-[80vh] flex items-center justify-center text-center overflow-hidden">
-        {/* Background Image */}
+        {/* 🖼️ Background Image */}
         <div className="absolute inset-0">
           <img
             src="/hero-jewelry.jpg"
             alt="Jewelry Hero Background"
             className="w-full h-full object-cover"
           />
-          {/* Dark Overlay */}
+          {/* 🌑 Dark Overlay */}
           <div className="absolute inset-0 bg-black opacity-50" />
         </div>
 
-        {/* Hero Content */}
+        {/* ✨ Hero Content */}
         <div className="relative z-10 px-4">
           <h1 className="text-4xl md:text-6xl font-bold mb-6 text-[#e0e0e0]">
             Jewelry Collection
@@ -76,7 +78,7 @@ export default function JewelryPage() {
         </div>
       </section>
 
-      {/* Shop by Category */}
+      {/* 🛍️ Shop by Category */}
       <section className="py-20 px-6 max-w-7xl mx-auto">
         <h2 className="text-3xl font-semibold text-center mb-16">
           Shop by Category
@@ -101,7 +103,7 @@ export default function JewelryPage() {
         </div>
       </section>
 
-      {/* Our Jewelry Section */}
+      {/* 💎 Our Jewelry Section */}
       <section className="py-20 px-6 max-w-7xl mx-auto">
         <h2 className="text-3xl font-semibold text-center mb-12">
           Our Jewelry
@@ -110,6 +112,7 @@ export default function JewelryPage() {
           Browse our exclusive collection of fine jewelry, meticulously crafted
           to celebrate life's most treasured moments.
         </p>
+
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-10">
           {products.map((product) => (
             <div key={product.id} className="group hover:cursor-pointer">
@@ -136,7 +139,7 @@ export default function JewelryPage() {
                   </Link>
                 </div>
 
-                {/* Add to Cart Button */}
+                {/* 🛒 Add to Cart Button */}
                 <div className="p-6 pt-0">
                   <button
                     onClick={(e) => {
@@ -151,7 +154,7 @@ export default function JewelryPage() {
                         quantity: 1,
                       });
                     }}
-                    className="w-full px-6 py-3 bg-white text-[#1f2a44] rounded-xl font-semibold transition-all duration-300 transform hover:scale-110 hover:bg-gray-200 hover:font-bold"
+                    className="w-full px-6 py-3 bg-white text-[#1f2a44] rounded-xl font-semibold transition-all duration-300 transform hover:scale-110 hover:bg-gray-200 hover:font-bold cursor-pointer" // ✏️ Added cursor-pointer here
                   >
                     Add to Cart
                   </button>
