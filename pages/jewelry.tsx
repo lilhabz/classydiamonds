@@ -112,7 +112,7 @@ export default function JewelryPage() {
                 <div className="flex-1 flex flex-col">
                   <Link href={`/product/${product.slug}`} className="flex-1">
                     {/* // 🖼️ Product Image */}
-                    <div className="w-full h-80 overflow-hidden">
+                    <div className="w-full h-64 overflow-hidden">
                       <Image
                         src={product.image}
                         alt={product.name}
@@ -123,7 +123,7 @@ export default function JewelryPage() {
                     </div>
 
                     {/* // 📝 Product Title & Price */}
-                    <div className="p-6 text-center">
+                    <div className="p-4 text-center">
                       <h3 className="text-2xl font-semibold text-[#cfd2d6] group-hover:text-white transition-colors duration-300">
                         {product.name}
                       </h3>
