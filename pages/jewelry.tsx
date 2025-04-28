@@ -160,22 +160,18 @@ export default function JewelryPage() {
         ) : (
           <div className="text-center mt-12 text-lg text-gray-400">
             🎉 You've seen all our beautiful jewelry!
+            <div className="mt-6">
+              <Link href="/custom">
+                <button className="px-8 py-4 bg-[#e0e0e0] text-[#1f2a44] rounded-full font-semibold text-lg hover:bg-white hover:scale-105 transition-transform duration-300">
+                  Create Your Own Piece
+                </button>
+              </Link>
+            </div>
           </div>
         )}
-
-        {/* 💎 Customize Your Own Card */}
-        <div className="mt-16">
-          <Link href="/custom">
-            <div className="h-64 bg-[#25304f] rounded-2xl shadow-lg hover:shadow-2xl hover:scale-105 transition-all duration-300 flex items-center justify-center text-2xl font-bold text-[#cfd2d6] hover:text-white cursor-pointer">
-              Create Your Own Piece
-            </div>
-          </Link>
-        </div>
       </section>
 
       <Footer />
     </div>
   );
 }
-
-//redeploy
