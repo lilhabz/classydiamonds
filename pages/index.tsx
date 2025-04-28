@@ -131,10 +131,13 @@ const Home = () => {
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-8 text-center">
             {[
               { name: "Engagement", image: "/category/engagement-cat.jpg" },
-              { name: "Wedding Bands", image: "/categories/wedding-bands.jpg" },
-              { name: "Rings", image: "/categories/rings.jpg" },
+              {
+                name: "Wedding Bands",
+                image: "/category/wedding-band-cat.jpg",
+              },
+              { name: "Rings", image: "/category/ring-cat.jpg" },
               { name: "Bracelets", image: "/categories/bracelets.jpg" },
-              { name: "Necklaces", image: "/categories/necklaces.jpg" },
+              { name: "Necklaces", image: "/category/necklace-cat.jpg" },
               { name: "Earrings", image: "/category/earring-cat.jpg" },
             ].map((category) => (
               <Link
