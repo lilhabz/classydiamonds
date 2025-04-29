@@ -168,6 +168,8 @@ export default function ContactPage() {
                 required
               ></textarea>
 
+              <input type="hidden" name="formCategory" value="custom" />
+
               <button
                 type="submit"
                 className="bg-white text-[#1f2a36] font-semibold py-3 rounded-lg hover:shadow-lg transition"
@@ -220,6 +222,8 @@ export default function ContactPage() {
                 className={inputClass}
                 required
               ></textarea>
+
+              <input type="hidden" name="formCategory" value="message" />
 
               <button
                 type="submit"
