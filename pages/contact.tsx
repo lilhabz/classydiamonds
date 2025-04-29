@@ -1,3 +1,5 @@
+//contact.tsx
+
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { FaPhoneAlt, FaEnvelope } from "react-icons/fa";

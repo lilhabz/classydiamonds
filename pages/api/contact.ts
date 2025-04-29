@@ -20,7 +20,7 @@ export default async function handler(
     message,
     sku,
     customMessage,
-    type: formType,
+    formCategory,
   } = req.body;
 
   if (
@@ -33,15 +33,15 @@ export default async function handler(
     return res.status(400).json({ error: "Missing required fields" });
   }
 
-  const isCustom = formType === "custom";
+  const isCustom = formCategory === "custom";
   const subject = isCustom
-    ? `💎 New Custom Jewelry Request from ${name}`
+    ? `💍 New Custom Jewelry Inquiry from ${name}`
     : `📩 New Message from ${name}`;
 
   const htmlBody = `
     <div style="font-family: Arial, sans-serif; font-size: 16px; color: #333;">
-      <h2 style="color: #1f2a44;">${
-        isCustom ? "New Custom Jewelry Request" : "New Contact Message"
+      <h2 style="color: #1f2a44;">$${
+        isCustom ? "New Custom Jewelry Inquiry" : "New Contact Message"
       }</h2>
       <p><strong>Name:</strong> ${name}</p>
       <p><strong>Email:</strong> ${email}</p>
