@@ -1,6 +1,14 @@
+// 📦 context/CartContext.tsx – Cart State + LocalStorage Sync
+
 "use client";
 
-import { createContext, useContext, useState, ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  ReactNode,
+} from "react";
 
 interface CartItem {
   id: number;
@@ -17,7 +25,7 @@ interface CartContextType {
   increaseQty: (id: number) => void;
   decreaseQty: (id: number) => void;
   clearCart: () => void;
-  addedItemName: string | null; // 🛎 For showing "Added to Cart"
+  addedItemName: string | null;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -32,8 +40,22 @@ export function useCart() {
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
-  const [addedItemName, setAddedItemName] = useState<string | null>(null); // 🛎 State for popup
+  const [addedItemName, setAddedItemName] = useState<string | null>(null);
 
+  // 🧠 Load cart from localStorage on first load
+  useEffect(() => {
+    const stored = localStorage.getItem("cart");
+    if (stored) {
+      setCartItems(JSON.parse(stored));
+    }
+  }, []);
+
+  // 💾 Save cart to localStorage when it changes
+  useEffect(() => {
+    localStorage.setItem("cart", JSON.stringify(cartItems));
+  }, [cartItems]);
+
+  // ➕ Add or increase item
   const addToCart = (item: CartItem) => {
     setCartItems((prev) => {
       const existing = prev.find((p) => p.id === item.id);
@@ -45,17 +67,16 @@ export function CartProvider({ children }: { children: ReactNode }) {
       return [...prev, item];
     });
 
-    // 🛎 Trigger the "Item Added" message
     setAddedItemName(item.name);
-    setTimeout(() => {
-      setAddedItemName(null);
-    }, 2500); // Show for 2.5 seconds
+    setTimeout(() => setAddedItemName(null), 2500);
   };
 
+  // ❌ Remove item
   const removeFromCart = (id: number) => {
     setCartItems((prev) => prev.filter((item) => item.id !== id));
   };
 
+  // ➕ Increase quantity
   const increaseQty = (id: number) => {
     setCartItems((prev) =>
       prev.map((item) =>
@@ -64,6 +85,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     );
   };
 
+  // ➖ Decrease quantity
   const decreaseQty = (id: number) => {
     setCartItems((prev) =>
       prev.map((item) =>
@@ -74,6 +96,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     );
   };
 
+  // 🧹 Clear everything
   const clearCart = () => {
     setCartItems([]);
   };
@@ -87,7 +110,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         increaseQty,
         decreaseQty,
         clearCart,
-        addedItemName, // 🛎 Pass it through context
+        addedItemName,
       }}
     >
       {children}
