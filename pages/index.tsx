@@ -222,39 +222,35 @@ const Home = () => {
 
         {/* 💎 Why Choose Us Section */}
         <section className="py-20 px-6 bg-[#1f2a44]">
-          {/* // 💎 Reasons Grid */}
-          <div className="max-w-5xl mx-auto text-center">
+          <div className="max-w-4xl mx-auto text-center">
             <h2 className="text-4xl font-bold mb-10">
               Why Choose Classy Diamonds?
             </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-              {[
-                "30+ Years of Custom Jewelry Expertise",
-                "Independent Custom Jeweler",
-                "One-of-a-Kind Designs",
-                "Trusted Worldwide by Clients from London to Australia",
-              ].map((reason) => (
-                <div key={reason} className="flex items-center space-x-4">
-                  <p className="text-lg text-[#cfd2d6]">{reason}</p>
-                </div>
-              ))}
-            </div>
+            <p className="text-lg text-[#cfd2d6] leading-relaxed">
+              At Classy Diamonds, our reputation is built on over 30 years of
+              excellence in craftsmanship and service. As an independent
+              jeweler, we’re proud to deliver timeless pieces that blend luxury
+              with individuality. Our clients around the world—from London to
+              Australia—trust us for our attention to detail, ethical standards,
+              and commitment to creating jewelry that celebrates life’s most
+              meaningful moments.
+            </p>
           </div>
         </section>
 
         {/* ✍️ Custom Work Section */}
         <section className="bg-[#25304f] py-20 px-6">
-          {/* // ✍️ Custom Work Content */}
           <div className="max-w-5xl mx-auto text-center">
             <h2 className="text-4xl font-bold mb-8">
               Bring Your Vision to Life
             </h2>
-            <p className="text-lg text-[#cfd2d6] mb-8">
-              With over 30 years of expertise, Ned at Classy Diamonds
-              specializes in breathtaking custom jewelry. Whether it's an
-              engagement ring, a one-of-a-kind pendant, or a meaningful
-              redesign, every piece is made with precision and passion to tell
-              your unique story.
+            <p className="text-lg text-[#cfd2d6] mb-8 leading-relaxed">
+              Ned, the artisan behind Classy Diamonds, works one-on-one with
+              clients to transform their ideas into extraordinary, wearable art.
+              Whether you're creating a custom engagement ring, redesigning a
+              family heirloom, or dreaming up something truly unique, every
+              piece is handcrafted with care, passion, and personal
+              attention—just for you.
             </p>
             <Link
               href="/custom"
