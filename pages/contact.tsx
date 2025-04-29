@@ -34,6 +34,8 @@ export default function ContactPage() {
     }
   };
 
+  const labelClass = "text-sm font-semibold text-[#e0e0e0]";
+
   return (
     <div className="min-h-screen flex flex-col bg-[#1f2a44] text-[#e0e0e0]">
       <Navbar />
@@ -126,30 +128,34 @@ export default function ContactPage() {
               onSubmit={(e) => handleSubmit(e, "custom")}
               className="flex flex-col space-y-6"
             >
+              <label className={labelClass}>Full Name *</label>
               <input
                 type="text"
                 name="name"
-                placeholder="Full Name"
                 className="p-4 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
                 required
               />
+
+              <label className={labelClass}>Email Address *</label>
               <input
                 type="email"
                 name="email"
-                placeholder="Email Address"
                 className="p-4 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
                 required
               />
+
+              <label className={labelClass}>Phone Number *</label>
               <input
                 type="text"
                 name="phone"
-                placeholder="Phone Number"
                 className="p-4 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
                 required
               />
+
+              <label className={labelClass}>Jewelry Type *</label>
               <select
                 name="type"
-                className="p-4 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
+                className="p-4 rounded-xl bg-[#1f2a36] text-white"
                 required
               >
                 <option value="">Select Jewelry Type</option>
@@ -159,23 +165,27 @@ export default function ContactPage() {
                 <option value="Bracelet">Bracelet</option>
                 <option value="Earrings">Earrings</option>
               </select>
+
+              <label className={labelClass}>Preferred Contact Method *</label>
               <select
                 name="preference"
-                className="p-4 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
+                className="p-4 rounded-xl bg-[#1f2a36] text-white"
                 required
               >
-                <option value="">Preferred Contact Method</option>
+                <option value="">Select Method</option>
                 <option value="Call">Call</option>
                 <option value="Text">Text</option>
                 <option value="Email">Email</option>
               </select>
+
+              <label className={labelClass}>Describe your vision *</label>
               <textarea
                 name="message"
-                placeholder="Describe your vision or ideas..."
                 rows={5}
-                className="p-4 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
+                className="p-4 rounded-xl bg-[#1f2a36] text-white"
                 required
               ></textarea>
+
               <button
                 type="submit"
                 className="bg-white text-[#1f2a36] font-semibold py-4 rounded-xl hover:shadow-lg transition"
@@ -197,50 +207,57 @@ export default function ContactPage() {
               onSubmit={(e) => handleSubmit(e, "message")}
               className="flex flex-col space-y-6"
             >
+              <label className={labelClass}>Full Name *</label>
               <input
                 type="text"
                 name="name"
-                placeholder="Full Name"
-                className="p-4 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
+                className="p-4 rounded-xl bg-[#1f2a36] text-white"
                 required
               />
+
+              <label className={labelClass}>Email Address *</label>
               <input
                 type="email"
                 name="email"
-                placeholder="Email Address"
-                className="p-4 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
+                className="p-4 rounded-xl bg-[#1f2a36] text-white"
                 required
               />
+
+              <label className={labelClass}>Phone Number *</label>
               <input
                 type="text"
                 name="phone"
-                placeholder="Phone Number"
-                className="p-4 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
+                className="p-4 rounded-xl bg-[#1f2a36] text-white"
                 required
               />
+
+              <label className={labelClass}>Preferred Contact Method *</label>
               <select
                 name="preference"
-                className="p-4 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
+                className="p-4 rounded-xl bg-[#1f2a36] text-white"
                 required
               >
-                <option value="">Preferred Contact Method</option>
+                <option value="">Select Method</option>
                 <option value="Call">Call</option>
                 <option value="Text">Text</option>
                 <option value="Email">Email</option>
               </select>
+
+              <label className={labelClass}>SKU # (optional)</label>
               <input
                 type="text"
                 name="sku"
-                placeholder="SKU # (optional)"
-                className="p-4 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
+                className="p-4 rounded-xl bg-[#1f2a36] text-white"
               />
+
+              <label className={labelClass}>Your Message *</label>
               <textarea
                 name="message"
-                placeholder="Your Message"
                 rows={5}
-                className="p-4 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
+                className="p-4 rounded-xl bg-[#1f2a36] text-white"
                 required
               ></textarea>
+
               <button
                 type="submit"
                 className="bg-white text-[#1f2a36] font-semibold py-4 rounded-xl hover:shadow-lg transition"
