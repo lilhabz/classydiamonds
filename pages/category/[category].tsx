@@ -20,8 +20,8 @@ export default function CategoryPage() {
   const [visibleCount, setVisibleCount] = useState(8);
   const productsEndRef = useRef<HTMLDivElement>(null);
 
-  const filteredProducts = jewelryData.filter(
-    (product) => product.category === category?.toLowerCase()
+  const filteredProducts = jewelryData.filter((product) =>
+    product.slug.includes(category?.toLowerCase().replace(/-/g, " "))
   );
 
   const handleLoadMore = () => {
