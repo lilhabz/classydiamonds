@@ -183,7 +183,7 @@ const Home = () => {
                 href={`/category/${gift.name
                   .toLowerCase()
                   .replace(/\s+/g, "-")}`}
-                className="group relative h-64 bg-[#25304f] rounded-2xl shadow-md overflow-hidden hover:shadow-2xl hover:scale-105 transition-all duration-300 flex items-center justify-center"
+                className="group relative h-64 bg-[#25304f] rounded-2xl shadow-md overflow-hidden hover:shadow-2xl hover:scale-105 transition-all duration-300 flex items-center justify-center h-40"
               >
                 {/* // 🖼️ Background Image */}
                 <div className="absolute inset-0">
@@ -198,7 +198,7 @@ const Home = () => {
 
                 {/* // ✨ Text */}
                 <span className="relative z-10 text-2xl font-semibold text-[#cfd2d6] group-hover:text-white transition-colors">
-                  Shop for {gift.name.split(" ")[1]}
+                  Gift for {gift.name.split(" ")[1]}
                 </span>
               </Link>
             ))}
