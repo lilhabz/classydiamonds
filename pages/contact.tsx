@@ -1,5 +1,3 @@
-//contact.tsx
-
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { FaPhoneAlt, FaEnvelope } from "react-icons/fa";
@@ -166,7 +164,7 @@ export default function ContactPage() {
 
               <label className={labelClass}>Describe your vision *</label>
               <textarea
-                name="message"
+                name="customMessage" // ✅ Updated here
                 rows={4}
                 className={inputClass}
                 required
