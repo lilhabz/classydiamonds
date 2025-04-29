@@ -39,6 +39,8 @@ export default function ContactPage() {
   const labelClass = "text-sm font-semibold text-[#e0e0e0]";
   const inputClass =
     "p-3 text-sm rounded-lg bg-[#1f2a36] text-white placeholder-gray-400";
+  const buttonClass =
+    "bg-white text-[#1f2a36] font-semibold py-3 rounded-lg hover:shadow-lg hover:cursor-pointer transition";
 
   return (
     <div className="min-h-screen flex flex-col bg-[#1f2a44] text-[#e0e0e0]">
@@ -172,10 +174,7 @@ export default function ContactPage() {
 
               <input type="hidden" name="formCategory" value="custom" />
 
-              <button
-                type="submit"
-                className="bg-white text-[#1f2a36] font-semibold py-3 rounded-lg hover:shadow-lg transition"
-              >
+              <button type="submit" className={buttonClass}>
                 Submit Custom Request
               </button>
               {customStatus && (
@@ -227,10 +226,7 @@ export default function ContactPage() {
 
               <input type="hidden" name="formCategory" value="message" />
 
-              <button
-                type="submit"
-                className="bg-white text-[#1f2a36] font-semibold py-3 rounded-lg hover:shadow-lg transition"
-              >
+              <button type="submit" className={buttonClass}>
                 Submit
               </button>
               {messageStatus && (
