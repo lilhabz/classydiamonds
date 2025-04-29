@@ -1,8 +1,39 @@
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { FaPhoneAlt, FaEnvelope } from "react-icons/fa";
+import { useState } from "react";
 
 export default function ContactPage() {
+  const [messageStatus, setMessageStatus] = useState("");
+  const [customStatus, setCustomStatus] = useState("");
+
+  const handleSubmit = async (
+    e: React.FormEvent<HTMLFormElement>,
+    type: "message" | "custom"
+  ) => {
+    e.preventDefault();
+    const form = e.currentTarget;
+    const data = Object.fromEntries(new FormData(form));
+
+    const response = await fetch("/api/contact", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...data, type }),
+    });
+
+    const result = await response.json();
+    if (response.ok) {
+      form.reset();
+      if (type === "message")
+        setMessageStatus("Thank you! Your message has been sent.");
+      else setCustomStatus("Awesome! Your custom request has been submitted.");
+    } else {
+      if (type === "message")
+        setMessageStatus("Something went wrong. Try again.");
+      else setCustomStatus("Could not send your request. Please try again.");
+    }
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-[#1f2a44] text-[#e0e0e0]">
       <Navbar />
@@ -86,68 +117,43 @@ export default function ContactPage() {
         className="px-6 py-20 max-w-7xl mx-auto scroll-mt-32"
       >
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-          {/* Contact Form */}
-          <div className="bg-[#25304f] p-10 rounded-2xl shadow-lg">
-            <h2 className="text-2xl sm:text-3xl font-serif font-semibold mb-6 text-center">
-              Send Us a Message
-            </h2>
-            <form className="flex flex-col space-y-6">
-              <input
-                type="text"
-                placeholder="Full Name"
-                className="p-4 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
-                required
-              />
-              <input
-                type="email"
-                placeholder="Email Address"
-                className="p-4 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
-                required
-              />
-              <textarea
-                placeholder="Your Message"
-                rows={5}
-                className="p-4 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
-                required
-              ></textarea>
-              <button
-                type="submit"
-                className="bg-white text-[#1f2a36] font-semibold py-4 rounded-xl hover:shadow-lg transition"
-              >
-                Submit
-              </button>
-            </form>
-          </div>
-
           {/* Custom Jewelry Inquiry Form */}
           <div className="bg-[#25304f] p-10 rounded-2xl shadow-lg">
             <h2 className="text-2xl sm:text-3xl font-serif font-semibold mb-6 text-center">
               Start Your Custom Jewelry Creation
             </h2>
-            <form className="flex flex-col space-y-6">
+            <form
+              onSubmit={(e) => handleSubmit(e, "custom")}
+              className="flex flex-col space-y-6"
+            >
               <input
                 type="text"
+                name="name"
                 placeholder="Full Name"
                 className="p-4 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
                 required
               />
               <input
                 type="email"
+                name="email"
                 placeholder="Email Address"
                 className="p-4 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
                 required
               />
               <input
                 type="text"
+                name="phone"
                 placeholder="Phone Number (optional)"
                 className="p-4 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
               />
               <input
                 type="text"
+                name="type"
                 placeholder="Type of Jewelry (e.g., Engagement Ring, Necklace)"
                 className="p-4 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
               />
               <textarea
+                name="message"
                 placeholder="Describe your vision or ideas..."
                 rows={5}
                 className="p-4 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
@@ -159,6 +165,51 @@ export default function ContactPage() {
               >
                 Submit Custom Request
               </button>
+              {customStatus && (
+                <p className="pt-2 text-sm text-center">{customStatus}</p>
+              )}
+            </form>
+          </div>
+
+          {/* Contact Form */}
+          <div className="bg-[#25304f] p-10 rounded-2xl shadow-lg">
+            <h2 className="text-2xl sm:text-3xl font-serif font-semibold mb-6 text-center">
+              Send Us a Message
+            </h2>
+            <form
+              onSubmit={(e) => handleSubmit(e, "message")}
+              className="flex flex-col space-y-6"
+            >
+              <input
+                type="text"
+                name="name"
+                placeholder="Full Name"
+                className="p-4 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
+                required
+              />
+              <input
+                type="email"
+                name="email"
+                placeholder="Email Address"
+                className="p-4 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
+                required
+              />
+              <textarea
+                name="message"
+                placeholder="Your Message"
+                rows={5}
+                className="p-4 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
+                required
+              ></textarea>
+              <button
+                type="submit"
+                className="bg-white text-[#1f2a36] font-semibold py-4 rounded-xl hover:shadow-lg transition"
+              >
+                Submit
+              </button>
+              {messageStatus && (
+                <p className="pt-2 text-sm text-center">{messageStatus}</p>
+              )}
             </form>
           </div>
         </div>
