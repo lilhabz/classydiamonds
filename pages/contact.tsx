@@ -6,12 +6,17 @@ import { useState } from "react";
 export default function ContactPage() {
   const [messageStatus, setMessageStatus] = useState("");
   const [customStatus, setCustomStatus] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (
     e: React.FormEvent<HTMLFormElement>,
     type: "message" | "custom"
   ) => {
     e.preventDefault();
+
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+
     const form = e.currentTarget;
     const data = Object.fromEntries(new FormData(form));
 
@@ -22,6 +27,7 @@ export default function ContactPage() {
     });
 
     const result = await response.json();
+
     if (response.ok) {
       form.reset();
       if (type === "message")
@@ -32,13 +38,13 @@ export default function ContactPage() {
         setMessageStatus("Something went wrong. Try again.");
       else setCustomStatus("Could not send your request. Please try again.");
     }
+
+    setIsSubmitting(false);
   };
 
   const labelClass = "text-sm font-semibold text-[#e0e0e0]";
   const inputClass =
     "p-3 text-sm rounded-lg bg-[#1f2a36] text-white placeholder-gray-400";
-  const buttonClass =
-    "bg-white text-[#1f2a36] font-semibold py-3 rounded-lg hover:shadow-lg hover:cursor-pointer transition";
 
   return (
     <div className="min-h-screen flex flex-col bg-[#1f2a44] text-[#e0e0e0]">
@@ -164,7 +170,7 @@ export default function ContactPage() {
 
               <label className={labelClass}>Describe your vision *</label>
               <textarea
-                name="customMessage" // ✅ Updated here
+                name="customMessage"
                 rows={4}
                 className={inputClass}
                 required
@@ -174,11 +180,15 @@ export default function ContactPage() {
 
               <button
                 type="submit"
-                className="w-full px-6 py-3 bg-white text-[#1f2a44] rounded-xl font-semibold hover:bg-gray-100 transition hover:scale-105 cursor-pointer"
+                disabled={isSubmitting}
+                className={`w-full px-6 py-3 rounded-xl font-semibold transition hover:scale-105 cursor-pointer ${
+                  isSubmitting
+                    ? "bg-gray-400 text-white cursor-not-allowed"
+                    : "bg-white text-[#1f2a44] hover:bg-gray-100"
+                }`}
               >
                 Submit Custom Request
               </button>
-
               {customStatus && (
                 <p className="pt-2 text-xs text-center">{customStatus}</p>
               )}
@@ -230,11 +240,15 @@ export default function ContactPage() {
 
               <button
                 type="submit"
-                className="w-full px-6 py-3 bg-white text-[#1f2a44] rounded-xl font-semibold hover:bg-gray-100 transition hover:scale-105 cursor-pointer"
+                disabled={isSubmitting}
+                className={`w-full px-6 py-3 rounded-xl font-semibold transition hover:scale-105 cursor-pointer ${
+                  isSubmitting
+                    ? "bg-gray-400 text-white cursor-not-allowed"
+                    : "bg-white text-[#1f2a44] hover:bg-gray-100"
+                }`}
               >
                 Submit
               </button>
-
               {messageStatus && (
                 <p className="pt-2 text-xs text-center">{messageStatus}</p>
               )}
