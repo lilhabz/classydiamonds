@@ -137,7 +137,7 @@ const Home = () => {
               },
               { name: "Rings", image: "/category/ring-cat.jpg" },
               { name: "Bracelets", image: "/category/bracelet-cat.jpg" },
-              { name: "Necklaces", image: "/category/ring-cat.jpg" },
+              { name: "Necklaces", image: "/necklace-cat.jpg" },
               { name: "Earrings", image: "/category/earring-cat.jpg" },
             ].map((category) => (
               <Link
@@ -175,8 +175,8 @@ const Home = () => {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
             {[
-              { name: "For Him", image: "/category/gift-for-him.jpg" },
-              { name: "For Her", image: "/category/his-gift-cat.jpg" },
+              { name: "For Him", image: "/category/his-gift-cat.jpg" },
+              { name: "For Her", image: "/category/her-gift-cat.jpg" },
             ].map((gift) => (
               <Link
                 key={gift.name}
