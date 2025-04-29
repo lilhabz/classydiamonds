@@ -35,6 +35,8 @@ export default function ContactPage() {
   };
 
   const labelClass = "text-sm font-semibold text-[#e0e0e0]";
+  const inputClass =
+    "p-3 text-sm rounded-lg bg-[#1f2a36] text-white placeholder-gray-400";
 
   return (
     <div className="min-h-screen flex flex-col bg-[#1f2a44] text-[#e0e0e0]">
@@ -120,44 +122,30 @@ export default function ContactPage() {
       >
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
           {/* Custom Jewelry Inquiry Form */}
-          <div className="bg-[#25304f] p-10 rounded-2xl shadow-lg">
-            <h2 className="text-2xl sm:text-3xl font-serif font-semibold mb-6 text-center">
+          <div className="bg-[#25304f] p-8 rounded-2xl shadow-lg text-sm">
+            <h2 className="text-xl sm:text-2xl font-serif font-semibold mb-6 text-center">
               Start Your Custom Jewelry Creation
             </h2>
             <form
               onSubmit={(e) => handleSubmit(e, "custom")}
-              className="flex flex-col space-y-6"
+              className="flex flex-col space-y-4"
             >
               <label className={labelClass}>Full Name *</label>
-              <input
-                type="text"
-                name="name"
-                className="p-4 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
-                required
-              />
+              <input type="text" name="name" className={inputClass} required />
 
               <label className={labelClass}>Email Address *</label>
               <input
                 type="email"
                 name="email"
-                className="p-4 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
+                className={inputClass}
                 required
               />
 
               <label className={labelClass}>Phone Number *</label>
-              <input
-                type="text"
-                name="phone"
-                className="p-4 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
-                required
-              />
+              <input type="text" name="phone" className={inputClass} required />
 
               <label className={labelClass}>Jewelry Type *</label>
-              <select
-                name="type"
-                className="p-4 rounded-xl bg-[#1f2a36] text-white"
-                required
-              >
+              <select name="type" className={inputClass} required>
                 <option value="Engagement Ring">Engagement Ring</option>
                 <option value="Wedding Band">Wedding Band</option>
                 <option value="Necklace">Necklace</option>
@@ -166,11 +154,7 @@ export default function ContactPage() {
               </select>
 
               <label className={labelClass}>Preferred Contact Method *</label>
-              <select
-                name="preference"
-                className="p-4 rounded-xl bg-[#1f2a36] text-white"
-                required
-              >
+              <select name="preference" className={inputClass} required>
                 <option value="Call">Call</option>
                 <option value="Text">Text</option>
                 <option value="Email">Email</option>
@@ -179,90 +163,72 @@ export default function ContactPage() {
               <label className={labelClass}>Describe your vision *</label>
               <textarea
                 name="message"
-                rows={5}
-                className="p-4 rounded-xl bg-[#1f2a36] text-white"
+                rows={4}
+                className={inputClass}
                 required
               ></textarea>
 
               <button
                 type="submit"
-                className="bg-white text-[#1f2a36] font-semibold py-4 rounded-xl hover:shadow-lg transition"
+                className="bg-white text-[#1f2a36] font-semibold py-3 rounded-lg hover:shadow-lg transition"
               >
                 Submit Custom Request
               </button>
               {customStatus && (
-                <p className="pt-2 text-sm text-center">{customStatus}</p>
+                <p className="pt-2 text-xs text-center">{customStatus}</p>
               )}
             </form>
           </div>
 
           {/* Contact Form */}
-          <div className="bg-[#25304f] p-10 rounded-2xl shadow-lg">
-            <h2 className="text-2xl sm:text-3xl font-serif font-semibold mb-6 text-center">
+          <div className="bg-[#25304f] p-8 rounded-2xl shadow-lg text-sm">
+            <h2 className="text-xl sm:text-2xl font-serif font-semibold mb-6 text-center">
               Send Us a Message
             </h2>
             <form
               onSubmit={(e) => handleSubmit(e, "message")}
-              className="flex flex-col space-y-6"
+              className="flex flex-col space-y-4"
             >
               <label className={labelClass}>Full Name *</label>
-              <input
-                type="text"
-                name="name"
-                className="p-4 rounded-xl bg-[#1f2a36] text-white"
-                required
-              />
+              <input type="text" name="name" className={inputClass} required />
 
               <label className={labelClass}>Email Address *</label>
               <input
                 type="email"
                 name="email"
-                className="p-4 rounded-xl bg-[#1f2a36] text-white"
+                className={inputClass}
                 required
               />
 
               <label className={labelClass}>Phone Number *</label>
-              <input
-                type="text"
-                name="phone"
-                className="p-4 rounded-xl bg-[#1f2a36] text-white"
-                required
-              />
+              <input type="text" name="phone" className={inputClass} required />
 
               <label className={labelClass}>Preferred Contact Method *</label>
-              <select
-                name="preference"
-                className="p-4 rounded-xl bg-[#1f2a36] text-white"
-                required
-              >
+              <select name="preference" className={inputClass} required>
                 <option value="Call">Call</option>
                 <option value="Text">Text</option>
                 <option value="Email">Email</option>
               </select>
 
               <label className={labelClass}>SKU # (optional)</label>
-              <input
-                type="text"
-                name="sku"
-                className="p-4 rounded-xl bg-[#1f2a36] text-white"
-              />
+              <input type="text" name="sku" className={inputClass} />
 
               <label className={labelClass}>Your Message *</label>
               <textarea
                 name="message"
-                rows={5}
-                className="p-4 rounded-xl bg-[#1f2a36] text-white"
+                rows={4}
+                className={inputClass}
                 required
               ></textarea>
 
               <button
                 type="submit"
-                className="bg-white text-[#1f2a36] font-semibold py-4 rounded-xl hover:shadow-lg transition"
+                className="bg-white text-[#1f2a36] font-semibold py-3 rounded-lg hover:shadow-lg transition"
               >
                 Submit
               </button>
               {messageStatus && (
-                <p className="pt-2 text-sm text-center">{messageStatus}</p>
+                <p className="pt-2 text-xs text-center">{messageStatus}</p>
               )}
             </form>
           </div>
