@@ -27,9 +27,10 @@ export default async function handler(
 
   try {
     await transporter.sendMail({
-      from: email,
+      from: process.env.GMAIL_USER, // ✅ This keeps Gmail happy
       to: "mikeh@burnsautogroup.com",
       subject: `New Contact from ${name}`,
+      replyTo: email, // ✅ This makes "Reply" go to visitor
       text: `
         Name: ${name}
         Email: ${email}
