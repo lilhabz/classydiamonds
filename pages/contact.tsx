@@ -9,18 +9,14 @@ export default function ContactPage() {
 
       {/* Hero Section */}
       <section className="relative w-full h-[80vh] flex items-center justify-center text-center overflow-hidden -mt-20">
-        {/* Background Image */}
         <div className="absolute inset-0">
           <img
-            src="/hero-contact.jpg" // replace this with your contact page hero image
+            src="/hero-contact.jpg"
             alt="Contact Classy Diamonds Hero Background"
             className="w-full h-full object-cover"
           />
-          {/* Dark Overlay */}
           <div className="absolute inset-0 bg-black opacity-50" />
         </div>
-
-        {/* Hero Content */}
         <div className="relative z-10 px-4">
           <h1 className="text-4xl md:text-6xl font-bold mb-6 text-[#e0e0e0]">
             Contact Classy Diamonds
@@ -34,7 +30,6 @@ export default function ContactPage() {
       {/* About Section */}
       <section className="px-6 py-16 max-w-7xl mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
-          {/* Ned's Photo */}
           <div className="w-full h-96 overflow-hidden rounded-2xl shadow-lg">
             <img
               src="/ned-photo.jpg"
@@ -42,8 +37,6 @@ export default function ContactPage() {
               className="w-full h-full object-cover"
             />
           </div>
-
-          {/* About Text */}
           <div className="text-center md:text-left">
             <h2 className="text-3xl font-semibold mb-8">About Us</h2>
             <p className="text-lg text-[#cfd2d6] leading-relaxed">
@@ -71,30 +64,27 @@ export default function ContactPage() {
       {/* Contact Info + Map Section */}
       <section className="px-6 py-20 max-w-7xl mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
-          {/* Contact Info */}
           <div className="flex flex-col gap-8 text-center md:text-left">
             <div className="flex flex-col items-center md:items-start">
               <FaPhoneAlt className="text-3xl mb-2" />
-              <p className="text-lg">+1 (123) 456-7890</p>{" "}
-              {/* <-- Replace with real number */}
+              <p className="text-lg">+1 (123) 456-7890</p>
             </div>
             <div className="flex flex-col items-center md:items-start">
               <FaEnvelope className="text-3xl mb-2" />
-              <p className="text-lg">info@classydiamonds.com</p>{" "}
-              {/* <-- Replace with real email */}
+              <p className="text-lg">info@classydiamonds.com</p>
             </div>
           </div>
-
-          {/* Google Map Placeholder */}
           <div className="w-full h-64 bg-[#25304f] rounded-2xl overflow-hidden flex items-center justify-center">
-            {/* TODO: Insert your Google Map iframe here */}
             <p className="text-[#cfd2d6] text-center">Google Map Coming Soon</p>
           </div>
         </div>
       </section>
 
       {/* Forms Section */}
-      <section className="px-6 py-20 max-w-7xl mx-auto">
+      <section
+        id="contact-form"
+        className="px-6 py-20 max-w-7xl mx-auto scroll-mt-32"
+      >
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
           {/* Contact Form */}
           <div className="bg-[#25304f] p-10 rounded-2xl shadow-lg">

@@ -17,18 +17,15 @@ export default function CustomPage() {
 
       {/* Hero Section */}
       <section className="-mt-20 relative w-full h-[80vh] flex items-center justify-center text-center overflow-hidden">
-        {/* Background Image */}
         <div className="absolute inset-0">
           <img
-            src="/hero-custom.jpg" // replace this with your custom page hero image
+            src="/hero-custom.jpg"
             alt="Custom Jewelry Hero Background"
             className="w-full h-full object-cover"
           />
-          {/* Dark Overlay */}
           <div className="absolute inset-0 bg-black opacity-50" />
         </div>
 
-        {/* Hero Content */}
         <div className="relative z-10 px-4">
           <h1 className="text-4xl sm:text-5xl font-bold mb-6 text-[#e0e0e0]">
             Create Your Dream Piece
@@ -109,13 +106,15 @@ export default function CustomPage() {
             your one-of-a-kind jewelry.
           </p>
           <a
-            href="/contact"
+            href="/contact#contact-form"
             className="inline-block px-8 py-4 bg-[#e0e0e0] text-[#1f2a44] rounded-full font-semibold text-lg hover:bg-white hover:scale-105 transition-transform duration-300"
           >
             Start Your Custom Piece
           </a>
         </div>
       </section>
+
+      <Footer />
     </div>
   );
 }
