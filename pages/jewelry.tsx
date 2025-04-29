@@ -179,7 +179,7 @@ export default function JewelryPage() {
         )}
       </section>
 
-      <Footer />
+      
     </div>
   );
 }

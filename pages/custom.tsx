@@ -95,7 +95,7 @@ export default function CustomPage() {
         </div>
       </section>
 
-      <Footer />
+      
     </div>
   );
 }

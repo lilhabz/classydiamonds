@@ -119,7 +119,7 @@ export default function CartPage() {
         )}
       </section>
 
-      <Footer />
+      
     </div>
   );
 }
