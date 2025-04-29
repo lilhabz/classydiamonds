@@ -7,6 +7,7 @@ export const jewelryData = [
     price: 4200,
     image: "/products/engagement-ring.jpg",
     slug: "diamond-engagement-ring",
+    category: "engagement",
   },
   {
     id: 2,
@@ -14,6 +15,7 @@ export const jewelryData = [
     price: 1800,
     image: "/products/tennis-bracelet.jpg",
     slug: "gold-tennis-bracelet",
+    category: "bracelets",
   },
   {
     id: 3,
@@ -21,6 +23,7 @@ export const jewelryData = [
     price: 2500,
     image: "/products/sapphire-necklace.jpg",
     slug: "sapphire-pendant-necklace",
+    category: "necklaces",
   },
   {
     id: 4,
@@ -28,6 +31,7 @@ export const jewelryData = [
     price: 950,
     image: "/products/pearl-earrings.jpg",
     slug: "pearl-drop-earrings",
+    category: "earrings",
   },
   {
     id: 5,
@@ -35,6 +39,7 @@ export const jewelryData = [
     price: 1200,
     image: "/products/mens-platinum-band.jpg",
     slug: "mens-platinum-wedding-band",
+    category: "wedding-bands",
   },
   {
     id: 6,
@@ -42,6 +47,7 @@ export const jewelryData = [
     price: 2750,
     image: "/products/halo-pendant.jpg",
     slug: "diamond-halo-pendant",
+    category: "necklaces",
   },
   {
     id: 7,
@@ -49,6 +55,7 @@ export const jewelryData = [
     price: 880,
     image: "/products/white-gold-hoops.jpg",
     slug: "white-gold-hoop-earrings",
+    category: "earrings",
   },
   {
     id: 8,
@@ -56,6 +63,7 @@ export const jewelryData = [
     price: 3100,
     image: "/products/emerald-solitaire-ring.jpg",
     slug: "emerald-solitaire-ring",
+    category: "rings",
   },
   {
     id: 9,
@@ -63,6 +71,7 @@ export const jewelryData = [
     price: 1500,
     image: "/products/gold-chain.jpg",
     slug: "classic-gold-chain",
+    category: "necklaces",
   },
   {
     id: 10,
@@ -70,6 +79,7 @@ export const jewelryData = [
     price: 5500,
     image: "/products/mens-diamond-watch.jpg",
     slug: "mens-diamond-watch",
+    category: "for-him",
   },
   {
     id: 11,
@@ -77,6 +87,7 @@ export const jewelryData = [
     price: 620,
     image: "/products/blue-topaz-earrings.jpg",
     slug: "blue-topaz-stud-earrings",
+    category: "earrings",
   },
   {
     id: 12,
@@ -84,5 +95,6 @@ export const jewelryData = [
     price: 2900,
     image: "/products/ruby-heart-pendant.jpg",
     slug: "ruby-heart-pendant",
+    category: "for-her",
   },
 ];
