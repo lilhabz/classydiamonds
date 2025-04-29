@@ -173,7 +173,7 @@ const Home = () => {
             Gifts for Him & Her
           </h2>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-8 text-center">
+          <div className="grid grid-cols-2 gap-8 text-center">
             {[
               { name: "For Him", image: "/category/his-gift-cat.jpg" },
               { name: "For Her", image: "/category/her-gift-cat.jpg" },
@@ -183,21 +183,21 @@ const Home = () => {
                 href={`/category/${gift.name
                   .toLowerCase()
                   .replace(/\s+/g, "-")}`}
-                className="group relative bg-[#25304f] rounded-2xl overflow-hidden shadow-md hover:shadow-2xl hover:scale-105 transition-all duration-300 flex items-center justify-center h-40"
+                className="group relative bg-[#25304f] rounded-2xl overflow-hidden shadow-md hover:shadow-2xl hover:scale-105 transition-all duration-300 flex items-center justify-center h-60"
               >
-                {/* // 🖼️ Background Image */}
                 <div className="absolute inset-0">
+                  {/* // 🖼️ Background Image */}
                   <img
                     src={gift.image}
                     alt={gift.name}
                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                   />
-                  {/* // 🌑 Darker Overlay (50% opacity) */}
+                  {/* // 🌑 Darker Overlay */}
                   <div className="absolute inset-0 bg-black opacity-50" />
                 </div>
 
                 {/* // 📝 Gift Label */}
-                <span className="relative z-10 text-lg font-semibold text-[#cfd2d6] group-hover:text-white transition-colors">
+                <span className="relative z-10 text-xl font-semibold text-[#cfd2d6] group-hover:text-white transition-colors">
                   {gift.name}
                 </span>
               </Link>
