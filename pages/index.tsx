@@ -136,7 +136,7 @@ const Home = () => {
                 image: "/category/wedding-band-cat.jpg",
               },
               { name: "Rings", image: "/category/ring-cat.jpg" },
-              { name: "Bracelets", image: "/categories/bracelets.jpg" },
+              { name: "Bracelets", image: "/categories/bracelet-cat.jpg" },
               { name: "Necklaces", image: "/category/necklace-cat.jpg" },
               { name: "Earrings", image: "/category/earring-cat.jpg" },
             ].map((category) => (
