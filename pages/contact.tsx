@@ -172,9 +172,13 @@ export default function ContactPage() {
 
               <input type="hidden" name="formCategory" value="custom" />
 
-              <button type="submit" className={buttonClass}>
+              <button
+                type="submit"
+                className="w-full px-6 py-3 bg-white text-[#1f2a44] rounded-xl font-semibold hover:bg-gray-100 transition hover:scale-105 cursor-pointer"
+              >
                 Submit Custom Request
               </button>
+
               {customStatus && (
                 <p className="pt-2 text-xs text-center">{customStatus}</p>
               )}
@@ -224,9 +228,13 @@ export default function ContactPage() {
 
               <input type="hidden" name="formCategory" value="message" />
 
-              <button type="submit" className={buttonClass}>
+              <button
+                type="submit"
+                className="w-full px-6 py-3 bg-white text-[#1f2a44] rounded-xl font-semibold hover:bg-gray-100 transition hover:scale-105 cursor-pointer"
+              >
                 Submit
               </button>
+
               {messageStatus && (
                 <p className="pt-2 text-xs text-center">{messageStatus}</p>
               )}
