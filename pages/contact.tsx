@@ -143,15 +143,32 @@ export default function ContactPage() {
               <input
                 type="text"
                 name="phone"
-                placeholder="Phone Number (optional)"
+                placeholder="Phone Number"
                 className="p-4 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
+                required
               />
-              <input
-                type="text"
+              <select
                 name="type"
-                placeholder="Type of Jewelry (e.g., Engagement Ring, Necklace)"
                 className="p-4 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
-              />
+                required
+              >
+                <option value="">Select Jewelry Type</option>
+                <option value="Engagement Ring">Engagement Ring</option>
+                <option value="Wedding Band">Wedding Band</option>
+                <option value="Necklace">Necklace</option>
+                <option value="Bracelet">Bracelet</option>
+                <option value="Earrings">Earrings</option>
+              </select>
+              <select
+                name="preference"
+                className="p-4 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
+                required
+              >
+                <option value="">Preferred Contact Method</option>
+                <option value="Call">Call</option>
+                <option value="Text">Text</option>
+                <option value="Email">Email</option>
+              </select>
               <textarea
                 name="message"
                 placeholder="Describe your vision or ideas..."
@@ -193,6 +210,29 @@ export default function ContactPage() {
                 placeholder="Email Address"
                 className="p-4 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
                 required
+              />
+              <input
+                type="text"
+                name="phone"
+                placeholder="Phone Number"
+                className="p-4 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
+                required
+              />
+              <select
+                name="preference"
+                className="p-4 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
+                required
+              >
+                <option value="">Preferred Contact Method</option>
+                <option value="Call">Call</option>
+                <option value="Text">Text</option>
+                <option value="Email">Email</option>
+              </select>
+              <input
+                type="text"
+                name="sku"
+                placeholder="SKU # (optional)"
+                className="p-4 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
               />
               <textarea
                 name="message"
