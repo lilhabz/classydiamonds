@@ -66,19 +66,21 @@ export default function JewelryPage() {
 
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-8 text-center">
           {[
-            { href: "/engagement-rings", label: "Engagement" },
-            { href: "/wedding-bands", label: "Wedding Bands" },
-            { href: "/rings", label: "Rings" },
-            { href: "/bracelets", label: "Bracelets" },
-            { href: "/necklaces", label: "Necklaces" },
-            { href: "/earrings", label: "Earrings" },
+            { name: "Engagement" },
+            { name: "Wedding Bands" },
+            { name: "Rings" },
+            { name: "Bracelets" },
+            { name: "Necklaces" },
+            { name: "Earrings" },
           ].map((category) => (
             <Link
-              key={category.label}
-              href={category.href}
+              key={category.name}
+              href={`/category/${category.name
+                .toLowerCase()
+                .replace(/\s+/g, "-")}`}
               className="group bg-[#25304f] rounded-2xl overflow-hidden shadow-md hover:shadow-2xl hover:scale-105 transition-all duration-300 flex items-center justify-center py-10 text-lg font-semibold text-[#cfd2d6] hover:text-white hover:cursor-pointer"
             >
-              {category.label}
+              {category.name}
             </Link>
           ))}
         </div>
