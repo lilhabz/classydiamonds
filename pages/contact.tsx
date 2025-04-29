@@ -1,88 +1,42 @@
+// 📄 pages/contact.tsx - Contact Page (Mobile Optimized)
+
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { FaPhoneAlt, FaEnvelope } from "react-icons/fa";
-import { useState } from "react";
 
 export default function ContactPage() {
-  const [messageStatus, setMessageStatus] = useState("");
-  const [customStatus, setCustomStatus] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const handleSubmit = async (
-    e: React.FormEvent<HTMLFormElement>,
-    type: "message" | "custom"
-  ) => {
-    e.preventDefault();
-
-    if (isSubmitting) return;
-    setIsSubmitting(true);
-
-    const form = e.currentTarget;
-    const data = Object.fromEntries(new FormData(form));
-
-    const response = await fetch("/api/contact", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...data, formCategory: type }),
-    });
-
-    const result = await response.json();
-
-    if (response.ok) {
-      form.reset();
-      if (type === "message")
-        setMessageStatus("Thank you! Your message has been sent.");
-      else setCustomStatus("Awesome! Your custom request has been submitted.");
-    } else {
-      if (type === "message")
-        setMessageStatus("Something went wrong. Try again.");
-      else setCustomStatus("Could not send your request. Please try again.");
-    }
-
-    setIsSubmitting(false);
-  };
-
-  const labelClass = "text-sm font-semibold text-[#e0e0e0]";
-  const inputClass =
-    "p-3 text-sm rounded-lg bg-[#1f2a36] text-white placeholder-gray-400";
-
   return (
     <div className="min-h-screen flex flex-col bg-[#1f2a44] text-[#e0e0e0]">
       <Navbar />
 
-      {/* Hero Section */}
-      <section className="relative w-full h-[80vh] flex items-center justify-center text-center overflow-hidden -mt-20">
-        <div className="absolute inset-0">
-          <img
-            src="/hero-contact.jpg"
-            alt="Contact Classy Diamonds Hero Background"
-            className="w-full h-full object-cover"
-          />
-          <div className="absolute inset-0 bg-black opacity-50" />
-        </div>
-        <div className="relative z-10 px-4">
-          <h1 className="text-4xl md:text-6xl font-bold mb-6 text-[#e0e0e0]">
-            Contact Classy Diamonds
-          </h1>
-          <p className="text-lg md:text-xl max-w-2xl mx-auto text-[#cfd2d6]">
-            Turning dreams into reality for nearly 30 years.
-          </p>
-        </div>
+      {/* 🌟 Hero Section */}
+      <section className="w-full pt-[120px] pb-16 text-center px-4 -mt-20">
+        <h1 className="text-3xl sm:text-4xl font-serif font-semibold mb-6">
+          Contact Classy Diamonds
+        </h1>
+        <p className="text-gray-300 max-w-2xl mx-auto text-base sm:text-lg">
+          Turning dreams into reality for nearly 30 years.
+        </p>
       </section>
 
-      {/* About Section */}
-      <section className="px-6 py-16 max-w-7xl mx-auto">
+      {/* 🧑‍🏭 About Section */}
+      <section className="px-4 sm:px-6 py-16 sm:py-20 max-w-7xl mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
-          <div className="w-full h-96 overflow-hidden rounded-2xl shadow-lg">
+          {/* 📸 Ned's Photo */}
+          <div className="w-full h-80 sm:h-96 overflow-hidden rounded-2xl shadow-lg">
             <img
               src="/ned-photo.jpg"
               alt="Ned - Classy Diamonds"
               className="w-full h-full object-cover"
             />
           </div>
+
+          {/* 📝 About Text */}
           <div className="text-center md:text-left">
-            <h2 className="text-3xl font-semibold mb-8">About Us</h2>
-            <p className="text-lg text-[#cfd2d6] leading-relaxed">
+            <h2 className="text-2xl sm:text-3xl font-semibold mb-6 sm:mb-8">
+              About Us
+            </h2>
+            <p className="text-base sm:text-lg text-[#cfd2d6] leading-relaxed">
               For nearly 30 years, Classy Diamonds has been providing superior
               quality and exceptional customer service to clients around the
               world. Ned is renowned for his meticulous custom design work,
@@ -104,154 +58,104 @@ export default function ContactPage() {
         </div>
       </section>
 
-      {/* Contact Info + Map Section */}
-      <section className="px-6 py-20 max-w-7xl mx-auto">
+      {/* 📍 Contact Info + Map */}
+      <section className="px-4 sm:px-6 py-16 sm:py-20 max-w-7xl mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+          {/* 📞 Contact Info */}
           <div className="flex flex-col gap-8 text-center md:text-left">
             <div className="flex flex-col items-center md:items-start">
               <FaPhoneAlt className="text-3xl mb-2" />
-              <p className="text-lg">+1 (123) 456-7890</p>
+              <p className="text-base sm:text-lg">+1 (123) 456-7890</p>
             </div>
             <div className="flex flex-col items-center md:items-start">
               <FaEnvelope className="text-3xl mb-2" />
-              <p className="text-lg">info@classydiamonds.com</p>
+              <p className="text-base sm:text-lg">info@classydiamonds.com</p>
             </div>
           </div>
-          <div className="w-full h-64 bg-[#25304f] rounded-2xl overflow-hidden flex items-center justify-center">
+
+          {/* 🗺️ Map Placeholder */}
+          <div className="w-full h-60 sm:h-64 bg-[#25304f] rounded-2xl overflow-hidden flex items-center justify-center">
             <p className="text-[#cfd2d6] text-center">Google Map Coming Soon</p>
           </div>
         </div>
       </section>
 
-      {/* Forms Section */}
-      <section
-        id="contact-form"
-        className="px-6 py-20 max-w-7xl mx-auto scroll-mt-32"
-      >
+      {/* 📝 Forms Section */}
+      <section className="px-4 sm:px-6 py-16 sm:py-20 max-w-7xl mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-          {/* Custom Jewelry Inquiry Form */}
-          <div className="bg-[#25304f] p-8 rounded-2xl shadow-lg text-sm">
-            <h2 className="text-xl sm:text-2xl font-serif font-semibold mb-6 text-center">
-              Start Your Custom Jewelry Creation
-            </h2>
-            <form
-              onSubmit={(e) => handleSubmit(e, "custom")}
-              className="flex flex-col space-y-4"
-            >
-              <label className={labelClass}>Full Name *</label>
-              <input type="text" name="name" className={inputClass} required />
-
-              <label className={labelClass}>Email Address *</label>
-              <input
-                type="email"
-                name="email"
-                className={inputClass}
-                required
-              />
-
-              <label className={labelClass}>Phone Number *</label>
-              <input type="text" name="phone" className={inputClass} required />
-
-              <label className={labelClass}>Jewelry Type *</label>
-              <select name="type" className={inputClass} required>
-                <option value="Engagement Ring">Engagement Ring</option>
-                <option value="Wedding Band">Wedding Band</option>
-                <option value="Necklace">Necklace</option>
-                <option value="Bracelet">Bracelet</option>
-                <option value="Earrings">Earrings</option>
-              </select>
-
-              <label className={labelClass}>Preferred Contact Method *</label>
-              <select name="preference" className={inputClass} required>
-                <option value="Call">Call</option>
-                <option value="Text">Text</option>
-                <option value="Email">Email</option>
-              </select>
-
-              <label className={labelClass}>Describe your vision *</label>
-              <textarea
-                name="customMessage"
-                rows={4}
-                className={inputClass}
-                required
-              ></textarea>
-
-              <input type="hidden" name="formCategory" value="custom" />
-
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className={`w-full px-6 py-3 rounded-xl font-semibold transition hover:scale-105 cursor-pointer ${
-                  isSubmitting
-                    ? "bg-gray-400 text-white cursor-not-allowed"
-                    : "bg-white text-[#1f2a44] hover:bg-gray-100"
-                }`}
-              >
-                Submit Custom Request
-              </button>
-              {customStatus && (
-                <p className="pt-2 text-xs text-center">{customStatus}</p>
-              )}
-            </form>
-          </div>
-
-          {/* Contact Form */}
-          <div className="bg-[#25304f] p-8 rounded-2xl shadow-lg text-sm">
-            <h2 className="text-xl sm:text-2xl font-serif font-semibold mb-6 text-center">
+          {/* 📬 General Contact Form */}
+          <div className="bg-[#25304f] p-8 sm:p-10 rounded-2xl shadow-lg">
+            <h2 className="text-2xl sm:text-3xl font-serif font-semibold mb-6 text-center">
               Send Us a Message
             </h2>
-            <form
-              onSubmit={(e) => handleSubmit(e, "message")}
-              className="flex flex-col space-y-4"
-            >
-              <label className={labelClass}>Full Name *</label>
-              <input type="text" name="name" className={inputClass} required />
-
-              <label className={labelClass}>Email Address *</label>
+            <form className="flex flex-col space-y-6">
               <input
-                type="email"
-                name="email"
-                className={inputClass}
+                type="text"
+                placeholder="Full Name"
+                className="p-4 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
                 required
               />
-
-              <label className={labelClass}>Phone Number *</label>
-              <input type="text" name="phone" className={inputClass} required />
-
-              <label className={labelClass}>Preferred Contact Method *</label>
-              <select name="preference" className={inputClass} required>
-                <option value="Call">Call</option>
-                <option value="Text">Text</option>
-                <option value="Email">Email</option>
-              </select>
-
-              <label className={labelClass}>SKU # (optional)</label>
-              <input type="text" name="sku" className={inputClass} />
-
-              <label className={labelClass}>Your Message *</label>
+              <input
+                type="email"
+                placeholder="Email Address"
+                className="p-4 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
+                required
+              />
               <textarea
-                name="message"
-                rows={4}
-                className={inputClass}
+                placeholder="Your Message"
+                rows={5}
+                className="p-4 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
                 required
               ></textarea>
-
-              <input type="hidden" name="formCategory" value="message" />
-
               <button
                 type="submit"
-                disabled={isSubmitting}
-                className={`w-full px-6 py-3 rounded-xl font-semibold transition hover:scale-105 cursor-pointer ${
-                  isSubmitting
-                    ? "bg-gray-400 text-white cursor-not-allowed"
-                    : "bg-white text-[#1f2a44] hover:bg-gray-100"
-                }`}
+                className="bg-white text-[#1f2a36] font-semibold py-4 rounded-xl hover:shadow-lg hover:scale-105 transition"
               >
                 Submit
               </button>
-              {messageStatus && (
-                <p className="pt-2 text-xs text-center">{messageStatus}</p>
-              )}
+            </form>
+          </div>
+
+          {/* 💍 Custom Jewelry Form */}
+          <div className="bg-[#25304f] p-8 sm:p-10 rounded-2xl shadow-lg">
+            <h2 className="text-2xl sm:text-3xl font-serif font-semibold mb-6 text-center">
+              Start Your Custom Jewelry Creation
+            </h2>
+            <form className="flex flex-col space-y-6">
+              <input
+                type="text"
+                placeholder="Full Name"
+                className="p-4 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
+                required
+              />
+              <input
+                type="email"
+                placeholder="Email Address"
+                className="p-4 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
+                required
+              />
+              <input
+                type="text"
+                placeholder="Phone Number (optional)"
+                className="p-4 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
+              />
+              <input
+                type="text"
+                placeholder="Type of Jewelry (e.g., Engagement Ring, Necklace)"
+                className="p-4 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
+              />
+              <textarea
+                placeholder="Describe your vision or ideas..."
+                rows={5}
+                className="p-4 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
+                required
+              ></textarea>
+              <button
+                type="submit"
+                className="bg-white text-[#1f2a36] font-semibold py-4 rounded-xl hover:shadow-lg hover:scale-105 transition"
+              >
+                Submit Custom Request
+              </button>
             </form>
           </div>
         </div>
