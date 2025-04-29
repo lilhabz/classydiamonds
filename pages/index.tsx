@@ -136,8 +136,8 @@ const Home = () => {
                 image: "/category/wedding-band-cat.jpg",
               },
               { name: "Rings", image: "/category/ring-cat.jpg" },
-              { name: "Bracelets", image: "" },
-              { name: "Necklaces", image: "" },
+              { name: "Bracelets", image: "/category/bracelet-cat.jpg" },
+              { name: "Necklaces", image: "/category/ring-cat.jpg" },
               { name: "Earrings", image: "/category/earring-cat.jpg" },
             ].map((category) => (
               <Link
@@ -169,23 +169,39 @@ const Home = () => {
 
         {/* 🎁 Gifts for Him & Her Section */}
         <section className="py-20 px-6 max-w-7xl mx-auto">
-          {/* // 🎁 Gifts Title */}
           <h2 className="text-3xl font-semibold text-center mb-16">
             Gifts for Him & Her
           </h2>
 
-          {/* // 🎁 Gift Category Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-            <Link href="/category/for-him">
-              <div className="h-64 bg-[#25304f] rounded-2xl shadow-md hover:shadow-2xl flex items-center justify-center text-2xl font-semibold text-[#cfd2d6] hover:text-white transition-colors duration-300 hover:scale-105">
-                Shop for Him
-              </div>
-            </Link>
-            <Link href="/category/for-her">
-              <div className="h-64 bg-[#25304f] rounded-2xl shadow-md flex items-center justify-center text-2xl font-semibold text-[#cfd2d6] hover:text-white transition-colors duration-300 hover:scale-105">
-                Shop for Her
-              </div>
-            </Link>
+            {[
+              { name: "For Him", image: "/category/gift-for-him.jpg" },
+              { name: "For Her", image: "/category/his-gift-cat.jpg" },
+            ].map((gift) => (
+              <Link
+                key={gift.name}
+                href={`/category/${gift.name
+                  .toLowerCase()
+                  .replace(/\s+/g, "-")}`}
+                className="group relative h-64 bg-[#25304f] rounded-2xl shadow-md overflow-hidden hover:shadow-2xl hover:scale-105 transition-all duration-300 flex items-center justify-center"
+              >
+                {/* // 🖼️ Background Image */}
+                <div className="absolute inset-0">
+                  <img
+                    src={gift.image}
+                    alt={gift.name}
+                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                  />
+                  {/* // 🌑 Dark Overlay */}
+                  <div className="absolute inset-0 bg-black opacity-40" />
+                </div>
+
+                {/* // ✨ Text */}
+                <span className="relative z-10 text-2xl font-semibold text-[#cfd2d6] group-hover:text-white transition-colors">
+                  Shop for {gift.name.split(" ")[1]}
+                </span>
+              </Link>
+            ))}
           </div>
         </section>
 
