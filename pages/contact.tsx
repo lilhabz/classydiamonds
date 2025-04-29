@@ -158,7 +158,6 @@ export default function ContactPage() {
                 className="p-4 rounded-xl bg-[#1f2a36] text-white"
                 required
               >
-                <option value="">Select Jewelry Type</option>
                 <option value="Engagement Ring">Engagement Ring</option>
                 <option value="Wedding Band">Wedding Band</option>
                 <option value="Necklace">Necklace</option>
@@ -172,7 +171,6 @@ export default function ContactPage() {
                 className="p-4 rounded-xl bg-[#1f2a36] text-white"
                 required
               >
-                <option value="">Select Method</option>
                 <option value="Call">Call</option>
                 <option value="Text">Text</option>
                 <option value="Email">Email</option>
@@ -237,7 +235,6 @@ export default function ContactPage() {
                 className="p-4 rounded-xl bg-[#1f2a36] text-white"
                 required
               >
-                <option value="">Select Method</option>
                 <option value="Call">Call</option>
                 <option value="Text">Text</option>
                 <option value="Email">Email</option>
