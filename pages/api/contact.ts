@@ -11,7 +11,7 @@ export default async function handler(
     return res.status(405).end("Method Not Allowed");
   }
 
-  const { name, email, message, phone, jewelryType, customMessage } = req.body;
+  const { name, email, message, phone, type, customMessage } = req.body;
 
   if (!name || !email || (!message && !customMessage)) {
     return res.status(400).json({ error: "Missing required fields" });
@@ -20,22 +20,22 @@ export default async function handler(
   const transporter = nodemailer.createTransport({
     service: "gmail",
     auth: {
-      user: process.env.GMAIL_USER, // set this in your .env.local
-      pass: process.env.GMAIL_PASS, // Gmail app password only
+      user: process.env.GMAIL_USER,
+      pass: process.env.GMAIL_PASS,
     },
   });
 
   try {
     await transporter.sendMail({
-      from: process.env.GMAIL_USER, // ✅ This keeps Gmail happy
+      from: process.env.GMAIL_USER,
+      replyTo: email,
       to: "mikeh@burnsautogroup.com",
       subject: `New Contact from ${name}`,
-      replyTo: email, // ✅ This makes "Reply" go to visitor
       text: `
         Name: ${name}
         Email: ${email}
         Phone: ${phone || "Not provided"}
-        Jewelry Type: ${jewelryType || "Not specified"}
+        Jewelry Type: ${type || "Not specified"}
 
         Message:
         ${message || customMessage}
