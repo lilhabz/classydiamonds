@@ -18,7 +18,7 @@ export default function ContactPage() {
     const response = await fetch("/api/contact", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...data, type }),
+      body: JSON.stringify({ ...data, formCategory: type }),
     });
 
     const result = await response.json();
