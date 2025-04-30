@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "formidable": "^3.5.4",
     "next": "15.3.1",
     "nodemailer": "^6.10.1",
     "react": "^19.0.0",
@@ -17,6 +18,7 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@types/formidable": "^3.4.5",
     "@types/node": "^20",
     "@types/nodemailer": "^6.4.17",
     "@types/react": "^19",
