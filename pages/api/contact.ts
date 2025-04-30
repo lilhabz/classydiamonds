@@ -1,14 +1,15 @@
-// 📄 pages/api/contact.ts - Fixed for Vercel + File Attach Support
+// 📄 pages/api/contact.ts - Email + MongoDB storage + Logs for Debug
 
 import type { NextApiRequest, NextApiResponse } from "next";
 import nodemailer from "nodemailer";
 import { IncomingForm } from "formidable";
 import fs from "fs";
 import path from "path";
+import { MongoClient } from "mongodb";
 
 export const config = {
   api: {
-    bodyParser: false, // Required for formidable
+    bodyParser: false,
   },
 };
 
@@ -21,16 +22,19 @@ export default async function handler(
   }
 
   const form = new IncomingForm({
-    maxFileSize: 5 * 1024 * 1024, // 5MB
+    maxFileSize: 5 * 1024 * 1024,
     uploadDir: "/tmp",
     keepExtensions: true,
   });
 
   form.parse(req, async (err, fields, files) => {
     if (err) {
-      console.error("Form parsing error:", err);
+      console.error("❌ Form parsing error:", err);
       return res.status(500).json({ error: "File upload error." });
     }
+
+    console.log("✅ Form parsed successfully.");
+    console.log("📨 Fields received:", fields);
 
     const name = fields.name?.[0] || "";
     const email = fields.email?.[0] || "";
@@ -42,7 +46,7 @@ export default async function handler(
     const formCategory = fields.formCategory?.[0];
 
     if (!name || !email || (!message && !customMessage)) {
-      console.warn("Missing required fields:", {
+      console.warn("⚠️ Missing required fields:", {
         name,
         email,
         message,
@@ -81,6 +85,35 @@ export default async function handler(
 
     const uploadedFile = files.file?.[0];
 
+    // ✅ Store data in MongoDB
+    try {
+      console.log("🧠 Connecting to MongoDB...");
+      const client = await MongoClient.connect(process.env.MONGODB_URI!);
+      const db = client.db("classydiamonds");
+      const collection = db.collection("messages");
+
+      const result = await collection.insertOne({
+        name,
+        email,
+        phone,
+        preference,
+        message,
+        customMessage,
+        type,
+        formCategory,
+        submittedAt: new Date(),
+        hasFile: !!uploadedFile,
+      });
+
+      console.log("✅ Message inserted into MongoDB:", result.insertedId);
+      await client.close();
+    } catch (err) {
+      console.error("❌ MongoDB insert error:", err);
+      return res
+        .status(500)
+        .json({ error: "Failed to save message to database" });
+    }
+
     const transporter = nodemailer.createTransport({
       service: "gmail",
       auth: {
@@ -106,11 +139,11 @@ export default async function handler(
           : [],
       });
 
+      console.log("✅ Email sent to mikeh@burnsautogroup.com");
       return res.status(200).json({ success: true });
     } catch (err) {
-      console.error("Email failed:", err);
+      console.error("❌ Email failed:", err);
       return res.status(500).json({ error: "Failed to send message" });
     }
   });
 }
-//p
