@@ -5,7 +5,7 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { signIn, signOut, useSession } from "next-auth/react"; // 🔐 NextAuth
+import { useSession } from "next-auth/react"; // 🔐 NextAuth
 import { FiUser, FiShoppingCart, FiSearch, FiMenu, FiX } from "react-icons/fi";
 import { useCart } from "@/context/CartContext";
 
@@ -92,17 +92,12 @@ const Navbar = () => {
             <FiSearch />
           </Link>
 
-          {session ? (
-            <div className="flex items-center space-x-2 cursor-pointer hover:text-white hover:scale-105 transition-transform duration-300">
-              <FiUser onClick={() => signOut()} />
-              <span className="text-sm hidden md:inline">Sign out</span>
-            </div>
-          ) : (
-            <div className="flex items-center space-x-2 cursor-pointer hover:text-white hover:scale-105 transition-transform duration-300">
-              <FiUser onClick={() => signIn()} />
-              <span className="text-sm hidden md:inline">Sign in</span>
-            </div>
-          )}
+          <Link
+            href={session ? "/account" : "/auth/signin"}
+            className="cursor-pointer hover:text-white hover:scale-105 transition-transform duration-300"
+          >
+            <FiUser />
+          </Link>
 
           <div className="relative">
             <button
@@ -207,15 +202,9 @@ const Navbar = () => {
             <Link href="/search">
               <FiSearch />
             </Link>
-            {session ? (
-              <span onClick={() => signOut()} className="cursor-pointer">
-                <FiUser />
-              </span>
-            ) : (
-              <span onClick={() => signIn()} className="cursor-pointer">
-                <FiUser />
-              </span>
-            )}
+            <Link href={session ? "/account" : "/auth/signin"}>
+              <FiUser />
+            </Link>
             <Link href="/cart">
               <FiShoppingCart />
             </Link>
