@@ -1,4 +1,4 @@
-// 📄 pages/contact.tsx - Contact Page with File Upload + Mobile Fix
+// 📄 pages/contact.tsx - Full Page (Hero, About, Map, Forms w/ Uploads)
 
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
@@ -66,6 +66,67 @@ export default function ContactPage() {
         </p>
       </section>
 
+      {/* 🧑‍🏭 About Section */}
+      <section className="px-4 sm:px-6 py-16 sm:py-20 max-w-7xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+          {/* 📸 Ned's Photo */}
+          <div className="w-full h-80 sm:h-96 overflow-hidden rounded-2xl shadow-lg">
+            <img
+              src="/ned-photo.jpg"
+              alt="Ned - Classy Diamonds"
+              className="w-full h-full object-cover"
+            />
+          </div>
+
+          {/* 📝 About Text */}
+          <div className="text-center md:text-left">
+            <h2 className="text-2xl sm:text-3xl font-semibold mb-6 sm:mb-8">
+              About Us
+            </h2>
+            <p className="text-base sm:text-lg text-[#cfd2d6] leading-relaxed">
+              For nearly 30 years, Classy Diamonds has been providing superior
+              quality and exceptional customer service to clients around the
+              world. Ned is renowned for his meticulous custom design work,
+              going above and beyond to create detailed, flawless pieces that
+              bring his customers' dreams to life.
+              <br />
+              <br />
+              His passion and dedication for fine craftsmanship are truly
+              remarkable and never go unnoticed. With a global clientele
+              spanning London, Quebec, Europe, and Australia, Ned is proud to
+              build lifelong relationships and craft unforgettable moments
+              through his jewelry.
+              <br />
+              <br />
+              At Classy Diamonds, every piece tells a story — and we look
+              forward to helping you tell yours.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* 📍 Contact Info + Map */}
+      <section className="px-4 sm:px-6 py-16 sm:py-20 max-w-7xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+          {/* 📞 Contact Info */}
+          <div className="flex flex-col gap-8 text-center md:text-left">
+            <div className="flex flex-col items-center md:items-start">
+              <FaPhoneAlt className="text-3xl mb-2" />
+              <p className="text-base sm:text-lg">+1 (123) 456-7890</p>
+            </div>
+            <div className="flex flex-col items-center md:items-start">
+              <FaEnvelope className="text-3xl mb-2" />
+              <p className="text-base sm:text-lg">info@classydiamonds.com</p>
+            </div>
+          </div>
+
+          {/* 🗺️ Map Placeholder */}
+          <div className="w-full h-60 sm:h-64 bg-[#25304f] rounded-2xl overflow-hidden flex items-center justify-center">
+            <p className="text-[#cfd2d6] text-center">Google Map Coming Soon</p>
+          </div>
+        </div>
+      </section>
+
       {/* 📝 Forms Section */}
       <section className="px-4 sm:px-6 py-16 sm:py-20 max-w-7xl mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
@@ -108,8 +169,6 @@ export default function ContactPage() {
                 required
                 className="p-4 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
               ></textarea>
-
-              {/* 📎 File Upload */}
               <div>
                 <input
                   type="file"
@@ -129,7 +188,6 @@ export default function ContactPage() {
                   />
                 )}
               </div>
-
               <button
                 type="submit"
                 className="bg-white text-[#1f2a36] font-semibold py-4 rounded-xl hover:shadow-lg hover:scale-105 transition"
@@ -181,8 +239,6 @@ export default function ContactPage() {
                 required
                 className="p-4 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
               ></textarea>
-
-              {/* 📎 File Upload */}
               <div>
                 <input
                   type="file"
@@ -202,7 +258,6 @@ export default function ContactPage() {
                   />
                 )}
               </div>
-
               <button
                 type="submit"
                 className="bg-white text-[#1f2a36] font-semibold py-4 rounded-xl hover:shadow-lg hover:scale-105 transition"
@@ -216,6 +271,8 @@ export default function ContactPage() {
           </div>
         </div>
       </section>
+
+      <Footer />
     </div>
   );
 }
