@@ -1,4 +1,4 @@
-// 📄 pages/contact.tsx - Full Page (Hero, About, Map, Forms w/ Uploads + Validation + Dropdown)
+// 📄 pages/contact.tsx - Full Page (Hero, About, Map, Forms w/ Uploads + Validation + Dropdown + Single Submit)
 
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
@@ -12,12 +12,16 @@ export default function ContactPage() {
   const [customFile, setCustomFile] = useState<File | null>(null);
   const [messagePreview, setMessagePreview] = useState<string | null>(null);
   const [customPreview, setCustomPreview] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (
     e: React.FormEvent<HTMLFormElement>,
     type: "message" | "custom"
   ) => {
     e.preventDefault();
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+
     const form = e.currentTarget;
     const formData = new FormData(form);
     formData.append("formCategory", type);
@@ -31,35 +35,44 @@ export default function ContactPage() {
     const message = formData.get("message") as string;
     const customMessage = formData.get("customMessage") as string;
     const preference = formData.get("preference") as string;
+    const typeSelection = formData.get("type") as string;
 
     if (!name.trim().includes(" ")) {
       alert("Please enter your full first and last name.");
+      setIsSubmitting(false);
       return;
     }
-
     if (!emailRegex.test(email)) {
       alert("Please enter a valid email address.");
+      setIsSubmitting(false);
       return;
     }
-
     if (!phoneRegex.test(phone)) {
       alert("Please enter a valid phone number.");
+      setIsSubmitting(false);
       return;
     }
-
     if (!preference.trim()) {
       alert("Please provide a preferred contact method.");
+      setIsSubmitting(false);
       return;
     }
-
     if (type === "message" && !message.trim()) {
       alert("Please enter your message.");
+      setIsSubmitting(false);
       return;
     }
-
-    if (type === "custom" && !customMessage.trim()) {
-      alert("Please describe your custom vision.");
-      return;
+    if (type === "custom") {
+      if (!customMessage.trim()) {
+        alert("Please describe your custom vision.");
+        setIsSubmitting(false);
+        return;
+      }
+      if (!typeSelection || typeSelection.trim() === "") {
+        alert("Please select the jewelry type.");
+        setIsSubmitting(false);
+        return;
+      }
     }
 
     if (type === "message" && messageFile) {
@@ -90,6 +103,7 @@ export default function ContactPage() {
       if (type === "message") setMessageStatus(err);
       else setCustomStatus(err);
     }
+    setIsSubmitting(false);
   };
 
   return (
@@ -197,6 +211,7 @@ export default function ContactPage() {
                 required
                 className="p-4 rounded-xl bg-[#1f2a36] text-white"
               >
+                <option value="">Preferred Contact Method</option>
                 <option value="Call">Call</option>
                 <option value="Text">Text</option>
                 <option value="Email">Email</option>
@@ -206,6 +221,7 @@ export default function ContactPage() {
                 required
                 className="p-4 rounded-xl bg-[#1f2a36] text-white"
               >
+                <option value="">Select Jewelry Type</option>
                 <option>Engagement Ring</option>
                 <option>Wedding Band</option>
                 <option>Earrings</option>
@@ -219,7 +235,7 @@ export default function ContactPage() {
                 rows={5}
                 required
                 className="p-4 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
-              ></textarea>
+              />
               <label className="cursor-pointer inline-block text-white">
                 Upload Image:
                 <input
@@ -242,7 +258,8 @@ export default function ContactPage() {
               )}
               <button
                 type="submit"
-                className="bg-white text-[#1f2a36] font-semibold py-4 rounded-xl hover:shadow-lg hover:scale-105 transition"
+                disabled={isSubmitting}
+                className="bg-white text-[#1f2a44] font-semibold py-4 rounded-xl hover:shadow-lg hover:scale-105 transition"
               >
                 Submit Custom Request
               </button>
@@ -285,6 +302,7 @@ export default function ContactPage() {
                 required
                 className="p-4 rounded-xl bg-[#1f2a36] text-white"
               >
+                <option value="">Preferred Contact Method</option>
                 <option value="Call">Call</option>
                 <option value="Text">Text</option>
                 <option value="Email">Email</option>
@@ -300,7 +318,7 @@ export default function ContactPage() {
                 rows={5}
                 required
                 className="p-4 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
-              ></textarea>
+              />
               <label className="cursor-pointer inline-block text-white">
                 Upload Image:
                 <input
@@ -323,7 +341,8 @@ export default function ContactPage() {
               )}
               <button
                 type="submit"
-                className="bg-white text-[#1f2a36] font-semibold py-4 rounded-xl hover:shadow-lg hover:scale-105 transition"
+                disabled={isSubmitting}
+                className="bg-white text-[#1f2a44] font-semibold py-4 rounded-xl hover:shadow-lg hover:scale-105 transition"
               >
                 Submit
               </button>
@@ -334,7 +353,8 @@ export default function ContactPage() {
           </div>
         </div>
       </section>
+
+      <Footer />
     </div>
   );
 }
-//p
