@@ -278,6 +278,12 @@ export default function ContactPage() {
                 required
                 className="p-4 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
               />
+              <input
+                name="sku"
+                placeholder="SKU # (optional)"
+                className="p-4 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
+              />
+
               <textarea
                 name="message"
                 placeholder="Your Message"
@@ -318,8 +324,6 @@ export default function ContactPage() {
           </div>
         </div>
       </section>
-
-      <Footer />
     </div>
   );
 }
