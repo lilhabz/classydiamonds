@@ -2,7 +2,7 @@
 
 import type { NextApiRequest, NextApiResponse } from "next";
 import nodemailer from "nodemailer";
-import formidable from "formidable";
+import { IncomingForm } from "formidable";
 import fs from "fs";
 import path from "path";
 
@@ -20,7 +20,7 @@ export default async function handler(
     return res.status(405).end("Method Not Allowed");
   }
 
-  const form = new formidable.IncomingForm({
+  const form = new IncomingForm({
     maxFileSize: 5 * 1024 * 1024, // 5MB
     uploadDir: "/tmp",
     keepExtensions: true,
