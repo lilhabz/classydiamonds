@@ -1,4 +1,4 @@
-// 📄 pages/contact.tsx - Full Page (Hero, About, Map, Forms w/ Uploads)
+// 📄 pages/contact.tsx - Full Page (Hero, About, Map, Forms w/ Uploads + Validation + Dropdown)
 
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
@@ -21,6 +21,46 @@ export default function ContactPage() {
     const form = e.currentTarget;
     const formData = new FormData(form);
     formData.append("formCategory", type);
+
+    const phoneRegex = /^[0-9\-\+\s\(\)]+$/;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    const name = formData.get("name") as string;
+    const email = formData.get("email") as string;
+    const phone = formData.get("phone") as string;
+    const message = formData.get("message") as string;
+    const customMessage = formData.get("customMessage") as string;
+    const preference = formData.get("preference") as string;
+
+    if (!name.trim().includes(" ")) {
+      alert("Please enter your full first and last name.");
+      return;
+    }
+
+    if (!emailRegex.test(email)) {
+      alert("Please enter a valid email address.");
+      return;
+    }
+
+    if (!phoneRegex.test(phone)) {
+      alert("Please enter a valid phone number.");
+      return;
+    }
+
+    if (!preference.trim()) {
+      alert("Please provide a preferred contact method.");
+      return;
+    }
+
+    if (type === "message" && !message.trim()) {
+      alert("Please enter your message.");
+      return;
+    }
+
+    if (type === "custom" && !customMessage.trim()) {
+      alert("Please describe your custom vision.");
+      return;
+    }
 
     if (type === "message" && messageFile) {
       formData.append("file", messageFile);
@@ -69,7 +109,6 @@ export default function ContactPage() {
       {/* 🧑‍🏭 About Section */}
       <section className="px-4 sm:px-6 py-16 sm:py-20 max-w-7xl mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
-          {/* 📸 Ned's Photo */}
           <div className="w-full h-80 sm:h-96 overflow-hidden rounded-2xl shadow-lg">
             <img
               src="/ned-photo.jpg"
@@ -77,8 +116,6 @@ export default function ContactPage() {
               className="w-full h-full object-cover"
             />
           </div>
-
-          {/* 📝 About Text */}
           <div className="text-center md:text-left">
             <h2 className="text-2xl sm:text-3xl font-semibold mb-6 sm:mb-8">
               About Us
@@ -108,7 +145,6 @@ export default function ContactPage() {
       {/* 📍 Contact Info + Map */}
       <section className="px-4 sm:px-6 py-16 sm:py-20 max-w-7xl mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
-          {/* 📞 Contact Info */}
           <div className="flex flex-col gap-8 text-center md:text-left">
             <div className="flex flex-col items-center md:items-start">
               <FaPhoneAlt className="text-3xl mb-2" />
@@ -119,8 +155,6 @@ export default function ContactPage() {
               <p className="text-base sm:text-lg">info@classydiamonds.com</p>
             </div>
           </div>
-
-          {/* 🗺️ Map Placeholder */}
           <div className="w-full h-60 sm:h-64 bg-[#25304f] rounded-2xl overflow-hidden flex items-center justify-center">
             <p className="text-[#cfd2d6] text-center">Google Map Coming Soon</p>
           </div>
@@ -154,14 +188,23 @@ export default function ContactPage() {
               />
               <input
                 name="phone"
-                placeholder="Phone Number (optional)"
+                placeholder="Phone Number"
+                required
                 className="p-4 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
               />
-              <input
+              <select
                 name="type"
-                placeholder="Type of Jewelry"
-                className="p-4 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
-              />
+                required
+                className="p-4 rounded-xl bg-[#1f2a36] text-white"
+              >
+                <option value="">Select Jewelry Type</option>
+                <option>Engagement Ring</option>
+                <option>Wedding Band</option>
+                <option>Earrings</option>
+                <option>Necklace</option>
+                <option>Bracelet</option>
+                <option>Pendant</option>
+              </select>
               <textarea
                 name="customMessage"
                 placeholder="Describe your vision or ideas..."
@@ -169,7 +212,8 @@ export default function ContactPage() {
                 required
                 className="p-4 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
               ></textarea>
-              <div>
+              <label className="cursor-pointer inline-block text-white">
+                Upload Image:
                 <input
                   type="file"
                   accept="image/*"
@@ -178,16 +222,16 @@ export default function ContactPage() {
                     setCustomFile(file || null);
                     if (file) setCustomPreview(URL.createObjectURL(file));
                   }}
-                  className="text-white"
+                  className="mt-2 cursor-pointer"
                 />
-                {customPreview && (
-                  <img
-                    src={customPreview}
-                    alt="Preview"
-                    className="mt-2 w-24 h-24 object-cover rounded-xl"
-                  />
-                )}
-              </div>
+              </label>
+              {customPreview && (
+                <img
+                  src={customPreview}
+                  alt="Preview"
+                  className="mt-2 w-24 h-24 object-cover rounded-xl"
+                />
+              )}
               <button
                 type="submit"
                 className="bg-white text-[#1f2a36] font-semibold py-4 rounded-xl hover:shadow-lg hover:scale-105 transition"
@@ -225,11 +269,13 @@ export default function ContactPage() {
               <input
                 name="phone"
                 placeholder="Phone Number"
+                required
                 className="p-4 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
               />
               <input
                 name="preference"
                 placeholder="Preferred Contact Method"
+                required
                 className="p-4 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
               />
               <textarea
@@ -239,7 +285,8 @@ export default function ContactPage() {
                 required
                 className="p-4 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
               ></textarea>
-              <div>
+              <label className="cursor-pointer inline-block text-white">
+                Upload Image:
                 <input
                   type="file"
                   accept="image/*"
@@ -248,16 +295,16 @@ export default function ContactPage() {
                     setMessageFile(file || null);
                     if (file) setMessagePreview(URL.createObjectURL(file));
                   }}
-                  className="text-white"
+                  className="mt-2 cursor-pointer"
                 />
-                {messagePreview && (
-                  <img
-                    src={messagePreview}
-                    alt="Preview"
-                    className="mt-2 w-24 h-24 object-cover rounded-xl"
-                  />
-                )}
-              </div>
+              </label>
+              {messagePreview && (
+                <img
+                  src={messagePreview}
+                  alt="Preview"
+                  className="mt-2 w-24 h-24 object-cover rounded-xl"
+                />
+              )}
               <button
                 type="submit"
                 className="bg-white text-[#1f2a36] font-semibold py-4 rounded-xl hover:shadow-lg hover:scale-105 transition"
