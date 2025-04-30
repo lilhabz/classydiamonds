@@ -193,6 +193,16 @@ export default function ContactPage() {
                 className="p-4 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
               />
               <select
+                name="preference"
+                required
+                className="p-4 rounded-xl bg-[#1f2a36] text-white"
+              >
+                <option value="">Preferred Contact Method</option>
+                <option value="Call">Call</option>
+                <option value="Text">Text</option>
+                <option value="Email">Email</option>
+              </select>
+              <select
                 name="type"
                 required
                 className="p-4 rounded-xl bg-[#1f2a36] text-white"
@@ -272,18 +282,21 @@ export default function ContactPage() {
                 required
                 className="p-4 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
               />
-              <input
+              <select
                 name="preference"
-                placeholder="Preferred Contact Method"
                 required
-                className="p-4 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
-              />
+                className="p-4 rounded-xl bg-[#1f2a36] text-white"
+              >
+                <option value="">Preferred Contact Method</option>
+                <option value="Call">Call</option>
+                <option value="Text">Text</option>
+                <option value="Email">Email</option>
+              </select>
               <input
                 name="sku"
                 placeholder="SKU # (optional)"
                 className="p-4 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
               />
-
               <textarea
                 name="message"
                 placeholder="Your Message"
