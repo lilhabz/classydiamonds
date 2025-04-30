@@ -88,6 +88,8 @@ export default async function handler(
     // ✅ Store data in MongoDB
     try {
       console.log("🧠 Connecting to MongoDB...");
+      console.log("🧪 MONGODB_URI:", process.env.MONGODB_URI);
+
       const client = await MongoClient.connect(process.env.MONGODB_URI!);
       const db = client.db("classydiamonds");
       const collection = db.collection("messages");
