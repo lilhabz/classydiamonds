@@ -1,9 +1,10 @@
-// 📄 pages/api/contact.ts - Supports file upload via formidable
+// 📄 pages/api/contact.ts - Fixed for Vercel + File Attach Support
 
 import type { NextApiRequest, NextApiResponse } from "next";
 import nodemailer from "nodemailer";
 import formidable from "formidable";
 import fs from "fs";
+import path from "path";
 
 export const config = {
   api: {
@@ -41,6 +42,12 @@ export default async function handler(
     const formCategory = fields.formCategory?.[0];
 
     if (!name || !email || (!message && !customMessage)) {
+      console.warn("Missing required fields:", {
+        name,
+        email,
+        message,
+        customMessage,
+      });
       return res.status(400).json({ error: "Missing required fields" });
     }
 
@@ -51,7 +58,7 @@ export default async function handler(
 
     const htmlBody = `
       <div style="font-family: Arial, sans-serif; font-size: 16px; color: #333;">
-        <h2 style="color: #1f2a44;">${
+        <h2 style="color: #1f2a44;">$${
           isCustom ? "New Custom Jewelry Inquiry" : "New Contact Message"
         }</h2>
         <p><strong>Name:</strong> ${name}</p>
@@ -72,6 +79,8 @@ export default async function handler(
       </div>
     `;
 
+    const uploadedFile = files.file?.[0];
+
     const transporter = nodemailer.createTransport({
       service: "gmail",
       auth: {
@@ -87,6 +96,14 @@ export default async function handler(
         to: "mikeh@burnsautogroup.com",
         subject,
         html: htmlBody,
+        attachments: uploadedFile
+          ? [
+              {
+                filename: uploadedFile.originalFilename || "upload.jpg",
+                path: uploadedFile.filepath,
+              },
+            ]
+          : [],
       });
 
       return res.status(200).json({ success: true });
