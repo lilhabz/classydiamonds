@@ -65,10 +65,10 @@ export default async function handler(
         }
         <hr style="margin: 20px 0;" />
         <p><strong>Message:</strong></p>
-        <p style="white-space: pre-line;">${(isCustom
-          ? customMessage
-          : message
-        ).replace(/\n/g, "<br>")}</p>
+        <p style="white-space: pre-line;">$${
+          (isCustom ? customMessage : message)?.replace(/\n/g, "<br>") ||
+          "No message provided."
+        }</p>
       </div>
     `;
 
