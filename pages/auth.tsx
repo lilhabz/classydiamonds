@@ -21,12 +21,28 @@ export default function AuthPage() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  // 🔒 Password validation rules
+  const validatePassword = (password: string) => {
+    const regex =
+      /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/;
+    return regex.test(password);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!isLogin && formData.password !== formData.confirmPassword) {
-      alert("Passwords do not match");
-      return;
+    if (!isLogin) {
+      if (formData.password !== formData.confirmPassword) {
+        alert("Passwords do not match");
+        return;
+      }
+
+      if (!validatePassword(formData.password)) {
+        alert(
+          "Password must be at least 8 characters, include an uppercase letter, a number, and a special character."
+        );
+        return;
+      }
     }
 
     if (isLogin) {
@@ -39,7 +55,6 @@ export default function AuthPage() {
       if (res?.ok) router.push("/");
       else alert("Login failed");
     } else {
-      // Placeholder signup logic — 🔐 Replace with actual user creation
       try {
         const response = await fetch("/api/signup", {
           method: "POST",
@@ -101,15 +116,21 @@ export default function AuthPage() {
             required
           />
           {!isLogin && (
-            <input
-              name="confirmPassword"
-              type="password"
-              placeholder="Confirm Password"
-              value={formData.confirmPassword}
-              onChange={handleChange}
-              className="w-full p-2 rounded bg-white text-black"
-              required
-            />
+            <>
+              <input
+                name="confirmPassword"
+                type="password"
+                placeholder="Confirm Password"
+                value={formData.confirmPassword}
+                onChange={handleChange}
+                className="w-full p-2 rounded bg-white text-black"
+                required
+              />
+              <p className="text-xs text-gray-300">
+                Must be 8+ chars, include 1 capital letter, 1 number, and 1
+                special character.
+              </p>
+            </>
           )}
 
           <button

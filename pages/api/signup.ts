@@ -20,16 +20,13 @@ export default async function handler(
     const db = client.db("classydiamonds");
     const users = db.collection("users");
 
-    // Check for existing user
     const existing = await users.findOne({ email });
     if (existing) {
       return res.status(400).json({ error: "Email is already registered" });
     }
 
-    // Hash the password
     const hashedPassword = await bcrypt.hash(password, 12);
 
-    // Insert the new user
     const result = await users.insertOne({
       name,
       email,

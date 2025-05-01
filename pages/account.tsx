@@ -1,4 +1,4 @@
-// 📄 pages/account.tsx - User Dashboard Page 💼
+// 📄 pages/account.tsx
 
 import { GetServerSideProps } from "next";
 import { getSession } from "next-auth/react";
