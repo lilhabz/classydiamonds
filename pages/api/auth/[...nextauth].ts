@@ -1,11 +1,13 @@
-// 📂 pages/api/auth/[...nextauth].ts
+// 📄 pages/api/auth/[...nextauth].ts - Handles login & session logic
 
-import NextAuth, { type NextAuthOptions } from "next-auth";
+import NextAuth from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { adapter } from "@/lib/mongoAdapter";
+import clientPromise from "@/lib/mongodb";
+import { compare } from "bcryptjs";
 
-export const authOptions: NextAuthOptions = {
+export const authOptions = {
   adapter,
   providers: [
     GoogleProvider({
@@ -19,24 +21,28 @@ export const authOptions: NextAuthOptions = {
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        // 🧠 This is a placeholder — you’ll want to build real validation here
-        if (
-          credentials?.email === "demo@classydiamonds.com" &&
-          credentials?.password === "demo123"
-        ) {
-          return {
-            id: "1",
-            name: "Demo User",
-            email: "demo@classydiamonds.com",
-          };
-        }
-        return null;
+        const client = await clientPromise;
+        const db = client.db("classydiamonds");
+        const user = await db
+          .collection("users")
+          .findOne({ email: credentials?.email });
+
+        if (!user || !user.password) return null;
+
+        const isValid = await compare(credentials!.password, user.password);
+        if (!isValid) return null;
+
+        return {
+          id: user._id.toString(),
+          name: user.name,
+          email: user.email,
+        };
       },
     }),
   ],
   secret: process.env.NEXTAUTH_SECRET,
   session: {
-    strategy: "jwt" as const,
+    strategy: "jwt" as const, // ✅ Type-safe for TypeScript
   },
 };
 
