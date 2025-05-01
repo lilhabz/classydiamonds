@@ -23,13 +23,11 @@ export default function AuthPage() {
     const updatedForm = { ...formData, [name]: value };
     setFormData(updatedForm);
 
-    // Re-check password live
     if (name === "password") {
       setPasswordValid(validatePassword(value));
     }
   };
 
-  // 🔒 Password validation rules
   const validatePassword = (password: string) => {
     const regex =
       /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/;
@@ -60,7 +58,7 @@ export default function AuthPage() {
         password: formData.password,
       });
 
-      if (res?.ok) router.push("/");
+      if (res?.ok) router.push("/account"); // ✅ Redirect to user account page
       else alert("Login failed");
     } else {
       try {
@@ -87,12 +85,10 @@ export default function AuthPage() {
   return (
     <div className="bg-[#1f2a36] text-white min-h-screen flex items-center justify-center px-4">
       <div className="bg-white/10 backdrop-blur p-8 rounded-2xl shadow-xl w-full max-w-md">
-        {/* 🧾 Header Title */}
         <h2 className="text-2xl font-bold mb-6 text-center">
           {isLogin ? "Login to Classy Diamonds 💎" : "Create Your Account 💍"}
         </h2>
 
-        {/* 🔐 Auth Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
           {!isLogin && (
             <input
@@ -153,15 +149,13 @@ export default function AuthPage() {
           </button>
         </form>
 
-        {/* 🔘 Google Login Option */}
         <button
-          onClick={() => signIn("google")}
+          onClick={() => signIn("google", { callbackUrl: "/account" })}
           className="w-full flex items-center justify-center mt-4 border border-white py-2 rounded hover:bg-white hover:text-black transition"
         >
           <FcGoogle className="mr-2" /> Continue with Google
         </button>
 
-        {/* 🔁 Toggle Login/Signup */}
         <p className="mt-6 text-center text-sm">
           {isLogin ? (
             <>

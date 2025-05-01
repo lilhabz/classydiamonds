@@ -1,7 +1,8 @@
 // 📄 pages/account.tsx
 
 import { GetServerSideProps } from "next";
-import { getSession } from "next-auth/react";
+import { getSession, signOut } from "next-auth/react";
+import { Session } from "next-auth";
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
   const session = await getSession(context);
@@ -20,7 +21,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
   };
 };
 
-export default function AccountPage({ session }: any) {
+export default function AccountPage({ session }: { session: Session }) {
   return (
     <div className="bg-[#1f2a36] text-white min-h-screen flex items-center justify-center px-4">
       <div className="bg-white/10 backdrop-blur p-8 rounded-2xl shadow-xl w-full max-w-md text-center">
@@ -30,12 +31,12 @@ export default function AccountPage({ session }: any) {
         </p>
         <p className="text-sm text-gray-300 mb-6">{session.user?.email}</p>
 
-        <a
-          href="/api/auth/signout"
-          className="inline-block bg-red-500 hover:bg-red-600 text-white px-6 py-2 rounded-lg transition"
+        <button
+          onClick={() => signOut({ callbackUrl: "/" })}
+          className="bg-red-500 hover:bg-red-600 text-white px-6 py-2 rounded-lg transition"
         >
           Sign Out
-        </a>
+        </button>
       </div>
     </div>
   );
