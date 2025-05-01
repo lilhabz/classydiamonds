@@ -21,15 +21,16 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
   };
 };
 
-export default function AccountPage({ session }: { session: Session }) {
+export default function AccountPage({ session }: { session: any }) {
+  const name = session?.user?.name ?? "User";
+  const email = session?.user?.email ?? "Not available";
+
   return (
     <div className="bg-[#1f2a36] text-white min-h-screen flex items-center justify-center px-4">
       <div className="bg-white/10 backdrop-blur p-8 rounded-2xl shadow-xl w-full max-w-md text-center">
         <h2 className="text-2xl font-bold mb-4">Welcome 👋</h2>
-        <p className="text-lg font-semibold mb-2">
-          {session.user?.name || session.user?.email}
-        </p>
-        <p className="text-sm text-gray-300 mb-6">{session.user?.email}</p>
+        <p className="text-lg font-semibold mb-2">{name}</p>
+        <p className="text-sm text-gray-300 mb-6">{email}</p>
 
         <button
           onClick={() => signOut({ callbackUrl: "/" })}
