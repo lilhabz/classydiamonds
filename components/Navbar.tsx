@@ -5,7 +5,7 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useSession } from "next-auth/react"; // 🔐 NextAuth
+import { useSession, signOut } from "next-auth/react"; // 🔐 NextAuth
 import { FiUser, FiShoppingCart, FiSearch, FiMenu, FiX } from "react-icons/fi";
 import { useCart } from "@/context/CartContext";
 
@@ -84,7 +84,7 @@ const Navbar = () => {
           })}
         </nav>
 
-        <div className="hidden md:flex space-x-6 text-[#e0e0e0] text-xl relative">
+        <div className="hidden md:flex items-center space-x-6 text-[#e0e0e0] text-xl relative">
           <Link
             href="/search"
             className="hover:text-white hover:scale-105 transition-transform duration-300"
@@ -92,12 +92,29 @@ const Navbar = () => {
             <FiSearch />
           </Link>
 
-          <Link
-            href={session ? "/account" : "/auth"}
-            className="cursor-pointer hover:text-white hover:scale-105 transition-transform duration-300"
-          >
-            <FiUser />
-          </Link>
+          {session ? (
+            <>
+              <Link
+                href="/account"
+                className="hover:text-white hover:scale-105 transition-transform duration-300"
+              >
+                <FiUser />
+              </Link>
+              <button
+                onClick={() => signOut()}
+                className="text-sm text-red-400 ml-2 hover:text-red-600"
+              >
+                Sign Out
+              </button>
+            </>
+          ) : (
+            <Link
+              href="/auth"
+              className="cursor-pointer hover:text-white hover:scale-105 transition-transform duration-300"
+            >
+              <FiUser />
+            </Link>
+          )}
 
           <div className="relative">
             <button
