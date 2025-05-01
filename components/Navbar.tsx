@@ -60,7 +60,7 @@ const Navbar = () => {
       )}
 
       <div className="flex items-center justify-between w-full h-full px-4 md:px-6">
-        {/* 🔗 Logo */}
+        {/* 🔗 Logo and Welcome Message */}
         <div className="flex items-center space-x-4">
           <Link
             href="/"
@@ -71,6 +71,12 @@ const Navbar = () => {
               <i>A Cut Above The Rest</i>
             </span>
           </Link>
+          {session && (
+            <p className="hidden md:block text-sm text-white font-light mt-1">
+              Welcome,{" "}
+              {session.user?.name?.split(" ")[0] || session.user?.email}
+            </p>
+          )}
         </div>
 
         {/* 🌐 Desktop Nav Links */}
@@ -102,13 +108,13 @@ const Navbar = () => {
             <FiSearch />
           </Link>
 
-          {/* 👤 Unified User Icon */}
+          {/* 👤 User Dropdown */}
           <div className="relative" ref={userRef}>
             {session ? (
               <>
                 <button
                   onClick={() => setUserMenuOpen((prev) => !prev)}
-                  className="hover:text-white hover:scale-105 transition-transform duration-300"
+                  className="hover:text-white hover:scale-105 transition-transform duration-300 cursor-pointer"
                 >
                   <FiUser />
                 </button>
@@ -131,6 +137,12 @@ const Navbar = () => {
                       className="block px-4 py-2 hover:bg-[#2a374f]"
                     >
                       Track Orders
+                    </Link>
+                    <Link
+                      href="/custom"
+                      className="block px-4 py-2 hover:bg-[#2a374f]"
+                    >
+                      Custom Requests
                     </Link>
                     <button
                       onClick={() => signOut({ callbackUrl: "/" })}
