@@ -17,13 +17,18 @@ const Navbar = () => {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
   const cartRef = useRef<HTMLDivElement>(null);
+  const userRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 50);
     const handleClickOutside = (event: MouseEvent) => {
       if (cartRef.current && !cartRef.current.contains(event.target as Node)) {
         setCartOpen(false);
+      }
+      if (userRef.current && !userRef.current.contains(event.target as Node)) {
+        setUserMenuOpen(false);
       }
     };
     window.addEventListener("scroll", handleScroll);
@@ -65,12 +70,6 @@ const Navbar = () => {
               <i>A Cut Above The Rest</i>
             </span>
           </Link>
-          {session && (
-            <p className="hidden md:block text-sm text-white font-light mt-1">
-              Welcome,{" "}
-              {session.user?.name?.split(" ")[0] || session.user?.email}
-            </p>
-          )}
         </div>
 
         <nav className="hidden md:flex absolute left-1/2 transform -translate-x-1/2 space-x-10 text-[#e0e0e0] font-semibold text-sm">
@@ -100,22 +99,45 @@ const Navbar = () => {
             <FiSearch />
           </Link>
 
-          {session ? (
-            <>
-              <Link
-                href="/account"
-                className="hover:text-white hover:scale-105 transition-transform duration-300"
-              >
-                <FiUser />
-              </Link>
-              <button
-                onClick={() => signOut({ callbackUrl: "/" })}
-                className="text-sm text-red-400 ml-2 hover:text-red-600"
-              >
-                Sign Out
-              </button>
-            </>
-          ) : (
+          <div className="relative" ref={userRef}>
+            <button
+              onClick={() => setUserMenuOpen((prev) => !prev)}
+              className="hover:text-white hover:scale-105 transition-transform duration-300"
+            >
+              <FiUser />
+            </button>
+
+            {session && userMenuOpen && (
+              <div className="absolute right-0 mt-2 w-48 bg-[#1f2a44]/95 backdrop-blur-sm rounded-xl shadow-lg py-2 text-sm text-white z-50">
+                <Link
+                  href="/account"
+                  className="block px-4 py-2 hover:bg-[#2a374f]"
+                >
+                  My Account
+                </Link>
+                <Link
+                  href="/account/orders"
+                  className="block px-4 py-2 hover:bg-[#2a374f]"
+                >
+                  Order History
+                </Link>
+                <Link
+                  href="/account/track"
+                  className="block px-4 py-2 hover:bg-[#2a374f]"
+                >
+                  Track Orders
+                </Link>
+                <button
+                  onClick={() => signOut({ callbackUrl: "/" })}
+                  className="w-full text-left px-4 py-2 text-red-400 hover:bg-[#2a374f] hover:text-red-500"
+                >
+                  Sign Out
+                </button>
+              </div>
+            )}
+          </div>
+
+          {!session && (
             <Link
               href="/auth"
               className="cursor-pointer hover:text-white hover:scale-105 transition-transform duration-300"
