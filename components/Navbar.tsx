@@ -5,7 +5,7 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useSession, signOut } from "next-auth/react"; // 🔐 NextAuth
+import { useSession, signOut } from "next-auth/react";
 import { FiUser, FiShoppingCart, FiSearch, FiMenu, FiX } from "react-icons/fi";
 import { useCart } from "@/context/CartContext";
 
@@ -55,18 +55,26 @@ const Navbar = () => {
       )}
 
       <div className="flex items-center justify-between w-full h-full px-4 md:px-6">
-        <Link
-          href="/"
-          className="flex flex-col text-white font-bold text-lg hover:opacity-80 hover:scale-105 transition-transform duration-300"
-        >
-          <span>Classy Diamonds</span>
-          <span className="text-xs font-light">
-            <i>A Cut Above The Rest</i>
-          </span>
-        </Link>
+        <div className="flex items-center space-x-4">
+          <Link
+            href="/"
+            className="flex flex-col text-white font-bold text-lg hover:opacity-80 hover:scale-105 transition-transform duration-300"
+          >
+            <span>Classy Diamonds</span>
+            <span className="text-xs font-light">
+              <i>A Cut Above The Rest</i>
+            </span>
+          </Link>
+          {session && (
+            <p className="hidden md:block text-sm text-white font-light mt-1">
+              Welcome,{" "}
+              {session.user?.name?.split(" ")[0] || session.user?.email}
+            </p>
+          )}
+        </div>
 
         <nav className="hidden md:flex absolute left-1/2 transform -translate-x-1/2 space-x-10 text-[#e0e0e0] font-semibold text-sm">
-          {["Home", "Jewelry", "Custom", "Contact"].map((name) => {
+          {"Home Jewelry Custom Contact".split(" ").map((name) => {
             const href = `/${name === "Home" ? "" : name.toLowerCase()}`;
             return (
               <Link
@@ -101,7 +109,7 @@ const Navbar = () => {
                 <FiUser />
               </Link>
               <button
-                onClick={() => signOut()}
+                onClick={() => signOut({ callbackUrl: "/" })}
                 className="text-sm text-red-400 ml-2 hover:text-red-600"
               >
                 Sign Out
