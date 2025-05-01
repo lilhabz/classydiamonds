@@ -58,7 +58,7 @@ export default function AuthPage() {
         password: formData.password,
       });
 
-      if (res?.ok) router.push("/account"); // ✅ Redirect to user account page
+      if (res?.ok) router.push("/"); // ✅ Redirect
       else alert("Login failed");
     } else {
       try {
@@ -150,7 +150,7 @@ export default function AuthPage() {
         </form>
 
         <button
-          onClick={() => signIn("google", { callbackUrl: "/account" })}
+          onClick={() => signIn("google", { callbackUrl: "/" })}
           className="w-full flex items-center justify-center mt-4 border border-white py-2 rounded hover:bg-white hover:text-black transition"
         >
           <FcGoogle className="mr-2" /> Continue with Google
