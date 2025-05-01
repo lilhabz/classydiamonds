@@ -202,7 +202,7 @@ const Navbar = () => {
             <Link href="/search">
               <FiSearch />
             </Link>
-            <Link href={session ? "/account" : "/auth/signin"}>
+            <Link href={session ? "/account" : "/auth"}>
               <FiUser />
             </Link>
             <Link href="/cart">
