@@ -93,7 +93,7 @@ const Navbar = () => {
           </Link>
 
           <Link
-            href={session ? "/account" : "/auth/signin"}
+            href={session ? "/account" : "/auth"}
             className="cursor-pointer hover:text-white hover:scale-105 transition-transform duration-300"
           >
             <FiUser />
