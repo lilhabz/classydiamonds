@@ -15,10 +15,18 @@ export default function AuthPage() {
     password: "",
     confirmPassword: "",
   });
+  const [passwordValid, setPasswordValid] = useState(false); // ✅ Show visual feedback
   const router = useRouter();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    const updatedForm = { ...formData, [name]: value };
+    setFormData(updatedForm);
+
+    // Re-check password live
+    if (name === "password") {
+      setPasswordValid(validatePassword(value));
+    }
   };
 
   // 🔒 Password validation rules
@@ -126,7 +134,11 @@ export default function AuthPage() {
                 className="w-full p-2 rounded bg-white text-black"
                 required
               />
-              <p className="text-xs text-gray-300">
+              <p
+                className={`text-xs font-medium mt-1 ${
+                  passwordValid ? "text-green-400" : "text-red-400"
+                }`}
+              >
                 Must be 8+ chars, include 1 capital letter, 1 number, and 1
                 special character.
               </p>
