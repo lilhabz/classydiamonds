@@ -60,6 +60,7 @@ const Navbar = () => {
       )}
 
       <div className="flex items-center justify-between w-full h-full px-4 md:px-6">
+        {/* 🔗 Logo */}
         <div className="flex items-center space-x-4">
           <Link
             href="/"
@@ -72,6 +73,7 @@ const Navbar = () => {
           </Link>
         </div>
 
+        {/* 🌐 Desktop Nav Links */}
         <nav className="hidden md:flex absolute left-1/2 transform -translate-x-1/2 space-x-10 text-[#e0e0e0] font-semibold text-sm">
           {"Home Jewelry Custom Contact".split(" ").map((name) => {
             const href = `/${name === "Home" ? "" : name.toLowerCase()}`;
@@ -91,6 +93,7 @@ const Navbar = () => {
           })}
         </nav>
 
+        {/* 🔧 Desktop Icons */}
         <div className="hidden md:flex items-center space-x-6 text-[#e0e0e0] text-xl relative">
           <Link
             href="/search"
@@ -99,53 +102,56 @@ const Navbar = () => {
             <FiSearch />
           </Link>
 
+          {/* 👤 Unified User Icon */}
           <div className="relative" ref={userRef}>
-            <button
-              onClick={() => setUserMenuOpen((prev) => !prev)}
-              className="hover:text-white hover:scale-105 transition-transform duration-300"
-            >
-              <FiUser />
-            </button>
-
-            {session && userMenuOpen && (
-              <div className="absolute right-0 mt-2 w-48 bg-[#1f2a44]/95 backdrop-blur-sm rounded-xl shadow-lg py-2 text-sm text-white z-50">
-                <Link
-                  href="/account"
-                  className="block px-4 py-2 hover:bg-[#2a374f]"
-                >
-                  My Account
-                </Link>
-                <Link
-                  href="/account/orders"
-                  className="block px-4 py-2 hover:bg-[#2a374f]"
-                >
-                  Order History
-                </Link>
-                <Link
-                  href="/account/track"
-                  className="block px-4 py-2 hover:bg-[#2a374f]"
-                >
-                  Track Orders
-                </Link>
+            {session ? (
+              <>
                 <button
-                  onClick={() => signOut({ callbackUrl: "/" })}
-                  className="w-full text-left px-4 py-2 text-red-400 hover:bg-[#2a374f] hover:text-red-500"
+                  onClick={() => setUserMenuOpen((prev) => !prev)}
+                  className="hover:text-white hover:scale-105 transition-transform duration-300"
                 >
-                  Sign Out
+                  <FiUser />
                 </button>
-              </div>
+                {userMenuOpen && (
+                  <div className="absolute right-0 mt-2 w-48 bg-[#1f2a44]/95 backdrop-blur-sm rounded-xl shadow-lg py-2 text-sm text-white z-50">
+                    <Link
+                      href="/account"
+                      className="block px-4 py-2 hover:bg-[#2a374f]"
+                    >
+                      My Account
+                    </Link>
+                    <Link
+                      href="/account/orders"
+                      className="block px-4 py-2 hover:bg-[#2a374f]"
+                    >
+                      Order History
+                    </Link>
+                    <Link
+                      href="/account/track"
+                      className="block px-4 py-2 hover:bg-[#2a374f]"
+                    >
+                      Track Orders
+                    </Link>
+                    <button
+                      onClick={() => signOut({ callbackUrl: "/" })}
+                      className="w-full text-left px-4 py-2 text-red-400 hover:bg-[#2a374f] hover:text-red-500"
+                    >
+                      Sign Out
+                    </button>
+                  </div>
+                )}
+              </>
+            ) : (
+              <Link
+                href="/auth"
+                className="cursor-pointer hover:text-white hover:scale-105 transition-transform duration-300"
+              >
+                <FiUser />
+              </Link>
             )}
           </div>
 
-          {!session && (
-            <Link
-              href="/auth"
-              className="cursor-pointer hover:text-white hover:scale-105 transition-transform duration-300"
-            >
-              <FiUser />
-            </Link>
-          )}
-
+          {/* 🛒 Cart Button */}
           <div className="relative">
             <button
               onClick={() => setCartOpen((prev) => !prev)}
@@ -225,6 +231,7 @@ const Navbar = () => {
           </div>
         </div>
 
+        {/* 📱 Mobile Menu Toggle */}
         <div className="md:hidden flex items-center text-2xl text-[#e0e0e0]">
           {menuOpen ? (
             <FiX onClick={() => setMenuOpen(false)} />
@@ -234,6 +241,7 @@ const Navbar = () => {
         </div>
       </div>
 
+      {/* 📱 Mobile Menu */}
       {menuOpen && (
         <div className="md:hidden bg-[#1f2a44] flex flex-col items-center space-y-6 py-8 text-[#e0e0e0] text-lg">
           {["Home", "Jewelry", "Custom", "Contact"].map((name) => (
