@@ -115,7 +115,7 @@ export default function CustomPage() {
             your one-of-a-kind jewelry.
           </p>
           <a
-            href="/contact"
+            href="/contact#custom-form"
             className="inline-block px-8 py-4 bg-[#e0e0e0] text-[#1f2a44] rounded-full font-semibold text-base sm:text-lg hover:bg-white hover:scale-105 transition-transform duration-300"
           >
             Start Your Custom Piece

@@ -192,7 +192,10 @@ export default function ContactPage() {
       <section className="px-4 sm:px-6 py-16 sm:py-20 max-w-7xl mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
           {/* 💍 Custom Jewelry Form */}
-          <div className="bg-[#25304f] p-8 sm:p-10 rounded-2xl shadow-lg">
+          <div
+            id="custom-form"
+            className="bg-[#25304f] p-8 sm:p-10 rounded-2xl shadow-lg"
+          >
             <h2 className="text-2xl sm:text-3xl font-serif font-semibold mb-6 text-center">
               Start Your Custom Jewelry Creation
             </h2>
