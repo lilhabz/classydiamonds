@@ -122,8 +122,6 @@ export default function CustomPage() {
           </a>
         </div>
       </section>
-
-      <Footer />
     </div>
   );
 }
