@@ -359,7 +359,7 @@ export default function ContactPage() {
                 <span className="text-white font-medium">Upload Image:</span>
                 <label
                   htmlFor="messageFile"
-                  className="inline-block bg-white text-[#1f2a44] font-semibold py-3 px-3 rounded-xl cursor-pointer hover:shadow-lg hover:scale-105 transition"
+                  className="inline-block bg-white text-[#1f2a44] font-semibold py-1 px-3 rounded-xl cursor-pointer hover:shadow-lg hover:scale-105 transition"
                 >
                   Choose Image
                 </label>
