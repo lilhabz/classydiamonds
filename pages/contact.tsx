@@ -231,7 +231,9 @@ export default function ContactPage() {
                   required
                   className="p-4 rounded-xl bg-[#1f2a36] text-white"
                 >
-                  <option value="">Preferred Contact Method</option>
+                  <option value="" disabled selected hidden>
+                    Preferred Contact Method
+                  </option>
                   <option value="Call">Call</option>
                   <option value="Text">Text</option>
                   <option value="Email">Email</option>
@@ -241,7 +243,9 @@ export default function ContactPage() {
                   required
                   className="p-4 rounded-xl bg-[#1f2a36] text-white"
                 >
-                  <option value="">Select Jewelry Type</option>
+                  <option value="" disabled selected hidden>
+                    Select Jewelry Type
+                  </option>
                   <option>Engagement Ring</option>
                   <option>Wedding Band</option>
                   <option>Earrings</option>
