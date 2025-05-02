@@ -191,98 +191,103 @@ export default function ContactPage() {
       {/* 📝 Forms Section */}
       <section className="px-4 sm:px-6 py-16 sm:py-20 max-w-7xl mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-          {/* 💍 Custom Jewelry Form */}
-          <div
-            id="custom-form"
-            className="bg-[#25304f] p-8 sm:p-10 rounded-2xl shadow-lg"
-          >
-            <h2 className="text-2xl sm:text-3xl font-serif font-semibold mb-6 text-center">
-              Start Your Custom Jewelry Creation
-            </h2>
-            <form
-              className="flex flex-col space-y-6"
-              onSubmit={(e) => handleSubmit(e, "custom")}
-            >
-              <input
-                name="name"
-                placeholder="Full Name"
-                required
-                className="p-4 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
-              />
-              <input
-                name="email"
-                type="email"
-                placeholder="Email Address"
-                required
-                className="p-4 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
-              />
-              <input
-                name="phone"
-                placeholder="Phone Number"
-                required
-                className="p-4 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
-              />
-              <select
-                name="preference"
-                required
-                className="p-4 rounded-xl bg-[#1f2a36] text-white"
+          {/* 💍 Custom Jewelry Form with offset anchor fix */}
+          <div className="relative">
+            {/* 🔧 Invisible scroll anchor offset for navbar spacing */}
+            <div
+              id="custom-form"
+              className="absolute -top-24"
+              aria-hidden="true"
+            />
+            <div className="bg-[#25304f] p-8 sm:p-10 rounded-2xl shadow-lg">
+              <h2 className="text-2xl sm:text-3xl font-serif font-semibold mb-6 text-center">
+                Start Your Custom Jewelry Creation
+              </h2>
+              <form
+                className="flex flex-col space-y-6"
+                onSubmit={(e) => handleSubmit(e, "custom")}
               >
-                <option value="">Preferred Contact Method</option>
-                <option value="Call">Call</option>
-                <option value="Text">Text</option>
-                <option value="Email">Email</option>
-              </select>
-              <select
-                name="type"
-                required
-                className="p-4 rounded-xl bg-[#1f2a36] text-white"
-              >
-                <option value="">Select Jewelry Type</option>
-                <option>Engagement Ring</option>
-                <option>Wedding Band</option>
-                <option>Earrings</option>
-                <option>Necklace</option>
-                <option>Bracelet</option>
-                <option>Pendant</option>
-              </select>
-              <textarea
-                name="customMessage"
-                placeholder="Describe your vision or ideas..."
-                rows={5}
-                required
-                className="p-4 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
-              />
-              <label className="cursor-pointer inline-block text-white">
-                Upload Image:
                 <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    setCustomFile(file || null);
-                    if (file) setCustomPreview(URL.createObjectURL(file));
-                  }}
-                  className="mt-2 cursor-pointer"
+                  name="name"
+                  placeholder="Full Name"
+                  required
+                  className="p-4 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
                 />
-              </label>
-              {customPreview && (
-                <img
-                  src={customPreview}
-                  alt="Preview"
-                  className="mt-2 w-24 h-24 object-cover rounded-xl"
+                <input
+                  name="email"
+                  type="email"
+                  placeholder="Email Address"
+                  required
+                  className="p-4 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
                 />
-              )}
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="bg-white text-[#1f2a44] font-semibold py-4 rounded-xl hover:shadow-lg hover:scale-105 transition"
-              >
-                Submit Custom Request
-              </button>
-              {customStatus && (
-                <p className="text-sm text-green-400 mt-2">{customStatus}</p>
-              )}
-            </form>
+                <input
+                  name="phone"
+                  placeholder="Phone Number"
+                  required
+                  className="p-4 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
+                />
+                <select
+                  name="preference"
+                  required
+                  className="p-4 rounded-xl bg-[#1f2a36] text-white"
+                >
+                  <option value="">Preferred Contact Method</option>
+                  <option value="Call">Call</option>
+                  <option value="Text">Text</option>
+                  <option value="Email">Email</option>
+                </select>
+                <select
+                  name="type"
+                  required
+                  className="p-4 rounded-xl bg-[#1f2a36] text-white"
+                >
+                  <option value="">Select Jewelry Type</option>
+                  <option>Engagement Ring</option>
+                  <option>Wedding Band</option>
+                  <option>Earrings</option>
+                  <option>Necklace</option>
+                  <option>Bracelet</option>
+                  <option>Pendant</option>
+                </select>
+                <textarea
+                  name="customMessage"
+                  placeholder="Describe your vision or ideas..."
+                  rows={5}
+                  required
+                  className="p-4 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
+                />
+                <label className="cursor-pointer inline-block text-white">
+                  Upload Image:
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      setCustomFile(file || null);
+                      if (file) setCustomPreview(URL.createObjectURL(file));
+                    }}
+                    className="mt-2 cursor-pointer"
+                  />
+                </label>
+                {customPreview && (
+                  <img
+                    src={customPreview}
+                    alt="Preview"
+                    className="mt-2 w-24 h-24 object-cover rounded-xl"
+                  />
+                )}
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="bg-white text-[#1f2a44] font-semibold py-4 rounded-xl hover:shadow-lg hover:scale-105 transition"
+                >
+                  Submit Custom Request
+                </button>
+                {customStatus && (
+                  <p className="text-sm text-green-400 mt-2">{customStatus}</p>
+                )}
+              </form>
+            </div>
           </div>
 
           {/* 📬 General Message Form */}
