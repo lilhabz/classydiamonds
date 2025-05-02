@@ -172,6 +172,7 @@ export default function ContactPage() {
       {/* 📍 Contact Info + Map */}
       <section className="px-4 sm:px-6 py-16 sm:py-20 max-w-7xl mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+          {/* 📞 Contact Info Block */}
           <div className="flex flex-col gap-8 text-center md:text-left">
             <div className="flex flex-col items-center md:items-start">
               <FaPhoneAlt className="text-3xl mb-2" />
@@ -182,16 +183,19 @@ export default function ContactPage() {
               <p className="text-base sm:text-lg">info@classydiamonds.com</p>
             </div>
           </div>
-          <div className="w-full h-60 sm:h-64 rounded-2xl overflow-hidden shadow-lg"></div>
-          <iframe
-            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d6062.453504254061!2d-74.2965584!3d40.558669599999995!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x89c3b5c5e191bbb5%3A0x6ec9ad5e4e09ad39!2sWoodbridge%20Jewelry%20Exchange!5e0!3m2!1sen!2sus!4v1746210843513!5m2!1sen!2sus"
-            width="100%"
-            height="100%"
-            style={{ border: 0 }}
-            allowFullScreen={true}
-            loading="lazy"
-            referrerPolicy="no-referrer-when-downgrade"
-          ></iframe>
+
+          {/* 🗺️ Google Map Card */}
+          <div className="w-full h-60 sm:h-64 rounded-2xl overflow-hidden shadow-lg">
+            <iframe
+              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d6062.453504254061!2d-74.2965584!3d40.558669599999995!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x89c3b5c5e191bbb5%3A0x6ec9ad5e4e09ad39!2sWoodbridge%20Jewelry%20Exchange!5e0!3m2!1sen!2sus!4v1746210843513!5m2!1sen!2sus"
+              width="100%"
+              height="100%"
+              style={{ border: 0 }}
+              allowFullScreen={true}
+              loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
+            ></iframe>
+          </div>
         </div>
       </section>
 
