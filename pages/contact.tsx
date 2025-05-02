@@ -354,11 +354,11 @@ export default function ContactPage() {
                 required
                 className="p-4 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
               />
-              {/* 📤 Upload Image Button (Unified Label/Button Style) */}
+              {/* 📤 Upload Image Button (Refined Style) */}
               <div className="flex flex-col items-start space-y-2 w-full">
                 <label
                   htmlFor="messageFile"
-                  className="w-full text-center bg-white text-[#1f2a44] font-semibold py-4 rounded-xl cursor-pointer hover:shadow-lg hover:scale-105 transition"
+                  className="inline-block bg-white text-[#1f2a44] font-semibold py-2 px-6 rounded-lg cursor-pointer hover:shadow-lg hover:scale-105 transition"
                 >
                   Upload Image
                 </label>
