@@ -83,7 +83,7 @@ export default function AuthPage() {
   };
 
   return (
-    <div className="bg-[#1f2a36] text-white min-h-screen flex items-center justify-center px-4">
+    <div className="bg-[#25304f] text-white min-h-screen flex items-center justify-center px-4">
       <div className="bg-white/10 backdrop-blur p-8 rounded-2xl shadow-xl w-full max-w-md">
         <h2 className="text-2xl font-bold mb-6 text-center">
           {isLogin ? "Login to Classy Diamonds 💎" : "Create Your Account 💍"}
