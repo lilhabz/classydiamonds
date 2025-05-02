@@ -4,13 +4,14 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import { FiUser, FiShoppingCart, FiSearch, FiMenu, FiX } from "react-icons/fi";
 import { useCart } from "@/context/CartContext";
 
 const Navbar = () => {
   const pathname = usePathname();
+  const router = useRouter();
   const { data: session } = useSession();
   const { cartItems, increaseQty, decreaseQty, removeFromCart, addedItemName } =
     useCart();
@@ -39,6 +40,17 @@ const Navbar = () => {
     };
   }, []);
 
+  useEffect(() => {
+    const handleRouteChange = () => {
+      setMenuOpen(false);
+      setCartOpen(false);
+    };
+    router.events?.on("routeChangeStart", handleRouteChange);
+    return () => {
+      router.events?.off("routeChangeStart", handleRouteChange);
+    };
+  }, [router]);
+
   const totalQuantity = cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
   const handleRemove = (id: number) => {
@@ -59,9 +71,17 @@ const Navbar = () => {
         </div>
       )}
 
-      <div className="flex items-center justify-between w-full h-full px-4 md:px-6">
-        {/* 🔗 Logo and Welcome Message */}
-        <div className="flex items-center space-x-4">
+      {/* 🧱 Main Container */}
+      <div className="w-full h-full px-4 md:px-6 flex items-center justify-between md:justify-normal">
+        {/* 📱 Mobile Left: User Icon */}
+        <div className="md:hidden text-2xl text-[#e0e0e0]">
+          <Link href={session ? "/account" : "/auth"}>
+            <FiUser />
+          </Link>
+        </div>
+
+        {/* 🔗 Logo */}
+        <div className="flex-1 flex justify-center md:justify-start items-center space-x-4">
           <Link
             href="/"
             className="flex flex-col text-white font-bold text-lg hover:opacity-80 hover:scale-105 transition-transform duration-300"
@@ -71,11 +91,24 @@ const Navbar = () => {
               <i>A Cut Above The Rest</i>
             </span>
           </Link>
-          {session && (
-            <p className="hidden md:block text-sm text-white font-light mt-1">
-              Welcome,{" "}
-              {session.user?.name?.split(" ")[0] || session.user?.email}
-            </p>
+        </div>
+
+        {/* 📱 Mobile Right: Cart + Hamburger */}
+        <div className="md:hidden flex items-center gap-4 text-2xl text-[#e0e0e0]">
+          <Link href="/cart">
+            <div className="relative">
+              <FiShoppingCart />
+              {totalQuantity > 0 && (
+                <span className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full text-xs w-5 h-5 flex items-center justify-center">
+                  {totalQuantity}
+                </span>
+              )}
+            </div>
+          </Link>
+          {menuOpen ? (
+            <FiX onClick={() => setMenuOpen(false)} />
+          ) : (
+            <FiMenu onClick={() => setMenuOpen(true)} />
           )}
         </div>
 
@@ -163,7 +196,7 @@ const Navbar = () => {
             )}
           </div>
 
-          {/* 🛒 Cart Button */}
+          {/* 🛒 Cart Icon */}
           <div className="relative">
             <button
               onClick={() => setCartOpen((prev) => !prev)}
@@ -242,18 +275,9 @@ const Navbar = () => {
             )}
           </div>
         </div>
-
-        {/* 📱 Mobile Menu Toggle */}
-        <div className="md:hidden flex items-center text-2xl text-[#e0e0e0]">
-          {menuOpen ? (
-            <FiX onClick={() => setMenuOpen(false)} />
-          ) : (
-            <FiMenu onClick={() => setMenuOpen(true)} />
-          )}
-        </div>
       </div>
 
-      {/* 📱 Mobile Menu */}
+      {/* 📱 Mobile Menu Content */}
       {menuOpen && (
         <div className="md:hidden bg-[#1f2a44] flex flex-col items-center space-y-6 py-8 text-[#e0e0e0] text-lg">
           {["Home", "Jewelry", "Custom", "Contact"].map((name) => (
