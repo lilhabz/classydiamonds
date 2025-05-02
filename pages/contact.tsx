@@ -327,7 +327,9 @@ export default function ContactPage() {
                 required
                 className="p-4 rounded-xl bg-[#1f2a36] text-white"
               >
-                <option value="">Preferred Contact Method</option>
+                <option value="" disabled selected hidden>
+                  Preferred Contact Method
+                </option>
                 <option value="Call">Call</option>
                 <option value="Text">Text</option>
                 <option value="Email">Email</option>
@@ -367,7 +369,7 @@ export default function ContactPage() {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="bg-white text-[#1f2a44] font-semibold py-4 rounded-xl hover:shadow-lg hover:scale-105 transition"
+                className="bg-white text-[#1f2a44] font-semibold py-4 rounded-xl hover:shadow-lg hover:scale-105 transition hover:cursor-pointer"
               >
                 Submit
               </button>
