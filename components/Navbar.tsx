@@ -45,7 +45,6 @@ const Navbar = () => {
       setMenuOpen(false);
       setCartOpen(false);
     };
-    // ✅ Use `router` change listener workaround for app dir
     window.addEventListener("popstate", handleRouteChange);
     return () => {
       window.removeEventListener("popstate", handleRouteChange);
@@ -61,7 +60,6 @@ const Navbar = () => {
   };
 
   return (
-    // 🔧 Full responsive navbar with auto-closing menus
     <header
       className={`fixed top-0 left-0 w-full z-50 bg-[#1f2a44] transition-all duration-300 ${
         scrolled ? "h-16" : "h-20"
@@ -73,20 +71,21 @@ const Navbar = () => {
         </div>
       )}
 
-      {/* 📱 Mobile Layout with repositioned icons */}
+      {/* 📱 Mobile Layout */}
       <div className="md:hidden flex items-center justify-between w-full px-4 h-full">
-        {/* 👤 Left - User Icon */}
-        <Link
-          href={session ? "/account" : "/auth"}
-          className="text-2xl text-[#e0e0e0]"
-        >
-          <FiUser />
-        </Link>
+        {/* 🍔 Hamburger Centered */}
+        <div className="absolute left-1/2 -translate-x-1/2 text-2xl text-[#e0e0e0]">
+          {menuOpen ? (
+            <FiX onClick={() => setMenuOpen(false)} />
+          ) : (
+            <FiMenu onClick={() => setMenuOpen(true)} />
+          )}
+        </div>
 
-        {/* 🔗 Center - Logo */}
+        {/* 🔗 Logo Left */}
         <Link
           href="/"
-          className="flex flex-col text-white font-bold text-center text-lg hover:opacity-80 hover:scale-105 transition-transform duration-300"
+          className="flex flex-col text-white font-bold text-lg hover:opacity-80 hover:scale-105 transition-transform duration-300"
         >
           <span>Classy Diamonds</span>
           <span className="text-xs font-light">
@@ -94,8 +93,11 @@ const Navbar = () => {
           </span>
         </Link>
 
-        {/* 🛒 & 🍔 Right - Cart + Menu */}
+        {/* 👤 & 🛒 Right Icons */}
         <div className="flex items-center gap-4 text-2xl text-[#e0e0e0]">
+          <Link href={session ? "/account" : "/auth"}>
+            <FiUser />
+          </Link>
           <Link href="/cart">
             <div className="relative">
               <FiShoppingCart />
@@ -106,15 +108,10 @@ const Navbar = () => {
               )}
             </div>
           </Link>
-          {menuOpen ? (
-            <FiX onClick={() => setMenuOpen(false)} />
-          ) : (
-            <FiMenu onClick={() => setMenuOpen(true)} />
-          )}
         </div>
       </div>
 
-      {/* 🖥️ Desktop layout remains unchanged */}
+      {/* 🖥️ Desktop Layout */}
       <div className="hidden md:flex items-center justify-between w-full h-full px-6">
         {/* 🔗 Logo and Welcome Message */}
         <div className="flex items-center space-x-4">
@@ -135,6 +132,7 @@ const Navbar = () => {
           )}
         </div>
 
+        {/* 🌐 Nav Links */}
         <nav className="absolute left-1/2 transform -translate-x-1/2 space-x-10 text-[#e0e0e0] font-semibold text-sm">
           {"Home Jewelry Custom Contact".split(" ").map((name) => {
             const href = `/${name === "Home" ? "" : name.toLowerCase()}`;
@@ -162,8 +160,6 @@ const Navbar = () => {
           >
             <FiSearch />
           </Link>
-
-          {/* 👤 User Dropdown */}
           <div className="relative" ref={userRef}>
             {session ? (
               <>
@@ -220,7 +216,7 @@ const Navbar = () => {
         </div>
       </div>
 
-      {/* 📱 Mobile Dropdown Menu */}
+      {/* 📱 Mobile Menu Dropdown */}
       {menuOpen && (
         <div className="md:hidden bg-[#1f2a44] flex flex-col items-center space-y-6 py-8 text-[#e0e0e0] text-lg">
           {["Home", "Jewelry", "Custom", "Contact"].map((name) => (
@@ -232,17 +228,6 @@ const Navbar = () => {
               {name}
             </Link>
           ))}
-          <div className="flex space-x-6 mt-4">
-            <Link href="/search">
-              <FiSearch />
-            </Link>
-            <Link href={session ? "/account" : "/auth"}>
-              <FiUser />
-            </Link>
-            <Link href="/cart">
-              <FiShoppingCart />
-            </Link>
-          </div>
         </div>
       )}
     </header>
