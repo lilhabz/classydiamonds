@@ -131,11 +131,11 @@ const Navbar = () => {
         </div>
       </div>
 
-      {/* 👤 User Dropdown (Mobile) */}
+      {/* 👤 User Dropdown */}
       {userMenuOpen && session && (
         <div
           ref={userRef}
-          className="absolute right-4 top-[70px] w-48 bg-[#1f2a44]/95 backdrop-blur-sm rounded-xl shadow-lg py-2 text-sm text-white z-50 animate-slide-fade-in md:hidden"
+          className="absolute right-0 top-[70px] w-48 bg-[#1f2a44]/95 backdrop-blur-sm rounded-xl shadow-lg py-2 text-sm text-white z-50 animate-slide-fade-in md:hidden"
         >
           <Link href="/account" className="block px-4 py-2 hover:bg-[#2a374f]">
             My Account
@@ -164,11 +164,11 @@ const Navbar = () => {
         </div>
       )}
 
-      {/* 🛒 Shared Cart Popup */}
+      {/* 🛒 Cart Dropdown (Mobile/Desktop) */}
       {cartOpen && (
         <div
           ref={cartRef}
-          className="absolute right-4 top-[70px] w-80 bg-[#1f2a44]/90 backdrop-blur-sm rounded-2xl shadow-lg p-6 flex flex-col gap-6 z-50 animate-slide-fade-in md:top-[80px]"
+          className="absolute top-[70px] right-0 w-80 bg-[#1f2a44]/95 backdrop-blur-sm rounded-l-xl shadow-lg p-6 flex flex-col gap-6 z-50 animate-slide-fade-in md:top-[80px]"
         >
           {cartItems.length === 0 ? (
             <p className="text-center text-[#cfd2d6]">Your cart is empty</p>
@@ -230,7 +230,7 @@ const Navbar = () => {
       {/* 📱 Mobile Menu Dropdown */}
       {menuOpen && (
         <div className="md:hidden bg-[#1f2a44] flex flex-col items-center space-y-6 py-8 text-[#e0e0e0] text-lg">
-          {["Home", "Jewelry", "Custom", "Contact"].map((name) => (
+          {"Home Jewelry Custom Contact".split(" ").map((name) => (
             <Link
               key={name}
               href={`/${name === "Home" ? "" : name.toLowerCase()}`}
@@ -241,111 +241,6 @@ const Navbar = () => {
           ))}
         </div>
       )}
-
-      {/* 🖥️ Desktop Layout */}
-      <div className="hidden md:flex items-center justify-between w-full h-full px-6">
-        {/* 🔗 Logo and Welcome Message */}
-        <div className="flex items-center space-x-4">
-          <Link
-            href="/"
-            className="flex flex-col text-white font-bold text-lg hover:opacity-80 hover:scale-105 transition-transform duration-300"
-          >
-            <span>Classy Diamonds</span>
-            <span className="text-xs font-light">
-              <i>A Cut Above The Rest</i>
-            </span>
-          </Link>
-          {session && (
-            <p className="hidden md:block text-sm text-white font-light mt-1">
-              Welcome,{" "}
-              {session.user?.name?.split(" ")[0] || session.user?.email}
-            </p>
-          )}
-        </div>
-
-        {/* 🌐 Nav Links */}
-        <nav className="absolute left-1/2 transform -translate-x-1/2 space-x-10 text-[#e0e0e0] font-semibold text-sm">
-          {["Home", "Jewelry", "Custom", "Contact"].map((name) => {
-            const href = `/${name === "Home" ? "" : name.toLowerCase()}`;
-            return (
-              <Link
-                key={name}
-                href={href}
-                className={`hover:text-white hover:scale-105 transition-transform duration-300 text-base md:text-lg ${
-                  pathname === href
-                    ? "text-white underline underline-offset-4"
-                    : ""
-                }`}
-              >
-                {name}
-              </Link>
-            );
-          })}
-        </nav>
-
-        {/* 🛠️ Desktop Icons */}
-        <div className="flex items-center space-x-6 text-[#e0e0e0] text-xl relative">
-          <Link
-            href="/search"
-            className="hover:text-white hover:scale-105 transition-transform duration-300"
-          >
-            <FiSearch />
-          </Link>
-          <div className="relative" ref={userRef}>
-            {session ? (
-              <>
-                <button
-                  onClick={() => setUserMenuOpen((prev) => !prev)}
-                  className="hover:text-white hover:scale-105 transition-transform duration-300 cursor-pointer"
-                >
-                  <FiUser />
-                </button>
-                {userMenuOpen && (
-                  <div className="absolute right-0 mt-2 w-48 bg-[#1f2a44]/95 backdrop-blur-sm rounded-xl shadow-lg py-2 text-sm text-white z-50">
-                    <Link
-                      href="/account"
-                      className="block px-4 py-2 hover:bg-[#2a374f]"
-                    >
-                      My Account
-                    </Link>
-                    <Link
-                      href="/account/orders"
-                      className="block px-4 py-2 hover:bg-[#2a374f]"
-                    >
-                      Order History
-                    </Link>
-                    <Link
-                      href="/account/track"
-                      className="block px-4 py-2 hover:bg-[#2a374f]"
-                    >
-                      Track Orders
-                    </Link>
-                    <Link
-                      href="/custom"
-                      className="block px-4 py-2 hover:bg-[#2a374f]"
-                    >
-                      Custom Requests
-                    </Link>
-                    <button
-                      onClick={() => signOut({ callbackUrl: "/" })}
-                      className="w-full text-left px-4 py-2 text-red-400 hover:bg-[#2a374f] hover:text-red-500"
-                    >
-                      Sign Out
-                    </button>
-                  </div>
-                )}
-              </>
-            ) : (
-              <Link
-                href="/auth"
-                className="cursor-pointer hover:text-white hover:scale-105 transition-transform duration-300"
-              >
-                <FiUser />
-              </Link>
-            )}
-          </div>
-        </div>
-      </div>
     </header>
   );
 };
