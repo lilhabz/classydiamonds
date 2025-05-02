@@ -98,18 +98,82 @@ const Navbar = () => {
           <Link href={session ? "/account" : "/auth"}>
             <FiUser />
           </Link>
-          <Link href="/cart">
-            <div className="relative">
-              <FiShoppingCart />
-              {totalQuantity > 0 && (
-                <span className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full text-xs w-5 h-5 flex items-center justify-center">
-                  {totalQuantity}
-                </span>
-              )}
-            </div>
-          </Link>
+          <button
+            onClick={() => setCartOpen((prev) => !prev)}
+            className="relative"
+          >
+            <FiShoppingCart />
+            {totalQuantity > 0 && (
+              <span className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full text-xs w-5 h-5 flex items-center justify-center">
+                {totalQuantity}
+              </span>
+            )}
+          </button>
         </div>
       </div>
+
+      {/* 🛒 Shared Cart Popup */}
+      {cartOpen && (
+        <div
+          ref={cartRef}
+          className="absolute right-4 top-[70px] w-80 bg-[#1f2a44]/90 backdrop-blur-sm rounded-2xl shadow-lg p-6 flex flex-col gap-6 z-50 animate-fade-in md:top-[80px]"
+        >
+          {cartItems.length === 0 ? (
+            <p className="text-center text-[#cfd2d6]">Your cart is empty</p>
+          ) : (
+            <>
+              {cartItems.map((item) => (
+                <div
+                  key={item.id}
+                  className="flex items-center border-b border-[#2d3a56] pb-4"
+                >
+                  <img
+                    src={item.image}
+                    alt={item.name}
+                    className="w-14 h-14 object-cover rounded-xl mr-4"
+                  />
+                  <div className="flex-1 flex flex-col">
+                    <p className="text-sm text-[#cfd2d6]">{item.name}</p>
+                    <p className="text-xs text-gray-400">
+                      ${(item.price * item.quantity).toLocaleString()}
+                    </p>
+                  </div>
+                  <div className="flex flex-col items-center space-y-2">
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => decreaseQty(item.id)}
+                        className="px-2 py-1 text-xs bg-white text-[#1f2a44] rounded hover:bg-gray-100"
+                      >
+                        -
+                      </button>
+                      <span className="text-sm">{item.quantity}</span>
+                      <button
+                        onClick={() => increaseQty(item.id)}
+                        className="px-2 py-1 text-xs bg-white text-[#1f2a44] rounded hover:bg-gray-100"
+                      >
+                        +
+                      </button>
+                    </div>
+                    <button
+                      onClick={() => handleRemove(item.id)}
+                      className="text-red-400 hover:text-red-600 text-xs"
+                    >
+                      🗑️
+                    </button>
+                  </div>
+                </div>
+              ))}
+              <Link
+                href="/cart"
+                onClick={() => setCartOpen(false)}
+                className="mt-2 text-center bg-white text-[#1f2a44] py-1 text-sm rounded-lg font-semibold hover:bg-gray-100 transition"
+              >
+                View Full Cart
+              </Link>
+            </>
+          )}
+        </div>
+      )}
 
       {/* 🖥️ Desktop Layout */}
       <div className="hidden md:flex items-center justify-between w-full h-full px-6">
