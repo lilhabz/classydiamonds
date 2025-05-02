@@ -229,7 +229,7 @@ export default function ContactPage() {
                 <select
                   name="preference"
                   required
-                  className="p-4 rounded-xl bg-[#1f2a36] text-white"
+                  className="p-4 rounded-xl bg-[#1f2a36] text-gray-400"
                 >
                   <option value="" disabled selected hidden>
                     Preferred Contact Method
@@ -241,7 +241,7 @@ export default function ContactPage() {
                 <select
                   name="type"
                   required
-                  className="p-4 rounded-xl bg-[#1f2a36] text-white"
+                  className="p-4 rounded-xl bg-[#1f2a36] text-gray-400"
                 >
                   <option value="" disabled selected hidden>
                     Select Jewelry Type
@@ -283,7 +283,7 @@ export default function ContactPage() {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="bg-white text-[#1f2a44] font-semibold py-4 rounded-xl hover:shadow-lg hover:scale-105 transition"
+                  className="bg-white text-[#1f2a44] font-semibold py-4 rounded-xl hover:shadow-lg hover:scale-105 transition hover:cursor-pointer"
                 >
                   Submit Custom Request
                 </button>
@@ -296,7 +296,7 @@ export default function ContactPage() {
 
           {/* 📬 General Message Form */}
           <div className="bg-[#25304f] p-8 sm:p-10 rounded-2xl shadow-lg">
-            <h2 className="text-2xl sm:text-3xl font-serif font-semibold mb-6 text-center">
+            <h2 className="text-2xl sm:text-3xl font-serif font-semibold mb-6 text-center hover:cursor-pointer">
               Send Us a Message
             </h2>
             <form
@@ -325,7 +325,7 @@ export default function ContactPage() {
               <select
                 name="preference"
                 required
-                className="p-4 rounded-xl bg-[#1f2a36] text-white"
+                className="p-4 rounded-xl bg-[#1f2a36] text-gray-400"
               >
                 <option value="" disabled selected hidden>
                   Preferred Contact Method
