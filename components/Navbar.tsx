@@ -21,14 +21,27 @@ const Navbar = () => {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const cartRef = useRef<HTMLDivElement>(null);
   const userRef = useRef<HTMLDivElement>(null);
+  const cartButtonRef = useRef<HTMLButtonElement>(null);
+  const userButtonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 50);
     const handleClickOutside = (event: MouseEvent) => {
-      if (cartRef.current && !cartRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      if (
+        cartRef.current &&
+        !cartRef.current.contains(target) &&
+        cartButtonRef.current &&
+        !cartButtonRef.current.contains(target)
+      ) {
         setCartOpen(false);
       }
-      if (userRef.current && !userRef.current.contains(event.target as Node)) {
+      if (
+        userRef.current &&
+        !userRef.current.contains(target) &&
+        userButtonRef.current &&
+        !userButtonRef.current.contains(target)
+      ) {
         setUserMenuOpen(false);
       }
     };
@@ -44,6 +57,7 @@ const Navbar = () => {
     const handleRouteChange = () => {
       setMenuOpen(false);
       setCartOpen(false);
+      setUserMenuOpen(false);
     };
     window.addEventListener("popstate", handleRouteChange);
     return () => {
@@ -95,14 +109,16 @@ const Navbar = () => {
 
         {/* 👤 & 🛒 Right Icons */}
         <div className="flex items-center gap-4 text-2xl text-[#e0e0e0]">
-          <Link href={session ? "/account" : "/auth"}>
-            <FiUser />
-          </Link>
           <button
-            onClick={(e) => {
-              e.stopPropagation();
-              setCartOpen((prev) => !prev);
-            }}
+            ref={userButtonRef}
+            onClick={() => setUserMenuOpen((prev) => !prev)}
+            className="hover:text-white"
+          >
+            <FiUser />
+          </button>
+          <button
+            ref={cartButtonRef}
+            onClick={() => setCartOpen((prev) => !prev)}
             className="relative"
           >
             <FiShoppingCart />
@@ -114,6 +130,39 @@ const Navbar = () => {
           </button>
         </div>
       </div>
+
+      {/* 👤 User Dropdown (Mobile) */}
+      {userMenuOpen && session && (
+        <div
+          ref={userRef}
+          className="absolute right-4 top-[70px] w-48 bg-[#1f2a44]/95 backdrop-blur-sm rounded-xl shadow-lg py-2 text-sm text-white z-50 animate-slide-fade-in md:hidden"
+        >
+          <Link href="/account" className="block px-4 py-2 hover:bg-[#2a374f]">
+            My Account
+          </Link>
+          <Link
+            href="/account/orders"
+            className="block px-4 py-2 hover:bg-[#2a374f]"
+          >
+            Order History
+          </Link>
+          <Link
+            href="/account/track"
+            className="block px-4 py-2 hover:bg-[#2a374f]"
+          >
+            Track Orders
+          </Link>
+          <Link href="/custom" className="block px-4 py-2 hover:bg-[#2a374f]">
+            Custom Requests
+          </Link>
+          <button
+            onClick={() => signOut({ callbackUrl: "/" })}
+            className="w-full text-left px-4 py-2 text-red-400 hover:bg-[#2a374f] hover:text-red-500"
+          >
+            Sign Out
+          </button>
+        </div>
+      )}
 
       {/* 🛒 Shared Cart Popup */}
       {cartOpen && (
@@ -178,6 +227,21 @@ const Navbar = () => {
         </div>
       )}
 
+      {/* 📱 Mobile Menu Dropdown */}
+      {menuOpen && (
+        <div className="md:hidden bg-[#1f2a44] flex flex-col items-center space-y-6 py-8 text-[#e0e0e0] text-lg">
+          {["Home", "Jewelry", "Custom", "Contact"].map((name) => (
+            <Link
+              key={name}
+              href={`/${name === "Home" ? "" : name.toLowerCase()}`}
+              onClick={() => setMenuOpen(false)}
+            >
+              {name}
+            </Link>
+          ))}
+        </div>
+      )}
+
       {/* 🖥️ Desktop Layout */}
       <div className="hidden md:flex items-center justify-between w-full h-full px-6">
         {/* 🔗 Logo and Welcome Message */}
@@ -201,7 +265,7 @@ const Navbar = () => {
 
         {/* 🌐 Nav Links */}
         <nav className="absolute left-1/2 transform -translate-x-1/2 space-x-10 text-[#e0e0e0] font-semibold text-sm">
-          {"Home Jewelry Custom Contact".split(" ").map((name) => {
+          {["Home", "Jewelry", "Custom", "Contact"].map((name) => {
             const href = `/${name === "Home" ? "" : name.toLowerCase()}`;
             return (
               <Link
@@ -282,21 +346,6 @@ const Navbar = () => {
           </div>
         </div>
       </div>
-
-      {/* 📱 Mobile Menu Dropdown */}
-      {menuOpen && (
-        <div className="md:hidden bg-[#1f2a44] flex flex-col items-center space-y-6 py-8 text-[#e0e0e0] text-lg">
-          {["Home", "Jewelry", "Custom", "Contact"].map((name) => (
-            <Link
-              key={name}
-              href={`/${name === "Home" ? "" : name.toLowerCase()}`}
-              onClick={() => setMenuOpen(false)}
-            >
-              {name}
-            </Link>
-          ))}
-        </div>
-      )}
     </header>
   );
 };
