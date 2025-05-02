@@ -260,9 +260,16 @@ export default function ContactPage() {
                   required
                   className="p-4 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
                 />
-                <label className="cursor-pointer inline-block text-white">
-                  Upload Image:
+                <div className="flex flex-col items-start space-y-2">
+                  <span className="text-white font-medium">Upload Image:</span>
+                  <label
+                    htmlFor="customFile"
+                    className="inline-block bg-white text-[#1f2a44] font-semibold py-3 px-6 rounded-xl cursor-pointer hover:shadow-lg hover:scale-105 transition"
+                  >
+                    Choose Image
+                  </label>
                   <input
+                    id="customFile"
                     type="file"
                     accept="image/*"
                     onChange={(e) => {
@@ -270,9 +277,10 @@ export default function ContactPage() {
                       setCustomFile(file || null);
                       if (file) setCustomPreview(URL.createObjectURL(file));
                     }}
-                    className="mt-2 cursor-pointer"
+                    className="hidden"
                   />
-                </label>
+                </div>
+
                 {customPreview && (
                   <img
                     src={customPreview}
@@ -346,9 +354,17 @@ export default function ContactPage() {
                 required
                 className="p-4 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
               />
-              <label className="cursor-pointer inline-block text-white">
-                Upload Image:
+              {/* 📤 Upload Image Button (Styled Like Other Buttons) */}
+              <div className="flex flex-col items-start space-y-2">
+                <span className="text-white font-medium">Upload Image:</span>
+                <label
+                  htmlFor="messageFile"
+                  className="inline-block bg-white text-[#1f2a44] font-semibold py-3 px-6 rounded-xl cursor-pointer hover:shadow-lg hover:scale-105 transition"
+                >
+                  Choose Image
+                </label>
                 <input
+                  id="messageFile"
                   type="file"
                   accept="image/*"
                   onChange={(e) => {
@@ -356,9 +372,10 @@ export default function ContactPage() {
                     setMessageFile(file || null);
                     if (file) setMessagePreview(URL.createObjectURL(file));
                   }}
-                  className="mt-2 cursor-pointer"
+                  className="hidden"
                 />
-              </label>
+              </div>
+
               {messagePreview && (
                 <img
                   src={messagePreview}
