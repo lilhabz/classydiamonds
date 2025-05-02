@@ -89,6 +89,7 @@ export default function AuthPage() {
           {isLogin ? "Login to Classy Diamonds 💎" : "Create Your Account 💍"}
         </h2>
 
+        {/* 🔐 Auth Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
           {!isLogin && (
             <input
@@ -141,21 +142,24 @@ export default function AuthPage() {
             </>
           )}
 
+          {/* ✨ White Login/Signup Button */}
           <button
             type="submit"
-            className="w-full bg-[#f7c59f] hover:bg-[#e6b78d] text-[#1f2a44] py-3 rounded-xl font-semibold transition hover:scale-105"
+            className="w-full bg-white hover:bg-gray-100 text-[#1f2a44] py-3 rounded-xl font-semibold transition hover:scale-105"
           >
             {isLogin ? "Login" : "Create Account"}
           </button>
         </form>
 
+        {/* 🧩 Google Auth Button (White Styled) */}
         <button
           onClick={() => signIn("google", { callbackUrl: "/" })}
-          className="w-full flex items-center justify-center mt-4 border border-white py-3 rounded-xl hover:bg-white hover:text-[#1f2a44] transition font-semibold"
+          className="w-full flex items-center justify-center mt-4 bg-white hover:bg-gray-100 text-[#1f2a44] font-semibold py-3 rounded-xl transition hover:scale-105"
         >
           <FcGoogle className="mr-2 text-xl" /> Continue with Google
         </button>
 
+        {/* 🔁 Toggle Login/Signup Link */}
         <p className="mt-6 text-center text-sm">
           {isLogin ? (
             <>
