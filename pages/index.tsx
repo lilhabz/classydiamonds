@@ -126,7 +126,10 @@ const Home = () => {
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-6 sm:gap-8 text-center">
             {[
               { name: "Engagement", image: "/category/engagement-cat.jpg" },
-              { name: "Wedding Bands", image: "/category/wedding-band-cat.jpg" },
+              {
+                name: "Wedding Bands",
+                image: "/category/wedding-band-cat.jpg",
+              },
               { name: "Rings", image: "/category/ring-cat.jpg" },
               { name: "Bracelets", image: "/category/bracelet-cat.jpg" },
               { name: "Necklaces", image: "/category/necklace-cat.jpg" },
@@ -134,7 +137,9 @@ const Home = () => {
             ].map((category) => (
               <Link
                 key={category.name}
-                href={`/category/${category.name.toLowerCase().replace(/\s+/g, "-")}`}
+                href={`/category/${category.name
+                  .toLowerCase()
+                  .replace(/\s+/g, "-")}`}
                 className="group relative bg-[#25304f] rounded-2xl overflow-hidden shadow-md hover:shadow-2xl hover:scale-105 transition-all duration-300 flex items-center justify-center h-32 sm:h-40"
               >
                 <div className="absolute inset-0">
@@ -166,7 +171,9 @@ const Home = () => {
             ].map((gift) => (
               <Link
                 key={gift.name}
-                href={`/category/${gift.name.toLowerCase().replace(/\s+/g, "-")}`}
+                href={`/category/${gift.name
+                  .toLowerCase()
+                  .replace(/\s+/g, "-")}`}
                 className="group relative bg-[#25304f] rounded-2xl overflow-hidden shadow-md hover:shadow-2xl hover:scale-105 transition-all duration-300 flex items-center justify-center h-48 sm:h-60"
               >
                 <div className="absolute inset-0">
@@ -218,7 +225,7 @@ const Home = () => {
         </section>
 
         {/* ✍️ Custom Jewelry CTA */}
-        <section className="bg-[#25304f] py-16 sm:py-20 px-4 sm:px-6">
+        <section className="bg-[#1f2a36] py-16 sm:py-20 px-4 sm:px-6">
           <div className="max-w-5xl mx-auto text-center">
             <h2 className="text-3xl sm:text-4xl font-bold mb-8">
               Bring Your Vision to Life
