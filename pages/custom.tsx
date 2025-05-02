@@ -19,14 +19,29 @@ export default function CustomPage() {
 
       <Navbar />
 
-      {/* 🌟 Hero Section */}
-      <section className="w-full flex flex-col items-center justify-center text-center -mt-20 pt-32 pb-20 sm:pb-24 px-4">
-        <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-6">
-          Create Your Dream Piece
-        </h1>
-        <p className="text-base sm:text-lg md:text-xl max-w-2xl text-[#cfd2d6]">
-          Work one-on-one with Ned to design a piece that tells your unique story.
-        </p>
+      {/* 🌟 Hero Section with Background Image */}
+      <section className="-mt-20 relative w-full h-[70vh] sm:h-[75vh] md:h-[80vh] flex items-center justify-center text-center overflow-hidden">
+        {/* 🖼️ Hero Background Image */}
+        <div className="absolute inset-0 z-0">
+          <img
+            src="/hero-custom.jpg"
+            alt="Custom Jewelry Background"
+            className="w-full h-full object-cover"
+          />
+          {/* 🌑 Overlay */}
+          <div className="absolute inset-0 bg-black opacity-50 pointer-events-none" />
+        </div>
+
+        {/* ✨ Hero Text */}
+        <div className="relative z-10 px-4">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-6">
+            Create Your Dream Piece
+          </h1>
+          <p className="text-base sm:text-lg md:text-xl max-w-2xl text-[#cfd2d6] mx-auto">
+            Work one-on-one with Ned to design a piece that tells your unique
+            story.
+          </p>
+        </div>
       </section>
 
       {/* 🧭 How It Works Section */}
@@ -37,10 +52,22 @@ export default function CustomPage() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8">
           {[
-            { title: "1. Consultation", desc: "Meet with Ned to discuss your vision, style, and ideas." },
-            { title: "2. Design Sketch", desc: "Receive a detailed sketch tailored to your dream piece." },
-            { title: "3. Crafting", desc: "Watch your vision come to life with masterful craftsmanship." },
-            { title: "4. Delivery", desc: "Receive your custom piece, crafted to perfection." },
+            {
+              title: "1. Consultation",
+              desc: "Meet with Ned to discuss your vision, style, and ideas.",
+            },
+            {
+              title: "2. Design Sketch",
+              desc: "Receive a detailed sketch tailored to your dream piece.",
+            },
+            {
+              title: "3. Crafting",
+              desc: "Watch your vision come to life with masterful craftsmanship.",
+            },
+            {
+              title: "4. Delivery",
+              desc: "Receive your custom piece, crafted to perfection.",
+            },
           ].map((step, index) => (
             <div
               key={index}
@@ -84,7 +111,8 @@ export default function CustomPage() {
             Ready to Create Your Piece?
           </h2>
           <p className="text-base sm:text-lg text-[#cfd2d6] mb-6 sm:mb-8 leading-relaxed">
-            Let's bring your vision to life. Reach out today to start designing your one-of-a-kind jewelry.
+            Let's bring your vision to life. Reach out today to start designing
+            your one-of-a-kind jewelry.
           </p>
           <a
             href="/contact"
@@ -95,7 +123,7 @@ export default function CustomPage() {
         </div>
       </section>
 
-      
+      <Footer />
     </div>
   );
 }

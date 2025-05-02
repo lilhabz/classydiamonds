@@ -110,14 +110,27 @@ export default function ContactPage() {
     <div className="min-h-screen flex flex-col bg-[#1f2a44] text-[#e0e0e0]">
       <Navbar />
 
-      {/* 🌟 Hero Section */}
-      <section className="w-full pt-[120px] pb-16 text-center px-4 -mt-20">
-        <h1 className="text-3xl sm:text-4xl font-serif font-semibold mb-6">
-          Contact Classy Diamonds
-        </h1>
-        <p className="text-gray-300 max-w-2xl mx-auto text-base sm:text-lg">
-          Turning dreams into reality for nearly 30 years.
-        </p>
+      {/* 🌟 Hero Section with Background Image */}
+      <section className="-mt-20 relative w-full h-[60vh] sm:h-[70vh] md:h-[75vh] flex items-center justify-center text-center overflow-hidden">
+        {/* 🖼️ Hero Background Image */}
+        <div className="absolute inset-0 z-0">
+          <img
+            src="/hero-contact.jpg"
+            alt="Contact Background"
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-black opacity-50 pointer-events-none" />
+        </div>
+
+        {/* ✨ Hero Text Content */}
+        <div className="relative z-10 px-4">
+          <h1 className="text-3xl sm:text-4xl font-serif font-semibold mb-6 text-white">
+            Contact Classy Diamonds
+          </h1>
+          <p className="text-gray-300 max-w-2xl mx-auto text-base sm:text-lg">
+            Turning dreams into reality for nearly 30 years.
+          </p>
+        </div>
       </section>
 
       {/* 🧑‍🏭 About Section */}
