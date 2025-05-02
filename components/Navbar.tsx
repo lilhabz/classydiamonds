@@ -85,147 +85,152 @@ const Navbar = () => {
         </div>
       )}
 
-      {/* 📱 Mobile Layout */}
-      <div className="md:hidden flex items-center justify-between w-full px-4 h-full">
-        {/* 🍔 Hamburger Centered */}
-        <div className="absolute left-1/2 -translate-x-1/2 text-2xl text-[#e0e0e0]">
-          {menuOpen ? (
-            <FiX onClick={() => setMenuOpen(false)} />
-          ) : (
-            <FiMenu onClick={() => setMenuOpen(true)} />
-          )}
-        </div>
-
-        {/* 🔗 Logo Left */}
-        <Link
-          href="/"
-          className="flex flex-col text-white font-bold text-lg hover:opacity-80 hover:scale-105 transition-transform duration-300"
-        >
-          <span>Classy Diamonds</span>
-          <span className="text-xs font-light">
-            <i>A Cut Above The Rest</i>
-          </span>
-        </Link>
-
-        {/* 👤 & 🛒 Right Icons */}
-        <div className="flex items-center gap-4 text-2xl text-[#e0e0e0]">
-          <button
-            ref={userButtonRef}
-            onClick={() => setUserMenuOpen((prev) => !prev)}
-            className="hover:text-white"
-          >
-            <FiUser />
-          </button>
-          <button
-            ref={cartButtonRef}
-            onClick={() => setCartOpen((prev) => !prev)}
-            className="relative"
-          >
-            <FiShoppingCart />
-            {totalQuantity > 0 && (
-              <span className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full text-xs w-5 h-5 flex items-center justify-center">
-                {totalQuantity}
-              </span>
+      <div className="relative">
+        {/* 📱 Mobile Layout */}
+        <div className="md:hidden flex items-center justify-between w-full px-4 h-full">
+          {/* 🍔 Hamburger Centered */}
+          <div className="absolute left-1/2 -translate-x-1/2 text-2xl text-[#e0e0e0]">
+            {menuOpen ? (
+              <FiX onClick={() => setMenuOpen(false)} />
+            ) : (
+              <FiMenu onClick={() => setMenuOpen(true)} />
             )}
-          </button>
-        </div>
-      </div>
+          </div>
 
-      {/* 👤 User Dropdown */}
-      {userMenuOpen && session && (
-        <div
-          ref={userRef}
-          className="absolute right-0 top-[70px] w-48 bg-[#1f2a44]/95 backdrop-blur-sm rounded-xl shadow-lg py-2 text-sm text-white z-50 animate-slide-fade-in md:hidden"
-        >
-          <Link href="/account" className="block px-4 py-2 hover:bg-[#2a374f]">
-            My Account
-          </Link>
+          {/* 🔗 Logo Left */}
           <Link
-            href="/account/orders"
-            className="block px-4 py-2 hover:bg-[#2a374f]"
+            href="/"
+            className="flex flex-col text-white font-bold text-lg hover:opacity-80 hover:scale-105 transition-transform duration-300"
           >
-            Order History
+            <span>Classy Diamonds</span>
+            <span className="text-xs font-light">
+              <i>A Cut Above The Rest</i>
+            </span>
           </Link>
-          <Link
-            href="/account/track"
-            className="block px-4 py-2 hover:bg-[#2a374f]"
-          >
-            Track Orders
-          </Link>
-          <Link href="/custom" className="block px-4 py-2 hover:bg-[#2a374f]">
-            Custom Requests
-          </Link>
-          <button
-            onClick={() => signOut({ callbackUrl: "/" })}
-            className="w-full text-left px-4 py-2 text-red-400 hover:bg-[#2a374f] hover:text-red-500"
-          >
-            Sign Out
-          </button>
-        </div>
-      )}
 
-      {/* 🛒 Cart Dropdown (Mobile/Desktop) */}
-      {cartOpen && (
-        <div
-          ref={cartRef}
-          className="absolute top-[70px] right-0 w-80 bg-[#1f2a44]/95 backdrop-blur-sm rounded-l-xl shadow-lg p-6 flex flex-col gap-6 z-50 animate-slide-fade-in md:top-[80px]"
-        >
-          {cartItems.length === 0 ? (
-            <p className="text-center text-[#cfd2d6]">Your cart is empty</p>
-          ) : (
-            <>
-              {cartItems.map((item) => (
-                <div
-                  key={item.id}
-                  className="flex items-center border-b border-[#2d3a56] pb-4"
-                >
-                  <img
-                    src={item.image}
-                    alt={item.name}
-                    className="w-14 h-14 object-cover rounded-xl mr-4"
-                  />
-                  <div className="flex-1 flex flex-col">
-                    <p className="text-sm text-[#cfd2d6]">{item.name}</p>
-                    <p className="text-xs text-gray-400">
-                      ${(item.price * item.quantity).toLocaleString()}
-                    </p>
-                  </div>
-                  <div className="flex flex-col items-center space-y-2">
-                    <div className="flex items-center gap-2">
+          {/* 👤 & 🛒 Right Icons */}
+          <div className="flex items-center gap-4 text-2xl text-[#e0e0e0]">
+            <button
+              ref={userButtonRef}
+              onClick={() => setUserMenuOpen((prev) => !prev)}
+              className="hover:text-white"
+            >
+              <FiUser />
+            </button>
+            <button
+              ref={cartButtonRef}
+              onClick={() => setCartOpen((prev) => !prev)}
+              className="relative"
+            >
+              <FiShoppingCart />
+              {totalQuantity > 0 && (
+                <span className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full text-xs w-5 h-5 flex items-center justify-center">
+                  {totalQuantity}
+                </span>
+              )}
+            </button>
+          </div>
+        </div>
+
+        {/* 👤 User Dropdown */}
+        {userMenuOpen && session && (
+          <div
+            ref={userRef}
+            className="absolute right-0 top-full mt-2 w-48 bg-[#1f2a44]/95 backdrop-blur-sm rounded-xl shadow-lg py-2 text-sm text-white z-50 animate-slide-fade-in md:hidden"
+          >
+            <Link
+              href="/account"
+              className="block px-4 py-2 hover:bg-[#2a374f]"
+            >
+              My Account
+            </Link>
+            <Link
+              href="/account/orders"
+              className="block px-4 py-2 hover:bg-[#2a374f]"
+            >
+              Order History
+            </Link>
+            <Link
+              href="/account/track"
+              className="block px-4 py-2 hover:bg-[#2a374f]"
+            >
+              Track Orders
+            </Link>
+            <Link href="/custom" className="block px-4 py-2 hover:bg-[#2a374f]">
+              Custom Requests
+            </Link>
+            <button
+              onClick={() => signOut({ callbackUrl: "/" })}
+              className="w-full text-left px-4 py-2 text-red-400 hover:bg-[#2a374f] hover:text-red-500"
+            >
+              Sign Out
+            </button>
+          </div>
+        )}
+
+        {/* 🛒 Cart Dropdown (Mobile/Desktop) */}
+        {cartOpen && (
+          <div
+            ref={cartRef}
+            className="absolute right-0 top-full mt-2 w-80 bg-[#1f2a44]/95 backdrop-blur-sm rounded-l-xl shadow-lg p-6 flex flex-col gap-6 z-50 animate-slide-fade-in"
+          >
+            {cartItems.length === 0 ? (
+              <p className="text-center text-[#cfd2d6]">Your cart is empty</p>
+            ) : (
+              <>
+                {cartItems.map((item) => (
+                  <div
+                    key={item.id}
+                    className="flex items-center border-b border-[#2d3a56] pb-4"
+                  >
+                    <img
+                      src={item.image}
+                      alt={item.name}
+                      className="w-14 h-14 object-cover rounded-xl mr-4"
+                    />
+                    <div className="flex-1 flex flex-col">
+                      <p className="text-sm text-[#cfd2d6]">{item.name}</p>
+                      <p className="text-xs text-gray-400">
+                        ${(item.price * item.quantity).toLocaleString()}
+                      </p>
+                    </div>
+                    <div className="flex flex-col items-center space-y-2">
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => decreaseQty(item.id)}
+                          className="px-2 py-1 text-xs bg-white text-[#1f2a44] rounded hover:bg-gray-100"
+                        >
+                          -
+                        </button>
+                        <span className="text-sm">{item.quantity}</span>
+                        <button
+                          onClick={() => increaseQty(item.id)}
+                          className="px-2 py-1 text-xs bg-white text-[#1f2a44] rounded hover:bg-gray-100"
+                        >
+                          +
+                        </button>
+                      </div>
                       <button
-                        onClick={() => decreaseQty(item.id)}
-                        className="px-2 py-1 text-xs bg-white text-[#1f2a44] rounded hover:bg-gray-100"
+                        onClick={() => handleRemove(item.id)}
+                        className="text-red-400 hover:text-red-600 text-xs"
                       >
-                        -
-                      </button>
-                      <span className="text-sm">{item.quantity}</span>
-                      <button
-                        onClick={() => increaseQty(item.id)}
-                        className="px-2 py-1 text-xs bg-white text-[#1f2a44] rounded hover:bg-gray-100"
-                      >
-                        +
+                        🗑️
                       </button>
                     </div>
-                    <button
-                      onClick={() => handleRemove(item.id)}
-                      className="text-red-400 hover:text-red-600 text-xs"
-                    >
-                      🗑️
-                    </button>
                   </div>
-                </div>
-              ))}
-              <Link
-                href="/cart"
-                onClick={() => setCartOpen(false)}
-                className="mt-2 text-center bg-white text-[#1f2a44] py-1 text-sm rounded-lg font-semibold hover:bg-gray-100 transition"
-              >
-                View Full Cart
-              </Link>
-            </>
-          )}
-        </div>
-      )}
+                ))}
+                <Link
+                  href="/cart"
+                  onClick={() => setCartOpen(false)}
+                  className="mt-2 text-center bg-white text-[#1f2a44] py-1 text-sm rounded-lg font-semibold hover:bg-gray-100 transition"
+                >
+                  View Full Cart
+                </Link>
+              </>
+            )}
+          </div>
+        )}
+      </div>
 
       {/* 📱 Mobile Menu Dropdown */}
       {menuOpen && (
@@ -241,6 +246,112 @@ const Navbar = () => {
           ))}
         </div>
       )}
+
+      {/* 🖥️ Desktop Layout */}
+      <div className="hidden md:flex items-center justify-between w-full h-full px-6">
+        {/* 🔗 Logo and Welcome Message */}
+        <div className="flex items-center space-x-4">
+          <Link
+            href="/"
+            className="flex flex-col text-white font-bold text-lg hover:opacity-80 hover:scale-105 transition-transform duration-300"
+          >
+            <span>Classy Diamonds</span>
+            <span className="text-xs font-light">
+              <i>A Cut Above The Rest</i>
+            </span>
+          </Link>
+          {session && (
+            <p className="hidden md:block text-sm text-white font-light mt-1">
+              Welcome,{" "}
+              {session.user?.name?.split(" ")[0] || session.user?.email}
+            </p>
+          )}
+        </div>
+
+        {/* 🌐 Nav Links */}
+        <nav className="absolute left-1/2 transform -translate-x-1/2 space-x-10 text-[#e0e0e0] font-semibold text-sm">
+          {["Home", "Jewelry", "Custom", "Contact"].map((name) => {
+            const href = `/${name === "Home" ? "" : name.toLowerCase()}`;
+            return (
+              <Link
+                key={name}
+                href={href}
+                className={`hover:text-white hover:scale-105 transition-transform duration-300 text-base md:text-lg ${
+                  pathname === href
+                    ? "text-white underline underline-offset-4"
+                    : ""
+                }`}
+              >
+                {name}
+              </Link>
+            );
+          })}
+        </nav>
+
+        {/* 🛠️ Desktop Icons */}
+        <div className="flex items-center space-x-6 text-[#e0e0e0] text-xl relative">
+          <Link
+            href="/search"
+            className="hover:text-white hover:scale-105 transition-transform duration-300"
+          >
+            <FiSearch />
+          </Link>
+          <div className="relative" ref={userRef}>
+            {session ? (
+              <>
+                <button
+                  onClick={() => setUserMenuOpen((prev) => !prev)}
+                  className="hover:text-white hover:scale-105 transition-transform duration-300 cursor-pointer"
+                  ref={userButtonRef}
+                >
+                  <FiUser />
+                </button>
+                {userMenuOpen && (
+                  <div className="absolute right-0 mt-2 w-48 bg-[#1f2a44]/95 backdrop-blur-sm rounded-xl shadow-lg py-2 text-sm text-white z-50">
+                    <Link
+                      href="/account"
+                      className="block px-4 py-2 hover:bg-[#2a374f]"
+                    >
+                      My Account
+                    </Link>
+                    <Link
+                      href="/account/orders"
+                      className="block px-4 py-2 hover:bg-[#2a374f]"
+                    >
+                      Order History
+                    </Link>
+                    <Link
+                      href="/account/track"
+                      className="block px-4 py-2 hover:bg-[#2a374f]"
+                    >
+                      Track Orders
+                    </Link>
+                    <Link
+                      href="/custom"
+                      className="block px-4 py-2 hover:bg-[#2a374f]"
+                    >
+                      Custom Requests
+                    </Link>
+                    <button
+                      onClick={() => signOut({ callbackUrl: "/" })}
+                      className="w-full text-left px-4 py-2 text-red-400 hover:bg-[#2a374f] hover:text-red-500"
+                    >
+                      Sign Out
+                    </button>
+                  </div>
+                )}
+              </>
+            ) : (
+              <Link
+                href="/auth"
+                className="cursor-pointer hover:text-white hover:scale-105 transition-transform duration-300"
+              >
+                <FiUser />
+              </Link>
+            )}
+          </div>
+        </div>
+      </div>
     </header>
   );
 };
