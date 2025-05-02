@@ -182,9 +182,16 @@ export default function ContactPage() {
               <p className="text-base sm:text-lg">info@classydiamonds.com</p>
             </div>
           </div>
-          <div className="w-full h-60 sm:h-64 bg-[#25304f] rounded-2xl overflow-hidden flex items-center justify-center">
-            <p className="text-[#cfd2d6] text-center">Google Map Coming Soon</p>
-          </div>
+          <div className="w-full h-60 sm:h-64 rounded-2xl overflow-hidden shadow-lg"></div>
+          <iframe
+            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d6062.453504254061!2d-74.2965584!3d40.558669599999995!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x89c3b5c5e191bbb5%3A0x6ec9ad5e4e09ad39!2sWoodbridge%20Jewelry%20Exchange!5e0!3m2!1sen!2sus!4v1746210843513!5m2!1sen!2sus"
+            width="100%"
+            height="100%"
+            style={{ border: 0 }}
+            allowFullScreen={true}
+            loading="lazy"
+            referrerPolicy="no-referrer-when-downgrade"
+          ></iframe>
         </div>
       </section>
 
@@ -387,7 +394,7 @@ export default function ContactPage() {
                 disabled={isSubmitting}
                 className="bg-white text-[#1f2a44] font-semibold py-4 rounded-xl hover:shadow-lg hover:scale-105 transition hover:cursor-pointer"
               >
-                Submit
+                Submit Message
               </button>
               {messageStatus && (
                 <p className="text-sm text-green-400 mt-2">{messageStatus}</p>
