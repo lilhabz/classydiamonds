@@ -260,22 +260,22 @@ export default function ContactPage() {
                   required
                   className="p-4 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
                 />
-                <div className="flex flex-col items-start space-y-2">
-                  <span className="text-white font-medium">Upload Image:</span>
+                {/* 📤 Upload Image Button (Refined Style) */}
+                <div className="flex flex-col items-start space-y-2 w-full">
                   <label
-                    htmlFor="customFile"
-                    className="inline-block bg-white text-[#1f2a44] font-semibold py-3 px-6 rounded-xl cursor-pointer hover:shadow-lg hover:scale-105 transition"
+                    htmlFor="messageFile"
+                    className="inline-block bg-white text-[#1f2a44] font-semibold py-2 px-6 rounded-lg cursor-pointer hover:shadow-lg hover:scale-105 transition"
                   >
-                    Choose Image
+                    Upload Image
                   </label>
                   <input
-                    id="customFile"
+                    id="messageFile"
                     type="file"
                     accept="image/*"
                     onChange={(e) => {
                       const file = e.target.files?.[0];
-                      setCustomFile(file || null);
-                      if (file) setCustomPreview(URL.createObjectURL(file));
+                      setMessageFile(file || null);
+                      if (file) setMessagePreview(URL.createObjectURL(file));
                     }}
                     className="hidden"
                   />
