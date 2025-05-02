@@ -173,7 +173,7 @@ export default function ContactPage() {
       <section className="px-4 sm:px-6 py-16 sm:py-20 max-w-7xl mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
           {/* 📞 Contact Info Block */}
-          <div className="flex flex-col gap-8 text-center md:text-left">
+          <div className="flex flex-col gap-8 text-center md:text-left bg-[#25304f]">
             <div className="flex flex-col items-center md:items-start">
               <FaPhoneAlt className="text-3xl mb-2" />
               <p className="text-base sm:text-lg">+1 (123) 456-7890</p>
