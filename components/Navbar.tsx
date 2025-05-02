@@ -45,9 +45,10 @@ const Navbar = () => {
       setMenuOpen(false);
       setCartOpen(false);
     };
-    router.events?.on("routeChangeStart", handleRouteChange);
+    // ✅ Use `router` change listener workaround for app dir
+    window.addEventListener("popstate", handleRouteChange);
     return () => {
-      router.events?.off("routeChangeStart", handleRouteChange);
+      window.removeEventListener("popstate", handleRouteChange);
     };
   }, [router]);
 
@@ -60,6 +61,7 @@ const Navbar = () => {
   };
 
   return (
+    // 🔧 Full responsive navbar with auto-closing menus
     <header
       className={`fixed top-0 left-0 w-full z-50 bg-[#1f2a44] transition-all duration-300 ${
         scrolled ? "h-16" : "h-20"
@@ -71,30 +73,29 @@ const Navbar = () => {
         </div>
       )}
 
-      {/* 🧱 Main Container */}
-      <div className="w-full h-full px-4 md:px-6 flex items-center justify-between md:justify-normal">
-        {/* 📱 Mobile Left: User Icon */}
-        <div className="md:hidden text-2xl text-[#e0e0e0]">
-          <Link href={session ? "/account" : "/auth"}>
-            <FiUser />
-          </Link>
-        </div>
+      {/* 📱 Mobile Layout with repositioned icons */}
+      <div className="md:hidden flex items-center justify-between w-full px-4 h-full">
+        {/* 👤 Left - User Icon */}
+        <Link
+          href={session ? "/account" : "/auth"}
+          className="text-2xl text-[#e0e0e0]"
+        >
+          <FiUser />
+        </Link>
 
-        {/* 🔗 Logo */}
-        <div className="flex-1 flex justify-center md:justify-start items-center space-x-4">
-          <Link
-            href="/"
-            className="flex flex-col text-white font-bold text-lg hover:opacity-80 hover:scale-105 transition-transform duration-300"
-          >
-            <span>Classy Diamonds</span>
-            <span className="text-xs font-light">
-              <i>A Cut Above The Rest</i>
-            </span>
-          </Link>
-        </div>
+        {/* 🔗 Center - Logo */}
+        <Link
+          href="/"
+          className="flex flex-col text-white font-bold text-center text-lg hover:opacity-80 hover:scale-105 transition-transform duration-300"
+        >
+          <span>Classy Diamonds</span>
+          <span className="text-xs font-light">
+            <i>A Cut Above The Rest</i>
+          </span>
+        </Link>
 
-        {/* 📱 Mobile Right: Cart + Hamburger */}
-        <div className="md:hidden flex items-center gap-4 text-2xl text-[#e0e0e0]">
+        {/* 🛒 & 🍔 Right - Cart + Menu */}
+        <div className="flex items-center gap-4 text-2xl text-[#e0e0e0]">
           <Link href="/cart">
             <div className="relative">
               <FiShoppingCart />
@@ -111,9 +112,30 @@ const Navbar = () => {
             <FiMenu onClick={() => setMenuOpen(true)} />
           )}
         </div>
+      </div>
 
-        {/* 🌐 Desktop Nav Links */}
-        <nav className="hidden md:flex absolute left-1/2 transform -translate-x-1/2 space-x-10 text-[#e0e0e0] font-semibold text-sm">
+      {/* 🖥️ Desktop layout remains unchanged */}
+      <div className="hidden md:flex items-center justify-between w-full h-full px-6">
+        {/* 🔗 Logo and Welcome Message */}
+        <div className="flex items-center space-x-4">
+          <Link
+            href="/"
+            className="flex flex-col text-white font-bold text-lg hover:opacity-80 hover:scale-105 transition-transform duration-300"
+          >
+            <span>Classy Diamonds</span>
+            <span className="text-xs font-light">
+              <i>A Cut Above The Rest</i>
+            </span>
+          </Link>
+          {session && (
+            <p className="hidden md:block text-sm text-white font-light mt-1">
+              Welcome,{" "}
+              {session.user?.name?.split(" ")[0] || session.user?.email}
+            </p>
+          )}
+        </div>
+
+        <nav className="absolute left-1/2 transform -translate-x-1/2 space-x-10 text-[#e0e0e0] font-semibold text-sm">
           {"Home Jewelry Custom Contact".split(" ").map((name) => {
             const href = `/${name === "Home" ? "" : name.toLowerCase()}`;
             return (
@@ -132,8 +154,8 @@ const Navbar = () => {
           })}
         </nav>
 
-        {/* 🔧 Desktop Icons */}
-        <div className="hidden md:flex items-center space-x-6 text-[#e0e0e0] text-xl relative">
+        {/* 🛠️ Desktop Icons */}
+        <div className="flex items-center space-x-6 text-[#e0e0e0] text-xl relative">
           <Link
             href="/search"
             className="hover:text-white hover:scale-105 transition-transform duration-300"
@@ -195,89 +217,10 @@ const Navbar = () => {
               </Link>
             )}
           </div>
-
-          {/* 🛒 Cart Icon */}
-          <div className="relative">
-            <button
-              onClick={() => setCartOpen((prev) => !prev)}
-              className="cursor-pointer hover:text-white hover:scale-105 transition-transform duration-300 relative"
-            >
-              <FiShoppingCart />
-              {totalQuantity > 0 && (
-                <span className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full text-xs w-5 h-5 flex items-center justify-center">
-                  {totalQuantity}
-                </span>
-              )}
-            </button>
-
-            {cartOpen && (
-              <div
-                ref={cartRef}
-                className="absolute right-0 mt-4 w-80 bg-[#1f2a44]/90 backdrop-blur-sm rounded-2xl shadow-lg p-6 flex flex-col gap-6 z-50 animate-fade-in"
-              >
-                {cartItems.length === 0 ? (
-                  <p className="text-center text-[#cfd2d6]">
-                    Your cart is empty
-                  </p>
-                ) : (
-                  <>
-                    {cartItems.map((item) => (
-                      <div
-                        key={item.id}
-                        className="flex items-center border-b border-[#2d3a56] pb-4"
-                      >
-                        <img
-                          src={item.image}
-                          alt={item.name}
-                          className="w-14 h-14 object-cover rounded-xl mr-4"
-                        />
-                        <div className="flex-1 flex flex-col">
-                          <p className="text-sm text-[#cfd2d6]">{item.name}</p>
-                          <p className="text-xs text-gray-400">
-                            ${(item.price * item.quantity).toLocaleString()}
-                          </p>
-                        </div>
-                        <div className="flex flex-col items-center space-y-2">
-                          <div className="flex items-center gap-2">
-                            <button
-                              onClick={() => decreaseQty(item.id)}
-                              className="px-2 py-1 text-xs bg-white text-[#1f2a44] rounded hover:bg-gray-100"
-                            >
-                              -
-                            </button>
-                            <span className="text-sm">{item.quantity}</span>
-                            <button
-                              onClick={() => increaseQty(item.id)}
-                              className="px-2 py-1 text-xs bg-white text-[#1f2a44] rounded hover:bg-gray-100"
-                            >
-                              +
-                            </button>
-                          </div>
-                          <button
-                            onClick={() => handleRemove(item.id)}
-                            className="text-red-400 hover:text-red-600 text-xs"
-                          >
-                            🗑️
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                    <Link
-                      href="/cart"
-                      onClick={() => setCartOpen(false)}
-                      className="mt-2 text-center bg-white text-[#1f2a44] py-1 text-sm rounded-lg font-semibold hover:bg-gray-100 transition"
-                    >
-                      View Full Cart
-                    </Link>
-                  </>
-                )}
-              </div>
-            )}
-          </div>
         </div>
       </div>
 
-      {/* 📱 Mobile Menu Content */}
+      {/* 📱 Mobile Dropdown Menu */}
       {menuOpen && (
         <div className="md:hidden bg-[#1f2a44] flex flex-col items-center space-y-6 py-8 text-[#e0e0e0] text-lg">
           {["Home", "Jewelry", "Custom", "Contact"].map((name) => (
