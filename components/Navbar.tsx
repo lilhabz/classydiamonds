@@ -99,7 +99,10 @@ const Navbar = () => {
             <FiUser />
           </Link>
           <button
-            onClick={() => setCartOpen((prev) => !prev)}
+            onClick={(e) => {
+              e.stopPropagation();
+              setCartOpen((prev) => !prev);
+            }}
             className="relative"
           >
             <FiShoppingCart />
