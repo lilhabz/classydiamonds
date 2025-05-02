@@ -138,7 +138,7 @@ export default function ContactPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
           <div className="w-full h-80 sm:h-96 overflow-hidden rounded-2xl shadow-lg">
             <img
-              src="/ned-photo.jpg"
+              src="/ned.jpg"
               alt="Ned - Classy Diamonds"
               className="w-full h-full object-cover"
             />
