@@ -66,7 +66,7 @@ const Navbar = () => {
       }`}
     >
       {addedItemName && (
-        <div className="fixed top-20 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg animate-fade-in z-[9999]">
+        <div className="fixed top-20 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg animate-slide-fade-in z-[9999]">
           ✅ {addedItemName} added to cart!
         </div>
       )}
@@ -116,7 +116,7 @@ const Navbar = () => {
       {cartOpen && (
         <div
           ref={cartRef}
-          className="absolute right-4 top-[70px] w-80 bg-[#1f2a44]/90 backdrop-blur-sm rounded-2xl shadow-lg p-6 flex flex-col gap-6 z-50 animate-fade-in md:top-[80px]"
+          className="absolute right-4 top-[70px] w-80 bg-[#1f2a44]/90 backdrop-blur-sm rounded-2xl shadow-lg p-6 flex flex-col gap-6 z-50 animate-slide-fade-in md:top-[80px]"
         >
           {cartItems.length === 0 ? (
             <p className="text-center text-[#cfd2d6]">Your cart is empty</p>
