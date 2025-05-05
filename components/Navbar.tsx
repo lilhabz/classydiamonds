@@ -110,14 +110,14 @@ const Navbar = () => {
             <button
               ref={userButtonRef}
               onClick={() => setUserMenuOpen((prev) => !prev)}
-              className="hover:text-white"
+              className="hover:text-white cursor-pointer"
             >
               <FiUser />
             </button>
             <button
               ref={cartButtonRef}
               onClick={() => setCartOpen((prev) => !prev)}
-              className="relative"
+              className="relative hover:text-white cursor-pointer"
             >
               <FiShoppingCart />
               {totalQuantity > 0 && (
@@ -129,10 +129,11 @@ const Navbar = () => {
           </div>
         </div>
 
+        {/* 👤 User Dropdown (Mobile) */}
         {userMenuOpen && session && (
           <div
             ref={userRef}
-            className="absolute right-0 top-full mt-2 w-48 bg-[#1f2a44]/95 backdrop-blur-sm rounded-xl shadow-lg py-2 text-sm text-white z-50 animate-slide-fade-in md:hidden"
+            className="absolute right-0 top-[100%] w-48 bg-[#1f2a44]/95 backdrop-blur-sm rounded-xl shadow-lg py-2 text-sm text-white z-50 animate-slide-fade-in md:hidden"
           >
             <Link
               href="/account"
@@ -164,10 +165,11 @@ const Navbar = () => {
           </div>
         )}
 
+        {/* 🛒 Cart Dropdown */}
         {cartOpen && (
           <div
             ref={cartRef}
-            className="absolute right-0 top-full mt-2 w-80 bg-[#1f2a44]/95 backdrop-blur-sm rounded-l-xl shadow-lg p-6 flex flex-col gap-6 z-50 animate-slide-fade-in"
+            className="absolute right-0 top-[100%] mt-2 w-80 bg-[#1f2a44]/95 backdrop-blur-sm rounded-xl shadow-lg p-6 flex flex-col gap-6 z-50 animate-slide-fade-in"
           >
             {cartItems.length === 0 ? (
               <p className="text-center text-[#cfd2d6]">Your cart is empty</p>
@@ -227,6 +229,7 @@ const Navbar = () => {
         )}
       </div>
 
+      {/* 📱 Mobile Nav Menu */}
       {menuOpen && (
         <div className="md:hidden bg-[#1f2a44] flex flex-col items-center space-y-6 py-8 text-[#e0e0e0] text-lg">
           {"Home Jewelry Custom Contact".split(" ").map((name) => (
@@ -241,6 +244,7 @@ const Navbar = () => {
         </div>
       )}
 
+      {/* 🖥️ Desktop Layout */}
       <div className="hidden md:flex items-center justify-between w-full h-full px-6">
         <div className="flex items-center space-x-4">
           <Link
@@ -287,7 +291,6 @@ const Navbar = () => {
             <FiSearch />
           </Link>
 
-          {/* 👤 User Icon */}
           <div className="relative" ref={userRef}>
             {session ? (
               <>
@@ -343,11 +346,10 @@ const Navbar = () => {
             )}
           </div>
 
-          {/* 🛒 Cart Icon */}
           <button
             ref={cartButtonRef}
             onClick={() => setCartOpen((prev) => !prev)}
-            className="relative hover:text-white hover:scale-105 transition-transform duration-300"
+            className="relative hover:text-white hover:scale-105 transition-transform duration-300 cursor-pointer"
           >
             <FiShoppingCart />
             {totalQuantity > 0 && (
