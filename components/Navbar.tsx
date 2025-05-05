@@ -76,10 +76,10 @@ const Navbar = () => {
   return (
     <>
       <header
-        className={`fixed top-0 left-0 w-full z-50 bg-[#1f2a44] transition-all duration-300 ${
+        className={`fixed top-0 left-0 w-full bg-[#1f2a44] transition-all duration-300 ${
           scrolled ? "h-16" : "h-20"
         }`}
-        style={{ zIndex: 100 }}
+        style={{ zIndex: 50 }}
       >
         {addedItemName && (
           <div className="fixed top-20 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg animate-slide-fade-in z-[9999]">
@@ -130,21 +130,6 @@ const Navbar = () => {
               </button>
             </div>
           </div>
-
-          {/* 📱 Mobile Nav Menu */}
-          {menuOpen && (
-            <div className="md:hidden bg-[#1f2a44] flex flex-col items-center space-y-6 py-8 text-[#e0e0e0] text-lg">
-              {"Home Jewelry Custom Contact".split(" ").map((name) => (
-                <Link
-                  key={name}
-                  href={`/${name === "Home" ? "" : name.toLowerCase()}`}
-                  onClick={() => setMenuOpen(false)}
-                >
-                  {name}
-                </Link>
-              ))}
-            </div>
-          )}
         </div>
 
         {/* 🖥️ Desktop Layout */}
@@ -269,8 +254,8 @@ const Navbar = () => {
       {cartOpen && (
         <div
           ref={cartRef}
-          className="fixed right-4 w-80 bg-[#1f2a44]/95 backdrop-blur-sm rounded-xl shadow-lg p-6 flex flex-col gap-6 z-40 animate-slide-fade-in"
-          style={{ top: scrolled ? "64px" : "80px" }}
+          className="fixed right-4 w-80 bg-[#1f2a44]/95 backdrop-blur-sm rounded-xl shadow-lg p-6 flex flex-col gap-6 z-40 animate-slide-fade-in transition-all duration-300"
+          style={{ top: `calc(${scrolled ? "64px" : "80px"})` }}
         >
           {cartItems.length === 0 ? (
             <p className="text-center text-[#cfd2d6]">Your cart is empty</p>
