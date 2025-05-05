@@ -2,8 +2,6 @@
 
 import Head from "next/head";
 import Link from "next/link";
-import Navbar from "../components/Navbar";
-import Footer from "../components/Footer";
 import { useEffect } from "react";
 import { useCart } from "@/context/CartContext";
 
@@ -25,8 +23,6 @@ export default function SuccessPage() {
         />
       </Head>
 
-      <Navbar />
-
       {/* ✅ Confirmation Section */}
       <main className="flex flex-col items-center justify-center flex-grow px-4 pt-28 pb-20 text-center">
         <div className="bg-[#25304f] rounded-2xl shadow-xl p-8 sm:p-12 max-w-xl">
@@ -39,9 +35,10 @@ export default function SuccessPage() {
             shortly.
           </p>
 
-          {/* 🏱 Luxury visual */}
+          {/* 🏱 Luxury visual – replace with a real image later! */}
           <div className="w-full h-48 sm:h-56 bg-[url('/luxury-placeholder.jpg')] bg-cover bg-center rounded-xl mb-6" />
 
+          {/* 🛍️ Continue Shopping */}
           <Link href="/jewelry">
             <div className="inline-block mt-2 px-6 py-3 bg-white text-[#1f2a44] font-semibold rounded-full shadow hover:bg-gray-100 transition hover:scale-105 cursor-pointer">
               Continue Shopping
@@ -49,8 +46,6 @@ export default function SuccessPage() {
           </Link>
         </div>
       </main>
-
-      <Footer />
     </div>
   );
 }
