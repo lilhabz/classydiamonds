@@ -133,7 +133,7 @@ const Navbar = () => {
         {userMenuOpen && session && (
           <div
             ref={userRef}
-            className="absolute right-0 top-[100%] w-48 bg-[#1f2a44]/95 backdrop-blur-sm rounded-xl shadow-lg py-2 text-sm text-white z-50 animate-slide-fade-in md:hidden"
+            className="absolute right-0 top-full mt-[1px] w-48 bg-[#1f2a44]/95 backdrop-blur-sm rounded-xl shadow-lg py-2 text-sm text-white z-50 animate-slide-fade-in md:hidden"
           >
             <Link
               href="/account"
@@ -169,7 +169,7 @@ const Navbar = () => {
         {cartOpen && (
           <div
             ref={cartRef}
-            className="absolute right-0 top-[100%] mt-2 w-80 bg-[#1f2a44]/95 backdrop-blur-sm rounded-xl shadow-lg p-6 flex flex-col gap-6 z-50 animate-slide-fade-in"
+            className="absolute right-0 top-full mt-[1px] w-80 bg-[#1f2a44]/95 backdrop-blur-sm rounded-xl shadow-lg p-6 flex flex-col gap-6 z-50 animate-slide-fade-in"
           >
             {cartItems.length === 0 ? (
               <p className="text-center text-[#cfd2d6]">Your cart is empty</p>
