@@ -9,8 +9,12 @@ export default function SuccessPage() {
   const { clearCart } = useCart();
 
   useEffect(() => {
-    // 🪙 Clear cart after successful purchase
-    clearCart();
+    // ✅ Delay cart clear so React renders this page fully before flushing context
+    const timer = setTimeout(() => {
+      clearCart(); // 🧼 Cart is cleared AFTER initial render tick
+    }, 100); // ⏱️ slight delay prevents freeze bugs on client nav
+
+    return () => clearTimeout(timer); // ♻️ Cleanup on unmount
   }, [clearCart]);
 
   return (
