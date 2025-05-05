@@ -3,7 +3,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import Stripe from "stripe";
 
-// ✅ Initialize without apiVersion to use the correct default for v18.1.0
+// ✅ Stripe initialized without apiVersion for v18+
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string);
 
 export default async function handler(
@@ -17,20 +17,24 @@ export default async function handler(
   try {
     const items = req.body.items;
 
-    // 🛡️ Build Stripe-compatible line_items array with valid image URLs
     const line_items = items.map((item: any) => {
-      const imageUrl = item.image.startsWith("http")
-        ? item.image
-        : `${req.headers.origin}${item.image.startsWith("/") ? "" : "/"}${
-            item.image
-          }`;
+      const hasImage =
+        typeof item.image === "string" && item.image.trim() !== "";
+      const imageUrl =
+        hasImage && item.image.startsWith("http")
+          ? item.image
+          : hasImage
+          ? `${req.headers.origin}${item.image.startsWith("/") ? "" : "/"}${
+              item.image
+            }`
+          : undefined;
 
       return {
         price_data: {
           currency: "usd",
           product_data: {
             name: item.name,
-            images: [imageUrl],
+            ...(imageUrl ? { images: [imageUrl] } : {}), // ✅ Only include if valid
           },
           unit_amount: item.price * 100,
         },
