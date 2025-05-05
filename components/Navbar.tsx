@@ -254,12 +254,11 @@ const Navbar = () => {
       {cartOpen && (
         <div
           ref={cartRef}
-          className="fixed right-4 w-80 bg-[#1f2a44]/95 backdrop-blur-sm shadow-lg py-2 px-6 text-sm text-white z-40 animate-slide-fade-in transition-all duration-300"
+          className="fixed right-4 w-80 bg-[#1f2a44]/95 backdrop-blur-sm shadow-lg text-sm text-white z-40 animate-slide-fade-in transition-all duration-300"
           style={{
-            top: `calc(${scrolled ? "64px" : "80px"})`,
-            borderRadius: "0.75rem",
-            borderTopLeftRadius: 0,
-            borderTopRightRadius: 0,
+            top: scrolled ? "64px" : "80px",
+            borderRadius: "0 0 0.75rem 0.75rem",
+            padding: "1rem 1.5rem",
           }}
         >
           {cartItems.length === 0 ? (
@@ -269,7 +268,7 @@ const Navbar = () => {
               {cartItems.map((item) => (
                 <div
                   key={item.id}
-                  className="flex items-center border-b border-[#2d3a56] pb-4"
+                  className="flex items-center border-b border-[#2d3a56] pb-4 mb-4"
                 >
                   <img
                     src={item.image}
@@ -310,7 +309,7 @@ const Navbar = () => {
               <Link
                 href="/cart"
                 onClick={() => setCartOpen(false)}
-                className="mt-2 text-center bg-white text-[#1f2a44] py-2 px-4 rounded-lg font-semibold text-[11px] hover:bg-gray-100 transition"
+                className="block text-center bg-white text-[#1f2a44] py-1 text-xs rounded-lg font-semibold hover:bg-gray-100 transition"
               >
                 View Full Cart
               </Link>
