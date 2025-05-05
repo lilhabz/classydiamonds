@@ -42,11 +42,14 @@ export default function CartPage() {
       });
 
       const data = await response.json();
-      if (data.url) {
+      if (data?.url) {
         window.location.href = data.url;
+      } else {
+        alert("Something went wrong with checkout. Please try again.");
       }
     } catch (error) {
       console.error("Checkout failed:", error);
+      alert("Checkout failed. Check console for details.");
     } finally {
       setIsLoading(false);
     }
