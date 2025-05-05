@@ -264,11 +264,11 @@ const Navbar = () => {
         </div>
       </header>
 
-      {/* 🛒 Cart Dropdown Detached Below Navbar */}
+      {/* 🛒 Cart Dropdown Sticky Below Navbar */}
       {cartOpen && (
         <div
           ref={cartRef}
-          className="absolute top-20 right-4 w-80 bg-[#1f2a44]/95 backdrop-blur-sm rounded-xl shadow-lg p-6 flex flex-col gap-6 z-40 animate-slide-fade-in"
+          className="fixed top-[80px] right-4 w-80 bg-[#1f2a44]/95 backdrop-blur-sm rounded-xl shadow-lg p-6 flex flex-col gap-6 z-40 animate-slide-fade-in"
         >
           {cartItems.length === 0 ? (
             <p className="text-center text-[#cfd2d6]">Your cart is empty</p>
