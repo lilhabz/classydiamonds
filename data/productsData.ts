@@ -6,7 +6,7 @@ export const productsData = [
     slug: "diamond-ring",
     name: "Diamond Engagement Ring",
     price: 4200,
-    image: "/products/engagement-ring.jpg",
+    image: "/products/placeholder.jpg",
     description:
       "A stunning handcrafted diamond ring perfect for your special moment.",
   },
@@ -15,7 +15,7 @@ export const productsData = [
     slug: "tennis-bracelet",
     name: "Gold Tennis Bracelet",
     price: 1800,
-    image: "/products/tennis-bracelet.jpg",
+    image: "/products/placeholder.jpg",
     description: "A luxurious gold tennis bracelet with elegant craftsmanship.",
   },
   {
@@ -23,7 +23,7 @@ export const productsData = [
     slug: "sapphire-necklace",
     name: "Sapphire Pendant Necklace",
     price: 2500,
-    image: "/products/sapphire-necklace.jpg",
+    image: "/products/placeholder.jpg",
     description: "A gorgeous sapphire pendant necklace set in fine gold.",
   },
   {
@@ -31,7 +31,7 @@ export const productsData = [
     slug: "pearl-earrings",
     name: "Pearl Drop Earrings",
     price: 950,
-    image: "/products/pearl-earrings.jpg",
+    image: "/products/placeholder.jpg",
     description: "Elegant pearl drop earrings perfect for special occasions.",
   },
 ];
