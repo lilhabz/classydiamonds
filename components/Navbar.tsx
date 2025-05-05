@@ -254,8 +254,13 @@ const Navbar = () => {
       {cartOpen && (
         <div
           ref={cartRef}
-          className="fixed right-4 w-80 bg-[#1f2a44]/95 backdrop-blur-sm rounded-xl shadow-lg p-6 flex flex-col gap-6 z-40 animate-slide-fade-in transition-all duration-300"
-          style={{ top: `calc(${scrolled ? "64px" : "80px"})` }}
+          className="fixed right-4 w-80 bg-[#1f2a44]/95 backdrop-blur-sm shadow-lg py-2 px-6 text-sm text-white z-40 animate-slide-fade-in transition-all duration-300"
+          style={{
+            top: `calc(${scrolled ? "64px" : "80px"})`,
+            borderRadius: "0.75rem",
+            borderTopLeftRadius: 0,
+            borderTopRightRadius: 0,
+          }}
         >
           {cartItems.length === 0 ? (
             <p className="text-center text-[#cfd2d6]">Your cart is empty</p>
