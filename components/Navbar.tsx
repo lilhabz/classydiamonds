@@ -79,6 +79,7 @@ const Navbar = () => {
         className={`fixed top-0 left-0 w-full z-50 bg-[#1f2a44] transition-all duration-300 ${
           scrolled ? "h-16" : "h-20"
         }`}
+        style={{ zIndex: 100 }}
       >
         {addedItemName && (
           <div className="fixed top-20 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg animate-slide-fade-in z-[9999]">
@@ -268,7 +269,8 @@ const Navbar = () => {
       {cartOpen && (
         <div
           ref={cartRef}
-          className="fixed top-[80px] right-4 w-80 bg-[#1f2a44]/95 backdrop-blur-sm rounded-xl shadow-lg p-6 flex flex-col gap-6 z-40 animate-slide-fade-in"
+          className="fixed right-4 w-80 bg-[#1f2a44]/95 backdrop-blur-sm rounded-xl shadow-lg p-6 flex flex-col gap-6 z-40 animate-slide-fade-in"
+          style={{ top: scrolled ? "64px" : "80px" }}
         >
           {cartItems.length === 0 ? (
             <p className="text-center text-[#cfd2d6]">Your cart is empty</p>
