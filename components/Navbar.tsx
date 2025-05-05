@@ -310,7 +310,7 @@ const Navbar = () => {
               <Link
                 href="/cart"
                 onClick={() => setCartOpen(false)}
-                className="mt-2 text-center bg-white text-[#1f2a44] py-1 text-sm rounded-lg font-semibold hover:bg-gray-100 transition"
+                className="mt-2 text-center bg-white text-[#1f2a44] py-1 text-xs rounded-lg font-semibold hover:bg-gray-100 transition"
               >
                 View Full Cart
               </Link>
