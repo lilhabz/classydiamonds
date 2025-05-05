@@ -88,7 +88,6 @@ const Navbar = () => {
       <div className="relative">
         {/* 📱 Mobile Layout */}
         <div className="md:hidden flex items-center justify-between w-full px-4 h-full">
-          {/* 🍔 Hamburger Centered */}
           <div className="absolute left-1/2 -translate-x-1/2 text-2xl text-[#e0e0e0]">
             {menuOpen ? (
               <FiX onClick={() => setMenuOpen(false)} />
@@ -97,7 +96,6 @@ const Navbar = () => {
             )}
           </div>
 
-          {/* 🔗 Logo Left */}
           <Link
             href="/"
             className="flex flex-col text-white font-bold text-lg hover:opacity-80 hover:scale-105 transition-transform duration-300"
@@ -108,7 +106,6 @@ const Navbar = () => {
             </span>
           </Link>
 
-          {/* 👤 & 🛒 Right Icons */}
           <div className="flex items-center gap-4 text-2xl text-[#e0e0e0]">
             <button
               ref={userButtonRef}
@@ -132,7 +129,6 @@ const Navbar = () => {
           </div>
         </div>
 
-        {/* 👤 User Dropdown */}
         {userMenuOpen && session && (
           <div
             ref={userRef}
@@ -168,7 +164,6 @@ const Navbar = () => {
           </div>
         )}
 
-        {/* 🛒 Cart Dropdown (Mobile/Desktop) */}
         {cartOpen && (
           <div
             ref={cartRef}
@@ -232,7 +227,6 @@ const Navbar = () => {
         )}
       </div>
 
-      {/* 📱 Mobile Menu Dropdown */}
       {menuOpen && (
         <div className="md:hidden bg-[#1f2a44] flex flex-col items-center space-y-6 py-8 text-[#e0e0e0] text-lg">
           {"Home Jewelry Custom Contact".split(" ").map((name) => (
@@ -247,9 +241,7 @@ const Navbar = () => {
         </div>
       )}
 
-      {/* 🖥️ Desktop Layout */}
       <div className="hidden md:flex items-center justify-between w-full h-full px-6">
-        {/* 🔗 Logo and Welcome Message */}
         <div className="flex items-center space-x-4">
           <Link
             href="/"
@@ -268,9 +260,8 @@ const Navbar = () => {
           )}
         </div>
 
-        {/* 🌐 Nav Links */}
         <nav className="absolute left-1/2 transform -translate-x-1/2 space-x-10 text-[#e0e0e0] font-semibold text-sm">
-          {["Home", "Jewelry", "Custom", "Contact"].map((name) => {
+          {"Home Jewelry Custom Contact".split(" ").map((name) => {
             const href = `/${name === "Home" ? "" : name.toLowerCase()}`;
             return (
               <Link
@@ -288,14 +279,15 @@ const Navbar = () => {
           })}
         </nav>
 
-        {/* 🛠️ Desktop Icons */}
-        <div className="flex items-center space-x-6 text-[#e0e0e0] text-xl relative">
+        <div className="flex items-center gap-6 text-[#e0e0e0] text-xl">
           <Link
             href="/search"
             className="hover:text-white hover:scale-105 transition-transform duration-300"
           >
             <FiSearch />
           </Link>
+
+          {/* 👤 User Icon */}
           <div className="relative" ref={userRef}>
             {session ? (
               <>
@@ -350,6 +342,20 @@ const Navbar = () => {
               </Link>
             )}
           </div>
+
+          {/* 🛒 Cart Icon */}
+          <button
+            ref={cartButtonRef}
+            onClick={() => setCartOpen((prev) => !prev)}
+            className="relative hover:text-white hover:scale-105 transition-transform duration-300"
+          >
+            <FiShoppingCart />
+            {totalQuantity > 0 && (
+              <span className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full text-xs w-5 h-5 flex items-center justify-center">
+                {totalQuantity}
+              </span>
+            )}
+          </button>
         </div>
       </div>
     </header>
