@@ -3,7 +3,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import Stripe from "stripe";
 
-// ✅ Initialize without apiVersion to use the correct default for v18.1.0
+// ✅ Initialize Stripe with environment key (using Stripe v18.1.0)
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string);
 
 export default async function handler(
@@ -11,13 +11,13 @@ export default async function handler(
   res: NextApiResponse
 ) {
   if (req.method !== "POST") {
-    return res.status(405).end("Method not allowed");
+    return res.status(405).json({ error: "Method not allowed" });
   }
 
   try {
     const items = req.body.items;
 
-    // 🛡️ Build Stripe-compatible line_items array (no image key if invalid)
+    // ✅ Generate Stripe line items (image optional)
     const line_items = items.map((item: any) => {
       const hasValidImage = item.image && item.image.startsWith("http");
 
@@ -33,12 +33,13 @@ export default async function handler(
         price_data: {
           currency: "usd",
           product_data,
-          unit_amount: item.price * 100,
+          unit_amount: item.price * 100, // Stripe expects cents
         },
         quantity: item.quantity,
       };
     });
 
+    // 🔒 Stripe Checkout Session creation
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
       mode: "payment",
@@ -47,9 +48,12 @@ export default async function handler(
       cancel_url: `${req.headers.origin}/cart`,
     });
 
-    res.status(200).json({ url: session.url });
+    // 🌐 Return redirect URL for Stripe Checkout
+    return res.status(200).json({ url: session.url });
   } catch (error: any) {
     console.error("❌ Stripe Checkout Error:", error.message);
-    res.status(500).json({ error: error.message });
+    return res
+      .status(500)
+      .json({ error: error.message || "Internal server error" });
   }
 }
