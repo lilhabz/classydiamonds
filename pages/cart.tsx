@@ -41,15 +41,22 @@ export default function CartPage() {
         body: JSON.stringify({ items: cartItems }),
       });
 
-      const data = await response.json();
-      if (data?.url) {
-        window.location.href = data.url;
-      } else {
-        alert("Something went wrong with checkout. Please try again.");
+      const text = await response.text();
+      try {
+        const data = JSON.parse(text);
+        if (data?.url) {
+          window.location.href = data.url;
+        } else {
+          alert("❌ Checkout failed. No URL returned.");
+          console.error("❌ Raw response:", text);
+        }
+      } catch (err) {
+        alert("❌ Checkout failed. Server response was not valid JSON.");
+        console.error("❌ Could not parse response:", text);
       }
     } catch (error) {
-      console.error("Checkout failed:", error);
-      alert("Checkout failed. Check console for details.");
+      console.error("❌ Checkout fetch error:", error);
+      alert("Checkout failed. See console.");
     } finally {
       setIsLoading(false);
     }

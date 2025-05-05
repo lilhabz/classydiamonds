@@ -3,7 +3,6 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import Stripe from "stripe";
 
-// ✅ Initialize Stripe with environment key (using Stripe v18.1.0)
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string);
 
 export default async function handler(
@@ -15,31 +14,30 @@ export default async function handler(
   }
 
   try {
-    const items = req.body.items;
+    const { items } = req.body;
 
-    // ✅ Generate Stripe line items (image optional)
-    const line_items = items.map((item: any) => {
-      const hasValidImage = item.image && item.image.startsWith("http");
+    if (!items || !Array.isArray(items)) {
+      return res.status(400).json({ error: "Invalid items data" });
+    }
 
-      const product_data: any = {
-        name: item.name,
-      };
+    const line_items = items
+      .filter((item) => item && item.name && item.price && item.quantity)
+      .map((item) => {
+        const product_data: any = { name: item.name };
+        if (item.image && item.image.startsWith("http")) {
+          product_data.images = [item.image];
+        }
 
-      if (hasValidImage) {
-        product_data.images = [item.image];
-      }
+        return {
+          price_data: {
+            currency: "usd",
+            product_data,
+            unit_amount: item.price * 100,
+          },
+          quantity: item.quantity,
+        };
+      });
 
-      return {
-        price_data: {
-          currency: "usd",
-          product_data,
-          unit_amount: item.price * 100, // Stripe expects cents
-        },
-        quantity: item.quantity,
-      };
-    });
-
-    // 🔒 Stripe Checkout Session creation
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
       mode: "payment",
@@ -48,7 +46,6 @@ export default async function handler(
       cancel_url: `${req.headers.origin}/cart`,
     });
 
-    // 🌐 Return redirect URL for Stripe Checkout
     return res.status(200).json({ url: session.url });
   } catch (error: any) {
     console.error("❌ Stripe Checkout Error:", error.message);
