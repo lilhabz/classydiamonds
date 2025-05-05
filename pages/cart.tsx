@@ -1,4 +1,4 @@
-// 📄 pages/cart.tsx – Cart + Order Summary + Embedded Checkout 💎
+// 📤 pages/cart.tsx – Cart + Order Summary + Stripe Checkout 💎
 
 "use client";
 
@@ -17,6 +17,7 @@ export default function CartPage() {
     email: "",
     address: "",
   });
+  const [isLoading, setIsLoading] = useState(false);
 
   const total = cartItems.reduce(
     (sum, item) => sum + item.price * item.quantity,
@@ -28,10 +29,27 @@ export default function CartPage() {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleCheckout = async (e: React.FormEvent) => {
     e.preventDefault();
-    alert("🛍️ Order submitted! (Hook up to backend/API)");
-    clearCart();
+    if (cartItems.length === 0) return;
+
+    setIsLoading(true);
+    try {
+      const response = await fetch("/api/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ items: cartItems }),
+      });
+
+      const data = await response.json();
+      if (data.url) {
+        window.location.href = data.url;
+      }
+    } catch (error) {
+      console.error("Checkout failed:", error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -46,7 +64,7 @@ export default function CartPage() {
       {/* 📦 Main Layout */}
       <main className="flex flex-col lg:flex-row px-4 sm:px-6 pt-24 pb-32 max-w-7xl mx-auto w-full gap-10">
         {/* 🛒 Cart Items */}
-        <section className="lg:w-2/3 flex flex-col gap-8">
+        <section className="lg:w-[65%] flex flex-col gap-8">
           <h1 className="text-2xl sm:text-3xl font-bold">Your Shopping Cart</h1>
           {cartItems.length > 0 ? (
             cartItems.map((item) => (
@@ -112,8 +130,8 @@ export default function CartPage() {
           )}
         </section>
 
-        {/* 📋 Order Summary + Checkout */}
-        <aside className="lg:w-1/3 bg-[#25304f] rounded-xl p-6 shadow flex flex-col gap-6 sticky top-24 h-fit">
+        {/* 📋 Order Summary + Stripe Checkout */}
+        <aside className="lg:w-[35%] bg-[#25304f] rounded-xl p-6 shadow flex flex-col gap-6 sticky top-24 h-fit">
           <h2 className="text-xl font-bold border-b border-[#2d3a56] pb-2">
             Order Summary
           </h2>
@@ -122,8 +140,8 @@ export default function CartPage() {
             Total: ${total.toLocaleString()}
           </p>
 
-          {/* 🧾 Checkout Form */}
-          <form onSubmit={handleSubmit} className="flex flex-col gap-4 mt-4">
+          {/* 📟 Checkout Info */}
+          <form onSubmit={handleCheckout} className="flex flex-col gap-4 mt-4">
             <input
               type="text"
               name="name"
@@ -153,9 +171,10 @@ export default function CartPage() {
             />
             <button
               type="submit"
+              disabled={isLoading}
               className="mt-2 px-6 py-3 bg-white text-[#1f2a44] rounded-full font-semibold hover:bg-gray-100 transition hover:scale-105"
             >
-              Place Order
+              {isLoading ? "Processing..." : "Proceed to Checkout"}
             </button>
           </form>
         </aside>
