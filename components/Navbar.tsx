@@ -4,14 +4,14 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/router"; // ✅ Correct for /pages router
 import { useSession, signOut } from "next-auth/react";
 import { FiUser, FiShoppingCart, FiSearch, FiMenu, FiX } from "react-icons/fi";
 import { useCart } from "@/context/CartContext";
 
 const Navbar = () => {
-  const pathname = usePathname();
   const router = useRouter();
+  const pathname = router.pathname; // ✅ Correct replacement for usePathname()
   const { data: session } = useSession();
   const { cartItems, increaseQty, decreaseQty, removeFromCart, addedItemName } =
     useCart();
