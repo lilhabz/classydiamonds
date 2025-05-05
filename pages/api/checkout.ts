@@ -17,17 +17,26 @@ export default async function handler(
   try {
     const items = req.body.items;
 
-    const line_items = items.map((item: any) => ({
-      price_data: {
-        currency: "usd",
-        product_data: {
-          name: item.name,
-          images: [item.image],
+    // 🛡️ Build Stripe-compatible line_items array with valid image URLs
+    const line_items = items.map((item: any) => {
+      const imageUrl = item.image.startsWith("http")
+        ? item.image
+        : `${req.headers.origin}${item.image.startsWith("/") ? "" : "/"}${
+            item.image
+          }`;
+
+      return {
+        price_data: {
+          currency: "usd",
+          product_data: {
+            name: item.name,
+            images: [imageUrl],
+          },
+          unit_amount: item.price * 100,
         },
-        unit_amount: item.price * 100,
-      },
-      quantity: item.quantity,
-    }));
+        quantity: item.quantity,
+      };
+    });
 
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
