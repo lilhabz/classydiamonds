@@ -1,4 +1,4 @@
-// 📥 pages/success.tsx – Post-Checkout Thank You Page 💎
+// 📅 pages/success.tsx – Post-Checkout Thank You Page 💎
 
 import Head from "next/head";
 import Link from "next/link";
@@ -11,7 +11,7 @@ export default function SuccessPage() {
   const { clearCart } = useCart();
 
   useEffect(() => {
-    // 🧹 Clear cart after successful purchase
+    // 🪙 Clear cart after successful purchase
     clearCart();
   }, [clearCart]);
 
@@ -39,14 +39,13 @@ export default function SuccessPage() {
             shortly.
           </p>
 
-          {/* 🎁 Luxury visual */}
+          {/* 🏱 Luxury visual */}
           <div className="w-full h-48 sm:h-56 bg-[url('/luxury-placeholder.jpg')] bg-cover bg-center rounded-xl mb-6" />
 
-          <Link
-            href="/jewelry"
-            className="inline-block mt-2 px-6 py-3 bg-white text-[#1f2a44] font-semibold rounded-full shadow hover:bg-gray-100 transition hover:scale-105"
-          >
-            Continue Shopping
+          <Link href="/jewelry">
+            <div className="inline-block mt-2 px-6 py-3 bg-white text-[#1f2a44] font-semibold rounded-full shadow hover:bg-gray-100 transition hover:scale-105 cursor-pointer">
+              Continue Shopping
+            </div>
           </Link>
         </div>
       </main>
