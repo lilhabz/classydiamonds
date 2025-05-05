@@ -1,46 +1,53 @@
-// 📄 pages/cart.tsx – Redesigned Cart Page with Checkout Sidebar 🛍️💳
+// 📄 pages/cart.tsx – Cart + Order Summary + Embedded Checkout 💎
 
 "use client";
 
+import Navbar from "../components/Navbar";
+import Footer from "../components/Footer";
 import Head from "next/head";
 import Link from "next/link";
 import { useCart } from "@/context/CartContext";
-import Navbar from "../components/Navbar";
-import Footer from "../components/Footer";
+import { useState } from "react";
 
 export default function CartPage() {
-  const { cartItems, removeFromCart, increaseQty, decreaseQty } = useCart();
+  const { cartItems, removeFromCart, increaseQty, decreaseQty, clearCart } =
+    useCart();
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    address: "",
+  });
+
   const total = cartItems.reduce(
     (sum, item) => sum + item.price * item.quantity,
     0
   );
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    alert("🛍️ Order submitted! (Hook up to backend/API)");
+    clearCart();
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-[#1f2a44] text-[#e0e0e0]">
       <Head>
-        <title>Shopping Cart | Classy Diamonds</title>
-        <meta name="description" content="View and manage your cart." />
+        <title>Your Cart | Classy Diamonds</title>
+        <meta name="description" content="Cart, summary, and checkout." />
       </Head>
 
       <Navbar />
 
-      {/* 🛒 Header Section */}
-      <section className="relative w-full h-[40vh] flex items-center justify-center text-center overflow-hidden -mt-20">
-        <div className="absolute inset-0 bg-[#1f2a44] pointer-events-none" />
-        <div className="relative z-10 px-4">
-          <h1 className="text-3xl sm:text-4xl font-bold mb-4">
-            Your Shopping Cart
-          </h1>
-          <p className="text-sm sm:text-base text-[#cfd2d6]">
-            Review your items and checkout in one place.
-          </p>
-        </div>
-      </section>
-
-      {/* 🛍️ Cart + Checkout Layout */}
-      <section className="px-4 sm:px-6 py-16 max-w-7xl mx-auto w-full flex flex-col lg:flex-row gap-10">
+      {/* 📦 Main Layout */}
+      <main className="flex flex-col lg:flex-row px-4 sm:px-6 pt-24 pb-32 max-w-7xl mx-auto w-full gap-10">
         {/* 🛒 Cart Items */}
-        <div className="flex-1 flex flex-col gap-6">
+        <section className="lg:w-2/3 flex flex-col gap-8">
+          <h1 className="text-2xl sm:text-3xl font-bold">Your Shopping Cart</h1>
           {cartItems.length > 0 ? (
             cartItems.map((item) => (
               <div
@@ -54,7 +61,6 @@ export default function CartPage() {
                     className="w-full h-full object-cover"
                   />
                 </div>
-
                 <div className="flex-1 text-center md:text-left">
                   <h2 className="text-lg sm:text-xl font-semibold text-[#cfd2d6]">
                     {item.name}
@@ -85,7 +91,6 @@ export default function CartPage() {
                     </button>
                   </div>
                 </div>
-
                 <button
                   onClick={() => removeFromCart(item.id)}
                   className="mt-4 md:mt-0 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition"
@@ -95,45 +100,66 @@ export default function CartPage() {
               </div>
             ))
           ) : (
-            <div className="text-center text-lg text-gray-400 flex flex-col gap-4 items-center">
-              <p>Your cart is empty. Start shopping to add beautiful pieces!</p>
+            <div className="text-center text-lg text-gray-400">
+              <p>Your cart is empty. Start shopping!</p>
               <Link
                 href="/jewelry"
-                className="mt-2 px-6 py-3 bg-white text-[#1f2a44] rounded-xl font-semibold hover:bg-gray-100 transition hover:scale-105"
+                className="mt-4 inline-block px-6 py-3 bg-white text-[#1f2a44] rounded-xl font-semibold hover:bg-gray-100 transition hover:scale-105"
               >
                 Browse Jewelry
               </Link>
             </div>
           )}
-        </div>
+        </section>
 
-        {/* 💳 Checkout Summary */}
-        {cartItems.length > 0 && (
-          <aside className="w-full lg:w-[400px] bg-[#25304f] rounded-xl shadow p-6 flex flex-col gap-6 sticky top-28 h-fit">
-            <h2 className="text-xl font-semibold">Order Summary</h2>
-            <div className="flex justify-between">
-              <span className="text-sm">Subtotal</span>
-              <span className="text-sm font-medium">
-                ${total.toLocaleString()}
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-sm">Shipping</span>
-              <span className="text-sm font-medium">
-                Calculated at checkout
-              </span>
-            </div>
-            <hr className="border-[#2d3a56]" />
-            <div className="flex justify-between text-lg font-bold">
-              <span>Total</span>
-              <span>${total.toLocaleString()}</span>
-            </div>
-            <button className="mt-3 px-6 py-3 bg-white text-[#1f2a44] rounded-full font-semibold hover:bg-gray-100 transition hover:scale-105">
-              Proceed to Checkout
+        {/* 📋 Order Summary + Checkout */}
+        <aside className="lg:w-1/3 bg-[#25304f] rounded-xl p-6 shadow flex flex-col gap-6 sticky top-24 h-fit">
+          <h2 className="text-xl font-bold border-b border-[#2d3a56] pb-2">
+            Order Summary
+          </h2>
+          <p className="text-sm">Items: {cartItems.length}</p>
+          <p className="text-lg font-semibold">
+            Total: ${total.toLocaleString()}
+          </p>
+
+          {/* 🧾 Checkout Form */}
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4 mt-4">
+            <input
+              type="text"
+              name="name"
+              placeholder="Full Name"
+              required
+              value={formData.name}
+              onChange={handleInputChange}
+              className="px-4 py-2 rounded bg-white text-[#1f2a44]"
+            />
+            <input
+              type="email"
+              name="email"
+              placeholder="Email Address"
+              required
+              value={formData.email}
+              onChange={handleInputChange}
+              className="px-4 py-2 rounded bg-white text-[#1f2a44]"
+            />
+            <input
+              type="text"
+              name="address"
+              placeholder="Shipping Address"
+              required
+              value={formData.address}
+              onChange={handleInputChange}
+              className="px-4 py-2 rounded bg-white text-[#1f2a44]"
+            />
+            <button
+              type="submit"
+              className="mt-2 px-6 py-3 bg-white text-[#1f2a44] rounded-full font-semibold hover:bg-gray-100 transition hover:scale-105"
+            >
+              Place Order
             </button>
-          </aside>
-        )}
-      </section>
+          </form>
+        </aside>
+      </main>
 
       <Footer />
     </div>
