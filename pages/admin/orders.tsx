@@ -1,4 +1,4 @@
-// ✅ Enhanced pages/admin/orders.tsx with Search, Date Filter, CSV Export
+// ✅ Enhanced pages/admin/orders.tsx with Search, Date Filter, CSV Export, Pagination, and Archiving
 
 import { useEffect, useState } from "react";
 import Head from "next/head";
@@ -14,6 +14,7 @@ interface Order {
   createdAt: string;
   stripeSessionId: string;
   shipped?: boolean;
+  archived?: boolean;
 }
 
 export default function AdminOrdersPage() {
@@ -24,6 +25,8 @@ export default function AdminOrdersPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
 
   useEffect(() => {
     const isAdmin = localStorage.getItem("adminAuth") === "true";
@@ -76,6 +79,27 @@ export default function AdminOrdersPage() {
     }
   };
 
+  const archiveOrder = async (orderId: string) => {
+    const confirmed = window.confirm(
+      `📦 Archive this order?\nOrder ID: ${orderId}`
+    );
+    if (!confirmed) return;
+
+    try {
+      const res = await fetch("/api/admin/archive", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderId }),
+      });
+
+      const result = await res.json();
+      if (res.ok) fetchOrders();
+      else alert("❌ " + result.error);
+    } catch (err) {
+      console.error("❌ Error archiving order:", err);
+    }
+  };
+
   const downloadCSV = () => {
     const headers = ["Name", "Email", "Order ID", "Total", "Date", "Items"];
     const rows = orders.map((order) => [
@@ -104,6 +128,8 @@ export default function AdminOrdersPage() {
   };
 
   const filteredOrders = orders.filter((order) => {
+    if (order.archived) return false;
+
     const query = searchQuery.toLowerCase();
     const matchQuery =
       order.customerName?.toLowerCase().includes(query) ||
@@ -116,6 +142,12 @@ export default function AdminOrdersPage() {
 
     return matchQuery && afterStart && beforeEnd;
   });
+
+  const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
+  const paginatedOrders = filteredOrders.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
 
   return (
     <div className="min-h-screen bg-[#1f2a44] text-white p-6">
@@ -185,7 +217,7 @@ export default function AdminOrdersPage() {
             <p>No matching orders found.</p>
           ) : (
             <div className="space-y-8">
-              {filteredOrders.map((order) => (
+              {paginatedOrders.map((order) => (
                 <div
                   key={order._id}
                   className="bg-[#25304f] p-6 rounded-xl shadow-md"
@@ -210,18 +242,45 @@ export default function AdminOrdersPage() {
                     ))}
                   </ul>
 
-                  <div className="flex justify-between items-center">
+                  <div className="flex justify-between items-center gap-2">
                     <span className="text-lg font-semibold">
                       💰 Total: ${(order.amount / 100).toFixed(2)}
                     </span>
-                    <button
-                      onClick={() => confirmAndShip(order.stripeSessionId)}
-                      className="bg-green-600 hover:bg-green-700 px-4 py-2 rounded text-sm"
-                    >
-                      Mark as Shipped 🚚
-                    </button>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => confirmAndShip(order.stripeSessionId)}
+                        className="bg-green-600 hover:bg-green-700 px-4 py-2 rounded text-sm"
+                      >
+                        Mark as Shipped 🚚
+                      </button>
+                      <button
+                        onClick={() => archiveOrder(order.stripeSessionId)}
+                        className="bg-yellow-600 hover:bg-yellow-700 px-4 py-2 rounded text-sm"
+                      >
+                        Archive 🗂
+                      </button>
+                    </div>
                   </div>
                 </div>
+              ))}
+            </div>
+          )}
+
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div className="flex justify-center mt-8 space-x-2">
+              {[...Array(totalPages)].map((_, index) => (
+                <button
+                  key={index}
+                  onClick={() => setCurrentPage(index + 1)}
+                  className={`px-3 py-1 rounded ${
+                    currentPage === index + 1
+                      ? "bg-blue-600"
+                      : "bg-[#2e3a58] hover:bg-blue-500"
+                  }`}
+                >
+                  {index + 1}
+                </button>
               ))}
             </div>
           )}
