@@ -68,7 +68,10 @@ export default async function handler(
         };
 
         await transporter.sendMail(mailOptions);
-        console.log("📧 Confirmation email sent");
+        console.log(
+          "📧 Confirmation email sent to:",
+          customerEmail || process.env.EMAIL_USER
+        );
       } catch (emailErr) {
         console.error("❌ Email sending failed:", emailErr);
       }
