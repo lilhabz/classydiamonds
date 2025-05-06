@@ -1,8 +1,10 @@
-// 📂 pages/admin/completed.tsx
+// 📂 pages/admin/completed.tsx – Admin View of Shipped Orders ✅🔒
 
 import { useEffect, useState } from "react";
 import Head from "next/head";
+import Link from "next/link";
 
+// 💎 Order type definition
 interface Order {
   _id: string;
   customerName: string;
@@ -18,22 +20,35 @@ interface Order {
 export default function CompletedOrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [adminKey, setAdminKey] = useState("");
+  const [authorized, setAuthorized] = useState(false);
 
+  // 🔐 Only fetch if authorized
   useEffect(() => {
-    const fetchCompletedOrders = async () => {
-      try {
-        const res = await fetch("/api/admin/completed");
-        const data = await res.json();
-        setOrders(data.orders || []);
-      } catch (err) {
-        console.error("❌ Failed to fetch completed orders:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
+    if (authorized) fetchCompletedOrders();
+  }, [authorized]);
 
-    fetchCompletedOrders();
-  }, []);
+  // 📦 Fetch shipped orders
+  const fetchCompletedOrders = async () => {
+    try {
+      const res = await fetch("/api/admin/completed");
+      const data = await res.json();
+      setOrders(data.orders || []);
+    } catch (err) {
+      console.error("❌ Failed to fetch completed orders:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 🔐 Admin login check
+  const handleLogin = () => {
+    if (adminKey === process.env.NEXT_PUBLIC_ADMIN_KEY) {
+      setAuthorized(true);
+    } else {
+      alert("❌ Incorrect admin key");
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#1f2a44] text-white p-6">
@@ -41,9 +56,35 @@ export default function CompletedOrdersPage() {
         <title>Completed Orders | Classy Diamonds</title>
       </Head>
 
-      <h1 className="text-3xl font-bold mb-6">✅ Completed Orders</h1>
+      {/* 🧭 Navigation */}
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold">✅ Completed Orders</h1>
+        <Link
+          href="/admin/orders"
+          className="text-sm bg-blue-600 px-4 py-2 rounded hover:bg-blue-700"
+        >
+          View Unshipped Orders 🔙
+        </Link>
+      </div>
 
-      {loading ? (
+      {/* 🔐 Admin Login Prompt */}
+      {!authorized ? (
+        <div className="max-w-sm mx-auto mt-20">
+          <input
+            type="password"
+            placeholder="Enter admin password"
+            value={adminKey}
+            onChange={(e) => setAdminKey(e.target.value)}
+            className="w-full px-4 py-2 rounded bg-gray-100 text-black mb-4"
+          />
+          <button
+            onClick={handleLogin}
+            className="w-full bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded"
+          >
+            Login 🔑
+          </button>
+        </div>
+      ) : loading ? (
         <p>Loading shipped orders...</p>
       ) : orders.length === 0 ? (
         <p>No completed orders yet.</p>
@@ -64,19 +105,21 @@ export default function CompletedOrdersPage() {
                 <strong>Address:</strong> {order.customerAddress}
               </p>
               <p>
-                <strong>Total:</strong> ${order.amount.toFixed(2)}
+                <strong>Total:</strong> ${(order.amount / 100).toFixed(2)}
               </p>
               <p>
                 <strong>Shipped At:</strong>{" "}
                 {new Date(order.shippedAt || "").toLocaleString()}
               </p>
+
+              {/* 🛍️ Items List */}
               <div className="mt-4">
                 <strong>Items:</strong>
                 {Array.isArray(order.items) ? (
                   <ul className="list-disc list-inside space-y-1 mt-2">
                     {order.items.map((item, i) => (
                       <li key={i}>
-                        {item.name || "Unnamed"} x{item.quantity || 1} — $
+                        {item.name || "Unnamed"} × {item.quantity || 1} — $
                         {((item.price || 0) * (item.quantity || 1)).toFixed(2)}
                       </li>
                     ))}

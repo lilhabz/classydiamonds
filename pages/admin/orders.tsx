@@ -1,14 +1,16 @@
-// 📂 pages/admin/orders.tsx
+// 📂 pages/admin/orders.tsx – Admin View of Unshipped Orders 🧾🔒
 
 import { useEffect, useState } from "react";
 import Head from "next/head";
+import Link from "next/link";
 
+// 💎 Order type definition
 interface Order {
   _id: string;
   customerName: string;
   customerEmail: string;
   customerAddress: string;
-  items?: { name: string; quantity: number; price: number; image?: string }[];
+  items?: { name: string; quantity: number; price: number }[];
   amount: number;
   createdAt: string;
   stripeSessionId: string;
@@ -19,25 +21,44 @@ export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
+  const [adminKey, setAdminKey] = useState("");
+  const [authorized, setAuthorized] = useState(false);
 
+  // 🔐 Only fetch orders if authorized
   useEffect(() => {
-    const fetchOrders = async () => {
-      try {
-        const res = await fetch("/api/admin/orders");
-        const data = await res.json();
-        setOrders(data.orders || []);
-      } catch (err) {
-        console.error("❌ Failed to fetch orders:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
+    if (authorized) fetchOrders();
+  }, [authorized]);
 
-    fetchOrders();
-  }, []);
+  // 📦 Fetch unshipped orders from API
+  const fetchOrders = async () => {
+    try {
+      const res = await fetch("/api/admin/orders");
+      const data = await res.json();
+      setOrders(data.orders || []);
+    } catch (err) {
+      console.error("❌ Failed to fetch orders:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const markAsShipped = async (orderId: string) => {
-    setMessage("Sending shipping email...");
+  // 🔐 Password-protected entry
+  const handleLogin = () => {
+    if (adminKey === process.env.NEXT_PUBLIC_ADMIN_KEY) {
+      setAuthorized(true);
+    } else {
+      alert("❌ Incorrect admin key");
+    }
+  };
+
+  // 🚚 Confirmation and ship request
+  const confirmAndShip = async (orderId: string) => {
+    const confirmed = window.confirm(
+      `📦 Are you sure you want to mark this order as shipped?\n\nOrder ID:\n${orderId}`
+    );
+
+    if (!confirmed) return;
+
     try {
       const res = await fetch("/api/shipped", {
         method: "POST",
@@ -46,14 +67,16 @@ export default function AdminOrdersPage() {
       });
 
       const result = await res.json();
-      if (result.success) {
-        window.location.href = "/admin/shipped-confirmation";
+
+      if (res.ok) {
+        setMessage("✅ Order marked as shipped!");
+        // Refresh order list
+        fetchOrders();
       } else {
-        setMessage(`❌ Failed to send: ${result.error}`);
+        alert("❌ " + result.error);
       }
     } catch (err) {
-      setMessage("❌ Error sending shipping email.");
-      console.error(err);
+      console.error("❌ Error shipping order:", err);
     }
   };
 
@@ -63,73 +86,83 @@ export default function AdminOrdersPage() {
         <title>Admin Orders | Classy Diamonds</title>
       </Head>
 
-      <h1 className="text-3xl font-bold mb-6">📦 Admin Order Management</h1>
+      {/* 🧭 Navigation */}
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold">Admin Orders</h1>
+        <Link
+          href="/admin/completed"
+          className="text-sm bg-blue-600 px-4 py-2 rounded hover:bg-blue-700"
+        >
+          View Completed Orders ➡️
+        </Link>
+      </div>
 
-      {loading ? (
-        <p>Loading orders...</p>
-      ) : orders.length === 0 ? (
-        <p>No orders found.</p>
+      {/* 🔐 Admin Login Prompt */}
+      {!authorized ? (
+        <div className="max-w-sm mx-auto mt-20">
+          <input
+            type="password"
+            placeholder="Enter admin password"
+            value={adminKey}
+            onChange={(e) => setAdminKey(e.target.value)}
+            className="w-full px-4 py-2 rounded bg-gray-100 text-black mb-4"
+          />
+          <button
+            onClick={handleLogin}
+            className="w-full bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded"
+          >
+            Login 🔑
+          </button>
+        </div>
       ) : (
-        <div className="space-y-10">
-          {orders.map((order) => (
-            <div
-              key={order._id}
-              className="bg-[#25304f] rounded-xl p-6 shadow-md"
-            >
-              <p>
-                <strong>Name:</strong> {order.customerName}
-              </p>
-              <p>
-                <strong>Email:</strong> {order.customerEmail}
-              </p>
-              <p>
-                <strong>Address:</strong> {order.customerAddress}
-              </p>
-              <p>
-                <strong>Order Total:</strong> $
-                {order.amount?.toFixed(2) ?? "N/A"}
-              </p>
-              <p>
-                <strong>Order Date:</strong>{" "}
-                {new Date(order.createdAt).toLocaleString()}
-              </p>
-              <p>
-                <strong>Order ID:</strong> {order.stripeSessionId}
-              </p>
+        <>
+          {/* 🔄 Orders Table */}
+          {loading ? (
+            <p>Loading orders...</p>
+          ) : orders.length === 0 ? (
+            <p>No unshipped orders found ✅</p>
+          ) : (
+            <div className="space-y-8">
+              {orders.map((order) => (
+                <div
+                  key={order._id}
+                  className="bg-[#25304f] p-6 rounded-xl shadow-md"
+                >
+                  <h2 className="text-xl font-semibold mb-2">
+                    {order.customerName} ({order.customerEmail})
+                  </h2>
+                  <p className="mb-2 text-sm">📍 {order.customerAddress}</p>
+                  <p className="mb-2 text-sm">
+                    🧾 Order Date: {new Date(order.createdAt).toLocaleString()}
+                  </p>
 
-              <div className="mt-4">
-                <strong>Items:</strong>
-                {Array.isArray(order.items) ? (
-                  <ul className="list-disc list-inside space-y-1 mt-2">
-                    {order.items.map((item, i) => (
-                      <li key={i}>
-                        {item.name || "Unnamed"} x{item.quantity || 1} — $
-                        {((item.price || 0) * (item.quantity || 1)).toFixed(2)}
+                  {/* 🛍️ Items List */}
+                  <ul className="mb-4 pl-4 list-disc text-sm">
+                    {order.items?.map((item, index) => (
+                      <li key={index}>
+                        {item.quantity}× {item.name} – $
+                        {(item.price * item.quantity).toFixed(2)}
                       </li>
                     ))}
                   </ul>
-                ) : (
-                  <p className="text-sm text-red-300 mt-2">
-                    ⚠️ No item data available.
-                  </p>
-                )}
-              </div>
 
-              <button
-                onClick={() => markAsShipped(order.stripeSessionId)}
-                className="mt-6 px-5 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition"
-              >
-                📬 Mark as Shipped
-              </button>
+                  {/* 💵 Amount + Button */}
+                  <div className="flex justify-between items-center">
+                    <span className="text-lg font-semibold">
+                      💰 Total: ${(order.amount / 100).toFixed(2)}
+                    </span>
+                    <button
+                      onClick={() => confirmAndShip(order.stripeSessionId)}
+                      className="bg-green-600 hover:bg-green-700 px-4 py-2 rounded text-sm"
+                    >
+                      Mark as Shipped 🚚
+                    </button>
+                  </div>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
-      )}
-
-      {message && (
-        <p className="mt-8 text-center text-yellow-300 font-semibold">
-          {message}
-        </p>
+          )}
+        </>
       )}
     </div>
   );
