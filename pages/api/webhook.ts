@@ -60,7 +60,9 @@ export default async function handler(
 
         const mailOptions = {
           from: `"Classy Diamonds" <${process.env.EMAIL_USER}>`,
-          to: [customerEmail, process.env.EMAIL_USER].filter(Boolean), // ✅ send to both
+          to: [customerEmail, process.env.EMAIL_USER].filter(
+            Boolean
+          ) as string[], // ✅ FIXED cast
           subject: "💎 Thank You for Your Order!",
           text: `Hi ${
             customerName || "Customer"
