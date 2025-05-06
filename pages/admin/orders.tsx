@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import Head from "next/head";
 import Link from "next/link";
 
-// 💎 Order type definition
 interface Order {
   _id: string;
   customerName: string;
@@ -24,13 +23,11 @@ export default function AdminOrdersPage() {
   const [adminKey, setAdminKey] = useState("");
   const [authorized, setAuthorized] = useState(false);
 
-  // 🔐 Check localStorage for saved login
   useEffect(() => {
     const isAdmin = localStorage.getItem("adminAuth") === "true";
     if (isAdmin) setAuthorized(true);
   }, []);
 
-  // 📦 Fetch orders once authorized
   useEffect(() => {
     if (authorized) fetchOrders();
   }, [authorized]);
@@ -49,7 +46,7 @@ export default function AdminOrdersPage() {
 
   const handleLogin = () => {
     if (adminKey === process.env.NEXT_PUBLIC_ADMIN_KEY) {
-      localStorage.setItem("adminAuth", "true"); // ✅ Store login flag
+      localStorage.setItem("adminAuth", "true");
       setAuthorized(true);
     } else {
       alert("❌ Incorrect admin key");
@@ -74,7 +71,7 @@ export default function AdminOrdersPage() {
 
       if (res.ok) {
         setMessage("✅ Order marked as shipped!");
-        fetchOrders(); // 🔄 Refresh orders after update
+        fetchOrders(); // 🔄 Refresh orders
       } else {
         alert("❌ " + result.error);
       }
@@ -128,15 +125,18 @@ export default function AdminOrdersPage() {
               key={order._id}
               className="bg-[#25304f] p-6 rounded-xl shadow-md"
             >
-              <h2 className="text-xl font-semibold mb-2">
+              <h2 className="text-xl font-semibold mb-1">
                 {order.customerName} ({order.customerEmail})
               </h2>
+              <p className="text-sm mb-2 text-gray-300">
+                🆔 Order ID: {order.stripeSessionId.slice(-8)}
+              </p>
               <p className="mb-2 text-sm">📍 {order.customerAddress}</p>
               <p className="mb-2 text-sm">
                 🧾 Order Date: {new Date(order.createdAt).toLocaleString()}
               </p>
 
-              {/* 🛍️ Items List */}
+              {/* 🛍️ Items */}
               <ul className="mb-4 pl-4 list-disc text-sm">
                 {order.items?.map((item, index) => (
                   <li key={index}>
@@ -146,7 +146,7 @@ export default function AdminOrdersPage() {
                 ))}
               </ul>
 
-              {/* 💵 Amount + Button */}
+              {/* 💰 Total & Button */}
               <div className="flex justify-between items-center">
                 <span className="text-lg font-semibold">
                   💰 Total: ${(order.amount / 100).toFixed(2)}
@@ -163,7 +163,7 @@ export default function AdminOrdersPage() {
         </div>
       )}
 
-      {/* 🔓 Optional Logout */}
+      {/* 🔓 Logout */}
       {authorized && (
         <button
           onClick={() => {

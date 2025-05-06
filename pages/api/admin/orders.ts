@@ -14,9 +14,11 @@ export default async function handler(
   try {
     const client = await clientPromise;
     const db = client.db();
+
+    // ✅ Only fetch orders where shipped is NOT true
     const orders = await db
       .collection("orders")
-      .find({})
+      .find({ shipped: { $ne: true } })
       .sort({ createdAt: -1 })
       .toArray();
 

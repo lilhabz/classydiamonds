@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import Head from "next/head";
 import Link from "next/link";
 
-// 💎 Order type definition
 interface Order {
   _id: string;
   customerName: string;
@@ -23,7 +22,6 @@ export default function CompletedOrdersPage() {
   const [adminKey, setAdminKey] = useState("");
   const [authorized, setAuthorized] = useState(false);
 
-  // 🔐 Check login memory
   useEffect(() => {
     const isAdmin = localStorage.getItem("adminAuth") === "true";
     if (isAdmin) setAuthorized(true);
@@ -33,7 +31,6 @@ export default function CompletedOrdersPage() {
     if (authorized) fetchCompletedOrders();
   }, [authorized]);
 
-  // 📦 Fetch completed orders
   const fetchCompletedOrders = async () => {
     try {
       const res = await fetch("/api/admin/completed");
@@ -48,7 +45,7 @@ export default function CompletedOrdersPage() {
 
   const handleLogin = () => {
     if (adminKey === process.env.NEXT_PUBLIC_ADMIN_KEY) {
-      localStorage.setItem("adminAuth", "true"); // ✅ Save login
+      localStorage.setItem("adminAuth", "true");
       setAuthorized(true);
     } else {
       alert("❌ Incorrect admin key");
@@ -72,7 +69,6 @@ export default function CompletedOrdersPage() {
         </Link>
       </div>
 
-      {/* 🔐 Login Form */}
       {!authorized ? (
         <div className="max-w-sm mx-auto mt-20">
           <input
@@ -100,11 +96,11 @@ export default function CompletedOrdersPage() {
               key={order._id}
               className="bg-[#25304f] rounded-xl p-6 shadow-md"
             >
-              <p>
-                <strong>Name:</strong> {order.customerName}
-              </p>
-              <p>
-                <strong>Email:</strong> {order.customerEmail}
+              <h2 className="text-xl font-semibold mb-1">
+                {order.customerName} ({order.customerEmail})
+              </h2>
+              <p className="text-sm mb-2 text-gray-300">
+                🆔 Order ID: {order.stripeSessionId.slice(-8)}
               </p>
               <p>
                 <strong>Address:</strong> {order.customerAddress}
@@ -140,7 +136,7 @@ export default function CompletedOrdersPage() {
         </div>
       )}
 
-      {/* 🔓 Optional Logout */}
+      {/* 🔓 Logout */}
       {authorized && (
         <button
           onClick={() => {
