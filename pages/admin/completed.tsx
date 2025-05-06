@@ -1,4 +1,4 @@
-// ✅ Enhanced pages/admin/completed.tsx with Search Functionality
+// ✅ Enhanced pages/admin/completed.tsx with Search, Date Filter, CSV Export
 
 import { useEffect, useState } from "react";
 import Head from "next/head";
@@ -22,6 +22,8 @@ export default function CompletedOrdersPage() {
   const [adminKey, setAdminKey] = useState("");
   const [authorized, setAuthorized] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
 
   useEffect(() => {
     const isAdmin = localStorage.getItem("adminAuth") === "true";
@@ -53,13 +55,45 @@ export default function CompletedOrdersPage() {
     }
   };
 
+  const downloadCSV = () => {
+    const headers = ["Name", "Email", "Order ID", "Total", "Date", "Items"];
+    const rows = orders.map((order) => [
+      order.customerName,
+      order.customerEmail,
+      order.stripeSessionId,
+      `$${(order.amount / 100).toFixed(2)}`,
+      new Date(order.shippedAt || "").toLocaleString(),
+      (order.items || [])
+        .map(
+          (i) =>
+            `${i.quantity}× ${i.name} - $${(i.quantity * i.price).toFixed(2)}`
+        )
+        .join(" | "),
+    ]);
+
+    const csvContent = [headers, ...rows].map((r) => r.join(",")).join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "completed_orders.csv";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const filteredOrders = orders.filter((order) => {
     const query = searchQuery.toLowerCase();
-    return (
+    const matchQuery =
       order.customerName?.toLowerCase().includes(query) ||
       order.customerEmail?.toLowerCase().includes(query) ||
-      order.stripeSessionId?.toLowerCase().includes(query)
-    );
+      order.stripeSessionId?.toLowerCase().includes(query);
+
+    const orderDate = new Date(order.shippedAt || "");
+    const afterStart = startDate ? orderDate >= new Date(startDate) : true;
+    const beforeEnd = endDate ? orderDate <= new Date(endDate) : true;
+
+    return matchQuery && afterStart && beforeEnd;
   });
 
   return (
@@ -98,13 +132,33 @@ export default function CompletedOrdersPage() {
         <p>Loading shipped orders...</p>
       ) : (
         <>
-          <input
-            type="text"
-            placeholder="Search by name, email, or ID..."
-            className="w-full max-w-md mb-6 px-4 py-2 rounded bg-[#2e3a58] text-white"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
+          <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 mb-6">
+            <input
+              type="text"
+              placeholder="Search by name, email, or ID..."
+              className="w-full sm:w-1/3 mb-2 sm:mb-0 px-4 py-2 rounded bg-[#2e3a58] text-white"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+            <input
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              className="px-2 py-1 rounded bg-[#2e3a58] text-white"
+            />
+            <input
+              type="date"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              className="px-2 py-1 rounded bg-[#2e3a58] text-white"
+            />
+            <button
+              onClick={downloadCSV}
+              className="bg-green-600 hover:bg-green-700 px-4 py-2 rounded text-sm"
+            >
+              Export CSV 📄
+            </button>
+          </div>
 
           {filteredOrders.length === 0 ? (
             <p>No matching orders found.</p>
@@ -134,7 +188,7 @@ export default function CompletedOrdersPage() {
 
                   <div className="mt-4">
                     <strong>Items:</strong>
-                    {Array.isArray(order.items) ? (
+                    {Array.isArray(order.items) && order.items.length > 0 ? (
                       <ul className="list-disc list-inside space-y-1 mt-2">
                         {order.items.map((item, i) => (
                           <li key={i}>
