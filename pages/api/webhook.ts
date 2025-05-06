@@ -42,9 +42,11 @@ export default async function handler(
       const customerName = session.customer_details?.name;
       const amountTotal = (session.amount_total || 0) / 100;
 
+      // 🧪 Debug customer details
+      console.log("🧪 Stripe customer details:", session.customer_details);
+
       // 💌 Send confirmation email
       try {
-        // 🧪 Debug: Check if env vars are loaded
         console.log("🔍 EMAIL_USER:", process.env.EMAIL_USER);
         console.log("🔍 EMAIL_PASS exists:", !!process.env.EMAIL_PASS);
 
@@ -58,7 +60,7 @@ export default async function handler(
 
         const mailOptions = {
           from: `"Classy Diamonds" <${process.env.EMAIL_USER}>`,
-          to: customerEmail || process.env.EMAIL_USER,
+          to: [customerEmail, process.env.EMAIL_USER].filter(Boolean), // ✅ send to both
           subject: "💎 Thank You for Your Order!",
           text: `Hi ${
             customerName || "Customer"
@@ -68,10 +70,7 @@ export default async function handler(
         };
 
         await transporter.sendMail(mailOptions);
-        console.log(
-          "📧 Confirmation email sent to:",
-          customerEmail || process.env.EMAIL_USER
-        );
+        console.log("📧 Confirmation email sent to:", mailOptions.to);
       } catch (emailErr) {
         console.error("❌ Email sending failed:", emailErr);
       }
