@@ -47,14 +47,34 @@ export default async function handler(
       const items = JSON.parse(metadata.items || "[]");
       const amountTotal = (session.amount_total || 0) / 100;
 
-      const itemDetails = items
+      const itemRows = items
         .map(
           (item: any) =>
-            `• ${item.name} x${item.quantity} - $${(
+            `<tr><td>${item.name}</td><td>x${item.quantity}</td><td>$${(
               item.price * item.quantity
-            ).toFixed(2)}`
+            ).toFixed(2)}</td></tr>`
         )
-        .join("\n");
+        .join("");
+
+      const htmlContent = `
+        <div style="font-family: Arial, sans-serif; color: #333;">
+          <h2 style="color: #1f2a44;">Thank You for Your Order, ${customerName}!</h2>
+          <p>We’ve received your order and are getting started on it right away. Here’s your receipt:</p>
+          <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
+            <thead>
+              <tr style="background-color: #f2f2f2;">
+                <th align="left">Item</th>
+                <th align="left">Quantity</th>
+                <th align="left">Subtotal</th>
+              </tr>
+            </thead>
+            <tbody>${itemRows}</tbody>
+          </table>
+          <p style="margin-top: 20px;"><strong>Shipping to:</strong><br>${customerAddress}</p>
+          <p><strong>Total:</strong> $${amountTotal.toFixed(2)}</p>
+          <p style="margin-top: 30px;">We appreciate your business.<br><strong>– Classy Diamonds</strong></p>
+        </div>
+      `;
 
       try {
         const transporter = nodemailer.createTransport({
@@ -69,20 +89,7 @@ export default async function handler(
           from: `"Classy Diamonds" <${process.env.EMAIL_USER}>`,
           to: customerEmail,
           subject: "💎 Your Classy Diamonds Receipt",
-          text: `Hi ${customerName},
-
-Thank you for your order! Here's your receipt:
-
-${itemDetails}
-
-Shipping to:
-${customerAddress}
-
-Total: $${amountTotal.toFixed(2)}
-
-We appreciate your business and will be in touch soon.
-
-– Classy Diamonds`,
+          html: htmlContent,
         };
 
         await transporter.sendMail(mailOptions);
