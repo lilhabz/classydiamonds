@@ -1,4 +1,4 @@
-// 📂 pages/api/admin/archive.ts – Archive Handler 🗂
+// 📂 pages/api/admin/archive.ts – Archive or Restore Handler 🗂♻️
 
 import type { NextApiRequest, NextApiResponse } from "next";
 import clientPromise from "@/lib/mongodb";
@@ -11,7 +11,7 @@ export default async function handler(
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const { orderId } = req.body;
+  const { orderId, restore } = req.body;
 
   if (!orderId) {
     return res.status(400).json({ error: "Missing orderId" });
@@ -21,22 +21,22 @@ export default async function handler(
     const client = await clientPromise;
     const db = client.db();
 
-    const result = await db
-      .collection("orders")
-      .updateOne(
-        { stripeSessionId: orderId },
-        { $set: { archived: true, archivedAt: new Date() } }
-      );
+    const result = await db.collection("orders").updateOne(
+      { stripeSessionId: orderId },
+      restore
+        ? { $set: { archived: false }, $unset: { archivedAt: "" } } // ♻️ RESTORE
+        : { $set: { archived: true, archivedAt: new Date() } } // 🗂 ARCHIVE
+    );
 
     if (result.modifiedCount === 0) {
       return res
         .status(404)
-        .json({ error: "Order not found or already archived" });
+        .json({ error: "Order not found or already in desired state" });
     }
 
     return res.status(200).json({ success: true });
   } catch (err) {
-    console.error("❌ Failed to archive order:", err);
+    console.error("❌ Failed to update archive state:", err);
     return res.status(500).json({ error: "Server error" });
   }
 }
