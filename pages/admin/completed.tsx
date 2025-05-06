@@ -23,12 +23,17 @@ export default function CompletedOrdersPage() {
   const [adminKey, setAdminKey] = useState("");
   const [authorized, setAuthorized] = useState(false);
 
-  // 🔐 Only fetch if authorized
+  // 🔐 Check login memory
+  useEffect(() => {
+    const isAdmin = localStorage.getItem("adminAuth") === "true";
+    if (isAdmin) setAuthorized(true);
+  }, []);
+
   useEffect(() => {
     if (authorized) fetchCompletedOrders();
   }, [authorized]);
 
-  // 📦 Fetch shipped orders
+  // 📦 Fetch completed orders
   const fetchCompletedOrders = async () => {
     try {
       const res = await fetch("/api/admin/completed");
@@ -41,9 +46,9 @@ export default function CompletedOrdersPage() {
     }
   };
 
-  // 🔐 Admin login check
   const handleLogin = () => {
     if (adminKey === process.env.NEXT_PUBLIC_ADMIN_KEY) {
+      localStorage.setItem("adminAuth", "true"); // ✅ Save login
       setAuthorized(true);
     } else {
       alert("❌ Incorrect admin key");
@@ -67,7 +72,7 @@ export default function CompletedOrdersPage() {
         </Link>
       </div>
 
-      {/* 🔐 Admin Login Prompt */}
+      {/* 🔐 Login Form */}
       {!authorized ? (
         <div className="max-w-sm mx-auto mt-20">
           <input
@@ -133,6 +138,19 @@ export default function CompletedOrdersPage() {
             </div>
           ))}
         </div>
+      )}
+
+      {/* 🔓 Optional Logout */}
+      {authorized && (
+        <button
+          onClick={() => {
+            localStorage.removeItem("adminAuth");
+            window.location.reload();
+          }}
+          className="mt-8 text-sm text-red-300 underline"
+        >
+          Logout 🔒
+        </button>
       )}
     </div>
   );

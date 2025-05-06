@@ -24,12 +24,17 @@ export default function AdminOrdersPage() {
   const [adminKey, setAdminKey] = useState("");
   const [authorized, setAuthorized] = useState(false);
 
-  // 🔐 Only fetch orders if authorized
+  // 🔐 Check localStorage for saved login
+  useEffect(() => {
+    const isAdmin = localStorage.getItem("adminAuth") === "true";
+    if (isAdmin) setAuthorized(true);
+  }, []);
+
+  // 📦 Fetch orders once authorized
   useEffect(() => {
     if (authorized) fetchOrders();
   }, [authorized]);
 
-  // 📦 Fetch unshipped orders from API
   const fetchOrders = async () => {
     try {
       const res = await fetch("/api/admin/orders");
@@ -42,16 +47,15 @@ export default function AdminOrdersPage() {
     }
   };
 
-  // 🔐 Password-protected entry
   const handleLogin = () => {
     if (adminKey === process.env.NEXT_PUBLIC_ADMIN_KEY) {
+      localStorage.setItem("adminAuth", "true"); // ✅ Store login flag
       setAuthorized(true);
     } else {
       alert("❌ Incorrect admin key");
     }
   };
 
-  // 🚚 Confirmation and ship request
   const confirmAndShip = async (orderId: string) => {
     const confirmed = window.confirm(
       `📦 Are you sure you want to mark this order as shipped?\n\nOrder ID:\n${orderId}`
@@ -70,8 +74,7 @@ export default function AdminOrdersPage() {
 
       if (res.ok) {
         setMessage("✅ Order marked as shipped!");
-        // Refresh order list
-        fetchOrders();
+        fetchOrders(); // 🔄 Refresh orders after update
       } else {
         alert("❌ " + result.error);
       }
@@ -114,55 +117,63 @@ export default function AdminOrdersPage() {
             Login 🔑
           </button>
         </div>
+      ) : loading ? (
+        <p>Loading orders...</p>
+      ) : orders.length === 0 ? (
+        <p>No unshipped orders found ✅</p>
       ) : (
-        <>
-          {/* 🔄 Orders Table */}
-          {loading ? (
-            <p>Loading orders...</p>
-          ) : orders.length === 0 ? (
-            <p>No unshipped orders found ✅</p>
-          ) : (
-            <div className="space-y-8">
-              {orders.map((order) => (
-                <div
-                  key={order._id}
-                  className="bg-[#25304f] p-6 rounded-xl shadow-md"
+        <div className="space-y-8">
+          {orders.map((order) => (
+            <div
+              key={order._id}
+              className="bg-[#25304f] p-6 rounded-xl shadow-md"
+            >
+              <h2 className="text-xl font-semibold mb-2">
+                {order.customerName} ({order.customerEmail})
+              </h2>
+              <p className="mb-2 text-sm">📍 {order.customerAddress}</p>
+              <p className="mb-2 text-sm">
+                🧾 Order Date: {new Date(order.createdAt).toLocaleString()}
+              </p>
+
+              {/* 🛍️ Items List */}
+              <ul className="mb-4 pl-4 list-disc text-sm">
+                {order.items?.map((item, index) => (
+                  <li key={index}>
+                    {item.quantity}× {item.name} – $
+                    {(item.price * item.quantity).toFixed(2)}
+                  </li>
+                ))}
+              </ul>
+
+              {/* 💵 Amount + Button */}
+              <div className="flex justify-between items-center">
+                <span className="text-lg font-semibold">
+                  💰 Total: ${(order.amount / 100).toFixed(2)}
+                </span>
+                <button
+                  onClick={() => confirmAndShip(order.stripeSessionId)}
+                  className="bg-green-600 hover:bg-green-700 px-4 py-2 rounded text-sm"
                 >
-                  <h2 className="text-xl font-semibold mb-2">
-                    {order.customerName} ({order.customerEmail})
-                  </h2>
-                  <p className="mb-2 text-sm">📍 {order.customerAddress}</p>
-                  <p className="mb-2 text-sm">
-                    🧾 Order Date: {new Date(order.createdAt).toLocaleString()}
-                  </p>
-
-                  {/* 🛍️ Items List */}
-                  <ul className="mb-4 pl-4 list-disc text-sm">
-                    {order.items?.map((item, index) => (
-                      <li key={index}>
-                        {item.quantity}× {item.name} – $
-                        {(item.price * item.quantity).toFixed(2)}
-                      </li>
-                    ))}
-                  </ul>
-
-                  {/* 💵 Amount + Button */}
-                  <div className="flex justify-between items-center">
-                    <span className="text-lg font-semibold">
-                      💰 Total: ${(order.amount / 100).toFixed(2)}
-                    </span>
-                    <button
-                      onClick={() => confirmAndShip(order.stripeSessionId)}
-                      className="bg-green-600 hover:bg-green-700 px-4 py-2 rounded text-sm"
-                    >
-                      Mark as Shipped 🚚
-                    </button>
-                  </div>
-                </div>
-              ))}
+                  Mark as Shipped 🚚
+                </button>
+              </div>
             </div>
-          )}
-        </>
+          ))}
+        </div>
+      )}
+
+      {/* 🔓 Optional Logout */}
+      {authorized && (
+        <button
+          onClick={() => {
+            localStorage.removeItem("adminAuth");
+            window.location.reload();
+          }}
+          className="mt-8 text-sm text-red-300 underline"
+        >
+          Logout 🔒
+        </button>
       )}
     </div>
   );
