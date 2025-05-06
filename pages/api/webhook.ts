@@ -46,33 +46,66 @@ export default async function handler(
       const customerAddress = metadata.customer_address || "N/A";
       const items = JSON.parse(metadata.items || "[]");
       const amountTotal = (session.amount_total || 0) / 100;
+      const orderDate = new Date().toLocaleString();
+      const orderId = session.id;
 
       const itemRows = items
         .map(
-          (item: any) =>
-            `<tr><td>${item.name}</td><td>x${item.quantity}</td><td>$${(
-              item.price * item.quantity
-            ).toFixed(2)}</td></tr>`
+          (item: any) => `
+            <tr>
+              <td style="padding: 8px; border: 1px solid #ddd;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                  <img src="${item.image}" alt="${
+            item.name
+          }" style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px;" />
+                  <span>${item.name}</span>
+                </div>
+              </td>
+              <td style="padding: 8px; border: 1px solid #ddd;">x${
+                item.quantity
+              }</td>
+              <td style="padding: 8px; border: 1px solid #ddd;">$${(
+                item.price * item.quantity
+              ).toFixed(2)}</td>
+            </tr>`
         )
         .join("");
 
       const htmlContent = `
-        <div style="font-family: Arial, sans-serif; color: #333;">
+        <div style="font-family: Arial, sans-serif; color: #333; max-width: 600px; margin: auto;">
           <h2 style="color: #1f2a44;">Thank You for Your Order, ${customerName}!</h2>
-          <p>We’ve received your order and are getting started on it right away. Here’s your receipt:</p>
+          <p>We’ve received your order and are getting started on it right away. Here's your detailed receipt:</p>
+
+          <p><strong>Order ID:</strong> ${orderId}<br>
+          <strong>Order Date:</strong> ${orderDate}</p>
+
           <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
             <thead>
               <tr style="background-color: #f2f2f2;">
-                <th align="left">Item</th>
-                <th align="left">Quantity</th>
-                <th align="left">Subtotal</th>
+                <th align="left" style="padding: 8px; border: 1px solid #ddd;">Item</th>
+                <th align="left" style="padding: 8px; border: 1px solid #ddd;">Quantity</th>
+                <th align="left" style="padding: 8px; border: 1px solid #ddd;">Subtotal</th>
               </tr>
             </thead>
             <tbody>${itemRows}</tbody>
           </table>
+
           <p style="margin-top: 20px;"><strong>Shipping to:</strong><br>${customerAddress}</p>
           <p><strong>Total:</strong> $${amountTotal.toFixed(2)}</p>
-          <p style="margin-top: 30px;">We appreciate your business.<br><strong>– Classy Diamonds</strong></p>
+
+          <hr style="margin: 30px 0;">
+
+          <p style="font-size: 14px;">
+            If you have any questions, contact us at
+            <a href="mailto:support@classydiamonds.com">support@classydiamonds.com</a><br>
+            <strong>Classy Diamonds</strong><br>
+            123 Sparkle Lane<br>
+            Philadelphia, PA 19106
+          </p>
+
+          <p style="margin-top: 30px; font-size: 14px; color: #777;">
+            Thank you again for choosing Classy Diamonds.
+          </p>
         </div>
       `;
 
