@@ -30,6 +30,10 @@ export default async function handler(
 
     try {
       event = stripe.webhooks.constructEvent(buf, sig, webhookSecret);
+
+      // ✅ Add log here to confirm webhook is hit
+      console.log("⚡️ Webhook hit");
+      console.log("🧪 Stripe event type:", event.type);
     } catch (err: any) {
       console.error("❌ Webhook Error:", err.message);
       return res.status(400).send(`Webhook Error: ${err.message}`);
@@ -62,7 +66,7 @@ export default async function handler(
           from: `"Classy Diamonds" <${process.env.EMAIL_USER}>`,
           to: [customerEmail, process.env.EMAIL_USER].filter(
             Boolean
-          ) as string[], // ✅ FIXED cast
+          ) as string[], // ✅ Type-safe email array
           subject: "💎 Thank You for Your Order!",
           text: `Hi ${
             customerName || "Customer"
