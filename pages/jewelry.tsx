@@ -79,7 +79,9 @@ export default function JewelryPage() {
           ].map((category) => (
             <Link
               key={category.name}
-              href={`/category/${category.name.toLowerCase().replace(/\s+/g, "-")}`}
+              href={`/category/${category.name
+                .toLowerCase()
+                .replace(/\s+/g, "-")}`}
               className="group bg-[#25304f] rounded-2xl overflow-hidden shadow-md hover:shadow-2xl hover:scale-105 transition-all duration-300 flex items-center justify-center py-8 sm:py-10 text-base sm:text-lg font-semibold text-[#cfd2d6] hover:text-white cursor-pointer"
             >
               {category.name}
@@ -178,8 +180,7 @@ export default function JewelryPage() {
           </div>
         )}
       </section>
-
-     
     </div>
   );
 }
+// redeploy
