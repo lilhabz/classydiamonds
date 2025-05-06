@@ -29,6 +29,15 @@ export default async function handler(
       return res.status(404).json({ error: "Order not found" });
     }
 
+    // ✅ Update Mongo to mark as shipped
+    await db
+      .collection("orders")
+      .updateOne(
+        { stripeSessionId: orderId },
+        { $set: { shipped: true, shippedAt: new Date() } }
+      );
+
+    // ✅ Send shipping email
     const transporter = nodemailer.createTransport({
       service: "gmail",
       auth: {
@@ -41,14 +50,12 @@ export default async function handler(
       <div style="font-family: Arial, sans-serif; color: #333; max-width: 600px; margin: auto;">
         <h2 style="color: #1f2a44;">Your Order Has Shipped! 📦</h2>
         <p>Hi ${order.customerName},</p>
-        <p>We’re excited to let you know that your order is officially on its way!</p>
-
-        <p><strong>Order ID:</strong> ${orderId}</p>
+        <p>Your order has been carefully packaged and handed off for delivery.</p>
         <p><strong>Shipping to:</strong><br>${order.customerAddress}</p>
         <p><strong>Total:</strong> $${order.amount.toFixed(2)}</p>
 
         <p style="margin-top: 30px; font-size: 14px;">
-          If you have any questions, reach us at
+          If you have any questions, reply to this email or contact
           <a href="mailto:support@classydiamonds.com">support@classydiamonds.com</a>
         </p>
 
@@ -58,14 +65,13 @@ export default async function handler(
       </div>
     `;
 
-    const mailOptions = {
+    await transporter.sendMail({
       from: `"Classy Diamonds" <${process.env.EMAIL_USER}>`,
       to: order.customerEmail,
       subject: "📦 Your Order Has Shipped!",
       html,
-    };
+    });
 
-    await transporter.sendMail(mailOptions);
     console.log("📬 Shipping email sent to:", order.customerEmail);
     return res.status(200).json({ success: true });
   } catch (err) {
