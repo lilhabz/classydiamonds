@@ -1,4 +1,4 @@
-// 📂 pages/admin/completed.tsx – Admin View of Shipped Orders ✅🔒
+// ✅ Enhanced pages/admin/completed.tsx with Search Functionality
 
 import { useEffect, useState } from "react";
 import Head from "next/head";
@@ -21,6 +21,7 @@ export default function CompletedOrdersPage() {
   const [loading, setLoading] = useState(true);
   const [adminKey, setAdminKey] = useState("");
   const [authorized, setAuthorized] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     const isAdmin = localStorage.getItem("adminAuth") === "true";
@@ -52,13 +53,21 @@ export default function CompletedOrdersPage() {
     }
   };
 
+  const filteredOrders = orders.filter((order) => {
+    const query = searchQuery.toLowerCase();
+    return (
+      order.customerName?.toLowerCase().includes(query) ||
+      order.customerEmail?.toLowerCase().includes(query) ||
+      order.stripeSessionId?.toLowerCase().includes(query)
+    );
+  });
+
   return (
     <div className="min-h-screen bg-[#1f2a44] text-white p-6">
       <Head>
         <title>Completed Orders | Classy Diamonds</title>
       </Head>
 
-      {/* 🧭 Navigation */}
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">✅ Completed Orders</h1>
         <Link
@@ -87,66 +96,76 @@ export default function CompletedOrdersPage() {
         </div>
       ) : loading ? (
         <p>Loading shipped orders...</p>
-      ) : orders.length === 0 ? (
-        <p>No completed orders yet.</p>
       ) : (
-        <div className="space-y-10">
-          {orders.map((order) => (
-            <div
-              key={order._id}
-              className="bg-[#25304f] rounded-xl p-6 shadow-md"
-            >
-              <h2 className="text-xl font-semibold mb-1">
-                {order.customerName} ({order.customerEmail})
-              </h2>
-              <p className="text-sm mb-2 text-gray-300">
-                🆔 Order ID: {order.stripeSessionId.slice(-8)}
-              </p>
-              <p>
-                <strong>Address:</strong> {order.customerAddress}
-              </p>
-              <p>
-                <strong>Total:</strong> ${(order.amount / 100).toFixed(2)}
-              </p>
-              <p>
-                <strong>Shipped At:</strong>{" "}
-                {new Date(order.shippedAt || "").toLocaleString()}
-              </p>
+        <>
+          <input
+            type="text"
+            placeholder="Search by name, email, or ID..."
+            className="w-full max-w-md mb-6 px-4 py-2 rounded bg-[#2e3a58] text-white"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
 
-              {/* 🛍️ Items List */}
-              <div className="mt-4">
-                <strong>Items:</strong>
-                {Array.isArray(order.items) ? (
-                  <ul className="list-disc list-inside space-y-1 mt-2">
-                    {order.items.map((item, i) => (
-                      <li key={i}>
-                        {item.name || "Unnamed"} × {item.quantity || 1} — $
-                        {((item.price || 0) * (item.quantity || 1)).toFixed(2)}
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="text-sm text-red-300 mt-2">
-                    ⚠️ No item data available.
+          {filteredOrders.length === 0 ? (
+            <p>No matching orders found.</p>
+          ) : (
+            <div className="space-y-10">
+              {filteredOrders.map((order) => (
+                <div
+                  key={order._id}
+                  className="bg-[#25304f] rounded-xl p-6 shadow-md"
+                >
+                  <h2 className="text-xl font-semibold mb-1">
+                    {order.customerName} ({order.customerEmail})
+                  </h2>
+                  <p className="text-sm mb-2 text-gray-300">
+                    🆔 Order ID: {order.stripeSessionId.slice(-8)}
                   </p>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+                  <p>
+                    <strong>Address:</strong> {order.customerAddress}
+                  </p>
+                  <p>
+                    <strong>Total:</strong> ${(order.amount / 100).toFixed(2)}
+                  </p>
+                  <p>
+                    <strong>Shipped At:</strong>{" "}
+                    {new Date(order.shippedAt || "").toLocaleString()}
+                  </p>
 
-      {/* 🔓 Logout */}
-      {authorized && (
-        <button
-          onClick={() => {
-            localStorage.removeItem("adminAuth");
-            window.location.reload();
-          }}
-          className="mt-8 text-sm text-red-300 underline"
-        >
-          Logout 🔒
-        </button>
+                  <div className="mt-4">
+                    <strong>Items:</strong>
+                    {Array.isArray(order.items) ? (
+                      <ul className="list-disc list-inside space-y-1 mt-2">
+                        {order.items.map((item, i) => (
+                          <li key={i}>
+                            {item.name || "Unnamed"} × {item.quantity || 1} — $
+                            {((item.price || 0) * (item.quantity || 1)).toFixed(
+                              2
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="text-sm text-red-300 mt-2">
+                        ⚠️ No item data available.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <button
+            onClick={() => {
+              localStorage.removeItem("adminAuth");
+              window.location.reload();
+            }}
+            className="mt-8 text-sm text-red-300 underline"
+          >
+            Logout 🔒
+          </button>
+        </>
       )}
     </div>
   );
