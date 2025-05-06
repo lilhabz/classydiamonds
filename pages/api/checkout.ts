@@ -14,7 +14,7 @@ export default async function handler(
   }
 
   try {
-    const { items } = req.body;
+    const { items, email } = req.body; // 🆕 include email from frontend
 
     if (!items || !Array.isArray(items)) {
       return res.status(400).json({ error: "Invalid items data" });
@@ -44,6 +44,7 @@ export default async function handler(
       line_items,
       success_url: `${req.headers.origin}/success`,
       cancel_url: `${req.headers.origin}/cart`,
+      customer_email: email, // ✅ THIS LINE IS KEY
     });
 
     return res.status(200).json({ url: session.url });

@@ -12,11 +12,13 @@ import { useState } from "react";
 export default function CartPage() {
   const { cartItems, removeFromCart, increaseQty, decreaseQty, clearCart } =
     useCart();
+
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     address: "",
   });
+
   const [isLoading, setIsLoading] = useState(false);
 
   const total = cartItems.reduce(
@@ -38,7 +40,10 @@ export default function CartPage() {
       const response = await fetch("/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ items: cartItems }),
+        body: JSON.stringify({
+          items: cartItems,
+          email: formData.email, // ✅ pass email to backend
+        }),
       });
 
       const text = await response.text();
@@ -189,8 +194,6 @@ export default function CartPage() {
           </form>
         </aside>
       </main>
-
-      <Footer />
     </div>
   );
 }
