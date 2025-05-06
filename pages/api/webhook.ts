@@ -42,8 +42,12 @@ export default async function handler(
       const customerName = session.customer_details?.name;
       const amountTotal = (session.amount_total || 0) / 100;
 
-      // 💌 Send email
+      // 💌 Send confirmation email
       try {
+        // 🧪 Debug: Check if env vars are loaded
+        console.log("🔍 EMAIL_USER:", process.env.EMAIL_USER);
+        console.log("🔍 EMAIL_PASS exists:", !!process.env.EMAIL_PASS);
+
         const transporter = nodemailer.createTransport({
           service: "gmail",
           auth: {
@@ -69,7 +73,7 @@ export default async function handler(
         console.error("❌ Email sending failed:", emailErr);
       }
 
-      // 💾 Backup order save (only if it doesn't already exist)
+      // 💾 Save order to MongoDB (if not already saved)
       try {
         const dbClient = await clientPromise;
         const db = dbClient.db();
