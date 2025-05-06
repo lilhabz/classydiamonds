@@ -47,7 +47,7 @@ export default function AdminOrdersPage() {
 
       const result = await res.json();
       if (result.success) {
-        setMessage("✅ Shipping email sent.");
+        window.location.href = "/admin/shipped-confirmation";
       } else {
         setMessage(`❌ Failed to send: ${result.error}`);
       }
