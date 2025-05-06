@@ -1,5 +1,6 @@
 // 📂 pages/_app.tsx
 
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import "@/styles/globals.css";
 import type { AppProps } from "next/app";
 import { SessionProvider } from "next-auth/react"; // 🔐 Wrap app with session support
