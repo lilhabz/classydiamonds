@@ -8,7 +8,7 @@ interface Order {
   customerName: string;
   customerEmail: string;
   customerAddress: string;
-  items: { name: string; quantity: number; price: number; image?: string }[];
+  items?: { name: string; quantity: number; price: number; image?: string }[];
   amount: number;
   createdAt: string;
   stripeSessionId: string;
@@ -86,7 +86,8 @@ export default function AdminOrdersPage() {
                 <strong>Address:</strong> {order.customerAddress}
               </p>
               <p>
-                <strong>Order Total:</strong> ${order.amount.toFixed(2)}
+                <strong>Order Total:</strong> $
+                {order.amount?.toFixed(2) ?? "N/A"}
               </p>
               <p>
                 <strong>Order Date:</strong>{" "}
@@ -98,14 +99,20 @@ export default function AdminOrdersPage() {
 
               <div className="mt-4">
                 <strong>Items:</strong>
-                <ul className="list-disc list-inside space-y-1 mt-2">
-                  {order.items.map((item, i) => (
-                    <li key={i}>
-                      {item.name} x{item.quantity} — $
-                      {(item.price * item.quantity).toFixed(2)}
-                    </li>
-                  ))}
-                </ul>
+                {Array.isArray(order.items) ? (
+                  <ul className="list-disc list-inside space-y-1 mt-2">
+                    {order.items.map((item, i) => (
+                      <li key={i}>
+                        {item.name || "Unnamed"} x{item.quantity || 1} — $
+                        {((item.price || 0) * (item.quantity || 1)).toFixed(2)}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-sm text-red-300 mt-2">
+                    ⚠️ No item data available.
+                  </p>
+                )}
               </div>
 
               <button
