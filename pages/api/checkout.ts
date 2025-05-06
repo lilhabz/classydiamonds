@@ -14,7 +14,7 @@ export default async function handler(
   }
 
   try {
-    const { items, email } = req.body; // 🆕 include email from frontend
+    const { items, name, email, address } = req.body;
 
     if (!items || !Array.isArray(items)) {
       return res.status(400).json({ error: "Invalid items data" });
@@ -44,7 +44,12 @@ export default async function handler(
       line_items,
       success_url: `${req.headers.origin}/success`,
       cancel_url: `${req.headers.origin}/cart`,
-      customer_email: email, // ✅ THIS LINE IS KEY
+      metadata: {
+        customer_name: name,
+        customer_email: email,
+        customer_address: address,
+        items: JSON.stringify(items),
+      },
     });
 
     return res.status(200).json({ url: session.url });

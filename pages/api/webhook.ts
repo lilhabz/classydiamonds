@@ -30,8 +30,6 @@ export default async function handler(
 
     try {
       event = stripe.webhooks.constructEvent(buf, sig, webhookSecret);
-
-      // ✅ Add log here to confirm webhook is hit
       console.log("⚡️ Webhook hit");
       console.log("🧪 Stripe event type:", event.type);
     } catch (err: any) {
@@ -42,18 +40,23 @@ export default async function handler(
     if (event.type === "checkout.session.completed") {
       const session = event.data.object as Stripe.Checkout.Session;
 
-      const customerEmail = session.customer_details?.email;
-      const customerName = session.customer_details?.name;
+      const metadata = session.metadata || {};
+      const customerEmail = metadata.customer_email || process.env.EMAIL_USER;
+      const customerName = metadata.customer_name || "Customer";
+      const customerAddress = metadata.customer_address || "N/A";
+      const items = JSON.parse(metadata.items || "[]");
       const amountTotal = (session.amount_total || 0) / 100;
 
-      // 🧪 Debug customer details
-      console.log("🧪 Stripe customer details:", session.customer_details);
+      const itemDetails = items
+        .map(
+          (item: any) =>
+            `• ${item.name} x${item.quantity} - $${(
+              item.price * item.quantity
+            ).toFixed(2)}`
+        )
+        .join("\n");
 
-      // 💌 Send confirmation email
       try {
-        console.log("🔍 EMAIL_USER:", process.env.EMAIL_USER);
-        console.log("🔍 EMAIL_PASS exists:", !!process.env.EMAIL_PASS);
-
         const transporter = nodemailer.createTransport({
           service: "gmail",
           auth: {
@@ -64,24 +67,30 @@ export default async function handler(
 
         const mailOptions = {
           from: `"Classy Diamonds" <${process.env.EMAIL_USER}>`,
-          to: [customerEmail, process.env.EMAIL_USER].filter(
-            Boolean
-          ) as string[], // ✅ Type-safe email array
-          subject: "💎 Thank You for Your Order!",
-          text: `Hi ${
-            customerName || "Customer"
-          },\n\nThank you for your purchase of $${amountTotal.toFixed(
-            2
-          )}.\nWe'll begin working on your order immediately.\n\n- Classy Diamonds`,
+          to: customerEmail,
+          subject: "💎 Your Classy Diamonds Receipt",
+          text: `Hi ${customerName},
+
+Thank you for your order! Here's your receipt:
+
+${itemDetails}
+
+Shipping to:
+${customerAddress}
+
+Total: $${amountTotal.toFixed(2)}
+
+We appreciate your business and will be in touch soon.
+
+– Classy Diamonds`,
         };
 
         await transporter.sendMail(mailOptions);
-        console.log("📧 Confirmation email sent to:", mailOptions.to);
+        console.log("📧 Receipt email sent to:", customerEmail);
       } catch (emailErr) {
         console.error("❌ Email sending failed:", emailErr);
       }
 
-      // 💾 Save order to MongoDB (if not already saved)
       try {
         const dbClient = await clientPromise;
         const db = dbClient.db();
@@ -91,8 +100,10 @@ export default async function handler(
 
         if (!existing) {
           await orders.insertOne({
-            customerName: customerName || "Unknown",
-            customerEmail: customerEmail || "Unknown",
+            customerName,
+            customerEmail,
+            customerAddress,
+            items,
             amount: amountTotal,
             currency: session.currency || "usd",
             paymentStatus: session.payment_status || "unpaid",
