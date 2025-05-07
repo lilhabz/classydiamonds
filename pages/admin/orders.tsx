@@ -1,9 +1,9 @@
-// ✅ Enhanced pages/admin/orders.tsx using session-based admin check instead of localStorage
+// ✅ Enhanced pages/admin/orders.tsx with fixed total, proper archive logic, and dashboard-style nav 🔐🛠️
 
 import { useEffect, useState } from "react";
 import Head from "next/head";
 import Link from "next/link";
-import { useSession } from "next-auth/react"; // 🔐 Auth
+import { useSession } from "next-auth/react";
 
 interface Order {
   _id: string;
@@ -72,7 +72,7 @@ export default function AdminOrdersPage() {
     if (!confirmed) return;
 
     try {
-      const res = await fetch("/api/admin/archive", {
+      const res = await fetch("/api/admin/archived", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ orderId }),
@@ -114,7 +114,7 @@ export default function AdminOrdersPage() {
   };
 
   const filteredOrders = orders.filter((order) => {
-    if (order.archived) return false;
+    if (order.archived || order.shipped) return false;
 
     const query = searchQuery.toLowerCase();
     const matchQuery =
@@ -150,13 +150,31 @@ export default function AdminOrdersPage() {
         <title>Admin Orders | Classy Diamonds</title>
       </Head>
 
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">Admin Orders</h1>
+      {/* 🛠️ Admin Dashboard Navigation */}
+      <div className="flex justify-center gap-4 mb-8 text-sm">
+        <Link
+          href="/admin/orders"
+          className="bg-blue-600 px-4 py-2 rounded hover:bg-blue-700"
+        >
+          📦 Orders
+        </Link>
         <Link
           href="/admin/completed"
-          className="text-sm bg-blue-600 px-4 py-2 rounded hover:bg-blue-700"
+          className="bg-green-600 px-4 py-2 rounded hover:bg-green-700"
         >
-          View Completed Orders ➡️
+          ✅ Shipped
+        </Link>
+        <Link
+          href="/admin/archived"
+          className="bg-yellow-600 px-4 py-2 rounded hover:bg-yellow-700"
+        >
+          🗂 Archived
+        </Link>
+        <Link
+          href="/admin/logs"
+          className="bg-gray-600 px-4 py-2 rounded hover:bg-gray-700"
+        >
+          📝 Logs
         </Link>
       </div>
 
@@ -166,7 +184,7 @@ export default function AdminOrdersPage() {
         <p>No matching orders found.</p>
       ) : (
         <>
-          {/* 🔍 Search & Filters */}
+          {/* 🔍 Filters */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 mb-6">
             <input
               type="text"
@@ -195,7 +213,7 @@ export default function AdminOrdersPage() {
             </button>
           </div>
 
-          {/* 📦 Orders */}
+          {/* 🧾 Orders */}
           <div className="space-y-8">
             {paginatedOrders.map((order) => (
               <div
@@ -264,7 +282,7 @@ export default function AdminOrdersPage() {
             </div>
           )}
 
-          {/* 🚪 Exit button to return to main site */}
+          {/* 🚪 Exit */}
           <button
             onClick={() => {
               window.location.href = "/";
