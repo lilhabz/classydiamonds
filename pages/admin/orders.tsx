@@ -1,8 +1,9 @@
-// ✅ Enhanced pages/admin/orders.tsx with Search, Date Filter, CSV Export, Pagination, and Archiving
+// ✅ Enhanced pages/admin/orders.tsx using session-based admin check instead of localStorage
 
 import { useEffect, useState } from "react";
 import Head from "next/head";
 import Link from "next/link";
+import { useSession } from "next-auth/react"; // 🔐 Auth
 
 interface Order {
   _id: string;
@@ -18,10 +19,9 @@ interface Order {
 }
 
 export default function AdminOrdersPage() {
+  const { data: session, status } = useSession();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
-  const [adminKey, setAdminKey] = useState("");
-  const [authorized, setAuthorized] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
@@ -29,13 +29,8 @@ export default function AdminOrdersPage() {
   const itemsPerPage = 5;
 
   useEffect(() => {
-    const isAdmin = localStorage.getItem("adminAuth") === "true";
-    if (isAdmin) setAuthorized(true);
-  }, []);
-
-  useEffect(() => {
-    if (authorized) fetchOrders();
-  }, [authorized]);
+    if (session?.user?.isAdmin) fetchOrders();
+  }, [session]);
 
   const fetchOrders = async () => {
     try {
@@ -46,15 +41,6 @@ export default function AdminOrdersPage() {
       console.error("❌ Failed to fetch orders:", err);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleLogin = () => {
-    if (adminKey === process.env.NEXT_PUBLIC_ADMIN_KEY) {
-      localStorage.setItem("adminAuth", "true");
-      setAuthorized(true);
-    } else {
-      alert("❌ Incorrect admin key");
     }
   };
 
@@ -149,6 +135,15 @@ export default function AdminOrdersPage() {
     currentPage * itemsPerPage
   );
 
+  if (status === "loading")
+    return <div className="p-6">Checking access...</div>;
+  if (!session?.user?.isAdmin)
+    return (
+      <div className="p-6 text-red-300 font-semibold">
+        ❌ Unauthorized – Admins only
+      </div>
+    );
+
   return (
     <div className="min-h-screen bg-[#1f2a44] text-white p-6">
       <Head>
@@ -165,26 +160,13 @@ export default function AdminOrdersPage() {
         </Link>
       </div>
 
-      {!authorized ? (
-        <div className="max-w-sm mx-auto mt-20">
-          <input
-            type="password"
-            placeholder="Enter admin password"
-            value={adminKey}
-            onChange={(e) => setAdminKey(e.target.value)}
-            className="w-full px-4 py-2 rounded bg-gray-100 text-black mb-4"
-          />
-          <button
-            onClick={handleLogin}
-            className="w-full bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded"
-          >
-            Login 🔑
-          </button>
-        </div>
-      ) : loading ? (
+      {loading ? (
         <p>Loading orders...</p>
+      ) : filteredOrders.length === 0 ? (
+        <p>No matching orders found.</p>
       ) : (
         <>
+          {/* 🔍 Search & Filters */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 mb-6">
             <input
               type="text"
@@ -213,60 +195,57 @@ export default function AdminOrdersPage() {
             </button>
           </div>
 
-          {filteredOrders.length === 0 ? (
-            <p>No matching orders found.</p>
-          ) : (
-            <div className="space-y-8">
-              {paginatedOrders.map((order) => (
-                <div
-                  key={order._id}
-                  className="bg-[#25304f] p-6 rounded-xl shadow-md"
-                >
-                  <h2 className="text-xl font-semibold mb-1">
-                    {order.customerName} ({order.customerEmail})
-                  </h2>
-                  <p className="text-sm mb-2 text-gray-300">
-                    🆔 Order ID: {order.stripeSessionId.slice(-8)}
-                  </p>
-                  <p className="mb-2 text-sm">📍 {order.customerAddress}</p>
-                  <p className="mb-2 text-sm">
-                    🧾 Order Date: {new Date(order.createdAt).toLocaleString()}
-                  </p>
+          {/* 📦 Orders */}
+          <div className="space-y-8">
+            {paginatedOrders.map((order) => (
+              <div
+                key={order._id}
+                className="bg-[#25304f] p-6 rounded-xl shadow-md"
+              >
+                <h2 className="text-xl font-semibold mb-1">
+                  {order.customerName} ({order.customerEmail})
+                </h2>
+                <p className="text-sm mb-2 text-gray-300">
+                  🆔 Order ID: {order.stripeSessionId.slice(-8)}
+                </p>
+                <p className="mb-2 text-sm">📍 {order.customerAddress}</p>
+                <p className="mb-2 text-sm">
+                  🧾 Order Date: {new Date(order.createdAt).toLocaleString()}
+                </p>
 
-                  <ul className="mb-4 pl-4 list-disc text-sm">
-                    {order.items?.map((item, index) => (
-                      <li key={index}>
-                        {item.quantity}× {item.name} – $
-                        {(item.price * item.quantity).toFixed(2)}
-                      </li>
-                    ))}
-                  </ul>
+                <ul className="mb-4 pl-4 list-disc text-sm">
+                  {order.items?.map((item, index) => (
+                    <li key={index}>
+                      {item.quantity}× {item.name} – $
+                      {(item.price * item.quantity).toFixed(2)}
+                    </li>
+                  ))}
+                </ul>
 
-                  <div className="flex justify-between items-center gap-2">
-                    <span className="text-lg font-semibold">
-                      💰 Total: ${(order.amount / 100).toFixed(2)}
-                    </span>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => confirmAndShip(order.stripeSessionId)}
-                        className="bg-green-600 hover:bg-green-700 px-4 py-2 rounded text-sm"
-                      >
-                        Mark as Shipped 🚚
-                      </button>
-                      <button
-                        onClick={() => archiveOrder(order.stripeSessionId)}
-                        className="bg-yellow-600 hover:bg-yellow-700 px-4 py-2 rounded text-sm"
-                      >
-                        Archive 🗂
-                      </button>
-                    </div>
+                <div className="flex justify-between items-center gap-2">
+                  <span className="text-lg font-semibold">
+                    💰 Total: ${(order.amount / 100).toFixed(2)}
+                  </span>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => confirmAndShip(order.stripeSessionId)}
+                      className="bg-green-600 hover:bg-green-700 px-4 py-2 rounded text-sm"
+                    >
+                      Mark as Shipped 🚚
+                    </button>
+                    <button
+                      onClick={() => archiveOrder(order.stripeSessionId)}
+                      className="bg-yellow-600 hover:bg-yellow-700 px-4 py-2 rounded text-sm"
+                    >
+                      Archive 🗂
+                    </button>
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
+              </div>
+            ))}
+          </div>
 
-          {/* Pagination Controls */}
+          {/* 🔄 Pagination Controls */}
           {totalPages > 1 && (
             <div className="flex justify-center mt-8 space-x-2">
               {[...Array(totalPages)].map((_, index) => (
@@ -285,14 +264,14 @@ export default function AdminOrdersPage() {
             </div>
           )}
 
+          {/* 🚪 Exit button to return to main site */}
           <button
             onClick={() => {
-              localStorage.removeItem("adminAuth");
-              window.location.reload();
+              window.location.href = "/";
             }}
             className="mt-8 text-sm text-red-300 underline"
           >
-            Logout 🔒
+            Exit Admin Panel 🔒
           </button>
         </>
       )}
