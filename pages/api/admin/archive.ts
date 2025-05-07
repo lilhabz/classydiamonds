@@ -1,4 +1,4 @@
-// 📂 pages/api/admin/archive.ts – Archive or Restore Handler 🗂♻️
+// 📂 pages/api/admin/archive.ts – Archive or Restore + Admin Log 🗂♻️📝
 
 import type { NextApiRequest, NextApiResponse } from "next";
 import clientPromise from "@/lib/mongodb";
@@ -21,18 +21,28 @@ export default async function handler(
     const client = await clientPromise;
     const db = client.db();
 
-    const result = await db.collection("orders").updateOne(
-      { stripeSessionId: orderId },
-      restore
-        ? { $set: { archived: false }, $unset: { archivedAt: "" } } // ♻️ RESTORE
-        : { $set: { archived: true, archivedAt: new Date() } } // 🗂 ARCHIVE
-    );
+    // 🛠 Update archive state
+    const update = restore
+      ? { $set: { archived: false }, $unset: { archivedAt: "" } }
+      : { $set: { archived: true, archivedAt: new Date() } };
+
+    const result = await db
+      .collection("orders")
+      .updateOne({ stripeSessionId: orderId }, update);
 
     if (result.modifiedCount === 0) {
       return res
         .status(404)
         .json({ error: "Order not found or already in desired state" });
     }
+
+    // 📝 Log action to adminLogs collection
+    await db.collection("adminLogs").insertOne({
+      orderId,
+      action: restore ? "restore" : "archive",
+      timestamp: new Date(),
+      performedBy: "admin", // ✅ Replace with real user ID/email if using Auth later
+    });
 
     return res.status(200).json({ success: true });
   } catch (err) {
