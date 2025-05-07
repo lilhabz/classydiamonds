@@ -165,9 +165,18 @@ export default function AdminLogsPage() {
                     <td className="py-2 px-4 text-blue-300 hover:text-blue-400">
                       {log.orderId.slice(-8)}
                     </td>
-                    <td className="py-2 px-4 capitalize text-yellow-300">
+                    <td
+                      className={`py-2 px-4 capitalize ${
+                        log.action === "shipped"
+                          ? "text-green-400"
+                          : log.action === "restore"
+                          ? "text-blue-400"
+                          : "text-yellow-300"
+                      }`}
+                    >
                       {log.action}
                     </td>
+
                     <td className="py-2 px-4 text-sm">
                       {new Date(log.timestamp).toLocaleString()}
                     </td>
