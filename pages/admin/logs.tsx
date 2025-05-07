@@ -1,4 +1,4 @@
-// ✅ Enhanced pages/admin/logs.tsx with expandable order view + unified admin nav 🔐📝
+// ✅ Enhanced pages/admin/logs.tsx with expandable order view + search + unified admin nav 🔐📝
 
 import { useEffect, useState } from "react";
 import Head from "next/head";
@@ -27,6 +27,7 @@ export default function AdminLogsPage() {
   const [expandedOrders, setExpandedOrders] = useState<
     Record<string, OrderDetails>
   >({});
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     if (session?.user?.isAdmin) fetchLogs();
@@ -83,6 +84,12 @@ export default function AdminLogsPage() {
     document.body.removeChild(link);
   };
 
+  const filteredLogs = logs.filter(
+    (log) =>
+      log.orderId.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      log.performedBy.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   if (status === "loading")
     return <div className="p-6">Checking access...</div>;
   if (!session?.user?.isAdmin)
@@ -116,8 +123,14 @@ export default function AdminLogsPage() {
         </Link>
       </nav>
 
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-semibold">🧾 Admin Logs</h2>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
+        <input
+          type="text"
+          placeholder="Search by Order ID or Admin..."
+          className="w-full sm:w-1/3 px-4 py-2 rounded bg-[#2e3a58] text-white"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+        />
         <button
           onClick={downloadCSV}
           className="text-sm bg-green-600 px-4 py-2 rounded hover:bg-green-700"
@@ -128,8 +141,8 @@ export default function AdminLogsPage() {
 
       {loading ? (
         <p>Loading logs...</p>
-      ) : logs.length === 0 ? (
-        <p>No admin activity logged yet.</p>
+      ) : filteredLogs.length === 0 ? (
+        <p>No matching admin logs found.</p>
       ) : (
         <div className="overflow-auto">
           <table className="min-w-full text-left">
@@ -142,7 +155,7 @@ export default function AdminLogsPage() {
               </tr>
             </thead>
             <tbody>
-              {logs.map((log) => (
+              {filteredLogs.map((log) => (
                 <>
                   <tr
                     key={log._id}
