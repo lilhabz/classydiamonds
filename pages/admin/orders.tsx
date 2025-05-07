@@ -150,8 +150,13 @@ export default function AdminOrdersPage() {
         <title>Admin Orders | Classy Diamonds</title>
       </Head>
 
-      {/* 🛠️ Admin Dashboard Navigation */}
-      <div className="flex justify-center gap-4 mb-8 text-sm">
+      {/* 🛠️ Admin Dashboard Heading */}
+      <h1 className="text-3xl font-bold text-center mb-8">
+        🛠️ Admin Dashboard
+      </h1>
+
+      {/* 🔗 Dashboard Nav Buttons */}
+      <div className="flex justify-center gap-4 mb-10 text-sm">
         <Link
           href="/admin/orders"
           className="bg-blue-600 px-4 py-2 rounded hover:bg-blue-700"
