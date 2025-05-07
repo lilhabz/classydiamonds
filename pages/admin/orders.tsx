@@ -1,4 +1,4 @@
-// ✅ Enhanced pages/admin/orders.tsx with fixed total, proper archive logic, and dashboard-style nav 🔐🛠️
+// ✅ Enhanced pages/admin/orders.tsx with fixed total, proper archive logic, and unified dashboard nav 🔐🛠️
 
 import { useEffect, useState } from "react";
 import Head from "next/head";
@@ -151,37 +151,23 @@ export default function AdminOrdersPage() {
       </Head>
 
       {/* 🛠️ Admin Dashboard Heading */}
-      <h1 className="text-3xl font-bold text-center mb-8">
-        🛠️ Admin Dashboard
-      </h1>
+      <h1 className="text-3xl font-bold mb-6">🛠️ Admin Dashboard</h1>
 
-      {/* 🔗 Dashboard Nav Buttons */}
-      <div className="flex justify-center gap-4 mb-10 text-sm">
-        <Link
-          href="/admin/orders"
-          className="bg-blue-600 px-4 py-2 rounded hover:bg-blue-700"
-        >
+      {/* 🔗 Admin Navigation Tabs */}
+      <nav className="flex space-x-6 mb-8 border-b border-[#2a374f] pb-4 text-white text-sm font-semibold">
+        <Link href="/admin" className="text-yellow-400">
           📦 Orders
         </Link>
-        <Link
-          href="/admin/completed"
-          className="bg-green-600 px-4 py-2 rounded hover:bg-green-700"
-        >
+        <Link href="/admin/completed" className="hover:text-yellow-300">
           ✅ Shipped
         </Link>
-        <Link
-          href="/admin/archived"
-          className="bg-yellow-600 px-4 py-2 rounded hover:bg-yellow-700"
-        >
+        <Link href="/admin/archived" className="hover:text-yellow-300">
           🗂 Archived
         </Link>
-        <Link
-          href="/admin/logs"
-          className="bg-gray-600 px-4 py-2 rounded hover:bg-gray-700"
-        >
+        <Link href="/admin/logs" className="hover:text-yellow-300">
           📝 Logs
         </Link>
-      </div>
+      </nav>
 
       {loading ? (
         <p>Loading orders...</p>
