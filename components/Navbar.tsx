@@ -4,14 +4,14 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { useRouter } from "next/router"; // ✅ Correct for /pages router
+import { useRouter } from "next/router";
 import { useSession, signOut } from "next-auth/react";
 import { FiUser, FiShoppingCart, FiSearch, FiMenu, FiX } from "react-icons/fi";
 import { useCart } from "@/context/CartContext";
 
 const Navbar = () => {
   const router = useRouter();
-  const pathname = router.pathname; // ✅ Correct replacement for usePathname()
+  const pathname = router.pathname;
   const { data: session } = useSession();
   const { cartItems, increaseQty, decreaseQty, removeFromCart, addedItemName } =
     useCart();
@@ -111,7 +111,6 @@ const Navbar = () => {
             <div className="flex items-center gap-4 text-2xl text-[#e0e0e0]">
               <button
                 ref={userButtonRef}
-                onClick={() => setUserMenuOpen((prev) => !prev)}
                 className="hover:text-white cursor-pointer"
               >
                 <FiUser />
@@ -168,6 +167,14 @@ const Navbar = () => {
                 </Link>
               );
             })}
+            {(session?.user as any)?.isAdmin && (
+              <Link
+                href="/admin"
+                className="text-yellow-400 font-semibold hover:text-yellow-300 transition text-base md:text-lg"
+              >
+                Admin 🛠️
+              </Link>
+            )}
           </nav>
 
           <div className="flex items-center gap-6 text-[#e0e0e0] text-xl">
@@ -182,7 +189,6 @@ const Navbar = () => {
               {session ? (
                 <>
                   <button
-                    onClick={() => setUserMenuOpen((prev) => !prev)}
                     className="hover:text-white hover:scale-105 transition-transform duration-300 cursor-pointer"
                     ref={userButtonRef}
                   >
