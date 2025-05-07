@@ -1,8 +1,9 @@
-// 📂 pages/admin/logs.tsx – View Admin Action Logs 📝 with CSV Export
+// ✅ pages/admin/logs.tsx – View Admin Logs using NextAuth session instead of localStorage 🔐📝
 
 import { useEffect, useState } from "react";
 import Head from "next/head";
 import Link from "next/link";
+import { useSession } from "next-auth/react";
 
 interface AdminLog {
   _id: string;
@@ -13,18 +14,13 @@ interface AdminLog {
 }
 
 export default function AdminLogsPage() {
+  const { data: session, status } = useSession();
   const [logs, setLogs] = useState<AdminLog[]>([]);
   const [loading, setLoading] = useState(true);
-  const [authorized, setAuthorized] = useState(false);
 
   useEffect(() => {
-    const isAdmin = localStorage.getItem("adminAuth") === "true";
-    if (isAdmin) setAuthorized(true);
-  }, []);
-
-  useEffect(() => {
-    if (authorized) fetchLogs();
-  }, [authorized]);
+    if (session?.user?.isAdmin) fetchLogs();
+  }, [session]);
 
   const fetchLogs = async () => {
     try {
@@ -58,6 +54,15 @@ export default function AdminLogsPage() {
     document.body.removeChild(link);
   };
 
+  if (status === "loading")
+    return <div className="p-6">Checking access...</div>;
+  if (!session?.user?.isAdmin)
+    return (
+      <div className="p-6 text-red-300 font-semibold">
+        ❌ Unauthorized – Admins only
+      </div>
+    );
+
   return (
     <div className="min-h-screen bg-[#1f2a44] text-white p-6">
       <Head>
@@ -82,9 +87,7 @@ export default function AdminLogsPage() {
         </div>
       </div>
 
-      {!authorized ? (
-        <p>🔒 Admin access required.</p>
-      ) : loading ? (
+      {loading ? (
         <p>Loading logs...</p>
       ) : logs.length === 0 ? (
         <p>No admin activity logged yet.</p>
