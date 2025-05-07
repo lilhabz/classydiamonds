@@ -166,7 +166,8 @@ export default function AdminLogsPage() {
                     <tr className="bg-[#2a374f]">
                       <td colSpan={4} className="px-6 py-4">
                         <p className="mb-2 text-sm">
-                          📍 {expandedOrders[log.orderId].customerAddress}
+                          📍 Address:{" "}
+                          {expandedOrders[log.orderId].customerAddress}
                         </p>
                         <p className="mb-2 text-sm">
                           🧾 Order Date:{" "}
