@@ -1,4 +1,4 @@
-// ✅ Enhanced pages/admin/archived.tsx with unified admin nav, fixed total, pagination 🔐🗂️
+// ✅ Enhanced pages/admin/archived.tsx with Restore button, unified nav, pagination, and logging 🔐🗂️
 
 import { useEffect, useState } from "react";
 import Head from "next/head";
@@ -39,6 +39,26 @@ export default function ArchivedOrdersPage() {
       console.error("❌ Failed to fetch archived orders:", err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const restoreOrder = async (orderId: string) => {
+    const confirmed = window.confirm(
+      `♻️ Restore this order?\nOrder ID: ${orderId}`
+    );
+    if (!confirmed) return;
+
+    try {
+      const res = await fetch("/api/admin/archived", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderId, restore: true }),
+      });
+      const result = await res.json();
+      if (res.ok) fetchArchivedOrders();
+      else alert("❌ " + result.error);
+    } catch (err) {
+      console.error("❌ Error restoring order:", err);
     }
   };
 
@@ -165,14 +185,22 @@ export default function ArchivedOrdersPage() {
               <ul className="mb-4 pl-4 list-disc text-sm">
                 {order.items?.map((item, index) => (
                   <li key={index}>
-                    {item.quantity}× {item.name} – $
+                    {item.quantity}× {item.name} – ${" "}
                     {(item.price * item.quantity).toFixed(2)}
                   </li>
                 ))}
               </ul>
-              <span className="text-lg font-semibold">
-                💰 Total: ${order.amount.toFixed(2)}
-              </span>
+              <div className="flex justify-between items-center">
+                <span className="text-lg font-semibold">
+                  💰 Total: ${order.amount.toFixed(2)}
+                </span>
+                <button
+                  onClick={() => restoreOrder(order.stripeSessionId)}
+                  className="bg-yellow-600 hover:bg-yellow-700 px-4 py-2 rounded text-sm"
+                >
+                  Restore 🗂️
+                </button>
+              </div>
             </div>
           ))}
         </div>
