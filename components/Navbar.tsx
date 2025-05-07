@@ -1,17 +1,17 @@
-// 📂 components/Navbar.tsx
+// 📂 components/Navbar.tsx – Full Updated Version with Role-Based Admin Link 🛡️ + Cart Dropdown + Mobile Layout
 
 "use client";
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { useRouter } from "next/router"; // ✅ Correct for /pages router
+import { useRouter } from "next/router";
 import { useSession, signOut } from "next-auth/react";
 import { FiUser, FiShoppingCart, FiSearch, FiMenu, FiX } from "react-icons/fi";
 import { useCart } from "@/context/CartContext";
 
 const Navbar = () => {
   const router = useRouter();
-  const pathname = router.pathname; // ✅ Correct replacement for usePathname()
+  const pathname = router.pathname;
   const { data: session } = useSession();
   const { cartItems, increaseQty, decreaseQty, removeFromCart, addedItemName } =
     useCart();
@@ -19,15 +19,15 @@ const Navbar = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const cartRef = useRef<HTMLDivElement>(null);
-  const userRef = useRef<HTMLDivElement>(null);
-  const cartButtonRef = useRef<HTMLButtonElement>(null);
-  const userButtonRef = useRef<HTMLButtonElement>(null);
+  const cartRef = useRef(null);
+  const userRef = useRef(null);
+  const cartButtonRef = useRef(null);
+  const userButtonRef = useRef(null);
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 50);
-    const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as Node;
+    const handleClickOutside = (event) => {
+      const target = event.target;
       if (
         cartRef.current &&
         !cartRef.current.contains(target) &&
@@ -67,7 +67,7 @@ const Navbar = () => {
 
   const totalQuantity = cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
-  const handleRemove = (id: number) => {
+  const handleRemove = (id) => {
     if (confirm("Are you sure you want to remove this item from your cart?")) {
       removeFromCart(id);
     }
@@ -86,51 +86,6 @@ const Navbar = () => {
             ✅ {addedItemName} added to cart!
           </div>
         )}
-
-        <div className="relative">
-          {/* 📱 Mobile Layout */}
-          <div className="md:hidden flex items-center justify-between w-full px-4 h-full">
-            <div className="absolute left-1/2 -translate-x-1/2 text-2xl text-[#e0e0e0]">
-              {menuOpen ? (
-                <FiX onClick={() => setMenuOpen(false)} />
-              ) : (
-                <FiMenu onClick={() => setMenuOpen(true)} />
-              )}
-            </div>
-
-            <Link
-              href="/"
-              className="flex flex-col text-white font-bold text-lg hover:opacity-80 hover:scale-105 transition-transform duration-300"
-            >
-              <span>Classy Diamonds</span>
-              <span className="text-xs font-light">
-                <i>A Cut Above The Rest</i>
-              </span>
-            </Link>
-
-            <div className="flex items-center gap-4 text-2xl text-[#e0e0e0]">
-              <button
-                ref={userButtonRef}
-                onClick={() => setUserMenuOpen((prev) => !prev)}
-                className="hover:text-white cursor-pointer"
-              >
-                <FiUser />
-              </button>
-              <button
-                ref={cartButtonRef}
-                onClick={() => setCartOpen((prev) => !prev)}
-                className="relative hover:text-white cursor-pointer"
-              >
-                <FiShoppingCart />
-                {totalQuantity > 0 && (
-                  <span className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full text-xs w-5 h-5 flex items-center justify-center">
-                    {totalQuantity}
-                  </span>
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
 
         {/* 🖥️ Desktop Layout */}
         <div className="hidden md:flex items-center justify-between w-full h-full px-6">
@@ -169,6 +124,14 @@ const Navbar = () => {
                 </Link>
               );
             })}
+            {session?.user?.isAdmin && (
+              <Link
+                href="/admin"
+                className="text-yellow-400 font-semibold hover:text-yellow-300 transition text-base md:text-lg"
+              >
+                Admin 🛠️
+              </Link>
+            )}
           </nav>
 
           <div className="flex items-center gap-6 text-[#e0e0e0] text-xl">
@@ -238,6 +201,49 @@ const Navbar = () => {
               ref={cartButtonRef}
               onClick={() => setCartOpen((prev) => !prev)}
               className="relative hover:text-white hover:scale-105 transition-transform duration-300 cursor-pointer"
+            >
+              <FiShoppingCart />
+              {totalQuantity > 0 && (
+                <span className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full text-xs w-5 h-5 flex items-center justify-center">
+                  {totalQuantity}
+                </span>
+              )}
+            </button>
+          </div>
+        </div>
+
+        {/* 📱 Mobile Layout (includes Admin tab) */}
+        <div className="md:hidden flex items-center justify-between w-full px-4 h-full">
+          <div className="absolute left-1/2 -translate-x-1/2 text-2xl text-[#e0e0e0]">
+            {menuOpen ? (
+              <FiX onClick={() => setMenuOpen(false)} />
+            ) : (
+              <FiMenu onClick={() => setMenuOpen(true)} />
+            )}
+          </div>
+
+          <Link
+            href="/"
+            className="flex flex-col text-white font-bold text-lg hover:opacity-80 hover:scale-105 transition-transform duration-300"
+          >
+            <span>Classy Diamonds</span>
+            <span className="text-xs font-light">
+              <i>A Cut Above The Rest</i>
+            </span>
+          </Link>
+
+          <div className="flex items-center gap-4 text-2xl text-[#e0e0e0]">
+            <button
+              ref={userButtonRef}
+              onClick={() => setUserMenuOpen((prev) => !prev)}
+              className="hover:text-white cursor-pointer"
+            >
+              <FiUser />
+            </button>
+            <button
+              ref={cartButtonRef}
+              onClick={() => setCartOpen((prev) => !prev)}
+              className="relative hover:text-white cursor-pointer"
             >
               <FiShoppingCart />
               {totalQuantity > 0 && (
