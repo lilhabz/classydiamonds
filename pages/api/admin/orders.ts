@@ -1,4 +1,4 @@
-// 📂 pages/api/admin/order.ts – Return single order details by orderId
+// 📂 pages/api/admin/orders.ts – Return all orders for Admin Dashboard
 
 import type { NextApiRequest, NextApiResponse } from "next";
 import clientPromise from "@/lib/mongodb";
@@ -11,32 +11,20 @@ export default async function handler(
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const { orderId } = req.query;
-
-  if (!orderId || typeof orderId !== "string") {
-    return res.status(400).json({ error: "Missing or invalid orderId" });
-  }
-
   try {
     const client = await clientPromise;
     const db = client.db();
-    const order = await db
+
+    // 📦 Fetch ALL orders, sorted newest first
+    const orders = await db
       .collection("orders")
-      .findOne({ stripeSessionId: orderId });
+      .find({})
+      .sort({ createdAt: -1 })
+      .toArray();
 
-    if (!order) {
-      return res.status(404).json({ error: "Order not found" });
-    }
-
-    // ✅ Clean structured return object (no duplicate keys)
-    return res.status(200).json({
-      items: order.items || [],
-      amount: order.amount,
-      customerAddress: order.customerAddress || "",
-      createdAt: order.createdAt || "",
-    });
+    return res.status(200).json({ orders });
   } catch (err) {
-    console.error("❌ Failed to fetch order:", err);
+    console.error("❌ Failed to fetch all orders:", err);
     return res.status(500).json({ error: "Server error" });
   }
 }
