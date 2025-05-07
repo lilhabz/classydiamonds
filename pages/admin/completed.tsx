@@ -1,9 +1,9 @@
-// ✅ Enhanced pages/admin/completed.tsx using session-based admin check instead of localStorage
+// ✅ Enhanced pages/admin/completed.tsx with fixed total, archive logic, and unified dashboard nav 🔐🛠️
 
 import { useEffect, useState } from "react";
 import Head from "next/head";
 import Link from "next/link";
-import { useSession } from "next-auth/react"; // 🔐 Auth
+import { useSession } from "next-auth/react";
 
 interface Order {
   _id: string;
@@ -51,7 +51,7 @@ export default function CompletedOrdersPage() {
     if (!confirmed) return;
 
     try {
-      const res = await fetch("/api/admin/archive", {
+      const res = await fetch("/api/admin/archived", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ orderId }),
@@ -77,7 +77,7 @@ export default function CompletedOrdersPage() {
       order.customerName,
       order.customerEmail,
       order.stripeSessionId,
-      `$${(order.amount / 100).toFixed(2)}`,
+      `$${order.amount.toFixed(2)}`,
       new Date(order.shippedAt || "").toLocaleString(),
       (order.items || [])
         .map(
@@ -135,20 +135,32 @@ export default function CompletedOrdersPage() {
         <title>Completed Orders | Classy Diamonds</title>
       </Head>
 
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">✅ Completed Orders</h1>
-        <Link
-          href="/admin/orders"
-          className="text-sm bg-blue-600 px-4 py-2 rounded hover:bg-blue-700"
-        >
-          View Unshipped Orders 🔙
+      {/* 🛠️ Admin Dashboard Heading */}
+      <h1 className="text-3xl font-bold mb-6">🛠️ Admin Dashboard</h1>
+
+      {/* 🔗 Admin Navigation Tabs */}
+      <nav className="flex space-x-6 mb-8 border-b border-[#2a374f] pb-4 text-white text-sm font-semibold">
+        <Link href="/admin" className="hover:text-yellow-300">
+          📦 Orders
         </Link>
-      </div>
+        <Link href="/admin/completed" className="text-yellow-400">
+          ✅ Shipped
+        </Link>
+        <Link href="/admin/archived" className="hover:text-yellow-300">
+          🗂 Archived
+        </Link>
+        <Link href="/admin/logs" className="hover:text-yellow-300">
+          📝 Logs
+        </Link>
+      </nav>
 
       {loading ? (
         <p>Loading shipped orders...</p>
+      ) : paginatedOrders.length === 0 ? (
+        <p>No matching orders found.</p>
       ) : (
         <>
+          {/* 🔍 Filters */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 mb-6">
             <input
               type="text"
@@ -177,62 +189,60 @@ export default function CompletedOrdersPage() {
             </button>
           </div>
 
-          {paginatedOrders.length === 0 ? (
-            <p>No matching orders found.</p>
-          ) : (
-            <div className="space-y-10">
-              {paginatedOrders.map((order) => (
-                <div
-                  key={order._id}
-                  className="bg-[#25304f] rounded-xl p-6 shadow-md"
-                >
-                  <h2 className="text-xl font-semibold mb-1">
-                    {order.customerName} ({order.customerEmail})
-                  </h2>
-                  <p className="text-sm mb-2 text-gray-300">
-                    🆔 Order ID: {order.stripeSessionId.slice(-8)}
-                  </p>
-                  <p>
-                    <strong>Address:</strong> {order.customerAddress}
-                  </p>
-                  <p>
-                    <strong>Total:</strong> ${(order.amount / 100).toFixed(2)}
-                  </p>
-                  <p>
-                    <strong>Shipped At:</strong>{" "}
-                    {new Date(order.shippedAt || "").toLocaleString()}
-                  </p>
-                  <div className="mt-4">
-                    <strong>Items:</strong>
-                    {Array.isArray(order.items) && order.items.length > 0 ? (
-                      <ul className="list-disc list-inside space-y-1 mt-2">
-                        {order.items.map((item, i) => (
-                          <li key={i}>
-                            {item.name || "Unnamed"} × {item.quantity || 1} — $
-                            {((item.price || 0) * (item.quantity || 1)).toFixed(
-                              2
-                            )}
-                          </li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <p className="text-sm text-red-300 mt-2">
-                        ⚠️ No item data available.
-                      </p>
-                    )}
-                  </div>
-
-                  <button
-                    onClick={() => archiveOrder(order.stripeSessionId)}
-                    className="mt-4 bg-yellow-600 hover:bg-yellow-700 px-4 py-2 rounded text-sm"
-                  >
-                    Archive 🗂
-                  </button>
+          {/* 🧾 Orders */}
+          <div className="space-y-10">
+            {paginatedOrders.map((order) => (
+              <div
+                key={order._id}
+                className="bg-[#25304f] rounded-xl p-6 shadow-md"
+              >
+                <h2 className="text-xl font-semibold mb-1">
+                  {order.customerName} ({order.customerEmail})
+                </h2>
+                <p className="text-sm mb-2 text-gray-300">
+                  🆔 Order ID: {order.stripeSessionId.slice(-8)}
+                </p>
+                <p>
+                  <strong>Address:</strong> {order.customerAddress}
+                </p>
+                <p>
+                  <strong>Total:</strong> ${order.amount.toFixed(2)}
+                </p>
+                <p>
+                  <strong>Shipped At:</strong>{" "}
+                  {new Date(order.shippedAt || "").toLocaleString()}
+                </p>
+                <div className="mt-4">
+                  <strong>Items:</strong>
+                  {Array.isArray(order.items) && order.items.length > 0 ? (
+                    <ul className="list-disc list-inside space-y-1 mt-2">
+                      {order.items.map((item, i) => (
+                        <li key={i}>
+                          {item.name || "Unnamed"} × {item.quantity || 1} — $
+                          {((item.price || 0) * (item.quantity || 1)).toFixed(
+                            2
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="text-sm text-red-300 mt-2">
+                      ⚠️ No item data available.
+                    </p>
+                  )}
                 </div>
-              ))}
-            </div>
-          )}
 
+                <button
+                  onClick={() => archiveOrder(order.stripeSessionId)}
+                  className="mt-4 bg-yellow-600 hover:bg-yellow-700 px-4 py-2 rounded text-sm"
+                >
+                  Archive 🗂
+                </button>
+              </div>
+            ))}
+          </div>
+
+          {/* 🔄 Pagination */}
           {totalPages > 1 && (
             <div className="flex justify-center mt-8 space-x-2">
               {[...Array(totalPages)].map((_, index) => (
@@ -251,6 +261,7 @@ export default function CompletedOrdersPage() {
             </div>
           )}
 
+          {/* 🚪 Exit */}
           <button
             onClick={() => {
               window.location.href = "/";
