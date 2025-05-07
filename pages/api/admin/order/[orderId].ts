@@ -1,4 +1,4 @@
-// 📂 pages/api/admin/order.ts – Return single order details by orderId
+// 📂 pages/api/admin/order/[orderId].ts – Return order details by ID 🧾
 
 import type { NextApiRequest, NextApiResponse } from "next";
 import clientPromise from "@/lib/mongodb";
@@ -20,6 +20,7 @@ export default async function handler(
   try {
     const client = await clientPromise;
     const db = client.db();
+
     const order = await db
       .collection("orders")
       .findOne({ stripeSessionId: orderId });
@@ -31,7 +32,7 @@ export default async function handler(
     return res.status(200).json({
       order: {
         items: order.items || [],
-        amount: order.amount,
+        amount: order.amount || 0,
         customerAddress: order.customerAddress || "",
         createdAt: order.createdAt || "",
       },
