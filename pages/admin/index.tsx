@@ -2,18 +2,15 @@
 
 import Head from "next/head";
 import Link from "next/link";
-import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
+import { useSession } from "next-auth/react";
 
 export default function AdminDashboard() {
-  const [authorized, setAuthorized] = useState(false);
+  const { data: session, status } = useSession();
   const router = useRouter();
   const pathname = router.pathname;
 
-  useEffect(() => {
-    const isAdmin = localStorage.getItem("adminAuth") === "true";
-    if (isAdmin) setAuthorized(true);
-  }, []);
+  const isAdmin = (session?.user as any)?.isAdmin === true;
 
   return (
     <div className="min-h-screen bg-[#1f2a44] text-white p-6">
@@ -23,7 +20,7 @@ export default function AdminDashboard() {
 
       <h1 className="text-3xl font-bold mb-6">🛠️ Admin Dashboard</h1>
 
-      {!authorized ? (
+      {!isAdmin ? (
         <p className="text-red-400">🔒 Admin access required.</p>
       ) : (
         <>
