@@ -46,7 +46,10 @@ const Navbar = () => {
       }
     };
     window.addEventListener("scroll", handleScroll);
-    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("mousedown", (event) => {
+      setTimeout(() => handleClickOutside(event), 0);
+    });
+
     return () => {
       window.removeEventListener("scroll", handleScroll);
       document.removeEventListener("mousedown", handleClickOutside);
