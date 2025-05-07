@@ -90,7 +90,7 @@ export default function AdminOrdersPage() {
       order.customerName,
       order.customerEmail,
       order.stripeSessionId,
-      `$${(order.amount / 100).toFixed(2)}`,
+      `$${order.amount.toFixed(2)}`,
       new Date(order.createdAt || "").toLocaleString(),
       (order.items || [])
         .map(
@@ -112,7 +112,7 @@ export default function AdminOrdersPage() {
   };
 
   const filteredOrders = orders.filter((order) => {
-    if (order.archived === true || order.shipped === true) return false;
+    if (order.archived || order.shipped) return false;
 
     const query = searchQuery.toLowerCase();
     const matchQuery =
@@ -225,7 +225,7 @@ export default function AdminOrdersPage() {
                 </ul>
                 <div className="flex justify-between items-center gap-2">
                   <span className="text-lg font-semibold">
-                    💰 Total: ${(order.amount / 100).toFixed(2)}
+                    💰 Total: ${order.amount.toFixed(2)}
                   </span>
                   <div className="flex gap-2">
                     <button
