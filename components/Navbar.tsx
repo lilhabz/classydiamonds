@@ -1,17 +1,17 @@
-// 📂 components/Navbar.tsx – Full Updated Version with Type Fixes and Admin Link 🛠️ + Cart Dropdown + Mobile Layout
+// 📂 components/Navbar.tsx
 
 "use client";
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { useRouter } from "next/router";
+import { useRouter } from "next/router"; // ✅ Correct for /pages router
 import { useSession, signOut } from "next-auth/react";
 import { FiUser, FiShoppingCart, FiSearch, FiMenu, FiX } from "react-icons/fi";
 import { useCart } from "@/context/CartContext";
 
 const Navbar = () => {
   const router = useRouter();
-  const pathname = router.pathname;
+  const pathname = router.pathname; // ✅ Correct replacement for usePathname()
   const { data: session } = useSession();
   const { cartItems, increaseQty, decreaseQty, removeFromCart, addedItemName } =
     useCart();
@@ -28,28 +28,25 @@ const Navbar = () => {
     const handleScroll = () => setScrolled(window.scrollY > 50);
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Node;
-      if (
-        cartRef.current &&
-        !cartRef.current.contains(target) &&
-        cartButtonRef.current &&
-        !cartButtonRef.current.contains(target)
-      ) {
+
+      if (cartButtonRef.current?.contains(target)) {
+        setCartOpen((prev) => !prev);
+        return;
+      }
+      if (userButtonRef.current?.contains(target)) {
+        setUserMenuOpen((prev) => !prev);
+        return;
+      }
+
+      if (cartRef.current && !cartRef.current.contains(target)) {
         setCartOpen(false);
       }
-      if (
-        userRef.current &&
-        !userRef.current.contains(target) &&
-        userButtonRef.current &&
-        !userButtonRef.current.contains(target)
-      ) {
+      if (userRef.current && !userRef.current.contains(target)) {
         setUserMenuOpen(false);
       }
     };
     window.addEventListener("scroll", handleScroll);
-    document.addEventListener("mousedown", (event) => {
-      setTimeout(() => handleClickOutside(event), 0);
-    });
-
+    document.addEventListener("mousedown", handleClickOutside);
     return () => {
       window.removeEventListener("scroll", handleScroll);
       document.removeEventListener("mousedown", handleClickOutside);
@@ -90,6 +87,50 @@ const Navbar = () => {
           </div>
         )}
 
+        {/* 📱 Mobile Layout */}
+        <div className="relative">
+          <div className="md:hidden flex items-center justify-between w-full px-4 h-full">
+            <div className="absolute left-1/2 -translate-x-1/2 text-2xl text-[#e0e0e0]">
+              {menuOpen ? (
+                <FiX onClick={() => setMenuOpen(false)} />
+              ) : (
+                <FiMenu onClick={() => setMenuOpen(true)} />
+              )}
+            </div>
+
+            <Link
+              href="/"
+              className="flex flex-col text-white font-bold text-lg hover:opacity-80 hover:scale-105 transition-transform duration-300"
+            >
+              <span>Classy Diamonds</span>
+              <span className="text-xs font-light">
+                <i>A Cut Above The Rest</i>
+              </span>
+            </Link>
+
+            <div className="flex items-center gap-4 text-2xl text-[#e0e0e0]">
+              <button
+                ref={userButtonRef}
+                onClick={() => setUserMenuOpen((prev) => !prev)}
+                className="hover:text-white cursor-pointer"
+              >
+                <FiUser />
+              </button>
+              <button
+                ref={cartButtonRef}
+                className="relative hover:text-white cursor-pointer"
+              >
+                <FiShoppingCart />
+                {totalQuantity > 0 && (
+                  <span className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full text-xs w-5 h-5 flex items-center justify-center">
+                    {totalQuantity}
+                  </span>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+
         {/* 🖥️ Desktop Layout */}
         <div className="hidden md:flex items-center justify-between w-full h-full px-6">
           <div className="flex items-center space-x-4">
@@ -127,14 +168,6 @@ const Navbar = () => {
                 </Link>
               );
             })}
-            {(session?.user as any)?.isAdmin && (
-              <Link
-                href="/admin"
-                className="text-yellow-400 font-semibold hover:text-yellow-300 transition text-base md:text-lg"
-              >
-                Admin 🛠️
-              </Link>
-            )}
           </nav>
 
           <div className="flex items-center gap-6 text-[#e0e0e0] text-xl">
@@ -202,51 +235,7 @@ const Navbar = () => {
 
             <button
               ref={cartButtonRef}
-              onClick={() => setCartOpen((prev) => !prev)}
               className="relative hover:text-white hover:scale-105 transition-transform duration-300 cursor-pointer"
-            >
-              <FiShoppingCart />
-              {totalQuantity > 0 && (
-                <span className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full text-xs w-5 h-5 flex items-center justify-center">
-                  {totalQuantity}
-                </span>
-              )}
-            </button>
-          </div>
-        </div>
-
-        {/* 📱 Mobile Layout */}
-        <div className="md:hidden flex items-center justify-between w-full px-4 h-full">
-          <div className="absolute left-1/2 -translate-x-1/2 text-2xl text-[#e0e0e0]">
-            {menuOpen ? (
-              <FiX onClick={() => setMenuOpen(false)} />
-            ) : (
-              <FiMenu onClick={() => setMenuOpen(true)} />
-            )}
-          </div>
-
-          <Link
-            href="/"
-            className="flex flex-col text-white font-bold text-lg hover:opacity-80 hover:scale-105 transition-transform duration-300"
-          >
-            <span>Classy Diamonds</span>
-            <span className="text-xs font-light">
-              <i>A Cut Above The Rest</i>
-            </span>
-          </Link>
-
-          <div className="flex items-center gap-4 text-2xl text-[#e0e0e0]">
-            <button
-              ref={userButtonRef}
-              onClick={() => setUserMenuOpen((prev) => !prev)}
-              className="hover:text-white cursor-pointer"
-            >
-              <FiUser />
-            </button>
-            <button
-              ref={cartButtonRef}
-              onClick={() => setCartOpen((prev) => !prev)}
-              className="relative hover:text-white cursor-pointer"
             >
               <FiShoppingCart />
               {totalQuantity > 0 && (
