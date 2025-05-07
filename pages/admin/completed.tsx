@@ -1,8 +1,9 @@
-// ✅ Enhanced pages/admin/completed.tsx with Search, Date Filter, CSV Export, Pagination, and Archiving
+// ✅ Enhanced pages/admin/completed.tsx using session-based admin check instead of localStorage
 
 import { useEffect, useState } from "react";
 import Head from "next/head";
 import Link from "next/link";
+import { useSession } from "next-auth/react"; // 🔐 Auth
 
 interface Order {
   _id: string;
@@ -18,10 +19,9 @@ interface Order {
 }
 
 export default function CompletedOrdersPage() {
+  const { data: session, status } = useSession();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
-  const [adminKey, setAdminKey] = useState("");
-  const [authorized, setAuthorized] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
@@ -29,13 +29,8 @@ export default function CompletedOrdersPage() {
   const itemsPerPage = 5;
 
   useEffect(() => {
-    const isAdmin = localStorage.getItem("adminAuth") === "true";
-    if (isAdmin) setAuthorized(true);
-  }, []);
-
-  useEffect(() => {
-    if (authorized) fetchCompletedOrders();
-  }, [authorized]);
+    if (session?.user?.isAdmin) fetchCompletedOrders();
+  }, [session]);
 
   const fetchCompletedOrders = async () => {
     try {
@@ -46,15 +41,6 @@ export default function CompletedOrdersPage() {
       console.error("❌ Failed to fetch completed orders:", err);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleLogin = () => {
-    if (adminKey === process.env.NEXT_PUBLIC_ADMIN_KEY) {
-      localStorage.setItem("adminAuth", "true");
-      setAuthorized(true);
-    } else {
-      alert("❌ Incorrect admin key");
     }
   };
 
@@ -134,6 +120,15 @@ export default function CompletedOrdersPage() {
     currentPage * itemsPerPage
   );
 
+  if (status === "loading")
+    return <div className="p-6">Checking access...</div>;
+  if (!session?.user?.isAdmin)
+    return (
+      <div className="p-6 text-red-300 font-semibold">
+        ❌ Unauthorized – Admins only
+      </div>
+    );
+
   return (
     <div className="min-h-screen bg-[#1f2a44] text-white p-6">
       <Head>
@@ -150,23 +145,7 @@ export default function CompletedOrdersPage() {
         </Link>
       </div>
 
-      {!authorized ? (
-        <div className="max-w-sm mx-auto mt-20">
-          <input
-            type="password"
-            placeholder="Enter admin password"
-            value={adminKey}
-            onChange={(e) => setAdminKey(e.target.value)}
-            className="w-full px-4 py-2 rounded bg-gray-100 text-black mb-4"
-          />
-          <button
-            onClick={handleLogin}
-            className="w-full bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded"
-          >
-            Login 🔑
-          </button>
-        </div>
-      ) : loading ? (
+      {loading ? (
         <p>Loading shipped orders...</p>
       ) : (
         <>
@@ -274,12 +253,11 @@ export default function CompletedOrdersPage() {
 
           <button
             onClick={() => {
-              localStorage.removeItem("adminAuth");
-              window.location.reload();
+              window.location.href = "/";
             }}
             className="mt-8 text-sm text-red-300 underline"
           >
-            Logout 🔒
+            Exit Admin Panel 🔒
           </button>
         </>
       )}
