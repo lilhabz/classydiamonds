@@ -1,4 +1,4 @@
-// ✅ pages/admin/logs.tsx – View Admin Logs using NextAuth session instead of localStorage 🔐📝
+// ✅ Enhanced pages/admin/logs.tsx with expandable order view + unified admin nav 🔐📝
 
 import { useEffect, useState } from "react";
 import Head from "next/head";
@@ -13,10 +13,20 @@ interface AdminLog {
   performedBy: string;
 }
 
+interface OrderDetails {
+  items: { name: string; quantity: number; price: number }[];
+  amount: number;
+  customerAddress: string;
+  createdAt: string;
+}
+
 export default function AdminLogsPage() {
   const { data: session, status } = useSession();
   const [logs, setLogs] = useState<AdminLog[]>([]);
   const [loading, setLoading] = useState(true);
+  const [expandedOrders, setExpandedOrders] = useState<
+    Record<string, OrderDetails>
+  >({});
 
   useEffect(() => {
     if (session?.user?.isAdmin) fetchLogs();
@@ -31,6 +41,25 @@ export default function AdminLogsPage() {
       console.error("❌ Failed to fetch admin logs:", err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchOrderDetails = async (orderId: string) => {
+    if (expandedOrders[orderId]) {
+      const updated = { ...expandedOrders };
+      delete updated[orderId];
+      setExpandedOrders(updated);
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/admin/order?orderId=${orderId}`);
+      const data = await res.json();
+      if (res.ok && data.order) {
+        setExpandedOrders((prev) => ({ ...prev, [orderId]: data.order }));
+      }
+    } catch (err) {
+      console.error("❌ Failed to fetch order details:", err);
     }
   };
 
@@ -69,22 +98,32 @@ export default function AdminLogsPage() {
         <title>Admin Logs | Classy Diamonds</title>
       </Head>
 
+      <h1 className="text-3xl font-bold mb-6">🛠️ Admin Dashboard</h1>
+
+      {/* 🔗 Admin Navigation Tabs */}
+      <nav className="flex space-x-6 mb-8 border-b border-[#2a374f] pb-4 text-white text-sm font-semibold">
+        <Link href="/admin" className="hover:text-yellow-300">
+          📦 Orders
+        </Link>
+        <Link href="/admin/completed" className="hover:text-yellow-300">
+          ✅ Shipped
+        </Link>
+        <Link href="/admin/archived" className="hover:text-yellow-300">
+          🗂 Archived
+        </Link>
+        <Link href="/admin/logs" className="text-yellow-400">
+          📝 Logs
+        </Link>
+      </nav>
+
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">📝 Admin Logs</h1>
-        <div className="flex items-center space-x-3">
-          <button
-            onClick={downloadCSV}
-            className="text-sm bg-green-600 px-4 py-2 rounded hover:bg-green-700"
-          >
-            Export CSV 📄
-          </button>
-          <Link
-            href="/admin/orders"
-            className="text-sm bg-blue-600 px-4 py-2 rounded hover:bg-blue-700"
-          >
-            Back to Orders 🔙
-          </Link>
-        </div>
+        <h2 className="text-xl font-semibold">🧾 Admin Logs</h2>
+        <button
+          onClick={downloadCSV}
+          className="text-sm bg-green-600 px-4 py-2 rounded hover:bg-green-700"
+        >
+          Export CSV 📄
+        </button>
       </div>
 
       {loading ? (
@@ -104,23 +143,67 @@ export default function AdminLogsPage() {
             </thead>
             <tbody>
               {logs.map((log) => (
-                <tr key={log._id} className="border-b border-[#384968]">
-                  <td className="py-2 px-4">{log.orderId}</td>
-                  <td className="py-2 px-4 capitalize text-yellow-300">
-                    {log.action}
-                  </td>
-                  <td className="py-2 px-4 text-sm">
-                    {new Date(log.timestamp).toLocaleString()}
-                  </td>
-                  <td className="py-2 px-4 text-sm text-gray-400">
-                    {log.performedBy}
-                  </td>
-                </tr>
+                <>
+                  <tr
+                    key={log._id}
+                    className="border-b border-[#384968] cursor-pointer"
+                    onClick={() => fetchOrderDetails(log.orderId)}
+                  >
+                    <td className="py-2 px-4 text-blue-300 hover:text-blue-400">
+                      {log.orderId.slice(-8)}
+                    </td>
+                    <td className="py-2 px-4 capitalize text-yellow-300">
+                      {log.action}
+                    </td>
+                    <td className="py-2 px-4 text-sm">
+                      {new Date(log.timestamp).toLocaleString()}
+                    </td>
+                    <td className="py-2 px-4 text-sm text-gray-400">
+                      {log.performedBy}
+                    </td>
+                  </tr>
+                  {expandedOrders[log.orderId] && (
+                    <tr className="bg-[#2a374f]">
+                      <td colSpan={4} className="px-6 py-4">
+                        <p className="mb-2 text-sm">
+                          📍 {expandedOrders[log.orderId].customerAddress}
+                        </p>
+                        <p className="mb-2 text-sm">
+                          🧾 Order Date:{" "}
+                          {new Date(
+                            expandedOrders[log.orderId].createdAt
+                          ).toLocaleString()}
+                        </p>
+                        <ul className="pl-4 list-disc text-sm mb-2">
+                          {expandedOrders[log.orderId].items.map((item, i) => (
+                            <li key={i}>
+                              {item.quantity}× {item.name} – ${" "}
+                              {(item.quantity * item.price).toFixed(2)}
+                            </li>
+                          ))}
+                        </ul>
+                        <p className="font-semibold">
+                          💰 Total: $
+                          {expandedOrders[log.orderId].amount.toFixed(2)}
+                        </p>
+                      </td>
+                    </tr>
+                  )}
+                </>
               ))}
             </tbody>
           </table>
         </div>
       )}
+
+      <button
+        onClick={() => {
+          window.location.href = "/";
+        }}
+        className="mt-8 text-sm text-red-300 underline"
+      >
+        Exit Admin Panel 🔒
+      </button>
     </div>
   );
 }

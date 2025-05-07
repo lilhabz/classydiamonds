@@ -1,4 +1,4 @@
-// ✅ pages/admin/archived.tsx – Shows archived orders with session-based admin auth 🔐
+// ✅ Enhanced pages/admin/archived.tsx with unified admin nav, fixed total, pagination 🔐🗂️
 
 import { useEffect, useState } from "react";
 import Head from "next/head";
@@ -55,7 +55,7 @@ export default function ArchivedOrdersPage() {
       order.customerName,
       order.customerEmail,
       order.stripeSessionId,
-      `$${(order.amount / 100).toFixed(2)}`,
+      `$${order.amount.toFixed(2)}`,
       new Date(order.createdAt || "").toLocaleString(),
       (order.items || [])
         .map(
@@ -107,15 +107,23 @@ export default function ArchivedOrdersPage() {
         <title>Archived Orders | Classy Diamonds</title>
       </Head>
 
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">🗂 Archived Orders</h1>
-        <Link
-          href="/admin/orders"
-          className="text-sm bg-blue-600 px-4 py-2 rounded hover:bg-blue-700"
-        >
-          View Active Orders 🔙
+      <h1 className="text-3xl font-bold mb-6">🛠️ Admin Dashboard</h1>
+
+      {/* 🔗 Admin Navigation Tabs */}
+      <nav className="flex space-x-6 mb-8 border-b border-[#2a374f] pb-4 text-white text-sm font-semibold">
+        <Link href="/admin" className="hover:text-yellow-300">
+          📦 Orders
         </Link>
-      </div>
+        <Link href="/admin/completed" className="hover:text-yellow-300">
+          ✅ Shipped
+        </Link>
+        <Link href="/admin/archived" className="text-yellow-400">
+          🗂 Archived
+        </Link>
+        <Link href="/admin/logs" className="hover:text-yellow-300">
+          📝 Logs
+        </Link>
+      </nav>
 
       <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 mb-6">
         <input
@@ -163,7 +171,7 @@ export default function ArchivedOrdersPage() {
                 ))}
               </ul>
               <span className="text-lg font-semibold">
-                💰 Total: ${(order.amount / 100).toFixed(2)}
+                💰 Total: ${order.amount.toFixed(2)}
               </span>
             </div>
           ))}
