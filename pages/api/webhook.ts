@@ -1,4 +1,4 @@
-// 📂 pages/api/webhook.ts
+// ✅ /pages/api/webhook.ts – Stripe order handler with shipped/archived fields added
 
 import { buffer } from "micro";
 import type { NextApiRequest, NextApiResponse } from "next";
@@ -52,22 +52,22 @@ export default async function handler(
       const itemRows = items
         .map(
           (item: any) => `
-            <tr>
-              <td style="padding: 8px; border: 1px solid #ddd;">
-                <div style="display: flex; align-items: center; gap: 10px;">
-                  <img src="${item.image}" alt="${
+          <tr>
+            <td style="padding: 8px; border: 1px solid #ddd;">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <img src="${item.image}" alt="${
             item.name
           }" style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px;" />
-                  <span>${item.name}</span>
-                </div>
-              </td>
-              <td style="padding: 8px; border: 1px solid #ddd;">x${
-                item.quantity
-              }</td>
-              <td style="padding: 8px; border: 1px solid #ddd;">$${(
-                item.price * item.quantity
-              ).toFixed(2)}</td>
-            </tr>`
+                <span>${item.name}</span>
+              </div>
+            </td>
+            <td style="padding: 8px; border: 1px solid #ddd;">x${
+              item.quantity
+            }</td>
+            <td style="padding: 8px; border: 1px solid #ddd;">$${(
+              item.price * item.quantity
+            ).toFixed(2)}</td>
+          </tr>`
         )
         .join("");
 
@@ -149,6 +149,8 @@ export default async function handler(
             paymentStatus: session.payment_status || "unpaid",
             stripeSessionId: session.id,
             createdAt: new Date(),
+            shipped: false, // ✅ Required for admin to display correctly
+            archived: false, // ✅ Required for filtering
           });
 
           console.log("✅ Order saved to MongoDB (via webhook)");
