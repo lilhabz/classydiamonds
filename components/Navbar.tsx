@@ -13,6 +13,10 @@ const Navbar = () => {
   const router = useRouter();
   const pathname = router.pathname;
   const { data: session } = useSession();
+  // 🧪 DEBUG SESSION INFO
+  useEffect(() => {
+    console.log("SESSION CHECK 🔍", session);
+  }, [session]);
   const { cartItems, increaseQty, decreaseQty, removeFromCart, addedItemName } =
     useCart();
   const [scrolled, setScrolled] = useState(false);
