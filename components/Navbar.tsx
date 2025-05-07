@@ -255,6 +255,74 @@ const Navbar = () => {
           </div>
         </div>
       </header>
+
+      {/* 🛒 Cart Dropdown Sticky Below Navbar */}
+      {cartOpen && (
+        <div
+          ref={cartRef}
+          className="fixed right-4 w-80 bg-[#1f2a44]/95 backdrop-blur-sm shadow-lg text-sm text-white z-40 animate-slide-fade-in transition-all duration-300"
+          style={{
+            top: scrolled ? "64px" : "80px",
+            borderRadius: "0 0 0.75rem 0.75rem",
+            padding: "1rem 1.5rem",
+          }}
+        >
+          {cartItems.length === 0 ? (
+            <p className="text-center text-[#cfd2d6]">Your cart is empty</p>
+          ) : (
+            <>
+              {cartItems.map((item) => (
+                <div
+                  key={item.id}
+                  className="flex items-center border-b border-[#2d3a56] pb-4 mb-4"
+                >
+                  <img
+                    src={item.image}
+                    alt={item.name}
+                    className="w-14 h-14 object-cover rounded-xl mr-4"
+                  />
+                  <div className="flex-1 flex flex-col">
+                    <p className="text-sm text-[#cfd2d6]">{item.name}</p>
+                    <p className="text-xs text-gray-400">
+                      ${(item.price * item.quantity).toLocaleString()}
+                    </p>
+                  </div>
+                  <div className="flex flex-col items-center space-y-2">
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => decreaseQty(item.id)}
+                        className="px-2 py-1 text-xs bg-white text-[#1f2a44] rounded hover:bg-gray-100"
+                      >
+                        -
+                      </button>
+                      <span className="text-sm">{item.quantity}</span>
+                      <button
+                        onClick={() => increaseQty(item.id)}
+                        className="px-2 py-1 text-xs bg-white text-[#1f2a44] rounded hover:bg-gray-100"
+                      >
+                        +
+                      </button>
+                    </div>
+                    <button
+                      onClick={() => handleRemove(item.id)}
+                      className="text-red-400 hover:text-red-600 text-xs"
+                    >
+                      🗑️
+                    </button>
+                  </div>
+                </div>
+              ))}
+              <Link
+                href="/cart"
+                onClick={() => setCartOpen(false)}
+                className="block text-center bg-white text-[#1f2a44] py-1 text-xs rounded-lg font-semibold hover:bg-gray-100 transition"
+              >
+                View Full Cart
+              </Link>
+            </>
+          )}
+        </div>
+      )}
     </>
   );
 };
