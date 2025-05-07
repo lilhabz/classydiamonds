@@ -1,4 +1,4 @@
-// ✅ Enhanced pages/admin/logs.tsx with expandable order view + search + unified admin nav 🔐📝
+// ✅ Full pages/admin/logs.tsx – with expandable order view, shipped logs support, search, and admin nav 🔐📝
 
 import { useEffect, useState } from "react";
 import Head from "next/head";
@@ -8,7 +8,7 @@ import { useSession } from "next-auth/react";
 interface AdminLog {
   _id: string;
   orderId: string;
-  action: "archive" | "restore";
+  action: "archive" | "restore" | "shipped";
   timestamp: string;
   performedBy: string;
 }
@@ -56,8 +56,8 @@ export default function AdminLogsPage() {
     try {
       const res = await fetch(`/api/admin/order?orderId=${orderId}`);
       const data = await res.json();
-      if (res.ok && data.order) {
-        setExpandedOrders((prev) => ({ ...prev, [orderId]: data.order }));
+      if (res.ok) {
+        setExpandedOrders((prev) => ({ ...prev, [orderId]: data }));
       }
     } catch (err) {
       console.error("❌ Failed to fetch order details:", err);

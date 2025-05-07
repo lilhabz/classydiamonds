@@ -1,4 +1,4 @@
-// 📤 pages/api/shipped.ts
+// 📤 pages/api/shipped.ts – Mark order as shipped + log admin action 🚚📝
 
 import type { NextApiRequest, NextApiResponse } from "next";
 import nodemailer from "nodemailer";
@@ -12,7 +12,7 @@ export default async function handler(
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const { orderId } = req.body;
+  const { orderId, adminEmail } = req.body;
 
   if (!orderId) {
     return res.status(400).json({ error: "Missing orderId" });
@@ -36,6 +36,14 @@ export default async function handler(
         { stripeSessionId: orderId },
         { $set: { shipped: true, shippedAt: new Date() } }
       );
+
+    // ✅ Log the shipment in adminLogs
+    await db.collection("adminLogs").insertOne({
+      orderId,
+      action: "shipped",
+      timestamp: new Date(),
+      performedBy: adminEmail || "unknown",
+    });
 
     // ✅ Send shipping email
     const transporter = nodemailer.createTransport({
