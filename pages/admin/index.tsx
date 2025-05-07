@@ -112,7 +112,7 @@ export default function AdminOrdersPage() {
   };
 
   const filteredOrders = orders.filter((order) => {
-    if (order.archived || order.shipped) return false;
+    if (order.archived === true || order.shipped === true) return false;
 
     const query = searchQuery.toLowerCase();
     const matchQuery =
