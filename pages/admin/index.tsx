@@ -90,7 +90,7 @@ export default function AdminOrdersPage() {
       order.customerName,
       order.customerEmail,
       order.stripeSessionId,
-      `$${order.amount.toFixed(2)}`,
+      `$${(order.amount / 100).toFixed(2)}`,
       new Date(order.createdAt || "").toLocaleString(),
       (order.items || [])
         .map(
@@ -148,10 +148,8 @@ export default function AdminOrdersPage() {
         <title>Admin Orders | Classy Diamonds</title>
       </Head>
 
-      {/* 🛠️ Admin Dashboard Heading */}
       <h1 className="text-3xl font-bold mb-6">🛠️ Admin Dashboard</h1>
 
-      {/* 🔗 Admin Navigation Tabs */}
       <nav className="flex space-x-6 mb-8 border-b border-[#2a374f] pb-4 text-white text-sm font-semibold">
         <Link href="/admin" className="text-yellow-400">
           📦 Orders
@@ -170,10 +168,9 @@ export default function AdminOrdersPage() {
       {loading ? (
         <p>Loading orders...</p>
       ) : paginatedOrders.length === 0 ? (
-        <p>No matching orders found.</p>
+        <p>No orders found.</p>
       ) : (
         <>
-          {/* 🔍 Filters */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 mb-6">
             <input
               type="text"
@@ -202,7 +199,6 @@ export default function AdminOrdersPage() {
             </button>
           </div>
 
-          {/* 🧾 Orders */}
           <div className="space-y-8">
             {paginatedOrders.map((order) => (
               <div
@@ -219,19 +215,17 @@ export default function AdminOrdersPage() {
                 <p className="mb-2 text-sm">
                   🧾 Order Date: {new Date(order.createdAt).toLocaleString()}
                 </p>
-
                 <ul className="mb-4 pl-4 list-disc text-sm">
                   {order.items?.map((item, index) => (
                     <li key={index}>
-                      {item.quantity}× {item.name} – $
+                      {item.quantity}× {item.name} – ${" "}
                       {(item.price * item.quantity).toFixed(2)}
                     </li>
                   ))}
                 </ul>
-
                 <div className="flex justify-between items-center gap-2">
                   <span className="text-lg font-semibold">
-                    💰 Total: ${order.amount.toFixed(2)}
+                    💰 Total: ${(order.amount / 100).toFixed(2)}
                   </span>
                   <div className="flex gap-2">
                     <button
@@ -252,7 +246,6 @@ export default function AdminOrdersPage() {
             ))}
           </div>
 
-          {/* 🔄 Pagination Controls */}
           {totalPages > 1 && (
             <div className="flex justify-center mt-8 space-x-2">
               {[...Array(totalPages)].map((_, index) => (
@@ -271,7 +264,6 @@ export default function AdminOrdersPage() {
             </div>
           )}
 
-          {/* 🚪 Exit */}
           <button
             onClick={() => {
               window.location.href = "/";
