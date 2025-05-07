@@ -1,3 +1,5 @@
+// 📂 pages/api/admin/order.ts – Return single order details by orderId
+
 import type { NextApiRequest, NextApiResponse } from "next";
 import clientPromise from "@/lib/mongodb";
 
@@ -26,13 +28,12 @@ export default async function handler(
       return res.status(404).json({ error: "Order not found" });
     }
 
+    // ✅ Clean structured return object (no duplicate keys)
     return res.status(200).json({
-      order: {
-        items: order.items || [],
-        amount: order.amount,
-        customerAddress: order.customerAddress || "",
-        createdAt: order.createdAt || "",
-      },
+      items: order.items || [],
+      amount: order.amount,
+      customerAddress: order.customerAddress || "",
+      createdAt: order.createdAt || "",
     });
   } catch (err) {
     console.error("❌ Failed to fetch order:", err);
