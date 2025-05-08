@@ -81,7 +81,7 @@ const Navbar = () => {
   return (
     <>
       <header
-        className={`fixed top-0 left-0 w-full bg-[#1f2a44] transition-all duration-300 z-50 ${
+        className={`fixed top-0 left-0 w-full bg-[#1f2a44] transition-all duration-300 z-50 flex items-center ${
           scrolled ? "h-16" : "h-20"
         }`}
       >
