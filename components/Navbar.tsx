@@ -1,4 +1,4 @@
-// 📂 components/Navbar.tsx – Fully Working + Responsive 💎
+// 📂 components/Navbar.tsx – Fully Working + Responsive 💎 (Admin link moved to dropdown only ✅)
 
 "use client";
 
@@ -187,6 +187,8 @@ const Navbar = () => {
             <Link href="/custom" className="block px-4 py-2 hover:bg-[#2a374f]">
               Custom Requests
             </Link>
+
+            {/* 🔐 Admin Link only in dropdown ✅ */}
             {(session?.user as any)?.isAdmin && (
               <Link
                 href="/admin"
@@ -195,6 +197,7 @@ const Navbar = () => {
                 Admin 🛠️
               </Link>
             )}
+
             <button
               onClick={() => signOut({ callbackUrl: "/" })}
               className="w-full text-left px-4 py-2 text-red-400 hover:bg-[#2a374f] hover:text-red-500"
@@ -206,6 +209,7 @@ const Navbar = () => {
 
         {/* 💻 Desktop Layout - Responsive Container */}
         <div className="hidden md:flex flex-wrap items-center justify-between gap-y-4 px-4 py-2 w-full">
+          {/* 💎 Logo + Greeting */}
           <div className="flex items-center space-x-4">
             <Link
               href="/"
@@ -242,6 +246,7 @@ const Navbar = () => {
                 </Link>
               );
             })}
+            {/* ❌ Removed admin from nav */}
           </nav>
 
           {/* 🔍 Icons */}
@@ -266,39 +271,40 @@ const Navbar = () => {
                     <div className="absolute right-0 mt-2 w-48 bg-[#1f2a44]/95 backdrop-blur-sm rounded-xl shadow-lg py-2 text-sm text-white z-50">
                       <Link
                         href="/account"
-                        className="cursor-pointer block px-4 py-2 hover:bg-[#2a374f]"
+                        className="block px-4 py-2 hover:bg-[#2a374f]"
                       >
                         My Account
                       </Link>
                       <Link
                         href="/account/orders"
-                        className="cursor-pointer block px-4 py-2 hover:bg-[#2a374f]"
+                        className="block px-4 py-2 hover:bg-[#2a374f]"
                       >
                         Order History
                       </Link>
                       <Link
                         href="/account/track"
-                        className="cursor-pointer block px-4 py-2 hover:bg-[#2a374f]"
+                        className="block px-4 py-2 hover:bg-[#2a374f]"
                       >
                         Track Orders
                       </Link>
                       <Link
                         href="/custom"
-                        className="cursor-pointer block px-4 py-2 hover:bg-[#2a374f]"
+                        className="block px-4 py-2 hover:bg-[#2a374f]"
                       >
                         Custom Requests
                       </Link>
+                      {/* 🔐 Admin link in dropdown only ✅ */}
                       {(session?.user as any)?.isAdmin && (
                         <Link
                           href="/admin"
-                          className="cursor-pointer block px-4 py-2 text-yellow-400 hover:bg-[#2a374f] hover:text-yellow-300"
+                          className="block px-4 py-2 text-yellow-400 hover:bg-[#2a374f] hover:text-yellow-300"
                         >
                           Admin 🛠️
                         </Link>
                       )}
                       <button
                         onClick={() => signOut({ callbackUrl: "/" })}
-                        className="cursor-pointer w-full text-left px-4 py-2 text-red-400 hover:bg-[#2a374f] hover:text-red-500"
+                        className="w-full text-left px-4 py-2 text-red-400 hover:bg-[#2a374f] hover:text-red-500"
                       >
                         Sign Out
                       </button>
@@ -329,6 +335,74 @@ const Navbar = () => {
           </div>
         </div>
       </header>
+
+      {/* 🛒 Cart Dropdown */}
+      {cartOpen && (
+        <div
+          ref={cartRef}
+          className="fixed right-4 w-80 bg-[#1f2a44]/95 backdrop-blur-sm shadow-lg text-sm text-white z-40 animate-slide-fade-in transition-all duration-300"
+          style={{
+            top: scrolled ? "64px" : "80px",
+            borderRadius: "0 0 0.75rem 0.75rem",
+            padding: "1rem 1.5rem",
+          }}
+        >
+          {cartItems.length === 0 ? (
+            <p className="text-center text-[#cfd2d6]">Your cart is empty</p>
+          ) : (
+            <>
+              {cartItems.map((item) => (
+                <div
+                  key={item.id}
+                  className="flex items-center border-b border-[#2d3a56] pb-4 mb-4"
+                >
+                  <img
+                    src={item.image}
+                    alt={item.name}
+                    className="w-14 h-14 object-cover rounded-xl mr-4"
+                  />
+                  <div className="flex-1 flex flex-col">
+                    <p className="text-sm text-[#cfd2d6]">{item.name}</p>
+                    <p className="text-xs text-gray-400">
+                      ${(item.price * item.quantity).toLocaleString()}
+                    </p>
+                  </div>
+                  <div className="flex flex-col items-center space-y-2">
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => decreaseQty(item.id)}
+                        className="px-2 py-1 text-xs bg-white text-[#1f2a44] rounded hover:bg-gray-100"
+                      >
+                        -
+                      </button>
+                      <span className="text-sm">{item.quantity}</span>
+                      <button
+                        onClick={() => increaseQty(item.id)}
+                        className="px-2 py-1 text-xs bg-white text-[#1f2a44] rounded hover:bg-gray-100"
+                      >
+                        +
+                      </button>
+                    </div>
+                    <button
+                      onClick={() => handleRemove(item.id)}
+                      className="text-red-400 hover:text-red-600 text-xs"
+                    >
+                      🗑️
+                    </button>
+                  </div>
+                </div>
+              ))}
+              <Link
+                href="/cart"
+                onClick={() => setCartOpen(false)}
+                className="block text-center bg-white text-[#1f2a44] py-1 text-xs rounded-lg font-semibold hover:bg-gray-100 transition"
+              >
+                View Full Cart
+              </Link>
+            </>
+          )}
+        </div>
+      )}
     </>
   );
 };
