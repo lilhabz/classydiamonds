@@ -1,7 +1,8 @@
-// 📂 components/Navbar.tsx – Full Code with Cart Toggle Working Again ✅
+// 📂 components/Navbar.tsx – Fully Labeled for Section-Based Editing 🧱
 
 "use client";
 
+// 🔧 Imports
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
@@ -9,29 +10,32 @@ import { useSession, signOut } from "next-auth/react";
 import { FiUser, FiShoppingCart, FiSearch, FiMenu, FiX } from "react-icons/fi";
 import { useCart } from "@/context/CartContext";
 
+// 🧠 Component Start
 const Navbar = () => {
+  // 🌐 Hooks
   const router = useRouter();
   const pathname = router.pathname;
   const { data: session } = useSession();
   const { cartItems, increaseQty, decreaseQty, removeFromCart, addedItemName } =
     useCart();
 
+  // 📦 State
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
 
+  // 📍 Refs
   const cartRef = useRef<HTMLDivElement>(null);
   const userRef = useRef<HTMLDivElement>(null);
   const cartButtonRef = useRef<HTMLButtonElement>(null);
   const userButtonRef = useRef<HTMLButtonElement>(null);
 
+  // 🎯 Scroll and Click Outside
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 50);
-
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Node;
-
       if (cartButtonRef.current?.contains(target)) {
         setCartOpen((prev) => !prev);
         return;
@@ -47,7 +51,6 @@ const Navbar = () => {
         setUserMenuOpen(false);
       }
     };
-
     window.addEventListener("scroll", handleScroll);
     document.addEventListener("mousedown", handleClickOutside);
     return () => {
@@ -56,6 +59,7 @@ const Navbar = () => {
     };
   }, []);
 
+  // 🔁 Route Change Reset
   useEffect(() => {
     const handleRouteChange = () => {
       setMenuOpen(false);
@@ -63,13 +67,11 @@ const Navbar = () => {
       setUserMenuOpen(false);
     };
     window.addEventListener("popstate", handleRouteChange);
-    return () => {
-      window.removeEventListener("popstate", handleRouteChange);
-    };
+    return () => window.removeEventListener("popstate", handleRouteChange);
   }, [router]);
 
+  // ➕ Cart Totals & Removal
   const totalQuantity = cartItems.reduce((sum, item) => sum + item.quantity, 0);
-
   const handleRemove = (id: number) => {
     if (confirm("Are you sure you want to remove this item from your cart?")) {
       removeFromCart(id);
@@ -78,17 +80,20 @@ const Navbar = () => {
 
   return (
     <>
+      {/* 🔝 Sticky Navbar Container */}
       <header
         className={`fixed top-0 left-0 w-full bg-[#1f2a44] transition-all duration-300 z-50 ${
           scrolled ? "h-16" : "h-20"
         }`}
       >
+        {/* ✅ Cart Added Popup */}
         {addedItemName && (
           <div className="fixed top-20 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg animate-slide-fade-in z-[9999]">
             ✅ {addedItemName} added to cart!
           </div>
         )}
 
+        {/* 📱 Mobile Top Bar */}
         <div className="md:hidden flex items-center justify-between w-full px-4 h-full">
           <div className="text-2xl text-[#e0e0e0]">
             {menuOpen ? (
@@ -98,6 +103,7 @@ const Navbar = () => {
             )}
           </div>
 
+          {/* 🏷️ Logo */}
           <Link href="/" className="text-white font-bold text-lg text-center">
             <div>
               <div>Classy Diamonds</div>
@@ -107,6 +113,7 @@ const Navbar = () => {
             </div>
           </Link>
 
+          {/* 👤 User & 🛒 Cart Icons */}
           <div className="flex items-center gap-4 text-2xl text-[#e0e0e0]">
             <button ref={userButtonRef} className="hover:text-white">
               <FiUser />
@@ -122,6 +129,7 @@ const Navbar = () => {
           </div>
         </div>
 
+        {/* 📱 Mobile Menu Dropdown */}
         {menuOpen && (
           <div className="md:hidden bg-[#25304f] w-full px-6 py-4 space-y-4 text-[#e0e0e0] text-lg">
             {"Home Jewelry Custom Contact".split(" ").map((name) => {
@@ -158,7 +166,9 @@ const Navbar = () => {
           </div>
         )}
 
+        {/* 💻 Desktop Layout */}
         <div className="hidden md:flex items-center justify-between w-full h-full px-6">
+          {/* 💎 Logo & Welcome */}
           <div className="flex items-center space-x-4">
             <Link
               href="/"
@@ -177,6 +187,7 @@ const Navbar = () => {
             )}
           </div>
 
+          {/* 🧭 Desktop Navigation */}
           <nav className="absolute left-1/2 transform -translate-x-1/2 space-x-10 text-[#e0e0e0] font-semibold text-sm">
             {"Home Jewelry Custom Contact".split(" ").map((name) => {
               const href = `/${name === "Home" ? "" : name.toLowerCase()}`;
@@ -204,6 +215,7 @@ const Navbar = () => {
             )}
           </nav>
 
+          {/* 🔍 User/Search/Cart Icons */}
           <div className="flex items-center gap-6 text-[#e0e0e0] text-xl">
             <Link
               href="/search"
@@ -279,6 +291,7 @@ const Navbar = () => {
         </div>
       </header>
 
+      {/* 🛒 Cart Dropdown */}
       {cartOpen && (
         <div
           ref={cartRef}
