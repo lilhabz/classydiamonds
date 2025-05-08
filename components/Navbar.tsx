@@ -31,20 +31,12 @@ const Navbar = () => {
 
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Node;
-      if (cartButtonRef.current?.contains(target)) {
-        setCartOpen((prev) => !prev);
-        return;
-      }
-      if (userButtonRef.current?.contains(target)) {
-        setUserMenuOpen((prev) => !prev);
-        return;
-      }
-      if (cartRef.current && !cartRef.current.contains(target)) {
+      if (cartButtonRef.current?.contains(target)) return;
+      if (userButtonRef.current?.contains(target)) return;
+      if (cartRef.current && !cartRef.current.contains(target))
         setCartOpen(false);
-      }
-      if (userRef.current && !userRef.current.contains(target)) {
+      if (userRef.current && !userRef.current.contains(target))
         setUserMenuOpen(false);
-      }
     };
 
     window.addEventListener("scroll", handleScroll);
@@ -73,6 +65,10 @@ const Navbar = () => {
   };
 
   const handleUserToggle = () => {
+    if (!session) {
+      router.push("/auth");
+      return;
+    }
     setUserMenuOpen((prev) => !prev);
     setCartOpen(false);
   };
@@ -177,7 +173,7 @@ const Navbar = () => {
           </div>
         )}
 
-        {userMenuOpen && (
+        {userMenuOpen && session?.user && (
           <div className="md:hidden absolute right-4 mt-2 w-48 bg-[#1f2a44]/95 backdrop-blur-sm rounded-xl shadow-lg py-2 text-sm text-white z-50">
             <Link
               href="/account"
