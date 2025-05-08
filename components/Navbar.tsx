@@ -1,4 +1,4 @@
-// 📂 components/Navbar.tsx
+// 📂 components/Navbar.tsx – Fixed Mobile Menu, User Dropdown, Cart Functionality
 
 "use client";
 
@@ -13,16 +13,14 @@ const Navbar = () => {
   const router = useRouter();
   const pathname = router.pathname;
   const { data: session } = useSession();
-  // 🧪 DEBUG SESSION INFO
-  useEffect(() => {
-    console.log("SESSION CHECK 🔍", session);
-  }, [session]);
   const { cartItems, increaseQty, decreaseQty, removeFromCart, addedItemName } =
     useCart();
+
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+
   const cartRef = useRef<HTMLDivElement>(null);
   const userRef = useRef<HTMLDivElement>(null);
   const cartButtonRef = useRef<HTMLButtonElement>(null);
@@ -32,7 +30,6 @@ const Navbar = () => {
     const handleScroll = () => setScrolled(window.scrollY > 50);
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Node;
-
       if (cartButtonRef.current?.contains(target)) {
         setCartOpen((prev) => !prev);
         return;
@@ -41,7 +38,6 @@ const Navbar = () => {
         setUserMenuOpen((prev) => !prev);
         return;
       }
-
       if (cartRef.current && !cartRef.current.contains(target)) {
         setCartOpen(false);
       }
@@ -79,12 +75,13 @@ const Navbar = () => {
 
   return (
     <>
+      {/* 🚩 Sticky Navbar */}
       <header
-        className={`fixed top-0 left-0 w-full bg-[#1f2a44] transition-all duration-300 ${
+        className={`fixed top-0 left-0 w-full bg-[#1f2a44] transition-all duration-300 z-50 ${
           scrolled ? "h-16" : "h-20"
         }`}
-        style={{ zIndex: 50 }}
       >
+        {/* ✅ Item Added Notification */}
         {addedItemName && (
           <div className="fixed top-20 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg animate-slide-fade-in z-[9999]">
             ✅ {addedItemName} added to cart!
@@ -92,49 +89,80 @@ const Navbar = () => {
         )}
 
         {/* 📱 Mobile Layout */}
-        <div className="relative">
-          <div className="md:hidden flex items-center justify-between w-full px-4 h-full">
-            <div className="absolute left-1/2 -translate-x-1/2 text-2xl text-[#e0e0e0]">
-              {menuOpen ? (
-                <FiX onClick={() => setMenuOpen(false)} />
-              ) : (
-                <FiMenu onClick={() => setMenuOpen(true)} />
+        <div className="md:hidden flex items-center justify-between w-full px-4 h-full">
+          {/* 🍔 Hamburger Icon */}
+          <div className="text-2xl text-[#e0e0e0]">
+            {menuOpen ? (
+              <FiX onClick={() => setMenuOpen(false)} />
+            ) : (
+              <FiMenu onClick={() => setMenuOpen(true)} />
+            )}
+          </div>
+
+          {/* 💎 Brand */}
+          <Link href="/" className="text-white font-bold text-lg text-center">
+            <div>
+              <div>Classy Diamonds</div>
+              <div className="text-xs font-light italic">
+                A Cut Above The Rest
+              </div>
+            </div>
+          </Link>
+
+          {/* 🙋‍♂️ User + Cart Icons */}
+          <div className="flex items-center gap-4 text-2xl text-[#e0e0e0]">
+            <button ref={userButtonRef} className="hover:text-white">
+              <FiUser />
+            </button>
+            <button ref={cartButtonRef} className="relative hover:text-white">
+              <FiShoppingCart />
+              {totalQuantity > 0 && (
+                <span className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full text-xs w-5 h-5 flex items-center justify-center">
+                  {totalQuantity}
+                </span>
               )}
-            </div>
-
-            <Link
-              href="/"
-              className="flex flex-col text-white font-bold text-lg hover:opacity-80 hover:scale-105 transition-transform duration-300"
-            >
-              <span>Classy Diamonds</span>
-              <span className="text-xs font-light">
-                <i>A Cut Above The Rest</i>
-              </span>
-            </Link>
-
-            <div className="flex items-center gap-4 text-2xl text-[#e0e0e0]">
-              <button
-                ref={userButtonRef}
-                className="hover:text-white cursor-pointer"
-              >
-                <FiUser />
-              </button>
-              <button
-                ref={cartButtonRef}
-                className="relative hover:text-white cursor-pointer"
-              >
-                <FiShoppingCart />
-                {totalQuantity > 0 && (
-                  <span className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full text-xs w-5 h-5 flex items-center justify-center">
-                    {totalQuantity}
-                  </span>
-                )}
-              </button>
-            </div>
+            </button>
           </div>
         </div>
 
-        {/* 🖥️ Desktop Layout */}
+        {/* 📂 Mobile Dropdown Menu */}
+        {menuOpen && (
+          <div className="md:hidden bg-[#25304f] w-full px-6 py-4 space-y-4 text-[#e0e0e0] text-lg">
+            {"Home Jewelry Custom Contact".split(" ").map((name) => {
+              const href = `/${name === "Home" ? "" : name.toLowerCase()}`;
+              return (
+                <Link
+                  key={name}
+                  href={href}
+                  className="block hover:text-white hover:underline"
+                  onClick={() => setMenuOpen(false)}
+                >
+                  {name}
+                </Link>
+              );
+            })}
+            {session?.user && (
+              <Link
+                href="/account"
+                className="block hover:text-white"
+                onClick={() => setMenuOpen(false)}
+              >
+                My Account
+              </Link>
+            )}
+            {(session?.user as any)?.isAdmin && (
+              <Link
+                href="/admin"
+                className="block text-yellow-400 hover:text-yellow-300"
+                onClick={() => setMenuOpen(false)}
+              >
+                Admin 🛠️
+              </Link>
+            )}
+          </div>
+        )}
+
+        {/* 🖥️ Desktop Layout (unchanged) */}
         <div className="hidden md:flex items-center justify-between w-full h-full px-6">
           <div className="flex items-center space-x-4">
             <Link
@@ -142,8 +170,8 @@ const Navbar = () => {
               className="flex flex-col text-white font-bold text-lg hover:opacity-80 hover:scale-105 transition-transform duration-300"
             >
               <span>Classy Diamonds</span>
-              <span className="text-xs font-light">
-                <i>A Cut Above The Rest</i>
+              <span className="text-xs font-light italic">
+                A Cut Above The Rest
               </span>
             </Link>
             {session && (
@@ -188,13 +216,12 @@ const Navbar = () => {
             >
               <FiSearch />
             </Link>
-
             <div className="relative" ref={userRef}>
               {session ? (
                 <>
                   <button
-                    className="hover:text-white hover:scale-105 transition-transform duration-300 cursor-pointer"
                     ref={userButtonRef}
+                    className="hover:text-white hover:scale-105 transition-transform duration-300"
                   >
                     <FiUser />
                   </button>
@@ -242,10 +269,9 @@ const Navbar = () => {
                 </Link>
               )}
             </div>
-
             <button
               ref={cartButtonRef}
-              className="relative hover:text-white hover:scale-105 transition-transform duration-300 cursor-pointer"
+              className="relative hover:text-white hover:scale-105 transition-transform duration-300"
             >
               <FiShoppingCart />
               {totalQuantity > 0 && (
@@ -258,7 +284,7 @@ const Navbar = () => {
         </div>
       </header>
 
-      {/* 🛒 Cart Dropdown Sticky Below Navbar */}
+      {/* 🛒 Cart Dropdown */}
       {cartOpen && (
         <div
           ref={cartRef}
