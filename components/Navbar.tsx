@@ -158,7 +158,7 @@ const Navbar = () => {
         {userMenuOpen && session?.user && (
           <div
             ref={userRef}
-            className="md:hidden fixed right-4 w-80 bg-[#1f2a44]/95 backdrop-blur-sm shadow-lg text-sm text-white z-40 animate-slide-fade-in transition-all duration-300"
+            className="md:hidden fixed right-0 w-80 bg-[#1f2a44]/95 backdrop-blur-sm shadow-lg text-sm text-white z-40 animate-slide-fade-in transition-all duration-300"
             style={{
               top: scrolled ? "64px" : "80px",
               borderRadius: "0 0 0.75rem 0.75rem",
