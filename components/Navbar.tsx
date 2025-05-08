@@ -1,4 +1,4 @@
-// 📂 components/Navbar.tsx – Fully Labeled for Section-Based Editing 🧱
+// 📂 components/Navbar.tsx – Fully Working + Comments 🧱
 
 "use client";
 
@@ -10,30 +10,28 @@ import { useSession, signOut } from "next-auth/react";
 import { FiUser, FiShoppingCart, FiSearch, FiMenu, FiX } from "react-icons/fi";
 import { useCart } from "@/context/CartContext";
 
-// 🧠 Component Start
+// 🧠 Navbar Component
 const Navbar = () => {
-  // 🌐 Hooks
   const router = useRouter();
   const pathname = router.pathname;
   const { data: session } = useSession();
   const { cartItems, increaseQty, decreaseQty, removeFromCart, addedItemName } =
     useCart();
 
-  // 📦 State
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
 
-  // 📍 Refs
   const cartRef = useRef<HTMLDivElement>(null);
   const userRef = useRef<HTMLDivElement>(null);
   const cartButtonRef = useRef<HTMLButtonElement>(null);
   const userButtonRef = useRef<HTMLButtonElement>(null);
 
-  // 🎯 Scroll and Click Outside
+  // 🎯 Scroll + Outside Click
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 50);
+
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Node;
       if (cartButtonRef.current?.contains(target)) {
@@ -51,6 +49,7 @@ const Navbar = () => {
         setUserMenuOpen(false);
       }
     };
+
     window.addEventListener("scroll", handleScroll);
     document.addEventListener("mousedown", handleClickOutside);
     return () => {
@@ -59,7 +58,7 @@ const Navbar = () => {
     };
   }, []);
 
-  // 🔁 Route Change Reset
+  // 🔄 Close menus on route change
   useEffect(() => {
     const handleRouteChange = () => {
       setMenuOpen(false);
@@ -70,7 +69,7 @@ const Navbar = () => {
     return () => window.removeEventListener("popstate", handleRouteChange);
   }, [router]);
 
-  // ➕ Cart Totals & Removal
+  // 🛒 Cart total + removal
   const totalQuantity = cartItems.reduce((sum, item) => sum + item.quantity, 0);
   const handleRemove = (id: number) => {
     if (confirm("Are you sure you want to remove this item from your cart?")) {
@@ -80,7 +79,7 @@ const Navbar = () => {
 
   return (
     <>
-      {/* 🔝 Sticky Navbar Container */}
+      {/* 🔝 Sticky Navbar */}
       <header
         className={`fixed top-0 left-0 w-full bg-[#1f2a44] transition-all duration-300 z-50 ${
           scrolled ? "h-16" : "h-20"
@@ -93,7 +92,7 @@ const Navbar = () => {
           </div>
         )}
 
-        {/* 📱 Mobile Top Bar */}
+        {/* 📱 Mobile Top Row */}
         <div className="md:hidden flex items-center justify-between w-full px-4 h-full">
           <div className="text-2xl text-[#e0e0e0]">
             {menuOpen ? (
@@ -103,7 +102,7 @@ const Navbar = () => {
             )}
           </div>
 
-          {/* 🏷️ Logo */}
+          {/* 🏷️ Mobile Logo */}
           <Link href="/" className="text-white font-bold text-lg text-center">
             <div>
               <div>Classy Diamonds</div>
@@ -113,12 +112,18 @@ const Navbar = () => {
             </div>
           </Link>
 
-          {/* 👤 User & 🛒 Cart Icons */}
+          {/* 👤 Mobile Icons */}
           <div className="flex items-center gap-4 text-2xl text-[#e0e0e0]">
-            <button ref={userButtonRef} className="hover:text-white">
+            <button
+              ref={userButtonRef}
+              className="cursor-pointer hover:text-white"
+            >
               <FiUser />
             </button>
-            <button ref={cartButtonRef} className="relative hover:text-white">
+            <button
+              ref={cartButtonRef}
+              className="relative cursor-pointer hover:text-white"
+            >
               <FiShoppingCart />
               {totalQuantity > 0 && (
                 <span className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full text-xs w-5 h-5 flex items-center justify-center">
@@ -129,7 +134,7 @@ const Navbar = () => {
           </div>
         </div>
 
-        {/* 📱 Mobile Menu Dropdown */}
+        {/* 📱 Mobile Dropdown Menu */}
         {menuOpen && (
           <div className="md:hidden bg-[#25304f] w-full px-6 py-4 space-y-4 text-[#e0e0e0] text-lg">
             {"Home Jewelry Custom Contact".split(" ").map((name) => {
@@ -138,7 +143,7 @@ const Navbar = () => {
                 <Link
                   key={name}
                   href={href}
-                  className="block hover:text-white hover:underline"
+                  className="block cursor-pointer hover:text-white hover:underline"
                   onClick={() => setMenuOpen(false)}
                 >
                   {name}
@@ -168,7 +173,7 @@ const Navbar = () => {
 
         {/* 💻 Desktop Layout */}
         <div className="hidden md:flex items-center justify-between w-full h-full px-6">
-          {/* 💎 Logo & Welcome */}
+          {/* 💎 Logo + Greeting */}
           <div className="flex items-center space-x-4">
             <Link
               href="/"
@@ -195,7 +200,7 @@ const Navbar = () => {
                 <Link
                   key={name}
                   href={href}
-                  className={`hover:text-white hover:scale-105 transition-transform duration-300 text-base md:text-lg ${
+                  className={`cursor-pointer hover:text-white hover:scale-105 transition-transform duration-300 text-base md:text-lg ${
                     pathname === href
                       ? "text-white underline underline-offset-4"
                       : ""
@@ -208,7 +213,7 @@ const Navbar = () => {
             {(session?.user as any)?.isAdmin && (
               <Link
                 href="/admin"
-                className="text-yellow-400 font-semibold hover:text-yellow-300 transition text-base md:text-lg"
+                className="cursor-pointer text-yellow-400 font-semibold hover:text-yellow-300 transition text-base md:text-lg"
               >
                 Admin 🛠️
               </Link>
@@ -219,48 +224,50 @@ const Navbar = () => {
           <div className="flex items-center gap-6 text-[#e0e0e0] text-xl">
             <Link
               href="/search"
-              className="hover:pointer hover:text-white hover:scale-105 transition-transform duration-300"
+              className="cursor-pointer hover:text-white hover:scale-105 transition-transform duration-300"
             >
               <FiSearch />
             </Link>
+
             <div className="relative" ref={userRef}>
               {session ? (
                 <>
                   <button
                     ref={userButtonRef}
-                    className="hover:pointer hover:text-white hover:scale-105 transition-transform duration-300"
+                    className="cursor-pointer hover:text-white hover:scale-105 transition-transform duration-300"
                   >
                     <FiUser />
                   </button>
+
                   {userMenuOpen && (
                     <div className="absolute right-0 mt-2 w-48 bg-[#1f2a44]/95 backdrop-blur-sm rounded-xl shadow-lg py-2 text-sm text-white z-50">
                       <Link
                         href="/account"
-                        className="block px-4 py-2 hover:bg-[#2a374f]"
+                        className="cursor-pointer block px-4 py-2 hover:bg-[#2a374f]"
                       >
                         My Account
                       </Link>
                       <Link
                         href="/account/orders"
-                        className="block px-4 py-2 hover:bg-[#2a374f]"
+                        className="cursor-pointer block px-4 py-2 hover:bg-[#2a374f]"
                       >
                         Order History
                       </Link>
                       <Link
                         href="/account/track"
-                        className="block px-4 py-2 hover:bg-[#2a374f]"
+                        className="cursor-pointer block px-4 py-2 hover:bg-[#2a374f]"
                       >
                         Track Orders
                       </Link>
                       <Link
                         href="/custom"
-                        className="block px-4 py-2 hover:bg-[#2a374f]"
+                        className="cursor-pointer block px-4 py-2 hover:bg-[#2a374f]"
                       >
                         Custom Requests
                       </Link>
                       <button
                         onClick={() => signOut({ callbackUrl: "/" })}
-                        className="w-full text-left px-4 py-2 text-red-400 hover:bg-[#2a374f] hover:text-red-500"
+                        className="cursor-pointer w-full text-left px-4 py-2 text-red-400 hover:bg-[#2a374f] hover:text-red-500"
                       >
                         Sign Out
                       </button>
@@ -276,9 +283,10 @@ const Navbar = () => {
                 </Link>
               )}
             </div>
+
             <button
               ref={cartButtonRef}
-              className="relative hover:text-white hover:scale-105 transition-transform duration-300"
+              className="relative cursor-pointer hover:text-white hover:scale-105 transition-transform duration-300"
             >
               <FiShoppingCart />
               {totalQuantity > 0 && (
