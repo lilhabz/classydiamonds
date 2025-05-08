@@ -4,6 +4,8 @@
 
 import Link from "next/link";
 import Head from "next/head";
+import Image from "next/image"; // ✅ Add this line for Next.js Image component
+
 import { useCart } from "@/context/CartContext"; // 🛒 Cart context
 import { productsData } from "@/data/productsData"; // 💎 Featured products data
 
@@ -64,7 +66,7 @@ const Home = () => {
           </h2>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-10 sm:gap-12">
-            {productsData.slice(0, 3).map((item) => (
+            {productsData.slice(0, 3).map((item, index) => (
               <div
                 key={item.id}
                 className="group bg-[#25304f] rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl hover:ring-2 hover:ring-[#e0e0e0] hover:scale-105 transition-all duration-300 flex flex-col cursor-pointer"
@@ -73,12 +75,14 @@ const Home = () => {
                   href={`/product/${item.slug}`}
                   className="flex-1 flex flex-col"
                 >
-                  {/* 🖼️ Product Image */}
-                  <div className="w-full h-72 sm:h-80 overflow-hidden">
-                    <img
+                  {/* 🖼️ Product Image — UPDATED to use Next.js Image for optimization */}
+                  <div className="relative w-full h-72 sm:h-80 overflow-hidden">
+                    <Image
                       src={item.image}
                       alt={item.name}
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                      fill
+                      priority={index === 0} // 🚀 Prioritize first image for faster render
+                      className="object-cover group-hover:scale-110 transition-transform duration-300"
                     />
                   </div>
 
