@@ -177,13 +177,14 @@ const Navbar = () => {
           <div className="flex items-center space-x-4">
             <Link
               href="/"
-              className="flex flex-col text-white font-bold text-lg hover:opacity-80 hover:scale-105 transition-transform duration-300"
+              className="flex flex-col text-white font-bold text-lg hover:text-white hover:opacity-80 hover:scale-105 transition-transform duration-300"
             >
               <span>Classy Diamonds</span>
               <span className="text-xs font-light italic">
                 A Cut Above The Rest
               </span>
             </Link>
+
             {session && (
               <p className="hidden md:block text-sm text-white font-light mt-1">
                 Welcome,{" "}
