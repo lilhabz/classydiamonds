@@ -156,7 +156,15 @@ const Navbar = () => {
 
         {/* 📲 Mobile User Dropdown – Sticks to navbar ✅ */}
         {userMenuOpen && session?.user && (
-          <div className="md:hidden absolute right-4 mt-2 w-48 bg-[#1f2a44]/95 backdrop-blur-sm rounded-xl shadow-lg py-2 text-sm text-white z-50">
+          <div
+            ref={userRef}
+            className="md:hidden fixed right-4 w-80 bg-[#1f2a44]/95 backdrop-blur-sm shadow-lg text-sm text-white z-40 animate-slide-fade-in transition-all duration-300"
+            style={{
+              top: scrolled ? "64px" : "80px",
+              borderRadius: "0 0 0.75rem 0.75rem",
+              padding: "1rem 1.5rem",
+            }}
+          >
             <Link
               href="/account"
               className="block px-4 py-2 hover:bg-[#2a374f]"
