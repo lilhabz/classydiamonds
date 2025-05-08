@@ -1,4 +1,4 @@
-// 📂 components/Navbar.tsx – Complete Version (Mobile Icons, Full Layout)
+// 📂 components/Navbar.tsx – Full Code with Cart Toggle Working Again ✅
 
 "use client";
 
@@ -29,22 +29,30 @@ const Navbar = () => {
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 50);
 
-    const handleClick = (event: MouseEvent) => {
+    const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Node;
-      const isCartBtn = cartButtonRef.current?.contains(target);
-      const isUserBtn = userButtonRef.current?.contains(target);
-      const isInCart = cartRef.current?.contains(target);
-      const isInUser = userRef.current?.contains(target);
 
-      if (!isCartBtn && !isInCart) setCartOpen(false);
-      if (!isUserBtn && !isInUser) setUserMenuOpen(false);
+      if (cartButtonRef.current?.contains(target)) {
+        setCartOpen((prev) => !prev);
+        return;
+      }
+      if (userButtonRef.current?.contains(target)) {
+        setUserMenuOpen((prev) => !prev);
+        return;
+      }
+      if (cartRef.current && !cartRef.current.contains(target)) {
+        setCartOpen(false);
+      }
+      if (userRef.current && !userRef.current.contains(target)) {
+        setUserMenuOpen(false);
+      }
     };
 
     window.addEventListener("scroll", handleScroll);
-    document.addEventListener("mousedown", handleClick);
+    document.addEventListener("mousedown", handleClickOutside);
     return () => {
       window.removeEventListener("scroll", handleScroll);
-      document.removeEventListener("mousedown", handleClick);
+      document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
 
@@ -70,20 +78,17 @@ const Navbar = () => {
 
   return (
     <>
-      {/* 🚩 Sticky Navbar */}
       <header
         className={`fixed top-0 left-0 w-full bg-[#1f2a44] transition-all duration-300 z-50 ${
           scrolled ? "h-16" : "h-20"
         }`}
       >
-        {/* ✅ Item Added Notification */}
         {addedItemName && (
           <div className="fixed top-20 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg animate-slide-fade-in z-[9999]">
             ✅ {addedItemName} added to cart!
           </div>
         )}
 
-        {/* 📱 Mobile Layout */}
         <div className="md:hidden flex items-center justify-between w-full px-4 h-full">
           <div className="text-2xl text-[#e0e0e0]">
             {menuOpen ? (
@@ -103,18 +108,10 @@ const Navbar = () => {
           </Link>
 
           <div className="flex items-center gap-4 text-2xl text-[#e0e0e0]">
-            <button
-              ref={userButtonRef}
-              onClick={() => setUserMenuOpen((prev) => !prev)}
-              className="hover:text-white"
-            >
+            <button ref={userButtonRef} className="hover:text-white">
               <FiUser />
             </button>
-            <button
-              ref={cartButtonRef}
-              onClick={() => setCartOpen((prev) => !prev)}
-              className="relative hover:text-white"
-            >
+            <button ref={cartButtonRef} className="relative hover:text-white">
               <FiShoppingCart />
               {totalQuantity > 0 && (
                 <span className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full text-xs w-5 h-5 flex items-center justify-center">
@@ -125,7 +122,6 @@ const Navbar = () => {
           </div>
         </div>
 
-        {/* 📂 Mobile Dropdown Menu */}
         {menuOpen && (
           <div className="md:hidden bg-[#25304f] w-full px-6 py-4 space-y-4 text-[#e0e0e0] text-lg">
             {"Home Jewelry Custom Contact".split(" ").map((name) => {
@@ -162,51 +158,6 @@ const Navbar = () => {
           </div>
         )}
 
-        {/* 🔒 Mobile User Dropdown */}
-        {userMenuOpen && (
-          <div
-            ref={userRef}
-            className="md:hidden bg-[#1f2a44]/95 px-6 py-4 text-sm text-white absolute right-4 top-20 z-40 rounded-xl shadow-xl"
-          >
-            {session ? (
-              <>
-                <Link
-                  href="/account"
-                  className="block py-2 hover:text-gray-200"
-                >
-                  My Account
-                </Link>
-                <Link
-                  href="/account/orders"
-                  className="block py-2 hover:text-gray-200"
-                >
-                  Order History
-                </Link>
-                <Link
-                  href="/account/track"
-                  className="block py-2 hover:text-gray-200"
-                >
-                  Track Orders
-                </Link>
-                <Link href="/custom" className="block py-2 hover:text-gray-200">
-                  Custom Requests
-                </Link>
-                <button
-                  onClick={() => signOut({ callbackUrl: "/" })}
-                  className="w-full text-left py-2 text-red-400 hover:text-red-500"
-                >
-                  Sign Out
-                </button>
-              </>
-            ) : (
-              <Link href="/auth" className="block py-2 hover:text-gray-200">
-                Sign In / Register
-              </Link>
-            )}
-          </div>
-        )}
-
-        {/* 🖥️ Desktop Layout */}
         <div className="hidden md:flex items-center justify-between w-full h-full px-6">
           <div className="flex items-center space-x-4">
             <Link
@@ -328,7 +279,6 @@ const Navbar = () => {
         </div>
       </header>
 
-      {/* 🛒 Cart Dropdown */}
       {cartOpen && (
         <div
           ref={cartRef}
