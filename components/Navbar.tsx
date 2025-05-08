@@ -72,6 +72,16 @@ const Navbar = () => {
     }
   };
 
+  const handleUserToggle = () => {
+    setUserMenuOpen((prev) => !prev);
+    setCartOpen(false);
+  };
+
+  const handleCartToggle = () => {
+    setCartOpen((prev) => !prev);
+    setUserMenuOpen(false);
+  };
+
   return (
     <>
       <header
@@ -111,12 +121,14 @@ const Navbar = () => {
           <div className="flex items-center gap-4 text-2xl text-[#e0e0e0]">
             <button
               ref={userButtonRef}
+              onClick={handleUserToggle}
               className="cursor-pointer hover:text-white"
             >
               <FiUser />
             </button>
             <button
               ref={cartButtonRef}
+              onClick={handleCartToggle}
               className="relative cursor-pointer hover:text-white"
             >
               <FiShoppingCart />
@@ -162,6 +174,38 @@ const Navbar = () => {
                 Admin 🛠️
               </Link>
             )}
+          </div>
+        )}
+
+        {userMenuOpen && (
+          <div className="md:hidden absolute right-4 mt-2 w-48 bg-[#1f2a44]/95 backdrop-blur-sm rounded-xl shadow-lg py-2 text-sm text-white z-50">
+            <Link
+              href="/account"
+              className="block px-4 py-2 hover:bg-[#2a374f]"
+            >
+              My Account
+            </Link>
+            <Link
+              href="/account/orders"
+              className="block px-4 py-2 hover:bg-[#2a374f]"
+            >
+              Order History
+            </Link>
+            <Link
+              href="/account/track"
+              className="block px-4 py-2 hover:bg-[#2a374f]"
+            >
+              Track Orders
+            </Link>
+            <Link href="/custom" className="block px-4 py-2 hover:bg-[#2a374f]">
+              Custom Requests
+            </Link>
+            <button
+              onClick={() => signOut({ callbackUrl: "/" })}
+              className="w-full text-left px-4 py-2 text-red-400 hover:bg-[#2a374f] hover:text-red-500"
+            >
+              Sign Out
+            </button>
           </div>
         )}
 
