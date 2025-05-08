@@ -219,7 +219,7 @@ const Navbar = () => {
           <div className="flex items-center gap-6 text-[#e0e0e0] text-xl">
             <Link
               href="/search"
-              className="hover:text-white hover:scale-105 transition-transform duration-300"
+              className="hover:pointer hover:text-white hover:scale-105 transition-transform duration-300"
             >
               <FiSearch />
             </Link>
@@ -228,7 +228,7 @@ const Navbar = () => {
                 <>
                   <button
                     ref={userButtonRef}
-                    className="hover:text-white hover:scale-105 transition-transform duration-300"
+                    className="hover:pointer hover:text-white hover:scale-105 transition-transform duration-300"
                   >
                     <FiUser />
                   </button>
