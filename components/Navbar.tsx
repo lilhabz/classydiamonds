@@ -267,6 +267,7 @@ const Navbar = () => {
                 <>
                   <button
                     ref={userButtonRef}
+                    onClick={handleUserToggle} // ✅ Fixed: makes user dropdown toggle on desktop
                     className="cursor-pointer hover:text-white hover:scale-105 transition-transform duration-300"
                   >
                     <FiUser />
@@ -317,6 +318,7 @@ const Navbar = () => {
             </div>
             <button
               ref={cartButtonRef}
+              onClick={handleCartToggle} // ✅ Fixed: toggles cart dropdown on desktop
               className="relative cursor-pointer hover:text-white hover:scale-105 transition-transform duration-300"
             >
               <FiShoppingCart />
