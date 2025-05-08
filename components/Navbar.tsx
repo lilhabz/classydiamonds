@@ -1,4 +1,4 @@
-// 📂 components/Navbar.tsx – Fully Working + Responsive 💎 (Admin link moved to dropdown only ✅)
+// 📂 components/Navbar.tsx – Fully Working + Mobile Fixes 💎
 
 "use client";
 
@@ -101,7 +101,6 @@ const Navbar = () => {
             )}
           </div>
 
-          {/* 🏷️ Mobile Logo */}
           <Link
             href="/"
             className="text-[#e0e0e0] font-bold text-lg text-center hover:text-white hover:scale-105 transition-transform duration-300"
@@ -152,18 +151,10 @@ const Navbar = () => {
                 </Link>
               );
             })}
-            {session?.user && (
-              <Link
-                href="/account"
-                className="block hover:text-white"
-                onClick={() => setMenuOpen(false)}
-              >
-                My Account
-              </Link>
-            )}
           </div>
         )}
 
+        {/* 📲 Mobile User Dropdown – Sticks to navbar ✅ */}
         {userMenuOpen && session?.user && (
           <div className="md:hidden absolute right-4 mt-2 w-48 bg-[#1f2a44]/95 backdrop-blur-sm rounded-xl shadow-lg py-2 text-sm text-white z-50">
             <Link
@@ -187,8 +178,6 @@ const Navbar = () => {
             <Link href="/custom" className="block px-4 py-2 hover:bg-[#2a374f]">
               Custom Requests
             </Link>
-
-            {/* 🔐 Admin Link only in dropdown ✅ */}
             {(session?.user as any)?.isAdmin && (
               <Link
                 href="/admin"
@@ -197,7 +186,6 @@ const Navbar = () => {
                 Admin 🛠️
               </Link>
             )}
-
             <button
               onClick={() => signOut({ callbackUrl: "/" })}
               className="w-full text-left px-4 py-2 text-red-400 hover:bg-[#2a374f] hover:text-red-500"
@@ -207,9 +195,8 @@ const Navbar = () => {
           </div>
         )}
 
-        {/* 💻 Desktop Layout - Responsive Container */}
+        {/* 💻 Desktop Layout */}
         <div className="hidden md:flex flex-wrap items-center justify-between gap-y-4 px-4 py-2 w-full">
-          {/* 💎 Logo + Greeting */}
           <div className="flex items-center space-x-4">
             <Link
               href="/"
@@ -228,7 +215,6 @@ const Navbar = () => {
             )}
           </div>
 
-          {/* 🧭 Desktop Navigation */}
           <nav className="flex flex-wrap justify-center gap-6 text-[#e0e0e0] font-semibold text-sm">
             {"Home Jewelry Custom Contact".split(" ").map((name) => {
               const href = `/${name === "Home" ? "" : name.toLowerCase()}`;
@@ -246,10 +232,8 @@ const Navbar = () => {
                 </Link>
               );
             })}
-            {/* ❌ Removed admin from nav */}
           </nav>
 
-          {/* 🔍 Icons */}
           <div className="flex items-center gap-4 text-[#e0e0e0] text-xl">
             <Link
               href="/search"
@@ -293,7 +277,6 @@ const Navbar = () => {
                       >
                         Custom Requests
                       </Link>
-                      {/* 🔐 Admin link in dropdown only ✅ */}
                       {(session?.user as any)?.isAdmin && (
                         <Link
                           href="/admin"
