@@ -1,8 +1,7 @@
-// 📂 components/Navbar.tsx – Fully Working + Comments 🧱
+// 📂 components/Navbar.tsx – Fully Working + Responsive 💎
 
 "use client";
 
-// 🔧 Imports
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
@@ -10,7 +9,6 @@ import { useSession, signOut } from "next-auth/react";
 import { FiUser, FiShoppingCart, FiSearch, FiMenu, FiX } from "react-icons/fi";
 import { useCart } from "@/context/CartContext";
 
-// 🧠 Navbar Component
 const Navbar = () => {
   const router = useRouter();
   const pathname = router.pathname;
@@ -28,7 +26,6 @@ const Navbar = () => {
   const cartButtonRef = useRef<HTMLButtonElement>(null);
   const userButtonRef = useRef<HTMLButtonElement>(null);
 
-  // 🎯 Scroll + Outside Click
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 50);
 
@@ -58,7 +55,6 @@ const Navbar = () => {
     };
   }, []);
 
-  // 🔄 Close menus on route change
   useEffect(() => {
     const handleRouteChange = () => {
       setMenuOpen(false);
@@ -69,7 +65,6 @@ const Navbar = () => {
     return () => window.removeEventListener("popstate", handleRouteChange);
   }, [router]);
 
-  // 🛒 Cart total + removal
   const totalQuantity = cartItems.reduce((sum, item) => sum + item.quantity, 0);
   const handleRemove = (id: number) => {
     if (confirm("Are you sure you want to remove this item from your cart?")) {
@@ -79,13 +74,11 @@ const Navbar = () => {
 
   return (
     <>
-      {/* 🔝 Sticky Navbar */}
       <header
         className={`fixed top-0 left-0 w-full bg-[#1f2a44] transition-all duration-300 z-50 ${
           scrolled ? "h-16" : "h-20"
         }`}
       >
-        {/* ✅ Cart Added Popup */}
         {addedItemName && (
           <div className="fixed top-20 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg animate-slide-fade-in z-[9999]">
             ✅ {addedItemName} added to cart!
@@ -115,7 +108,6 @@ const Navbar = () => {
             </div>
           </Link>
 
-          {/* 👤 Mobile Icons */}
           <div className="flex items-center gap-4 text-2xl text-[#e0e0e0]">
             <button
               ref={userButtonRef}
@@ -137,7 +129,6 @@ const Navbar = () => {
           </div>
         </div>
 
-        {/* 📱 Mobile Dropdown Menu */}
         {menuOpen && (
           <div className="md:hidden bg-[#25304f] w-full px-6 py-4 space-y-4 text-[#e0e0e0] text-lg">
             {"Home Jewelry Custom Contact".split(" ").map((name) => {
@@ -174,8 +165,8 @@ const Navbar = () => {
           </div>
         )}
 
-        {/* 💻 Desktop Layout */}
-        <div className="hidden md:flex items-center justify-between w-full h-full px-6">
+        {/* 💻 Desktop Layout - Responsive Container */}
+        <div className="hidden md:flex flex-wrap items-center justify-between gap-y-4 px-4 py-2 w-full">
           {/* 💎 Logo + Greeting */}
           <div className="flex items-center space-x-4">
             <Link
@@ -188,7 +179,7 @@ const Navbar = () => {
               </span>
             </Link>
             {session && (
-              <p className="hidden md:block text-sm text-white font-light mt-1">
+              <p className="hidden lg:block text-sm text-white font-light mt-1">
                 Welcome,{" "}
                 {session.user?.name?.split(" ")[0] || session.user?.email}
               </p>
@@ -196,14 +187,14 @@ const Navbar = () => {
           </div>
 
           {/* 🧭 Desktop Navigation */}
-          <nav className="absolute left-1/2 transform -translate-x-1/2 space-x-10 text-[#e0e0e0] font-semibold text-sm">
+          <nav className="flex flex-wrap justify-center gap-6 text-[#e0e0e0] font-semibold text-sm">
             {"Home Jewelry Custom Contact".split(" ").map((name) => {
               const href = `/${name === "Home" ? "" : name.toLowerCase()}`;
               return (
                 <Link
                   key={name}
                   href={href}
-                  className={`cursor-pointer text-[#e0e0e0] hover:text-white hover:scale-105 transition-transform duration-300 text-base md:text-lg ${
+                  className={`cursor-pointer text-[#e0e0e0] hover:text-white hover:scale-105 transition-transform duration-300 text-sm md:text-base ${
                     pathname === href
                       ? "text-white underline underline-offset-4"
                       : ""
@@ -216,7 +207,7 @@ const Navbar = () => {
             {(session?.user as any)?.isAdmin && (
               <Link
                 href="/admin"
-                className="cursor-pointer text-yellow-400 font-semibold hover:text-yellow-300 transition text-base md:text-lg"
+                className="cursor-pointer text-yellow-400 font-semibold hover:text-yellow-300 transition text-base"
               >
                 Admin 🛠️
               </Link>
@@ -224,14 +215,13 @@ const Navbar = () => {
           </nav>
 
           {/* 🔍 Icons */}
-          <div className="flex items-center gap-6 text-[#e0e0e0] text-xl">
+          <div className="flex items-center gap-4 text-[#e0e0e0] text-xl">
             <Link
               href="/search"
               className="cursor-pointer hover:text-white hover:scale-105 transition-transform duration-300"
             >
               <FiSearch />
             </Link>
-
             <div className="relative" ref={userRef}>
               {session ? (
                 <>
@@ -241,7 +231,6 @@ const Navbar = () => {
                   >
                     <FiUser />
                   </button>
-
                   {userMenuOpen && (
                     <div className="absolute right-0 mt-2 w-48 bg-[#1f2a44]/95 backdrop-blur-sm rounded-xl shadow-lg py-2 text-sm text-white z-50">
                       <Link
@@ -286,7 +275,6 @@ const Navbar = () => {
                 </Link>
               )}
             </div>
-
             <button
               ref={cartButtonRef}
               className="relative cursor-pointer hover:text-white hover:scale-105 transition-transform duration-300"
