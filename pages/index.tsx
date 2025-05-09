@@ -1,20 +1,19 @@
-// 📄 pages/index.tsx - Home Page (Mobile-Optimized + Full Image Fixes ✅)
+// 📄 pages/index.tsx - Home Page (Fully Restored to Original State ✅)
 
 "use client";
 
 import Link from "next/link";
 import Head from "next/head";
-import Image from "next/image"; // ✅ Using Next.js optimized image
+import Image from "next/image";
 
-import { useCart } from "@/context/CartContext"; // 🛒 Cart context
-import { productsData } from "@/data/productsData"; // 💎 Featured products data
+import { useCart } from "@/context/CartContext";
+import { productsData } from "@/data/productsData";
 
 const Home = () => {
-  const { addToCart } = useCart(); // 🛒 Hook to add items to cart
+  const { addToCart } = useCart();
 
   return (
     <>
-      {/* 🌐 Head Metadata */}
       <Head>
         <title>Classy Diamonds - Fine Jewelry</title>
         <meta
@@ -24,23 +23,21 @@ const Home = () => {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
 
-      {/* 🏠 Page Container */}
       <main className="flex flex-col min-h-screen bg-[#1f2a44] text-[#e0e0e0]">
-        <div className="h-0" /> {/* 🧹 Navbar Spacer */}
+        <div className="h-0" />
+
         {/* 🌟 Hero Section */}
-        <section className="-mt-20 relative w-full h-[80vh] text-center overflow-hidden">
+        <section className="-mt-20 relative w-full h-[80vh] flex items-center justify-center text-center overflow-hidden">
           <div className="absolute inset-0">
-            <Image
+            <img
               src="/hero-home.jpg"
               alt="Hero Background"
-              fill
-              priority
-              className="object-cover"
+              className="w-full h-full object-cover"
             />
-            <div className="absolute inset-0 bg-black opacity-50" />
+            <div className="absolute inset-0 bg-black opacity-50 pointer-events-none" />
           </div>
 
-          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center px-4">
+          <div className="relative z-10 px-4">
             <h1 className="text-3xl sm:text-4xl md:text-6xl font-bold mb-6 text-[#e0e0e0]">
               Timeless Elegance
             </h1>
@@ -55,12 +52,12 @@ const Home = () => {
             </Link>
           </div>
         </section>
+
         {/* 💎 Featured Products Section */}
         <section className="py-16 sm:py-20 px-4 sm:px-6 max-w-7xl mx-auto">
           <h2 className="text-2xl sm:text-3xl font-semibold text-center mb-12 sm:mb-16">
             Featured Pieces
           </h2>
-
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-10 sm:gap-12">
             {productsData.slice(0, 3).map((item, index) => (
               <div
@@ -80,7 +77,6 @@ const Home = () => {
                       className="object-cover group-hover:scale-110 transition-transform duration-300"
                     />
                   </div>
-
                   <div className="p-6 text-center flex-1 flex flex-col justify-between">
                     <div>
                       <h3 className="text-xl sm:text-2xl font-semibold text-[#cfd2d6] group-hover:text-white transition-colors duration-300">
@@ -92,7 +88,6 @@ const Home = () => {
                     </div>
                   </div>
                 </Link>
-
                 <div className="p-6 pt-0">
                   <button
                     onClick={() =>
@@ -113,12 +108,12 @@ const Home = () => {
             ))}
           </div>
         </section>
-        {/* 🛍️ Shop by Category Section – Text overlay now inside image container */}
+
+        {/* 🛍️ Shop by Category Section */}
         <section className="py-16 sm:py-20 px-4 sm:px-6 max-w-7xl mx-auto">
           <h2 className="text-2xl sm:text-3xl font-semibold text-center mb-12 sm:mb-16">
             Shop by Category
           </h2>
-
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-6 sm:gap-8 text-center">
             {[
               { name: "Engagement", image: "/category/engagement-cat.jpg" },
@@ -136,33 +131,30 @@ const Home = () => {
                 href={`/category/${category.name
                   .toLowerCase()
                   .replace(/\s+/g, "-")}`}
-                className="group relative rounded-2xl overflow-hidden shadow-md hover:shadow-2xl hover:scale-105 transition-all duration-300 h-48 sm:h-60"
+                className="group relative bg-[#25304f] rounded-2xl overflow-hidden shadow-md hover:shadow-2xl hover:scale-105 transition-all duration-300 flex items-center justify-center h-32 sm:h-40"
               >
-                <div className="relative w-full h-full">
-                  <Image
+                <div className="absolute inset-0">
+                  <img
                     src={category.image}
                     alt={category.name}
-                    fill
                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                   />
                   <div className="absolute inset-0 bg-black opacity-40 pointer-events-none" />
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-sm sm:text-lg font-semibold text-[#cfd2d6] group-hover:text-white transition-colors">
-                      {category.name}
-                    </span>
-                  </div>
                 </div>
+                <span className="relative z-10 text-sm sm:text-lg font-semibold text-[#cfd2d6] group-hover:text-white transition-colors">
+                  {category.name}
+                </span>
               </Link>
             ))}
           </div>
         </section>
-        {/* 🎁 Gifts Section – Text overlay fixed */}
+
+        {/* 🎁 Gifts Section */}
         <section className="py-16 sm:py-20 px-4 sm:px-6 max-w-7xl mx-auto">
           <h2 className="text-2xl sm:text-3xl font-semibold text-center mb-12 sm:mb-16">
             Gifts for Him & Her
           </h2>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 text-center">
             {[
               { name: "For Him", image: "/category/his-gift-cat.jpg" },
               { name: "For Her", image: "/category/her-gift-cat.jpg" },
@@ -172,26 +164,24 @@ const Home = () => {
                 href={`/category/${gift.name
                   .toLowerCase()
                   .replace(/\s+/g, "-")}`}
-                className="group relative rounded-2xl overflow-hidden shadow-md hover:shadow-2xl hover:scale-105 transition-all duration-300 h-48 sm:h-60"
+                className="group relative bg-[#25304f] rounded-2xl overflow-hidden shadow-md hover:shadow-2xl hover:scale-105 transition-all duration-300 flex items-center justify-center h-48 sm:h-60"
               >
-                <div className="relative w-full h-full">
-                  <Image
+                <div className="absolute inset-0">
+                  <img
                     src={gift.image}
                     alt={gift.name}
-                    fill
-                    className="object-cover group-hover:scale-110 transition-transform duration-300"
+                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                   />
                   <div className="absolute inset-0 bg-black opacity-50 pointer-events-none" />
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-lg sm:text-xl font-semibold text-[#cfd2d6] group-hover:text-white transition-colors">
-                      {gift.name}
-                    </span>
-                  </div>
                 </div>
+                <span className="relative z-10 text-lg sm:text-xl font-semibold text-[#cfd2d6] group-hover:text-white transition-colors">
+                  {gift.name}
+                </span>
               </Link>
             ))}
           </div>
         </section>
+
         {/* 🛠️ About Section */}
         <section className="py-16 sm:py-20 px-4 sm:px-6 bg-[#1f2a44]">
           <div className="max-w-4xl mx-auto text-center">
@@ -207,6 +197,7 @@ const Home = () => {
             </p>
           </div>
         </section>
+
         {/* 💎 Why Choose Us Section */}
         <section className="py-16 sm:py-20 px-4 sm:px-6 bg-[#1f2a44]">
           <div className="max-w-4xl mx-auto text-center">
@@ -222,6 +213,7 @@ const Home = () => {
             </p>
           </div>
         </section>
+
         {/* ✍️ Custom Jewelry CTA */}
         <section className="bg-[#1f2a44] py-16 sm:py-20 px-4 sm:px-6">
           <div className="max-w-5xl mx-auto text-center">
