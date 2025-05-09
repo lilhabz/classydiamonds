@@ -198,17 +198,24 @@ const Navbar = () => {
                   className="absolute right-0 mt-2 w-48 bg-[#1f2a44]/95 backdrop-blur-sm rounded-xl shadow-lg py-2 text-sm text-white z-[9999] pointer-events-auto"
                 >
                   {[
-                    { href: "/account", label: "My Account" },
-                    { href: "/account/orders", label: "Order History" },
-                    { href: "/account/track", label: "Track Orders" },
-                    { href: "/custom", label: "Custom Requests" },
-                  ].map(({ href, label }) => (
-                    <Link key={label} href={href} legacyBehavior>
+                    "/account",
+                    "/account/orders",
+                    "/account/track",
+                    "/custom",
+                  ].map((href, index) => (
+                    <Link key={href} href={href} legacyBehavior>
                       <a
                         onClick={() => setUserMenuOpen(false)}
                         className="block w-full text-left px-4 py-2 hover:bg-[#2a374f]"
                       >
-                        {label}
+                        {
+                          [
+                            "My Account",
+                            "Order History",
+                            "Track Orders",
+                            "Custom Requests",
+                          ][index]
+                        }
                       </a>
                     </Link>
                   ))}
