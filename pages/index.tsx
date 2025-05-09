@@ -136,7 +136,7 @@ const Home = () => {
                 href={`/category/${category.name
                   .toLowerCase()
                   .replace(/\s+/g, "-")}`}
-                className="group relative rounded-2xl overflow-hidden shadow-md hover:shadow-2xl hover:scale-105 transition-all duration-300 h-32 sm:h-40"
+                className="group relative rounded-2xl overflow-hidden shadow-md hover:shadow-2xl hover:scale-105 transition-all duration-300 flex items-center justify-center h-32 sm:h-40"
               >
                 <div className="relative w-full h-full">
                   <Image
@@ -172,7 +172,7 @@ const Home = () => {
                 href={`/category/${gift.name
                   .toLowerCase()
                   .replace(/\s+/g, "-")}`}
-                className="group relative rounded-2xl overflow-hidden shadow-md hover:shadow-2xl hover:scale-105 transition-all duration-300 h-48 sm:h-60"
+                className="group relative rounded-2xl overflow-hidden shadow-md hover:shadow-2xl hover:scale-105 transition-all duration-300 flex items-center justify-center h-48 sm:h-60"
               >
                 <div className="relative w-full h-full">
                   <Image
