@@ -77,7 +77,7 @@ const Home = () => {
                       alt={item.name}
                       fill
                       priority={index === 0}
-                      className="object-cover group-hover:scale-110 transition-transform duration-300"
+                      className="object-cover w-full h-full group-hover:scale-110 transition-transform duration-300"
                     />
                   </div>
 
