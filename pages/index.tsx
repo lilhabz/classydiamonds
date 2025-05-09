@@ -114,12 +114,12 @@ const Home = () => {
         </section>
 
         {/* 🛍️ Shop by Category Section */}
-        <section className="py-16 sm:py-20 w-full px-4 sm:px-6">
+        <section className="py-16 sm:py-20 w-full px-4 sm:px-10">
           <h2 className="text-2xl sm:text-3xl font-semibold text-center mb-12 sm:mb-16">
             Shop by Category
           </h2>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-1 sm:gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
             {[
               { name: "Engagement", image: "/category/engagement-cat.jpg" },
               {
@@ -136,9 +136,9 @@ const Home = () => {
                 href={`/category/${category.name
                   .toLowerCase()
                   .replace(/\s+/g, "-")}`}
-                className="group block relative rounded-xl overflow-hidden transition-all duration-300 hover:scale-[1.05] hover:shadow-lg"
+                className="group block relative rounded-xl overflow-hidden transition-transform duration-300 hover:scale-105 hover:shadow-lg"
               >
-                <div className="relative w-full h-40 sm:h-44 rounded-xl overflow-hidden">
+                <div className="relative w-full h-40 sm:h-48 rounded-xl overflow-hidden">
                   <Image
                     src={category.image}
                     alt={category.name}
