@@ -130,7 +130,7 @@ const Home = () => {
               { name: "Bracelets", image: "/category/bracelet-cat.jpg" },
               { name: "Necklaces", image: "/category/necklace-cat.jpg" },
               { name: "Earrings", image: "/category/earring-cat.jpg" },
-            ].map((category) => (
+            ].map((category, index) => (
               <Link
                 key={category.name}
                 href={`/category/${category.name
@@ -143,11 +143,12 @@ const Home = () => {
                     src={category.image}
                     alt={category.name}
                     fill
-                    sizes="100vw"
+                    priority={index < 3} // ✅ Load top 3 images faster
                     className="object-cover rounded-xl"
                   />
-                  <div className="absolute inset-0 bg-black bg-opacity-40 rounded-xl pointer-events-none" />
-                  <span className="absolute inset-0 flex items-center justify-center text-sm sm:text-base font-semibold text-[#cfd2d6] group-hover:text-white z-10 transition-colors">
+                  {/* ✅ Slightly lighter overlay so images still visible */}
+                  <div className="absolute inset-0 bg-black bg-opacity-25 rounded-xl pointer-events-none" />
+                  <span className="absolute inset-0 flex items-center justify-center text-sm sm:text-base font-semibold text-[#f0f0f0] group-hover:text-white z-10 transition-colors">
                     {category.name}
                   </span>
                 </div>
