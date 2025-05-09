@@ -119,7 +119,7 @@ const Home = () => {
             Shop by Category
           </h2>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6 sm:gap-8">
             {[
               { name: "Engagement", image: "/category/engagement-cat.jpg" },
               {
