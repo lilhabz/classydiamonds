@@ -118,7 +118,9 @@ const Home = () => {
           <h2 className="text-2xl sm:text-3xl font-semibold text-center mb-12 sm:mb-16">
             Shop by Category
           </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 text-center">
+
+          {/* 👇 Responsive Grid: 2 on small, 3 on medium, 6 on large screens */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-6 sm:gap-8">
             {[
               { name: "Engagement", image: "/category/engagement-cat.jpg" },
               {
@@ -135,18 +137,24 @@ const Home = () => {
                 href={`/category/${category.name
                   .toLowerCase()
                   .replace(/\s+/g, "-")}`}
-                className="group relative bg-[#25304f] rounded-2xl overflow-hidden shadow-md hover:shadow-2xl transition-all duration-300 h-64"
+                className="group relative bg-[#25304f] rounded-2xl overflow-hidden shadow-md hover:shadow-2xl hover:scale-105 transition-all duration-300"
               >
-                <Image
-                  src={category.image}
-                  alt={category.name}
-                  fill
-                  className="object-cover w-full h-full"
-                />
-                <div className="absolute inset-0 bg-black bg-opacity-40"></div>
-                <span className="absolute inset-0 flex items-center justify-center text-lg font-semibold text-white">
-                  {category.name}
-                </span>
+                {/* 📐 Keep card shape consistent (4:3 ratio for better fit) */}
+                <div className="aspect-[4/3] relative w-full h-full">
+                  <Image
+                    src={category.image}
+                    alt={category.name}
+                    fill
+                    sizes="100vw"
+                    className="object-cover"
+                  />
+                  {/* 🌑 Overlay */}
+                  <div className="absolute inset-0 bg-black opacity-40 pointer-events-none" />
+                  {/* 📝 Text Overlay */}
+                  <span className="absolute inset-0 flex items-center justify-center text-sm sm:text-base font-semibold text-[#cfd2d6] group-hover:text-white transition-colors z-10">
+                    {category.name}
+                  </span>
+                </div>
               </Link>
             ))}
           </div>
