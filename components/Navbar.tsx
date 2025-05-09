@@ -1,4 +1,4 @@
-// 📂 components/Navbar.tsx – Fully Working + Mobile Fixes 💎
+// 📂 components/Navbar.tsx – Fully Working + Desktop Dropdown Fix + Mobile Menu Position Fix 💎
 
 "use client";
 
@@ -80,6 +80,7 @@ const Navbar = () => {
 
   return (
     <>
+      {/* 🧭 Navbar Container */}
       <header
         className={`fixed top-0 left-0 w-full bg-[#1f2a44] transition-all duration-300 z-50 flex items-center ${
           scrolled ? "h-16" : "h-20"
@@ -135,199 +136,200 @@ const Navbar = () => {
             </button>
           </div>
         </div>
+      </header>
 
-        {menuOpen && (
-          <div className="md:hidden bg-[#25304f] w-full px-6 py-4 space-y-4 text-[#e0e0e0] text-lg">
-            {"Home Jewelry Custom Contact".split(" ").map((name) => {
-              const href = `/${name === "Home" ? "" : name.toLowerCase()}`;
-              return (
-                <Link
-                  key={name}
-                  href={href}
-                  className="block cursor-pointer hover:text-white hover:underline"
-                  onClick={() => setMenuOpen(false)}
-                >
-                  {name}
-                </Link>
-              );
-            })}
-          </div>
-        )}
-
-        {/* 📲 Mobile User Dropdown – Sticks to navbar ✅ */}
-        {userMenuOpen && session?.user && (
-          <div
-            ref={userRef}
-            className="md:hidden fixed right-0 w-80 bg-[#1f2a44]/95 backdrop-blur-sm shadow-lg text-sm text-white z-40 animate-slide-fade-in transition-all duration-300"
-            style={{
-              top: scrolled ? "64px" : "80px",
-              borderRadius: "0 0 0.75rem 0.75rem",
-              padding: "1rem 1.5rem",
-            }}
-          >
-            <Link
-              href="/account"
-              className="block px-4 py-2 hover:bg-[#2a374f]"
-            >
-              My Account
-            </Link>
-            <Link
-              href="/account/orders"
-              className="block px-4 py-2 hover:bg-[#2a374f]"
-            >
-              Order History
-            </Link>
-            <Link
-              href="/account/track"
-              className="block px-4 py-2 hover:bg-[#2a374f]"
-            >
-              Track Orders
-            </Link>
-            <Link href="/custom" className="block px-4 py-2 hover:bg-[#2a374f]">
-              Custom Requests
-            </Link>
-            {(session?.user as any)?.isAdmin && (
+      {/* 📱 Mobile Menu Dropdown – ⬇️ moved below navbar */}
+      {menuOpen && (
+        <div
+          className="md:hidden fixed top-[80px] w-full bg-[#25304f] px-6 py-4 space-y-4 text-[#e0e0e0] text-lg z-40"
+          style={{ borderRadius: "0 0 0.75rem 0.75rem" }}
+        >
+          {"Home Jewelry Custom Contact".split(" ").map((name) => {
+            const href = `/${name === "Home" ? "" : name.toLowerCase()}`;
+            return (
               <Link
-                href="/admin"
-                className="block px-4 py-2 text-yellow-400 hover:bg-[#2a374f] hover:text-yellow-300"
+                key={name}
+                href={href}
+                className="block cursor-pointer hover:text-white hover:underline"
+                onClick={() => setMenuOpen(false)}
               >
-                Admin 🛠️
+                {name}
               </Link>
-            )}
-            <button
-              onClick={() => signOut({ callbackUrl: "/" })}
-              className="w-full text-left px-4 py-2 text-red-400 hover:bg-[#2a374f] hover:text-red-500"
-            >
-              Sign Out
-            </button>
-          </div>
-        )}
+            );
+          })}
+        </div>
+      )}
 
-        {/* 💻 Desktop Layout */}
-        <div className="hidden md:flex flex-wrap items-center justify-between gap-y-4 px-4 py-2 w-full">
-          <div className="flex items-center space-x-4">
+      {/* 📲 Mobile User Dropdown – ✅ unchanged */}
+      {userMenuOpen && session?.user && (
+        <div
+          ref={userRef}
+          className="md:hidden fixed right-0 w-80 bg-[#1f2a44]/95 backdrop-blur-sm shadow-lg text-sm text-white z-40 animate-slide-fade-in transition-all duration-300 pointer-events-auto"
+          style={{
+            top: scrolled ? "64px" : "80px",
+            borderRadius: "0 0 0.75rem 0.75rem",
+            padding: "1rem 1.5rem",
+          }}
+        >
+          <Link href="/account" className="block px-4 py-2 hover:bg-[#2a374f]">
+            My Account
+          </Link>
+          <Link
+            href="/account/orders"
+            className="block px-4 py-2 hover:bg-[#2a374f]"
+          >
+            Order History
+          </Link>
+          <Link
+            href="/account/track"
+            className="block px-4 py-2 hover:bg-[#2a374f]"
+          >
+            Track Orders
+          </Link>
+          <Link href="/custom" className="block px-4 py-2 hover:bg-[#2a374f]">
+            Custom Requests
+          </Link>
+          {(session?.user as any)?.isAdmin && (
             <Link
-              href="/"
-              className="flex flex-col text-[#e0e0e0] font-bold text-lg hover:text-white hover:scale-105 transition-transform duration-300"
+              href="/admin"
+              className="block px-4 py-2 text-yellow-400 hover:bg-[#2a374f] hover:text-yellow-300"
             >
-              <span>Classy Diamonds</span>
-              <span className="text-xs font-light italic">
-                A Cut Above The Rest
-              </span>
+              Admin 🛠️
             </Link>
-            {session && (
-              <p className="hidden lg:block text-sm text-white font-light mt-1">
-                Welcome,{" "}
-                {session.user?.name?.split(" ")[0] || session.user?.email}
-              </p>
-            )}
-          </div>
+          )}
+          <button
+            onClick={() => signOut({ callbackUrl: "/" })}
+            className="w-full text-left px-4 py-2 text-red-400 hover:bg-[#2a374f] hover:text-red-500"
+          >
+            Sign Out
+          </button>
+        </div>
+      )}
 
-          <nav className="flex flex-wrap justify-center gap-6 text-[#e0e0e0] font-semibold text-sm">
-            {"Home Jewelry Custom Contact".split(" ").map((name) => {
-              const href = `/${name === "Home" ? "" : name.toLowerCase()}`;
-              return (
-                <Link
-                  key={name}
-                  href={href}
-                  className={`cursor-pointer text-[#e0e0e0] hover:text-white hover:scale-105 transition-transform duration-300 text-sm md:text-base ${
-                    pathname === href
-                      ? "text-white underline underline-offset-4"
-                      : ""
-                  }`}
-                >
-                  {name}
-                </Link>
-              );
-            })}
-          </nav>
+      {/* 💻 Desktop Layout */}
+      <div className="hidden md:flex flex-wrap items-center justify-between gap-y-4 px-4 py-2 w-full">
+        <div className="flex items-center space-x-4">
+          <Link
+            href="/"
+            className="flex flex-col text-[#e0e0e0] font-bold text-lg hover:text-white hover:scale-105 transition-transform duration-300"
+          >
+            <span>Classy Diamonds</span>
+            <span className="text-xs font-light italic">
+              A Cut Above The Rest
+            </span>
+          </Link>
+          {session && (
+            <p className="hidden lg:block text-sm text-white font-light mt-1">
+              Welcome,{" "}
+              {session.user?.name?.split(" ")[0] || session.user?.email}
+            </p>
+          )}
+        </div>
 
-          <div className="flex items-center gap-4 text-[#e0e0e0] text-xl">
-            <Link
-              href="/search"
-              className="cursor-pointer hover:text-white hover:scale-105 transition-transform duration-300"
-            >
-              <FiSearch />
-            </Link>
-            <div className="relative" ref={userRef}>
-              {session ? (
-                <>
-                  <button
-                    ref={userButtonRef}
-                    onClick={handleUserToggle}
-                    className="cursor-pointer hover:text-white hover:scale-105 transition-transform duration-300"
-                  >
-                    <FiUser />
-                  </button>
-                  {userMenuOpen && (
-                    <div className="absolute right-0 mt-2 w-48 bg-[#1f2a44]/95 backdrop-blur-sm rounded-xl shadow-lg py-2 text-sm text-white z-50">
-                      <Link
-                        href="/account"
-                        className="block px-4 py-2 hover:bg-[#2a374f]"
-                      >
-                        My Account
-                      </Link>
-                      <Link
-                        href="/account/orders"
-                        className="block px-4 py-2 hover:bg-[#2a374f]"
-                      >
-                        Order History
-                      </Link>
-                      <Link
-                        href="/account/track"
-                        className="block px-4 py-2 hover:bg-[#2a374f]"
-                      >
-                        Track Orders
-                      </Link>
-                      <Link
-                        href="/custom"
-                        className="block px-4 py-2 hover:bg-[#2a374f]"
-                      >
-                        Custom Requests
-                      </Link>
-                      {(session?.user as any)?.isAdmin && (
-                        <Link
-                          href="/admin"
-                          className="block px-4 py-2 text-yellow-400 hover:bg-[#2a374f] hover:text-yellow-300"
-                        >
-                          Admin 🛠️
-                        </Link>
-                      )}
-                      <button
-                        onClick={() => signOut({ callbackUrl: "/" })}
-                        className="w-full text-left px-4 py-2 text-red-400 hover:bg-[#2a374f] hover:text-red-500"
-                      >
-                        Sign Out
-                      </button>
-                    </div>
-                  )}
-                </>
-              ) : (
-                <Link
-                  href="/auth"
+        <nav className="flex flex-wrap justify-center gap-6 text-[#e0e0e0] font-semibold text-sm">
+          {"Home Jewelry Custom Contact".split(" ").map((name) => {
+            const href = `/${name === "Home" ? "" : name.toLowerCase()}`;
+            return (
+              <Link
+                key={name}
+                href={href}
+                className={`cursor-pointer text-[#e0e0e0] hover:text-white hover:scale-105 transition-transform duration-300 text-sm md:text-base ${
+                  pathname === href
+                    ? "text-white underline underline-offset-4"
+                    : ""
+                }`}
+              >
+                {name}
+              </Link>
+            );
+          })}
+        </nav>
+
+        <div className="flex items-center gap-4 text-[#e0e0e0] text-xl">
+          <Link
+            href="/search"
+            className="cursor-pointer hover:text-white hover:scale-105 transition-transform duration-300"
+          >
+            <FiSearch />
+          </Link>
+          <div className="relative" ref={userRef}>
+            {session ? (
+              <>
+                <button
+                  ref={userButtonRef}
+                  onClick={handleUserToggle}
                   className="cursor-pointer hover:text-white hover:scale-105 transition-transform duration-300"
                 >
                   <FiUser />
-                </Link>
-              )}
-            </div>
-            <button
-              ref={cartButtonRef}
-              onClick={handleCartToggle}
-              className="relative cursor-pointer hover:text-white hover:scale-105 transition-transform duration-300"
-            >
-              <FiShoppingCart />
-              {totalQuantity > 0 && (
-                <span className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full text-xs w-5 h-5 flex items-center justify-center">
-                  {totalQuantity}
-                </span>
-              )}
-            </button>
+                </button>
+                {userMenuOpen && (
+                  <div className="absolute right-0 mt-2 w-48 bg-[#1f2a44]/95 backdrop-blur-sm rounded-xl shadow-lg py-2 text-sm text-white z-[9999] pointer-events-auto">
+                    <Link
+                      href="/account"
+                      className="block px-4 py-2 hover:bg-[#2a374f]"
+                    >
+                      My Account
+                    </Link>
+                    <Link
+                      href="/account/orders"
+                      className="block px-4 py-2 hover:bg-[#2a374f]"
+                    >
+                      Order History
+                    </Link>
+                    <Link
+                      href="/account/track"
+                      className="block px-4 py-2 hover:bg-[#2a374f]"
+                    >
+                      Track Orders
+                    </Link>
+                    <Link
+                      href="/custom"
+                      className="block px-4 py-2 hover:bg-[#2a374f]"
+                    >
+                      Custom Requests
+                    </Link>
+                    {(session?.user as any)?.isAdmin && (
+                      <Link
+                        href="/admin"
+                        className="block px-4 py-2 text-yellow-400 hover:bg-[#2a374f] hover:text-yellow-300"
+                      >
+                        Admin 🛠️
+                      </Link>
+                    )}
+                    <button
+                      onClick={() => signOut({ callbackUrl: "/" })}
+                      className="w-full text-left px-4 py-2 text-red-400 hover:bg-[#2a374f] hover:text-red-500"
+                    >
+                      Sign Out
+                    </button>
+                  </div>
+                )}
+              </>
+            ) : (
+              <Link
+                href="/auth"
+                className="cursor-pointer hover:text-white hover:scale-105 transition-transform duration-300"
+              >
+                <FiUser />
+              </Link>
+            )}
           </div>
+          <button
+            ref={cartButtonRef}
+            onClick={handleCartToggle}
+            className="relative cursor-pointer hover:text-white hover:scale-105 transition-transform duration-300"
+          >
+            <FiShoppingCart />
+            {totalQuantity > 0 && (
+              <span className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full text-xs w-5 h-5 flex items-center justify-center">
+                {totalQuantity}
+              </span>
+            )}
+          </button>
         </div>
-      </header>
+      </div>
 
-      {/* 🛒 Cart Dropdown */}
+      {/* 🛒 Cart Dropdown – ✅ unchanged */}
       {cartOpen && (
         <div
           ref={cartRef}
