@@ -77,7 +77,7 @@ const Home = () => {
                       alt={item.name}
                       fill
                       priority={index === 0}
-                      className="object-cover w-full h-full group-hover:scale-110 transition-transform duration-300"
+                      className="object-cover group-hover:scale-110 transition-transform duration-300"
                     />
                   </div>
 
@@ -119,7 +119,7 @@ const Home = () => {
             Shop by Category
           </h2>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6 sm:gap-8">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-6 sm:gap-8 text-center">
             {[
               { name: "Engagement", image: "/category/engagement-cat.jpg" },
               {
@@ -143,7 +143,7 @@ const Home = () => {
                     src={category.image}
                     alt={category.name}
                     fill
-                    className="object-cover w-full h-full group-hover:scale-110 transition-transform duration-300"
+                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                   />
                   <div className="absolute inset-0 bg-black opacity-40 pointer-events-none" />
                   <div className="absolute inset-0 flex items-center justify-center">
