@@ -244,12 +244,7 @@ const Navbar = () => {
                 >
                   Track Orders
                 </Link>
-                <Link
-                  href="/custom"
-                  className="block px-4 py-2 hover:bg-[#2a374f]"
-                >
-                  Custom Requests
-                </Link>
+
                 {(session?.user as any)?.isAdmin && (
                   <Link
                     href="/admin"
