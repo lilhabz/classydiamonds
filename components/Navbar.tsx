@@ -222,7 +222,8 @@ const Navbar = () => {
                   </Link>
                   {(session?.user as any)?.isAdmin && (
                     <button
-                      onClick={() => {
+                      onMouseDown={(e) => {
+                        e.preventDefault();
                         setUserMenuOpen(false);
                         router.push("/admin");
                       }}
@@ -232,7 +233,11 @@ const Navbar = () => {
                     </button>
                   )}
                   <button
-                    onClick={() => signOut({ callbackUrl: "/" })}
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      setUserMenuOpen(false);
+                      signOut({ callbackUrl: "/" });
+                    }}
                     className="w-full text-left px-4 py-2 text-red-400 hover:bg-[#2a374f] hover:text-red-500"
                   >
                     Sign Out
