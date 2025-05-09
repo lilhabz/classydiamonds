@@ -29,7 +29,6 @@ const Home = () => {
         <div className="h-0" /> {/* 🧹 Navbar Spacer */}
         {/* 🌟 Hero Section */}
         <section className="-mt-20 relative w-full h-[80vh] text-center overflow-hidden">
-          {/* 🖼️ Hero Background Image */}
           <div className="absolute inset-0">
             <Image
               src="/hero-home.jpg"
@@ -41,7 +40,6 @@ const Home = () => {
             <div className="absolute inset-0 bg-black opacity-50" />
           </div>
 
-          {/* ✨ Overlayed Hero Text */}
           <div className="absolute inset-0 z-10 flex flex-col items-center justify-center px-4">
             <h1 className="text-3xl sm:text-4xl md:text-6xl font-bold mb-6 text-[#e0e0e0]">
               Timeless Elegance
@@ -73,7 +71,6 @@ const Home = () => {
                   href={`/product/${item.slug}`}
                   className="flex-1 flex flex-col"
                 >
-                  {/* 🖼️ Product Image */}
                   <div className="relative w-full h-72 sm:h-80 overflow-hidden">
                     <Image
                       src={item.image}
@@ -84,7 +81,6 @@ const Home = () => {
                     />
                   </div>
 
-                  {/* 📝 Product Info */}
                   <div className="p-6 text-center flex-1 flex flex-col justify-between">
                     <div>
                       <h3 className="text-xl sm:text-2xl font-semibold text-[#cfd2d6] group-hover:text-white transition-colors duration-300">
@@ -97,7 +93,6 @@ const Home = () => {
                   </div>
                 </Link>
 
-                {/* 🛒 Add to Cart Button */}
                 <div className="p-6 pt-0">
                   <button
                     onClick={() =>
@@ -118,13 +113,13 @@ const Home = () => {
             ))}
           </div>
         </section>
-        {/* 🛍️ Shop by Category Section (Fixed Image + Text Overlay) */}
+        {/* 🛍️ Shop by Category Section – Text overlay now inside image container */}
         <section className="py-16 sm:py-20 px-4 sm:px-6 max-w-7xl mx-auto">
           <h2 className="text-2xl sm:text-3xl font-semibold text-center mb-12 sm:mb-16">
             Shop by Category
           </h2>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-6 sm:gap-8 text-center">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-6 sm:gap-8">
             {[
               { name: "Engagement", image: "/category/engagement-cat.jpg" },
               {
@@ -141,9 +136,9 @@ const Home = () => {
                 href={`/category/${category.name
                   .toLowerCase()
                   .replace(/\s+/g, "-")}`}
-                className="group relative rounded-2xl overflow-hidden shadow-md hover:shadow-2xl hover:scale-105 transition-all duration-300 flex items-center justify-center h-32 sm:h-40 bg-[#25304f]"
+                className="group relative rounded-2xl overflow-hidden shadow-md hover:shadow-2xl hover:scale-105 transition-all duration-300 h-32 sm:h-40"
               >
-                <div className="absolute inset-0 relative w-full h-full">
+                <div className="relative w-full h-full">
                   <Image
                     src={category.image}
                     alt={category.name}
@@ -151,21 +146,23 @@ const Home = () => {
                     className="object-cover group-hover:scale-110 transition-transform duration-300"
                   />
                   <div className="absolute inset-0 bg-black opacity-40 pointer-events-none" />
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <span className="text-sm sm:text-lg font-semibold text-[#cfd2d6] group-hover:text-white transition-colors">
+                      {category.name}
+                    </span>
+                  </div>
                 </div>
-                <span className="relative z-10 text-sm sm:text-lg font-semibold text-[#cfd2d6] group-hover:text-white transition-colors">
-                  {category.name}
-                </span>
               </Link>
             ))}
           </div>
         </section>
-        {/* 🎁 Gifts for Him & Her Section (Fixed Image + Text Overlay) */}
+        {/* 🎁 Gifts Section – Text overlay fixed */}
         <section className="py-16 sm:py-20 px-4 sm:px-6 max-w-7xl mx-auto">
           <h2 className="text-2xl sm:text-3xl font-semibold text-center mb-12 sm:mb-16">
             Gifts for Him & Her
           </h2>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 text-center">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
             {[
               { name: "For Him", image: "/category/his-gift-cat.jpg" },
               { name: "For Her", image: "/category/her-gift-cat.jpg" },
@@ -175,9 +172,9 @@ const Home = () => {
                 href={`/category/${gift.name
                   .toLowerCase()
                   .replace(/\s+/g, "-")}`}
-                className="group relative bg-[#25304f] rounded-2xl overflow-hidden shadow-md hover:shadow-2xl hover:scale-105 transition-all duration-300 flex items-center justify-center h-48 sm:h-60"
+                className="group relative rounded-2xl overflow-hidden shadow-md hover:shadow-2xl hover:scale-105 transition-all duration-300 h-48 sm:h-60"
               >
-                <div className="absolute inset-0 relative w-full h-full">
+                <div className="relative w-full h-full">
                   <Image
                     src={gift.image}
                     alt={gift.name}
@@ -185,10 +182,12 @@ const Home = () => {
                     className="object-cover group-hover:scale-110 transition-transform duration-300"
                   />
                   <div className="absolute inset-0 bg-black opacity-50 pointer-events-none" />
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <span className="text-lg sm:text-xl font-semibold text-[#cfd2d6] group-hover:text-white transition-colors">
+                      {gift.name}
+                    </span>
+                  </div>
                 </div>
-                <span className="relative z-10 text-lg sm:text-xl font-semibold text-[#cfd2d6] group-hover:text-white transition-colors">
-                  {gift.name}
-                </span>
               </Link>
             ))}
           </div>
