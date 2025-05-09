@@ -119,7 +119,7 @@ const Home = () => {
             Shop by Category
           </h2>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
             {[
               { name: "Engagement", image: "/category/engagement-cat.jpg" },
               {
@@ -136,19 +136,18 @@ const Home = () => {
                 href={`/category/${category.name
                   .toLowerCase()
                   .replace(/\s+/g, "-")}`}
-                className="group block relative rounded-xl overflow-hidden transition-transform duration-300 hover:scale-105 hover:shadow-lg"
+                className="group relative rounded-xl overflow-hidden shadow-md hover:shadow-xl hover:scale-105 transition-transform duration-300"
               >
-                <div className="relative w-full h-40 sm:h-48 rounded-xl overflow-hidden">
+                <div className="relative aspect-[4/3] w-full">
                   <Image
                     src={category.image}
                     alt={category.name}
                     fill
-                    priority={index < 3} // ✅ Load top 3 images faster
-                    className="object-cover rounded-xl"
+                    priority={index < 3}
+                    className="rounded-xl object-cover z-0"
                   />
-                  {/* ✅ Slightly lighter overlay so images still visible */}
-                  <div className="absolute inset-0 bg-black bg-opacity-25 rounded-xl pointer-events-none" />
-                  <span className="absolute inset-0 flex items-center justify-center text-sm sm:text-base font-semibold text-[#f0f0f0] group-hover:text-white z-10 transition-colors">
+                  <div className="absolute inset-0 bg-black/30 z-10" />
+                  <span className="absolute inset-0 flex items-center justify-center text-sm sm:text-base font-semibold text-white z-20">
                     {category.name}
                   </span>
                 </div>
