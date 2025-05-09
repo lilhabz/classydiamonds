@@ -1,4 +1,4 @@
-// 📄 pages/index.tsx - Home Page (Mobile-Optimized + Next.js Image Fixes ✅)
+// 📄 pages/index.tsx - Home Page (Mobile-Optimized + Full Image Fixes ✅)
 
 "use client";
 
@@ -118,7 +118,7 @@ const Home = () => {
             ))}
           </div>
         </section>
-        {/* 🛍️ Shop by Category */}
+        {/* 🛍️ Shop by Category Section (Fixed Image + Text Overlay) */}
         <section className="py-16 sm:py-20 px-4 sm:px-6 max-w-7xl mx-auto">
           <h2 className="text-2xl sm:text-3xl font-semibold text-center mb-12 sm:mb-16">
             Shop by Category
@@ -141,7 +141,7 @@ const Home = () => {
                 href={`/category/${category.name
                   .toLowerCase()
                   .replace(/\s+/g, "-")}`}
-                className="group relative bg-[#25304f] rounded-2xl overflow-hidden shadow-md hover:shadow-2xl hover:scale-105 transition-all duration-300 flex items-center justify-center h-32 sm:h-40"
+                className="group relative rounded-2xl overflow-hidden shadow-md hover:shadow-2xl hover:scale-105 transition-all duration-300 flex items-center justify-center h-32 sm:h-40 bg-[#25304f]"
               >
                 <div className="absolute inset-0 relative w-full h-full">
                   <Image
@@ -159,7 +159,7 @@ const Home = () => {
             ))}
           </div>
         </section>
-        {/* 🎁 Gifts Section */}
+        {/* 🎁 Gifts for Him & Her Section (Fixed Image + Text Overlay) */}
         <section className="py-16 sm:py-20 px-4 sm:px-6 max-w-7xl mx-auto">
           <h2 className="text-2xl sm:text-3xl font-semibold text-center mb-12 sm:mb-16">
             Gifts for Him & Her
