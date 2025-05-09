@@ -156,7 +156,7 @@ const Home = () => {
         </section>
 
         {/* 🎁 Gifts for Him & Her Section */}
-        <section className="py-16 sm:py-20 px-4 sm:px-6 max-w-7xl mx-auto">
+        <section className="py-16 sm:py-20 w-full px-0">
           <h2 className="text-2xl sm:text-3xl font-semibold text-center mb-12 sm:mb-16">
             Gifts for Him & Her
           </h2>
