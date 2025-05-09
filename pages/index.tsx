@@ -114,7 +114,7 @@ const Home = () => {
         </section>
 
         {/* 🛍️ Shop by Category Section */}
-        <section className="py-16 sm:py-20 px-4 sm:px-6 max-w-7xl mx-auto">
+        <section className="py-16 sm:py-20 w-full px-4 sm:px-6">
           <h2 className="text-2xl sm:text-3xl font-semibold text-center mb-12 sm:mb-16">
             Shop by Category
           </h2>
@@ -130,27 +130,28 @@ const Home = () => {
               { name: "Necklaces", image: "/category/necklace-cat.jpg" },
               { name: "Earrings", image: "/category/earring-cat.jpg" },
             ].map((category) => (
-              <Link
-                key={category.name}
-                href={`/category/${category.name
-                  .toLowerCase()
-                  .replace(/\s+/g, "-")}`}
-                className="group relative bg-[#25304f] rounded-2xl overflow-hidden shadow-md hover:shadow-2xl hover:scale-105 transition-all duration-300"
-              >
-                <div className="relative w-full h-40 sm:h-48">
-                  <Image
-                    src={category.image}
-                    alt={category.name}
-                    fill
-                    sizes="100vw"
-                    className="object-cover"
-                  />
-                  <div className="absolute inset-0 bg-black opacity-40 pointer-events-none" />
-                  <span className="absolute inset-0 flex items-center justify-center text-sm sm:text-base font-semibold text-[#cfd2d6] group-hover:text-white transition-colors z-10">
-                    {category.name}
-                  </span>
-                </div>
-              </Link>
+              <div key={category.name} className="w-full max-w-[180px] mx-auto">
+                <Link
+                  href={`/category/${category.name
+                    .toLowerCase()
+                    .replace(/\s+/g, "-")}`}
+                  className="group relative bg-[#25304f] rounded-2xl overflow-hidden shadow-md hover:shadow-2xl hover:scale-105 transition-all duration-300"
+                >
+                  <div className="relative w-full h-36">
+                    <Image
+                      src={category.image}
+                      alt={category.name}
+                      fill
+                      sizes="100vw"
+                      className="object-cover"
+                    />
+                    <div className="absolute inset-0 bg-black opacity-40 pointer-events-none" />
+                    <span className="absolute inset-0 flex items-center justify-center text-sm font-semibold text-[#cfd2d6] group-hover:text-white transition-colors z-10">
+                      {category.name}
+                    </span>
+                  </div>
+                </Link>
+              </div>
             ))}
           </div>
         </section>
