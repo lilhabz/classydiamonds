@@ -137,7 +137,7 @@ const Home = () => {
                   .replace(/\s+/g, "-")}`}
                 className="group relative bg-[#25304f] rounded-2xl overflow-hidden shadow-md hover:shadow-2xl hover:scale-105 transition-all duration-300"
               >
-                <div className="relative w-full aspect-square">
+                <div className="relative w-full h-48 sm:h-60">
                   <Image
                     src={category.image}
                     alt={category.name}
