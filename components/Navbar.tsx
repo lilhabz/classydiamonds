@@ -156,34 +156,43 @@ const Navbar = () => {
               </p>
             )}
           </div>
+        </div>
+        <nav className="flex flex-wrap justify-center gap-6 text-[#e0e0e0] font-semibold text-sm">
+          {"Home Jewelry Custom Contact".split(" ").map((name) => {
+            const href = `/${name === "Home" ? "" : name.toLowerCase()}`;
+            return (
+              <Link
+                key={name}
+                href={href}
+                className={`cursor-pointer text-[#e0e0e0] hover:text-white hover:scale-105 transition-transform duration-300 text-sm md:text-base ${
+                  pathname === href
+                    ? "text-white underline underline-offset-4"
+                    : ""
+                }`}
+              >
+                {name}
+              </Link>
+            );
+          })}
+        </nav>
 
-          <nav className="flex flex-wrap justify-center gap-6 text-[#e0e0e0] font-semibold text-sm">
-            {"Home Jewelry Custom Contact".split(" ").map((name) => {
-              const href = `/${name === "Home" ? "" : name.toLowerCase()}`;
-              return (
-                <Link
-                  key={name}
-                  href={href}
-                  className={`cursor-pointer text-[#e0e0e0] hover:text-white hover:scale-105 transition-transform duration-300 text-sm md:text-base ${
-                    pathname === href
-                      ? "text-white underline underline-offset-4"
-                      : ""
-                  }`}
-                >
-                  {name}
-                </Link>
-              );
-            })}
-          </nav>
-
-          <div className="flex items-center gap-4 text-[#e0e0e0] text-xl">
-            <Link
-              href="/search"
+        <div className="flex items-center gap-4 text-[#e0e0e0] text-xl">
+          <Link
+            href="/search"
+            className="cursor-pointer hover:text-white hover:scale-105 transition-transform duration-300"
+          >
+            <FiSearch />
+          </Link>
+          <div className="relative">
+            <button
+              ref={userButtonRef}
+              onClick={handleUserToggle}
               className="cursor-pointer hover:text-white hover:scale-105 transition-transform duration-300"
             >
-              <FiSearch />
-            </Link>
-            <div className="relative">
+              <FiUser />
+            </button>
+            {/* ✅ Navbar Container and Desktop Dropdown Fixed */}
+            <div className="hidden md:flex items-center gap-4 text-[#e0e0e0] text-xl relative">
               <button
                 ref={userButtonRef}
                 onClick={handleUserToggle}
@@ -191,7 +200,6 @@ const Navbar = () => {
               >
                 <FiUser />
               </button>
-              {/* ✅ Desktop User Dropdown - Now fully clickable */}
               {userMenuOpen && (
                 <div
                   ref={userRef}
