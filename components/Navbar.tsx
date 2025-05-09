@@ -191,6 +191,7 @@ const Navbar = () => {
               >
                 <FiUser />
               </button>
+              {/* ✅ Desktop User Dropdown - Now fully clickable */}
               {userMenuOpen && (
                 <div
                   ref={userRef}
@@ -198,24 +199,28 @@ const Navbar = () => {
                 >
                   <Link
                     href="/account"
+                    onClick={() => setUserMenuOpen(false)}
                     className="block px-4 py-2 hover:bg-[#2a374f]"
                   >
                     My Account
                   </Link>
                   <Link
                     href="/account/orders"
+                    onClick={() => setUserMenuOpen(false)}
                     className="block px-4 py-2 hover:bg-[#2a374f]"
                   >
                     Order History
                   </Link>
                   <Link
                     href="/account/track"
+                    onClick={() => setUserMenuOpen(false)}
                     className="block px-4 py-2 hover:bg-[#2a374f]"
                   >
                     Track Orders
                   </Link>
                   <Link
                     href="/custom"
+                    onClick={() => setUserMenuOpen(false)}
                     className="block px-4 py-2 hover:bg-[#2a374f]"
                   >
                     Custom Requests
