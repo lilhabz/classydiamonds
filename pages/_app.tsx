@@ -1,12 +1,12 @@
-// 📂 pages/_app.tsx
+// 📂 pages/_app.tsx – With Vercel Speed Insights 🧪
 
-import { SpeedInsights } from "@vercel/speed-insights/next";
 import "@/styles/globals.css";
 import type { AppProps } from "next/app";
-import { SessionProvider } from "next-auth/react"; // 🔐 Wrap app with session support
+import { SessionProvider } from "next-auth/react"; // 🔐 Session auth
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { CartProvider } from "@/context/CartContext";
+import { SpeedInsights } from "@vercel/speed-insights/next"; // 🚀 Performance tracking
 
 export default function App({
   Component,
@@ -18,6 +18,9 @@ export default function App({
       <CartProvider>
         {/* 🧭 Global site layout */}
         <Navbar />
+
+        {/* 🧪 Vercel Speed Analytics */}
+        <SpeedInsights />
 
         {/* 📄 Page Content with padding for navbar */}
         <div className="pt-20 flex flex-col min-h-screen bg-[#1f2a44] text-[#e0e0e0]">
