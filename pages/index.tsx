@@ -118,7 +118,7 @@ const Home = () => {
           <h2 className="text-2xl sm:text-3xl font-semibold text-center mb-12 sm:mb-16">
             Shop by Category
           </h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 sm:gap-6 px-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4 px-6">
             {[
               { name: "Engagement", image: "/category/engagement-cat.jpg" },
               {
@@ -137,7 +137,7 @@ const Home = () => {
                   .replace(/\s+/g, "-")}`}
                 className="group relative bg-[#25304f] rounded-2xl overflow-hidden shadow-md hover:shadow-2xl hover:scale-105 transition-all duration-300"
               >
-                <div className="relative w-full h-48 sm:h-60">
+                <div className="relative w-full h-40 sm:h-48">
                   <Image
                     src={category.image}
                     alt={category.name}
