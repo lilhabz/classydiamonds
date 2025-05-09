@@ -118,7 +118,8 @@ const Home = () => {
           <h2 className="text-2xl sm:text-3xl font-semibold text-center mb-12 sm:mb-16">
             Shop by Category
           </h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4 px-6">
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3 px-2 sm:px-4">
             {[
               { name: "Engagement", image: "/category/engagement-cat.jpg" },
               {
@@ -130,22 +131,22 @@ const Home = () => {
               { name: "Necklaces", image: "/category/necklace-cat.jpg" },
               { name: "Earrings", image: "/category/earring-cat.jpg" },
             ].map((category) => (
-              <div key={category.name} className="w-full max-w-[180px] mx-auto">
+              <div key={category.name} className="w-full max-w-[170px] mx-auto">
                 <Link
                   href={`/category/${category.name
                     .toLowerCase()
                     .replace(/\s+/g, "-")}`}
-                  className="group relative bg-[#25304f] rounded-2xl overflow-hidden shadow-md hover:shadow-2xl hover:scale-105 transition-all duration-300"
+                  className="group relative rounded-xl overflow-hidden shadow-md hover:shadow-xl hover:scale-105 transition-all duration-300"
                 >
-                  <div className="relative w-full h-36">
+                  <div className="relative w-full h-36 rounded-xl overflow-hidden">
                     <Image
                       src={category.image}
                       alt={category.name}
                       fill
                       sizes="100vw"
-                      className="object-cover"
+                      className="object-cover rounded-xl"
                     />
-                    <div className="absolute inset-0 bg-black opacity-40 pointer-events-none" />
+                    <div className="absolute inset-0 bg-black opacity-40 pointer-events-none rounded-xl" />
                     <span className="absolute inset-0 flex items-center justify-center text-sm font-semibold text-[#cfd2d6] group-hover:text-white transition-colors z-10">
                       {category.name}
                     </span>
