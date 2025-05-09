@@ -1,10 +1,10 @@
-// 📄 pages/index.tsx - Home Page (Mobile-Optimized)
+// 📄 pages/index.tsx - Home Page (Optimized with Next.js Image)
 
 "use client";
 
 import Link from "next/link";
 import Head from "next/head";
-import Image from "next/image"; // ✅ Add this line for Next.js Image component
+import Image from "next/image"; // ✅ Next.js optimized Image component
 
 import { useCart } from "@/context/CartContext"; // 🛒 Cart context
 import { productsData } from "@/data/productsData"; // 💎 Featured products data
@@ -26,23 +26,21 @@ const Home = () => {
 
       {/* 🏠 Page Container */}
       <main className="flex flex-col min-h-screen bg-[#1f2a44] text-[#e0e0e0]">
-        {/* 🧹 Navbar Spacer (adjusted with -mt below) */}
-        <div className="h-0" />
-
+        <div className="h-0" /> {/* 🧹 Navbar Spacer */}
         {/* 🌟 Hero Section */}
         <section className="-mt-20 relative w-full h-[80vh] flex items-center justify-center text-center overflow-hidden">
-          {/* 🖼️ Hero Background Image */}
-          <div className="absolute inset-0">
-            <img
+          <div className="absolute inset-0 relative">
+            {/* 🖼️ Hero Image with Optimization */}
+            <Image
               src="/hero-home.jpg"
               alt="Hero Background"
-              className="w-full h-full object-cover"
+              fill
+              priority
+              className="object-cover"
             />
-            {/* 🌑 Dark overlay — allows taps through on mobile */}
             <div className="absolute inset-0 bg-black opacity-50 pointer-events-none" />
           </div>
 
-          {/* ✨ Hero Text Content */}
           <div className="relative z-10 px-4">
             <h1 className="text-3xl sm:text-4xl md:text-6xl font-bold mb-6 text-[#e0e0e0]">
               Timeless Elegance
@@ -58,8 +56,7 @@ const Home = () => {
             </Link>
           </div>
         </section>
-
-        {/* 💎 Featured Products Section */}
+        {/* 💎 Featured Products */}
         <section className="py-16 sm:py-20 px-4 sm:px-6 max-w-7xl mx-auto">
           <h2 className="text-2xl sm:text-3xl font-semibold text-center mb-12 sm:mb-16">
             Featured Pieces
@@ -75,18 +72,16 @@ const Home = () => {
                   href={`/product/${item.slug}`}
                   className="flex-1 flex flex-col"
                 >
-                  {/* 🖼️ Product Image — UPDATED to use Next.js Image for optimization */}
                   <div className="relative w-full h-72 sm:h-80 overflow-hidden">
                     <Image
                       src={item.image}
                       alt={item.name}
                       fill
-                      priority={index === 0} // 🚀 Prioritize first image for faster render
+                      priority={index === 0}
                       className="object-cover group-hover:scale-110 transition-transform duration-300"
                     />
                   </div>
 
-                  {/* 📝 Product Info */}
                   <div className="p-6 text-center flex-1 flex flex-col justify-between">
                     <div>
                       <h3 className="text-xl sm:text-2xl font-semibold text-[#cfd2d6] group-hover:text-white transition-colors duration-300">
@@ -99,7 +94,6 @@ const Home = () => {
                   </div>
                 </Link>
 
-                {/* 🛒 Add to Cart Button */}
                 <div className="p-6 pt-0">
                   <button
                     onClick={() =>
@@ -120,8 +114,7 @@ const Home = () => {
             ))}
           </div>
         </section>
-
-        {/* 🛍️ Shop by Category Section */}
+        {/* 🛍️ Shop by Category */}
         <section className="py-16 sm:py-20 px-4 sm:px-6 max-w-7xl mx-auto">
           <h2 className="text-2xl sm:text-3xl font-semibold text-center mb-12 sm:mb-16">
             Shop by Category
@@ -146,11 +139,12 @@ const Home = () => {
                   .replace(/\s+/g, "-")}`}
                 className="group relative bg-[#25304f] rounded-2xl overflow-hidden shadow-md hover:shadow-2xl hover:scale-105 transition-all duration-300 flex items-center justify-center h-32 sm:h-40"
               >
-                <div className="absolute inset-0">
-                  <img
+                <div className="absolute inset-0 relative">
+                  <Image
                     src={category.image}
                     alt={category.name}
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                    fill
+                    className="object-cover group-hover:scale-110 transition-transform duration-300"
                   />
                   <div className="absolute inset-0 bg-black opacity-40 pointer-events-none" />
                 </div>
@@ -161,7 +155,6 @@ const Home = () => {
             ))}
           </div>
         </section>
-
         {/* 🎁 Gifts Section */}
         <section className="py-16 sm:py-20 px-4 sm:px-6 max-w-7xl mx-auto">
           <h2 className="text-2xl sm:text-3xl font-semibold text-center mb-12 sm:mb-16">
@@ -180,11 +173,12 @@ const Home = () => {
                   .replace(/\s+/g, "-")}`}
                 className="group relative bg-[#25304f] rounded-2xl overflow-hidden shadow-md hover:shadow-2xl hover:scale-105 transition-all duration-300 flex items-center justify-center h-48 sm:h-60"
               >
-                <div className="absolute inset-0">
-                  <img
+                <div className="absolute inset-0 relative">
+                  <Image
                     src={gift.image}
                     alt={gift.name}
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                    fill
+                    className="object-cover group-hover:scale-110 transition-transform duration-300"
                   />
                   <div className="absolute inset-0 bg-black opacity-50 pointer-events-none" />
                 </div>
@@ -195,7 +189,6 @@ const Home = () => {
             ))}
           </div>
         </section>
-
         {/* 🛠️ About Section */}
         <section className="py-16 sm:py-20 px-4 sm:px-6 bg-[#1f2a44]">
           <div className="max-w-4xl mx-auto text-center">
@@ -211,7 +204,6 @@ const Home = () => {
             </p>
           </div>
         </section>
-
         {/* 💎 Why Choose Us Section */}
         <section className="py-16 sm:py-20 px-4 sm:px-6 bg-[#1f2a44]">
           <div className="max-w-4xl mx-auto text-center">
@@ -227,7 +219,6 @@ const Home = () => {
             </p>
           </div>
         </section>
-
         {/* ✍️ Custom Jewelry CTA */}
         <section className="bg-[#1f2a44] py-16 sm:py-20 px-4 sm:px-6">
           <div className="max-w-5xl mx-auto text-center">
@@ -254,5 +245,4 @@ const Home = () => {
   );
 };
 
-export default Home;
-// 🏠 Home Page
+export default Home; // 🏠 Home Page
