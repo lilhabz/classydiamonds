@@ -29,11 +29,15 @@ const Home = () => {
         {/* 🌟 Hero Section */}
         <section className="-mt-20 relative w-full h-[80vh] flex items-center justify-center text-center overflow-hidden">
           <div className="absolute inset-0">
-            <img
-              src="/hero-home.jpg"
-              alt="Hero Background"
-              className="w-full h-full object-cover"
-            />
+            <div className="relative w-full h-full">
+              <Image
+                src="/hero-home.jpg"
+                alt="Hero Background"
+                fill
+                sizes="100vw"
+                className="w-full h-full object-cover"
+              />
+            </div>
             <div className="absolute inset-0 bg-black opacity-50 pointer-events-none" />
           </div>
 
