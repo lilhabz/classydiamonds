@@ -1,4 +1,4 @@
-// 📄 pages/index.tsx - Home Page (Fully Restored to Original State ✅)
+// 📄 pages/index.tsx - Home Page (Category Cards Fixed to Fill Full Width & Overlay Text Correctly) ✅
 
 "use client";
 
@@ -114,13 +114,11 @@ const Home = () => {
         </section>
 
         {/* 🛍️ Shop by Category Section */}
-        <section className="py-16 sm:py-20 px-4 sm:px-6 max-w-7xl mx-auto">
+        <section className="py-16 sm:py-20 px-0 max-w-[1800px] mx-auto">
           <h2 className="text-2xl sm:text-3xl font-semibold text-center mb-12 sm:mb-16">
             Shop by Category
           </h2>
-
-          {/* 👇 Responsive Grid: 2 on small, 3 on medium, 6 on large screens */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-6 sm:gap-8">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 sm:gap-6 px-6">
             {[
               { name: "Engagement", image: "/category/engagement-cat.jpg" },
               {
@@ -139,8 +137,7 @@ const Home = () => {
                   .replace(/\s+/g, "-")}`}
                 className="group relative bg-[#25304f] rounded-2xl overflow-hidden shadow-md hover:shadow-2xl hover:scale-105 transition-all duration-300"
               >
-                {/* 📐 Keep card shape consistent (4:3 ratio for better fit) */}
-                <div className="aspect-[4/3] relative w-full h-full">
+                <div className="relative w-full aspect-square">
                   <Image
                     src={category.image}
                     alt={category.name}
@@ -148,9 +145,7 @@ const Home = () => {
                     sizes="100vw"
                     className="object-cover"
                   />
-                  {/* 🌑 Overlay */}
                   <div className="absolute inset-0 bg-black opacity-40 pointer-events-none" />
-                  {/* 📝 Text Overlay */}
                   <span className="absolute inset-0 flex items-center justify-center text-sm sm:text-base font-semibold text-[#cfd2d6] group-hover:text-white transition-colors z-10">
                     {category.name}
                   </span>
