@@ -137,11 +137,13 @@ const Home = () => {
                   .replace(/\s+/g, "-")}`}
                 className="group relative bg-[#25304f] rounded-2xl overflow-hidden shadow-md hover:shadow-2xl hover:scale-105 transition-all duration-300 flex items-center justify-center h-32 sm:h-40"
               >
-                <div className="absolute inset-0">
-                  <img
+                <div className="absolute inset-0 relative w-full h-full">
+                  <Image
                     src={category.image}
                     alt={category.name}
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                    fill
+                    sizes="100vw"
+                    className="object-cover group-hover:scale-110 transition-transform duration-300"
                   />
                   <div className="absolute inset-0 bg-black opacity-40 pointer-events-none" />
                 </div>
@@ -170,11 +172,13 @@ const Home = () => {
                   .replace(/\s+/g, "-")}`}
                 className="group relative bg-[#25304f] rounded-2xl overflow-hidden shadow-md hover:shadow-2xl hover:scale-105 transition-all duration-300 flex items-center justify-center h-48 sm:h-60"
               >
-                <div className="absolute inset-0">
-                  <img
+                <div className="absolute inset-0 relative w-full h-full">
+                  <Image
                     src={gift.image}
                     alt={gift.name}
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                    fill
+                    sizes="100vw"
+                    className="object-cover group-hover:scale-110 transition-transform duration-300"
                   />
                   <div className="absolute inset-0 bg-black opacity-50 pointer-events-none" />
                 </div>
