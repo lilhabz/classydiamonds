@@ -119,7 +119,7 @@ const Home = () => {
             Shop by Category
           </h2>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-6 sm:gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
             {[
               { name: "Engagement", image: "/category/engagement-cat.jpg" },
               {
@@ -136,7 +136,7 @@ const Home = () => {
                 href={`/category/${category.name
                   .toLowerCase()
                   .replace(/\s+/g, "-")}`}
-                className="group relative rounded-2xl overflow-hidden shadow-md hover:shadow-2xl hover:scale-105 transition-all duration-300 h-32 sm:h-40"
+                className="group relative rounded-2xl overflow-hidden shadow-md hover:shadow-2xl hover:scale-105 transition-all duration-300 h-48 sm:h-60"
               >
                 <div className="relative w-full h-full">
                   <Image
