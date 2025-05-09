@@ -1,4 +1,4 @@
-// 📂 components/Navbar.tsx – Fully Working + Desktop Dropdown Fix + Mobile Menu Position Fix 💎
+// 📂 components/Navbar.tsx – Fully Working + FIXED: Desktop Nav Now Inside Header 💎
 
 "use client";
 
@@ -82,7 +82,7 @@ const Navbar = () => {
     <>
       {/* 🧭 Navbar Container */}
       <header
-        className={`fixed top-0 left-0 w-full bg-[#1f2a44] transition-all duration-300 z-50 flex items-center ${
+        className={`fixed top-0 left-0 w-full bg-[#1f2a44] transition-all duration-300 z-50 flex flex-col items-center ${
           scrolled ? "h-16" : "h-20"
         }`}
       >
@@ -136,9 +136,132 @@ const Navbar = () => {
             </button>
           </div>
         </div>
+
+        {/* 💻 Desktop Layout – ✅ Now inside header */}
+        <div className="hidden md:flex flex-wrap items-center justify-between gap-y-4 px-4 py-2 w-full">
+          <div className="flex items-center space-x-4">
+            <Link
+              href="/"
+              className="flex flex-col text-[#e0e0e0] font-bold text-lg hover:text-white hover:scale-105 transition-transform duration-300"
+            >
+              <span>Classy Diamonds</span>
+              <span className="text-xs font-light italic">
+                A Cut Above The Rest
+              </span>
+            </Link>
+            {session && (
+              <p className="hidden lg:block text-sm text-white font-light mt-1">
+                Welcome,{" "}
+                {session.user?.name?.split(" ")[0] || session.user?.email}
+              </p>
+            )}
+          </div>
+
+          <nav className="flex flex-wrap justify-center gap-6 text-[#e0e0e0] font-semibold text-sm">
+            {"Home Jewelry Custom Contact".split(" ").map((name) => {
+              const href = `/${name === "Home" ? "" : name.toLowerCase()}`;
+              return (
+                <Link
+                  key={name}
+                  href={href}
+                  className={`cursor-pointer text-[#e0e0e0] hover:text-white hover:scale-105 transition-transform duration-300 text-sm md:text-base ${
+                    pathname === href
+                      ? "text-white underline underline-offset-4"
+                      : ""
+                  }`}
+                >
+                  {name}
+                </Link>
+              );
+            })}
+          </nav>
+
+          <div className="flex items-center gap-4 text-[#e0e0e0] text-xl">
+            <Link
+              href="/search"
+              className="cursor-pointer hover:text-white hover:scale-105 transition-transform duration-300"
+            >
+              <FiSearch />
+            </Link>
+            <div className="relative" ref={userRef}>
+              {session ? (
+                <>
+                  <button
+                    ref={userButtonRef}
+                    onClick={handleUserToggle}
+                    className="cursor-pointer hover:text-white hover:scale-105 transition-transform duration-300"
+                  >
+                    <FiUser />
+                  </button>
+                  {userMenuOpen && (
+                    <div className="absolute right-0 mt-2 w-48 bg-[#1f2a44]/95 backdrop-blur-sm rounded-xl shadow-lg py-2 text-sm text-white z-[9999] pointer-events-auto">
+                      <Link
+                        href="/account"
+                        className="block px-4 py-2 hover:bg-[#2a374f]"
+                      >
+                        My Account
+                      </Link>
+                      <Link
+                        href="/account/orders"
+                        className="block px-4 py-2 hover:bg-[#2a374f]"
+                      >
+                        Order History
+                      </Link>
+                      <Link
+                        href="/account/track"
+                        className="block px-4 py-2 hover:bg-[#2a374f]"
+                      >
+                        Track Orders
+                      </Link>
+                      <Link
+                        href="/custom"
+                        className="block px-4 py-2 hover:bg-[#2a374f]"
+                      >
+                        Custom Requests
+                      </Link>
+                      {(session?.user as any)?.isAdmin && (
+                        <Link
+                          href="/admin"
+                          className="block px-4 py-2 text-yellow-400 hover:bg-[#2a374f] hover:text-yellow-300"
+                        >
+                          Admin 🛠️
+                        </Link>
+                      )}
+                      <button
+                        onClick={() => signOut({ callbackUrl: "/" })}
+                        className="w-full text-left px-4 py-2 text-red-400 hover:bg-[#2a374f] hover:text-red-500"
+                      >
+                        Sign Out
+                      </button>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <Link
+                  href="/auth"
+                  className="cursor-pointer hover:text-white hover:scale-105 transition-transform duration-300"
+                >
+                  <FiUser />
+                </Link>
+              )}
+            </div>
+            <button
+              ref={cartButtonRef}
+              onClick={handleCartToggle}
+              className="relative cursor-pointer hover:text-white hover:scale-105 transition-transform duration-300"
+            >
+              <FiShoppingCart />
+              {totalQuantity > 0 && (
+                <span className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full text-xs w-5 h-5 flex items-center justify-center">
+                  {totalQuantity}
+                </span>
+              )}
+            </button>
+          </div>
+        </div>
       </header>
 
-      {/* 📱 Mobile Menu Dropdown – ⬇️ moved below navbar */}
+      {/* 📱 Mobile Menu Dropdown – below navbar */}
       {menuOpen && (
         <div
           className="md:hidden fixed top-[80px] w-full bg-[#25304f] px-6 py-4 space-y-4 text-[#e0e0e0] text-lg z-40"
@@ -160,7 +283,7 @@ const Navbar = () => {
         </div>
       )}
 
-      {/* 📲 Mobile User Dropdown – ✅ unchanged */}
+      {/* 📲 Mobile User Dropdown */}
       {userMenuOpen && session?.user && (
         <div
           ref={userRef}
@@ -206,130 +329,7 @@ const Navbar = () => {
         </div>
       )}
 
-      {/* 💻 Desktop Layout */}
-      <div className="hidden md:flex flex-wrap items-center justify-between gap-y-4 px-4 py-2 w-full">
-        <div className="flex items-center space-x-4">
-          <Link
-            href="/"
-            className="flex flex-col text-[#e0e0e0] font-bold text-lg hover:text-white hover:scale-105 transition-transform duration-300"
-          >
-            <span>Classy Diamonds</span>
-            <span className="text-xs font-light italic">
-              A Cut Above The Rest
-            </span>
-          </Link>
-          {session && (
-            <p className="hidden lg:block text-sm text-white font-light mt-1">
-              Welcome,{" "}
-              {session.user?.name?.split(" ")[0] || session.user?.email}
-            </p>
-          )}
-        </div>
-
-        <nav className="flex flex-wrap justify-center gap-6 text-[#e0e0e0] font-semibold text-sm">
-          {"Home Jewelry Custom Contact".split(" ").map((name) => {
-            const href = `/${name === "Home" ? "" : name.toLowerCase()}`;
-            return (
-              <Link
-                key={name}
-                href={href}
-                className={`cursor-pointer text-[#e0e0e0] hover:text-white hover:scale-105 transition-transform duration-300 text-sm md:text-base ${
-                  pathname === href
-                    ? "text-white underline underline-offset-4"
-                    : ""
-                }`}
-              >
-                {name}
-              </Link>
-            );
-          })}
-        </nav>
-
-        <div className="flex items-center gap-4 text-[#e0e0e0] text-xl">
-          <Link
-            href="/search"
-            className="cursor-pointer hover:text-white hover:scale-105 transition-transform duration-300"
-          >
-            <FiSearch />
-          </Link>
-          <div className="relative" ref={userRef}>
-            {session ? (
-              <>
-                <button
-                  ref={userButtonRef}
-                  onClick={handleUserToggle}
-                  className="cursor-pointer hover:text-white hover:scale-105 transition-transform duration-300"
-                >
-                  <FiUser />
-                </button>
-                {userMenuOpen && (
-                  <div className="absolute right-0 mt-2 w-48 bg-[#1f2a44]/95 backdrop-blur-sm rounded-xl shadow-lg py-2 text-sm text-white z-[9999] pointer-events-auto">
-                    <Link
-                      href="/account"
-                      className="block px-4 py-2 hover:bg-[#2a374f]"
-                    >
-                      My Account
-                    </Link>
-                    <Link
-                      href="/account/orders"
-                      className="block px-4 py-2 hover:bg-[#2a374f]"
-                    >
-                      Order History
-                    </Link>
-                    <Link
-                      href="/account/track"
-                      className="block px-4 py-2 hover:bg-[#2a374f]"
-                    >
-                      Track Orders
-                    </Link>
-                    <Link
-                      href="/custom"
-                      className="block px-4 py-2 hover:bg-[#2a374f]"
-                    >
-                      Custom Requests
-                    </Link>
-                    {(session?.user as any)?.isAdmin && (
-                      <Link
-                        href="/admin"
-                        className="block px-4 py-2 text-yellow-400 hover:bg-[#2a374f] hover:text-yellow-300"
-                      >
-                        Admin 🛠️
-                      </Link>
-                    )}
-                    <button
-                      onClick={() => signOut({ callbackUrl: "/" })}
-                      className="w-full text-left px-4 py-2 text-red-400 hover:bg-[#2a374f] hover:text-red-500"
-                    >
-                      Sign Out
-                    </button>
-                  </div>
-                )}
-              </>
-            ) : (
-              <Link
-                href="/auth"
-                className="cursor-pointer hover:text-white hover:scale-105 transition-transform duration-300"
-              >
-                <FiUser />
-              </Link>
-            )}
-          </div>
-          <button
-            ref={cartButtonRef}
-            onClick={handleCartToggle}
-            className="relative cursor-pointer hover:text-white hover:scale-105 transition-transform duration-300"
-          >
-            <FiShoppingCart />
-            {totalQuantity > 0 && (
-              <span className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full text-xs w-5 h-5 flex items-center justify-center">
-                {totalQuantity}
-              </span>
-            )}
-          </button>
-        </div>
-      </div>
-
-      {/* 🛒 Cart Dropdown – ✅ unchanged */}
+      {/* 🛒 Cart Dropdown – unchanged */}
       {cartOpen && (
         <div
           ref={cartRef}
