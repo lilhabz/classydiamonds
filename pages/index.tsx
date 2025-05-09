@@ -119,7 +119,7 @@ const Home = () => {
             Shop by Category
           </h2>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3 px-2 sm:px-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-1 sm:gap-2">
             {[
               { name: "Engagement", image: "/category/engagement-cat.jpg" },
               {
@@ -131,28 +131,27 @@ const Home = () => {
               { name: "Necklaces", image: "/category/necklace-cat.jpg" },
               { name: "Earrings", image: "/category/earring-cat.jpg" },
             ].map((category) => (
-              <div key={category.name} className="w-full max-w-[170px] mx-auto">
-                <Link
-                  href={`/category/${category.name
-                    .toLowerCase()
-                    .replace(/\s+/g, "-")}`}
-                  className="group relative rounded-xl overflow-hidden shadow-md hover:shadow-xl hover:scale-105 transition-all duration-300"
-                >
-                  <div className="relative w-full h-36 rounded-xl overflow-hidden">
-                    <Image
-                      src={category.image}
-                      alt={category.name}
-                      fill
-                      sizes="100vw"
-                      className="object-cover rounded-xl"
-                    />
-                    <div className="absolute inset-0 bg-black opacity-40 pointer-events-none rounded-xl" />
-                    <span className="absolute inset-0 flex items-center justify-center text-sm font-semibold text-[#cfd2d6] group-hover:text-white transition-colors z-10">
-                      {category.name}
-                    </span>
-                  </div>
-                </Link>
-              </div>
+              <Link
+                key={category.name}
+                href={`/category/${category.name
+                  .toLowerCase()
+                  .replace(/\s+/g, "-")}`}
+                className="group block relative rounded-xl overflow-hidden transition-all duration-300 hover:scale-[1.05] hover:shadow-lg"
+              >
+                <div className="relative w-full h-40 sm:h-44 rounded-xl overflow-hidden">
+                  <Image
+                    src={category.image}
+                    alt={category.name}
+                    fill
+                    sizes="100vw"
+                    className="object-cover rounded-xl"
+                  />
+                  <div className="absolute inset-0 bg-black bg-opacity-40 rounded-xl pointer-events-none" />
+                  <span className="absolute inset-0 flex items-center justify-center text-sm sm:text-base font-semibold text-[#cfd2d6] group-hover:text-white z-10 transition-colors">
+                    {category.name}
+                  </span>
+                </div>
+              </Link>
             ))}
           </div>
         </section>
