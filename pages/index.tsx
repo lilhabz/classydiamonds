@@ -118,7 +118,7 @@ const Home = () => {
           <h2 className="text-2xl sm:text-3xl font-semibold text-center mb-12 sm:mb-16">
             Shop by Category
           </h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-6 sm:gap-8 text-center">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4 sm:gap-6 md:gap-8">
             {[
               { name: "Engagement", image: "/category/engagement-cat.jpg" },
               {
@@ -135,9 +135,9 @@ const Home = () => {
                 href={`/category/${category.name
                   .toLowerCase()
                   .replace(/\s+/g, "-")}`}
-                className="group relative bg-[#25304f] rounded-2xl overflow-hidden shadow-md hover:shadow-2xl hover:scale-105 transition-all duration-300 flex items-center justify-center h-32 sm:h-40"
+                className="group aspect-square relative bg-[#25304f] rounded-2xl overflow-hidden shadow-md hover:shadow-2xl hover:scale-105 transition-all duration-300"
               >
-                <div className="absolute inset-0 relative w-full h-full">
+                <div className="absolute inset-0 w-full h-full">
                   <Image
                     src={category.image}
                     alt={category.name}
@@ -147,7 +147,6 @@ const Home = () => {
                   />
                   <div className="absolute inset-0 bg-black opacity-40 pointer-events-none" />
                 </div>
-                {/* 📝 Overlayed Text */}
                 <span className="absolute inset-0 flex items-center justify-center z-10 text-sm sm:text-lg font-semibold text-[#cfd2d6] group-hover:text-white transition-colors">
                   {category.name}
                 </span>
@@ -183,7 +182,6 @@ const Home = () => {
                   />
                   <div className="absolute inset-0 bg-black opacity-50 pointer-events-none" />
                 </div>
-                {/* 📝 Overlayed Text */}
                 <span className="absolute inset-0 flex items-center justify-center z-10 text-lg sm:text-xl font-semibold text-[#cfd2d6] group-hover:text-white transition-colors">
                   {gift.name}
                 </span>
