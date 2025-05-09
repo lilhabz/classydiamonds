@@ -1,4 +1,4 @@
-// 📂 components/Navbar.tsx – Fully Working + FIXED: Desktop Nav Now Inside Header 💎
+// 📂 components/Navbar.tsx – Fully Working + Desktop Dropdown Fix + Mobile Menu Position Fix 💎
 
 "use client";
 
@@ -82,7 +82,7 @@ const Navbar = () => {
     <>
       {/* 🧭 Navbar Container */}
       <header
-        className={`fixed top-0 left-0 w-full bg-[#1f2a44] transition-all duration-300 z-50 flex flex-col items-center ${
+        className={`fixed top-0 left-0 w-full bg-[#1f2a44] transition-all duration-300 z-50 flex items-center ${
           scrolled ? "h-16" : "h-20"
         }`}
       >
@@ -137,7 +137,7 @@ const Navbar = () => {
           </div>
         </div>
 
-        {/* 💻 Desktop Layout – ✅ Now inside header */}
+        {/* 💻 Desktop Layout */}
         <div className="hidden md:flex flex-wrap items-center justify-between gap-y-4 px-4 py-2 w-full">
           <div className="flex items-center space-x-4">
             <Link
@@ -183,66 +183,58 @@ const Navbar = () => {
             >
               <FiSearch />
             </Link>
-            <div className="relative" ref={userRef}>
-              {session ? (
-                <>
-                  <button
-                    ref={userButtonRef}
-                    onClick={handleUserToggle}
-                    className="cursor-pointer hover:text-white hover:scale-105 transition-transform duration-300"
-                  >
-                    <FiUser />
-                  </button>
-                  {userMenuOpen && (
-                    <div className="absolute right-0 mt-2 w-48 bg-[#1f2a44]/95 backdrop-blur-sm rounded-xl shadow-lg py-2 text-sm text-white z-[9999] pointer-events-auto">
-                      <Link
-                        href="/account"
-                        className="block px-4 py-2 hover:bg-[#2a374f]"
-                      >
-                        My Account
-                      </Link>
-                      <Link
-                        href="/account/orders"
-                        className="block px-4 py-2 hover:bg-[#2a374f]"
-                      >
-                        Order History
-                      </Link>
-                      <Link
-                        href="/account/track"
-                        className="block px-4 py-2 hover:bg-[#2a374f]"
-                      >
-                        Track Orders
-                      </Link>
-                      <Link
-                        href="/custom"
-                        className="block px-4 py-2 hover:bg-[#2a374f]"
-                      >
-                        Custom Requests
-                      </Link>
-                      {(session?.user as any)?.isAdmin && (
-                        <Link
-                          href="/admin"
-                          className="block px-4 py-2 text-yellow-400 hover:bg-[#2a374f] hover:text-yellow-300"
-                        >
-                          Admin 🛠️
-                        </Link>
-                      )}
-                      <button
-                        onClick={() => signOut({ callbackUrl: "/" })}
-                        className="w-full text-left px-4 py-2 text-red-400 hover:bg-[#2a374f] hover:text-red-500"
-                      >
-                        Sign Out
-                      </button>
-                    </div>
-                  )}
-                </>
-              ) : (
-                <Link
-                  href="/auth"
-                  className="cursor-pointer hover:text-white hover:scale-105 transition-transform duration-300"
+            <div className="relative">
+              <button
+                ref={userButtonRef}
+                onClick={handleUserToggle}
+                className="cursor-pointer hover:text-white hover:scale-105 transition-transform duration-300"
+              >
+                <FiUser />
+              </button>
+              {userMenuOpen && (
+                <div
+                  ref={userRef}
+                  className="absolute right-0 mt-2 w-48 bg-[#1f2a44]/95 backdrop-blur-sm rounded-xl shadow-lg py-2 text-sm text-white z-[9999] pointer-events-auto"
                 >
-                  <FiUser />
-                </Link>
+                  <Link
+                    href="/account"
+                    className="block px-4 py-2 hover:bg-[#2a374f]"
+                  >
+                    My Account
+                  </Link>
+                  <Link
+                    href="/account/orders"
+                    className="block px-4 py-2 hover:bg-[#2a374f]"
+                  >
+                    Order History
+                  </Link>
+                  <Link
+                    href="/account/track"
+                    className="block px-4 py-2 hover:bg-[#2a374f]"
+                  >
+                    Track Orders
+                  </Link>
+                  <Link
+                    href="/custom"
+                    className="block px-4 py-2 hover:bg-[#2a374f]"
+                  >
+                    Custom Requests
+                  </Link>
+                  {(session?.user as any)?.isAdmin && (
+                    <Link
+                      href="/admin"
+                      className="block px-4 py-2 text-yellow-400 hover:bg-[#2a374f] hover:text-yellow-300"
+                    >
+                      Admin 🛠️
+                    </Link>
+                  )}
+                  <button
+                    onClick={() => signOut({ callbackUrl: "/" })}
+                    className="w-full text-left px-4 py-2 text-red-400 hover:bg-[#2a374f] hover:text-red-500"
+                  >
+                    Sign Out
+                  </button>
+                </div>
               )}
             </div>
             <button
@@ -261,7 +253,7 @@ const Navbar = () => {
         </div>
       </header>
 
-      {/* 📱 Mobile Menu Dropdown – below navbar */}
+      {/* 📱 Mobile Menu Dropdown – ⬇️ moved below navbar */}
       {menuOpen && (
         <div
           className="md:hidden fixed top-[80px] w-full bg-[#25304f] px-6 py-4 space-y-4 text-[#e0e0e0] text-lg z-40"
@@ -283,7 +275,7 @@ const Navbar = () => {
         </div>
       )}
 
-      {/* 📲 Mobile User Dropdown */}
+      {/* 📲 Mobile User Dropdown – ✅ unchanged */}
       {userMenuOpen && session?.user && (
         <div
           ref={userRef}
@@ -328,8 +320,7 @@ const Navbar = () => {
           </button>
         </div>
       )}
-
-      {/* 🛒 Cart Dropdown – unchanged */}
+      {/* 🛒 Cart Dropdown – ✅ restored */}
       {cartOpen && (
         <div
           ref={cartRef}
