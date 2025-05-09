@@ -1,4 +1,4 @@
-// 📄 pages/index.tsx - Home Page (Optimized with Next.js Image)
+// 📄 pages/index.tsx - Home Page (Optimized + Image Layout Fixes for Next.js)
 
 "use client";
 
@@ -29,7 +29,7 @@ const Home = () => {
         <div className="h-0" /> {/* 🧹 Navbar Spacer */}
         {/* 🌟 Hero Section */}
         <section className="-mt-20 relative w-full h-[80vh] flex items-center justify-center text-center overflow-hidden">
-          <div className="absolute inset-0 relative">
+          <div className="absolute inset-0 relative h-full w-full">
             {/* 🖼️ Hero Image with Optimization */}
             <Image
               src="/hero-home.jpg"
@@ -139,7 +139,7 @@ const Home = () => {
                   .replace(/\s+/g, "-")}`}
                 className="group relative bg-[#25304f] rounded-2xl overflow-hidden shadow-md hover:shadow-2xl hover:scale-105 transition-all duration-300 flex items-center justify-center h-32 sm:h-40"
               >
-                <div className="absolute inset-0 relative">
+                <div className="absolute inset-0 relative w-full h-full">
                   <Image
                     src={category.image}
                     alt={category.name}
@@ -173,7 +173,7 @@ const Home = () => {
                   .replace(/\s+/g, "-")}`}
                 className="group relative bg-[#25304f] rounded-2xl overflow-hidden shadow-md hover:shadow-2xl hover:scale-105 transition-all duration-300 flex items-center justify-center h-48 sm:h-60"
               >
-                <div className="absolute inset-0 relative">
+                <div className="absolute inset-0 relative w-full h-full">
                   <Image
                     src={gift.image}
                     alt={gift.name}
