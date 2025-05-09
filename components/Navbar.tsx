@@ -203,13 +203,13 @@ const Navbar = () => {
                     { href: "/account/track", label: "Track Orders" },
                     { href: "/custom", label: "Custom Requests" },
                   ].map(({ href, label }) => (
-                    <Link
-                      key={label}
-                      href={href}
-                      className="block w-full text-left px-4 py-2 hover:bg-[#2a374f]"
-                      onClick={() => setUserMenuOpen(false)}
-                    >
-                      {label}
+                    <Link key={label} href={href} legacyBehavior>
+                      <a
+                        onClick={() => setUserMenuOpen(false)}
+                        className="block w-full text-left px-4 py-2 hover:bg-[#2a374f]"
+                      >
+                        {label}
+                      </a>
                     </Link>
                   ))}
 
