@@ -1,10 +1,10 @@
-// 📄 pages/index.tsx - Home Page (Optimized + Image Layout Fixes for Next.js)
+// 📄 pages/index.tsx - Home Page (Mobile-Optimized + Next.js Image Fixes ✅)
 
 "use client";
 
 import Link from "next/link";
 import Head from "next/head";
-import Image from "next/image"; // ✅ Next.js optimized Image component
+import Image from "next/image"; // ✅ Using Next.js optimized image
 
 import { useCart } from "@/context/CartContext"; // 🛒 Cart context
 import { productsData } from "@/data/productsData"; // 💎 Featured products data
@@ -28,9 +28,9 @@ const Home = () => {
       <main className="flex flex-col min-h-screen bg-[#1f2a44] text-[#e0e0e0]">
         <div className="h-0" /> {/* 🧹 Navbar Spacer */}
         {/* 🌟 Hero Section */}
-        <section className="-mt-20 relative w-full h-[80vh] flex items-center justify-center text-center overflow-hidden">
-          <div className="absolute inset-0 relative h-full w-full">
-            {/* 🖼️ Hero Image with Optimization */}
+        <section className="-mt-20 relative w-full h-[80vh] text-center overflow-hidden">
+          {/* 🖼️ Hero Background Image */}
+          <div className="absolute inset-0">
             <Image
               src="/hero-home.jpg"
               alt="Hero Background"
@@ -38,10 +38,11 @@ const Home = () => {
               priority
               className="object-cover"
             />
-            <div className="absolute inset-0 bg-black opacity-50 pointer-events-none" />
+            <div className="absolute inset-0 bg-black opacity-50" />
           </div>
 
-          <div className="relative z-10 px-4">
+          {/* ✨ Overlayed Hero Text */}
+          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center px-4">
             <h1 className="text-3xl sm:text-4xl md:text-6xl font-bold mb-6 text-[#e0e0e0]">
               Timeless Elegance
             </h1>
@@ -56,7 +57,7 @@ const Home = () => {
             </Link>
           </div>
         </section>
-        {/* 💎 Featured Products */}
+        {/* 💎 Featured Products Section */}
         <section className="py-16 sm:py-20 px-4 sm:px-6 max-w-7xl mx-auto">
           <h2 className="text-2xl sm:text-3xl font-semibold text-center mb-12 sm:mb-16">
             Featured Pieces
@@ -72,6 +73,7 @@ const Home = () => {
                   href={`/product/${item.slug}`}
                   className="flex-1 flex flex-col"
                 >
+                  {/* 🖼️ Product Image */}
                   <div className="relative w-full h-72 sm:h-80 overflow-hidden">
                     <Image
                       src={item.image}
@@ -82,6 +84,7 @@ const Home = () => {
                     />
                   </div>
 
+                  {/* 📝 Product Info */}
                   <div className="p-6 text-center flex-1 flex flex-col justify-between">
                     <div>
                       <h3 className="text-xl sm:text-2xl font-semibold text-[#cfd2d6] group-hover:text-white transition-colors duration-300">
@@ -94,6 +97,7 @@ const Home = () => {
                   </div>
                 </Link>
 
+                {/* 🛒 Add to Cart Button */}
                 <div className="p-6 pt-0">
                   <button
                     onClick={() =>
