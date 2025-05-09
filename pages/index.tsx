@@ -147,7 +147,8 @@ const Home = () => {
                   />
                   <div className="absolute inset-0 bg-black opacity-40 pointer-events-none" />
                 </div>
-                <span className="relative z-10 text-sm sm:text-lg font-semibold text-[#cfd2d6] group-hover:text-white transition-colors">
+                {/* 📝 Overlayed Text */}
+                <span className="absolute inset-0 flex items-center justify-center z-10 text-sm sm:text-lg font-semibold text-[#cfd2d6] group-hover:text-white transition-colors">
                   {category.name}
                 </span>
               </Link>
@@ -155,7 +156,7 @@ const Home = () => {
           </div>
         </section>
 
-        {/* 🎁 Gifts Section */}
+        {/* 🎁 Gifts for Him & Her Section */}
         <section className="py-16 sm:py-20 px-4 sm:px-6 max-w-7xl mx-auto">
           <h2 className="text-2xl sm:text-3xl font-semibold text-center mb-12 sm:mb-16">
             Gifts for Him & Her
@@ -182,7 +183,8 @@ const Home = () => {
                   />
                   <div className="absolute inset-0 bg-black opacity-50 pointer-events-none" />
                 </div>
-                <span className="relative z-10 text-lg sm:text-xl font-semibold text-[#cfd2d6] group-hover:text-white transition-colors">
+                {/* 📝 Overlayed Text */}
+                <span className="absolute inset-0 flex items-center justify-center z-10 text-lg sm:text-xl font-semibold text-[#cfd2d6] group-hover:text-white transition-colors">
                   {gift.name}
                 </span>
               </Link>
