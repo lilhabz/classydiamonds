@@ -1,4 +1,4 @@
-// 📂 components/Navbar.tsx – Fully Working + Desktop + Mobile Fixes 💎
+// 📂 components/Navbar.tsx – Fully Working + Mobile Fixes 💎
 
 "use client";
 
@@ -154,8 +154,57 @@ const Navbar = () => {
           </div>
         )}
 
-        {/* ✅ Desktop Layout - Separate and Clickable */}
-        <div className="hidden md:flex justify-between items-center w-full px-6">
+        {/* 📲 Mobile User Dropdown – Sticks to navbar ✅ */}
+        {userMenuOpen && session?.user && (
+          <div
+            ref={userRef}
+            className="md:hidden fixed right-0 w-80 bg-[#1f2a44]/95 backdrop-blur-sm shadow-lg text-sm text-white z-40 animate-slide-fade-in transition-all duration-300"
+            style={{
+              top: scrolled ? "64px" : "80px",
+              borderRadius: "0 0 0.75rem 0.75rem",
+              padding: "1rem 1.5rem",
+            }}
+          >
+            <Link
+              href="/account"
+              className="block px-4 py-2 hover:bg-[#2a374f]"
+            >
+              My Account
+            </Link>
+            <Link
+              href="/account/orders"
+              className="block px-4 py-2 hover:bg-[#2a374f]"
+            >
+              Order History
+            </Link>
+            <Link
+              href="/account/track"
+              className="block px-4 py-2 hover:bg-[#2a374f]"
+            >
+              Track Orders
+            </Link>
+            <Link href="/custom" className="block px-4 py-2 hover:bg-[#2a374f]">
+              Custom Requests
+            </Link>
+            {(session?.user as any)?.isAdmin && (
+              <Link
+                href="/admin"
+                className="block px-4 py-2 text-yellow-400 hover:bg-[#2a374f] hover:text-yellow-300"
+              >
+                Admin 🛠️
+              </Link>
+            )}
+            <button
+              onClick={() => signOut({ callbackUrl: "/" })}
+              className="w-full text-left px-4 py-2 text-red-400 hover:bg-[#2a374f] hover:text-red-500"
+            >
+              Sign Out
+            </button>
+          </div>
+        )}
+
+        {/* 💻 Desktop Layout */}
+        <div className="hidden md:flex flex-wrap items-center justify-between gap-y-4 px-4 py-2 w-full">
           <div className="flex items-center space-x-4">
             <Link
               href="/"
@@ -193,20 +242,75 @@ const Navbar = () => {
             })}
           </nav>
 
-          <div className="flex items-center gap-4 text-[#e0e0e0] text-xl relative">
+          <div className="flex items-center gap-4 text-[#e0e0e0] text-xl">
             <Link
               href="/search"
               className="cursor-pointer hover:text-white hover:scale-105 transition-transform duration-300"
             >
               <FiSearch />
             </Link>
-            <button
-              ref={userButtonRef}
-              onClick={handleUserToggle}
-              className="cursor-pointer hover:text-white hover:scale-105 transition-transform duration-300"
-            >
-              <FiUser />
-            </button>
+            <div className="relative" ref={userRef}>
+              {session ? (
+                <>
+                  <button
+                    ref={userButtonRef}
+                    onClick={handleUserToggle}
+                    className="cursor-pointer hover:text-white hover:scale-105 transition-transform duration-300"
+                  >
+                    <FiUser />
+                  </button>
+                  {userMenuOpen && (
+                    <div className="absolute right-0 mt-2 w-48 bg-[#1f2a44]/95 backdrop-blur-sm rounded-xl shadow-lg py-2 text-sm text-white z-50">
+                      <Link
+                        href="/account"
+                        className="block px-4 py-2 hover:bg-[#2a374f]"
+                      >
+                        My Account
+                      </Link>
+                      <Link
+                        href="/account/orders"
+                        className="block px-4 py-2 hover:bg-[#2a374f]"
+                      >
+                        Order History
+                      </Link>
+                      <Link
+                        href="/account/track"
+                        className="block px-4 py-2 hover:bg-[#2a374f]"
+                      >
+                        Track Orders
+                      </Link>
+                      <Link
+                        href="/custom"
+                        className="block px-4 py-2 hover:bg-[#2a374f]"
+                      >
+                        Custom Requests
+                      </Link>
+                      {(session?.user as any)?.isAdmin && (
+                        <Link
+                          href="/admin"
+                          className="block px-4 py-2 text-yellow-400 hover:bg-[#2a374f] hover:text-yellow-300"
+                        >
+                          Admin 🛠️
+                        </Link>
+                      )}
+                      <button
+                        onClick={() => signOut({ callbackUrl: "/" })}
+                        className="w-full text-left px-4 py-2 text-red-400 hover:bg-[#2a374f] hover:text-red-500"
+                      >
+                        Sign Out
+                      </button>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <Link
+                  href="/auth"
+                  className="cursor-pointer hover:text-white hover:scale-105 transition-transform duration-300"
+                >
+                  <FiUser />
+                </Link>
+              )}
+            </div>
             <button
               ref={cartButtonRef}
               onClick={handleCartToggle}
@@ -219,48 +323,6 @@ const Navbar = () => {
                 </span>
               )}
             </button>
-
-            {/* 🎯 Desktop User Dropdown */}
-            {userMenuOpen && session && (
-              <div
-                ref={userRef}
-                className="absolute right-0 top-full mt-2 w-48 bg-[#1f2a44]/95 backdrop-blur-sm rounded-xl shadow-lg py-2 text-sm text-white z-50"
-              >
-                <Link
-                  href="/account"
-                  className="block px-4 py-2 hover:bg-[#2a374f]"
-                >
-                  My Account
-                </Link>
-                <Link
-                  href="/account/orders"
-                  className="block px-4 py-2 hover:bg-[#2a374f]"
-                >
-                  Order History
-                </Link>
-                <Link
-                  href="/account/track"
-                  className="block px-4 py-2 hover:bg-[#2a374f]"
-                >
-                  Track Orders
-                </Link>
-
-                {(session?.user as any)?.isAdmin && (
-                  <Link
-                    href="/admin"
-                    className="block px-4 py-2 text-yellow-400 hover:bg-[#2a374f] hover:text-yellow-300"
-                  >
-                    Admin 🛠️
-                  </Link>
-                )}
-                <button
-                  onClick={() => signOut({ callbackUrl: "/" })}
-                  className="w-full text-left px-4 py-2 text-red-400 hover:bg-[#2a374f] hover:text-red-500"
-                >
-                  Sign Out
-                </button>
-              </div>
-            )}
           </div>
         </div>
       </header>
