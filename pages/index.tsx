@@ -114,7 +114,7 @@ const Home = () => {
         </section>
 
         {/* 🛍️ Shop by Category Section */}
-        <section className="py-16 sm:py-20 px-0 max-w-[1800px] mx-auto">
+        <section className="py-16 sm:py-20 w-full px-4 sm:px-6">
           <h2 className="text-2xl sm:text-3xl font-semibold text-center mb-12 sm:mb-16">
             Shop by Category
           </h2>
@@ -156,7 +156,7 @@ const Home = () => {
         </section>
 
         {/* 🎁 Gifts for Him & Her Section */}
-        <section className="py-16 sm:py-20 w-full px-0">
+        <section className="py-16 sm:py-20 px-4 sm:px-6 max-w-7xl mx-auto">
           <h2 className="text-2xl sm:text-3xl font-semibold text-center mb-12 sm:mb-16">
             Gifts for Him & Her
           </h2>
