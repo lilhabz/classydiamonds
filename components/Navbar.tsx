@@ -35,8 +35,13 @@ const Navbar = () => {
       if (userButtonRef.current?.contains(target)) return;
       if (cartRef.current && !cartRef.current.contains(target))
         setCartOpen(false);
-      if (userRef.current && !userRef.current.contains(target))
+      if (
+        userRef.current &&
+        !userRef.current.contains(target) &&
+        !userButtonRef.current?.contains(target)
+      ) {
         setUserMenuOpen(false);
+      }
     };
 
     window.addEventListener("scroll", handleScroll);
