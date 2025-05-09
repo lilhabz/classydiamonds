@@ -143,7 +143,7 @@ const Home = () => {
                     src={category.image}
                     alt={category.name}
                     fill
-                    className="object-cover group-hover:scale-110 transition-transform duration-300"
+                    className="object-cover w-full h-full group-hover:scale-110 transition-transform duration-300"
                   />
                   <div className="absolute inset-0 bg-black opacity-40 pointer-events-none" />
                   <div className="absolute inset-0 flex items-center justify-center">
