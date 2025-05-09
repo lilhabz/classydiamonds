@@ -35,13 +35,8 @@ const Navbar = () => {
       if (userButtonRef.current?.contains(target)) return;
       if (cartRef.current && !cartRef.current.contains(target))
         setCartOpen(false);
-      if (
-        userRef.current &&
-        !userRef.current.contains(target) &&
-        !userButtonRef.current?.contains(target)
-      ) {
+      if (userRef.current && !userRef.current.contains(target))
         setUserMenuOpen(false);
-      }
     };
 
     window.addEventListener("scroll", handleScroll);
@@ -226,12 +221,15 @@ const Navbar = () => {
                     Custom Requests
                   </Link>
                   {(session?.user as any)?.isAdmin && (
-                    <Link
-                      href="/admin"
-                      className="block px-4 py-2 text-yellow-400 hover:bg-[#2a374f] hover:text-yellow-300"
+                    <button
+                      onClick={() => {
+                        setUserMenuOpen(false);
+                        router.push("/admin");
+                      }}
+                      className="block w-full text-left px-4 py-2 text-yellow-400 hover:bg-[#2a374f] hover:text-yellow-300"
                     >
                       Admin 🛠️
-                    </Link>
+                    </button>
                   )}
                   <button
                     onClick={() => signOut({ callbackUrl: "/" })}
