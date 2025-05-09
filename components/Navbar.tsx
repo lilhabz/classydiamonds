@@ -197,34 +197,42 @@ const Navbar = () => {
                   ref={userRef}
                   className="absolute right-0 mt-2 w-48 bg-[#1f2a44]/95 backdrop-blur-sm rounded-xl shadow-lg py-2 text-sm text-white z-[9999] pointer-events-auto"
                 >
-                  <Link
-                    href="/account"
-                    onClick={() => setUserMenuOpen(false)}
-                    className="block px-4 py-2 hover:bg-[#2a374f]"
+                  <button
+                    onClick={() => {
+                      setUserMenuOpen(false);
+                      router.push("/account");
+                    }}
+                    className="block w-full text-left px-4 py-2 hover:bg-[#2a374f]"
                   >
                     My Account
-                  </Link>
-                  <Link
-                    href="/account/orders"
-                    onClick={() => setUserMenuOpen(false)}
-                    className="block px-4 py-2 hover:bg-[#2a374f]"
+                  </button>
+                  <button
+                    onClick={() => {
+                      setUserMenuOpen(false);
+                      router.push("/account/orders");
+                    }}
+                    className="block w-full text-left px-4 py-2 hover:bg-[#2a374f]"
                   >
                     Order History
-                  </Link>
-                  <Link
-                    href="/account/track"
-                    onClick={() => setUserMenuOpen(false)}
-                    className="block px-4 py-2 hover:bg-[#2a374f]"
+                  </button>
+                  <button
+                    onClick={() => {
+                      setUserMenuOpen(false);
+                      router.push("/account/track");
+                    }}
+                    className="block w-full text-left px-4 py-2 hover:bg-[#2a374f]"
                   >
                     Track Orders
-                  </Link>
-                  <Link
-                    href="/custom"
-                    onClick={() => setUserMenuOpen(false)}
-                    className="block px-4 py-2 hover:bg-[#2a374f]"
+                  </button>
+                  <button
+                    onClick={() => {
+                      setUserMenuOpen(false);
+                      router.push("/custom");
+                    }}
+                    className="block w-full text-left px-4 py-2 hover:bg-[#2a374f]"
                   >
                     Custom Requests
-                  </Link>
+                  </button>
                   {(session?.user as any)?.isAdmin && (
                     <button
                       onMouseDown={(e) => {
