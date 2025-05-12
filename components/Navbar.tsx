@@ -264,8 +264,11 @@ const Navbar = () => {
       {/* 📱 Mobile Menu Dropdown – ⬇️ moved below navbar */}
       {menuOpen && (
         <div
-          className="md:hidden fixed top-[80px] w-full bg-[#25304f] px-6 py-4 space-y-4 text-[#e0e0e0] text-lg z-40"
-          style={{ borderRadius: "0 0 0.75rem 0.75rem" }}
+          className="md:hidden fixed w-full bg-[#25304f] px-6 py-4 space-y-4 text-[#e0e0e0] text-lg z-40 animate-slide-fade-in"
+          style={{
+            top: scrolled ? "64px" : "80px",
+            borderRadius: "0 0 0.75rem 0.75rem",
+          }}
         >
           {"Home Jewelry Custom Contact".split(" ").map((name) => {
             const href = `/${name === "Home" ? "" : name.toLowerCase()}`;
