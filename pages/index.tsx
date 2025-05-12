@@ -114,82 +114,78 @@ const Home = () => {
         </section>
 
         {/* 🛍️ Shop by Category Section */}
-        <section className="py-16 sm:py-20 w-full px-4 sm:px-10">
-          <h2 className="text-2xl sm:text-3xl font-semibold text-center mb-12 sm:mb-16">
-            Shop by Category
-          </h2>
+<section className="py-16 sm:py-20 w-full px-4 sm:px-10">
+  <h2 className="text-2xl sm:text-3xl font-semibold text-center mb-12 sm:mb-16">
+    Shop by Category
+  </h2>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-            {[
-              { name: "Engagement", image: "/category/engagement-cat.jpg" },
-              {
-                name: "Wedding Bands",
-                image: "/category/wedding-band-cat.jpg",
-              },
-              { name: "Rings", image: "/category/ring-cat.jpg" },
-              { name: "Bracelets", image: "/category/bracelet-cat.jpg" },
-              { name: "Necklaces", image: "/category/necklace-cat.jpg" },
-              { name: "Earrings", image: "/category/earring-cat.jpg" },
-            ].map((category, index) => (
-              <Link
-                key={category.name}
-                href={`/category/${category.name
-                  .toLowerCase()
-                  .replace(/\s+/g, "-")}`}
-                className="group relative rounded-xl overflow-hidden shadow-md hover:shadow-xl hover:scale-105 transition-transform duration-300"
-              >
-                <div className="relative aspect-[4/3] w-full">
-                  <Image
-                    src={category.image}
-                    alt={category.name}
-                    fill
-                    priority={index < 3}
-                    className="rounded-xl object-cover z-0"
-                  />
-                  <div className="absolute inset-0 bg-black/30 z-10" />
-                  <span className="absolute inset-0 flex items-center justify-center text-sm sm:text-base font-semibold text-white z-20">
-                    {category.name}
-                  </span>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </section>
+  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+    {[
+      { name: "Engagement", image: "/category/engagement-cat.jpg" },
+      { name: "Wedding Bands", image: "/category/wedding-band-cat.jpg" },
+      { name: "Rings", image: "/category/ring-cat.jpg" },
+      { name: "Bracelets", image: "/category/bracelet-cat.jpg" },
+      { name: "Necklaces", image: "/category/necklace-cat.jpg" },
+      { name: "Earrings", image: "/category/earring-cat.jpg" },
+    ].map((category, index) => (
+      <Link
+        key={category.name}
+        href={`/category/${category.name.toLowerCase().replace(/\s+/g, "-")}`}
+        className="group relative rounded-xl overflow-hidden shadow-md hover:shadow-xl hover:scale-105 transition-transform duration-300"
+      >
+        <div className="relative aspect-[4/3] w-full">
+          <Image
+            src={category.image}
+            alt={category.name}
+            fill
+            priority={index < 3}
+            className="rounded-xl object-cover z-0"
+          />
+          <div className="absolute inset-0 bg-black/30 z-10" />
+          <span className="absolute inset-0 flex items-center justify-center text-sm sm:text-base font-semibold text-white z-20">
+            {category.name}
+          </span>
+        </div>
+      </Link>
+    ))}
+  </div>
+</section>
 
-        {/* 🎁 Gifts for Him & Her Section */}
-        <section className="py-16 sm:py-20 px-4 sm:px-6 max-w-7xl mx-auto">
-          <h2 className="text-2xl sm:text-3xl font-semibold text-center mb-12 sm:mb-16">
-            Gifts for Him & Her
-          </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 text-center">
-            {[
-              { name: "For Him", image: "/category/his-gift-cat.jpg" },
-              { name: "For Her", image: "/category/her-gift-cat.jpg" },
-            ].map((gift) => (
-              <Link
-                key={gift.name}
-                href={`/category/${gift.name
-                  .toLowerCase()
-                  .replace(/\s+/g, "-")}`}
-                className="group relative bg-[#25304f] rounded-2xl overflow-hidden shadow-md hover:shadow-2xl hover:scale-105 transition-all duration-300 flex items-center justify-center h-48 sm:h-60"
-              >
-                <div className="absolute inset-0 relative w-full h-full">
-                  <Image
-                    src={gift.image}
-                    alt={gift.name}
-                    fill
-                    sizes="100vw"
-                    className="object-cover group-hover:scale-110 transition-transform duration-300"
-                  />
-                  <div className="absolute inset-0 bg-black opacity-50 pointer-events-none" />
-                </div>
-                <span className="absolute inset-0 flex items-center justify-center z-10 text-lg sm:text-xl font-semibold text-[#cfd2d6] group-hover:text-white transition-colors">
-                  {gift.name}
-                </span>
-              </Link>
-            ))}
-          </div>
-        </section>
+{/* 🎁 Gifts for Him & Her Section (⛓️ Matched Size with Category) */}
+<section className="py-16 sm:py-20 px-4 sm:px-10 w-full">
+  <h2 className="text-2xl sm:text-3xl font-semibold text-center mb-12 sm:mb-16">
+    Gifts for Him & Her
+  </h2>
+
+  {/* 🔁 Match layout and aspect ratio to Shop by Category */}
+  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+    {[
+      { name: "For Him", image: "/category/his-gift-cat.jpg" },
+      { name: "For Her", image: "/category/her-gift-cat.jpg" },
+    ].map((gift, index) => (
+      <Link
+        key={gift.name}
+        href={`/category/${gift.name.toLowerCase().replace(/\s+/g, "-")}`}
+        className="group relative rounded-xl overflow-hidden shadow-md hover:shadow-xl hover:scale-105 transition-transform duration-300"
+      >
+        <div className="relative aspect-[4/3] w-full">
+          <Image
+            src={gift.image}
+            alt={gift.name}
+            fill
+            priority={index < 1}
+            className="object-cover z-0 rounded-xl group-hover:scale-110 transition-transform duration-300"
+          />
+          <div className="absolute inset-0 bg-black/40 z-10" />
+          <span className="absolute inset-0 flex items-center justify-center text-sm sm:text-base font-semibold text-white z-20">
+            {gift.name}
+          </span>
+        </div>
+      </Link>
+    ))}
+  </div>
+</section>
+
 
         {/* 🛠️ About Section */}
         <section className="py-16 sm:py-20 px-4 sm:px-6 bg-[#1f2a44]">
