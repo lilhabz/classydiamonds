@@ -156,13 +156,14 @@ const Home = () => {
           </div>
         </section>
 
-        {/* 🎁 Gifts for Him & Her Section (⛓️ Matched Size with Category) */}
+        {/* 🎁 Gifts for Him & Her Section (Centered Cards Under Title) */}
         <section className="py-16 sm:py-20 px-4 sm:px-10 w-full">
           <h2 className="text-2xl sm:text-3xl font-semibold text-center mb-12 sm:mb-16">
             Gifts for Him & Her
           </h2>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 justify-center">
+          {/* 🔧 Centering the two cards */}
+          <div className="grid grid-cols-2 gap-4 justify-center max-w-2xl mx-auto">
             {[
               { name: "For Him", image: "/category/his-gift-cat.jpg" },
               { name: "For Her", image: "/category/her-gift-cat.jpg" },
