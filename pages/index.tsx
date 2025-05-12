@@ -57,17 +57,18 @@ const Home = () => {
           </div>
         </section>
 
-        {/* 💎 Featured Products Section - Fixed Centered Peek Carousel on Mobile */}
+        {/* 💎 Featured Products Section - Mobile Swipe Carousel with Centered Peek */}
         <section className="py-16 sm:py-20 px-4 sm:px-6 max-w-7xl mx-auto">
           <h2 className="text-2xl sm:text-3xl font-semibold text-center mb-12 sm:mb-16">
             Featured Pieces
           </h2>
-          <div className="sm:hidden overflow-x-auto scrollbar-hide -mx-4 px-4">
-            <div className="flex gap-6 snap-x snap-mandatory scroll-px-6 justify-center">
+
+          <div className="sm:hidden overflow-x-auto scrollbar-hide px-4 -mx-4">
+            <div className="flex gap-6 snap-x snap-mandatory scroll-px-4 justify-center">
               {productsData.slice(0, 3).map((item, index) => (
                 <div
                   key={item.id}
-                  className="group bg-[#25304f] rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl hover:ring-2 hover:ring-[#e0e0e0] hover:scale-105 transition-all duration-300 flex flex-col cursor-pointer snap-center min-w-[70%] max-w-[75%]"
+                  className="group bg-[#25304f] rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl hover:ring-2 hover:ring-[#e0e0e0] hover:scale-105 transition-all duration-300 flex flex-col cursor-pointer snap-center min-w-[85%] max-w-[90%]"
                 >
                   <Link
                     href={`/product/${item.slug}`}
