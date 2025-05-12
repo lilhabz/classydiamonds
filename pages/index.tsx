@@ -67,7 +67,7 @@ const Home = () => {
               {productsData.slice(0, 3).map((item, index) => (
                 <div
                   key={item.id}
-                  className="group bg-[#25304f] rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl hover:ring-2 hover:ring-[#e0e0e0] hover:scale-105 transition-all duration-300 flex flex-col cursor-pointer snap-center min-w-[75%] max-w-[80%]"
+                  className="group bg-[#25304f] rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl hover:ring-2 hover:ring-[#e0e0e0] hover:scale-105 transition-all duration-300 flex flex-col cursor-pointer snap-center min-w-[70%] max-w-[75%]"
                 >
                   <Link
                     href={`/product/${item.slug}`}
