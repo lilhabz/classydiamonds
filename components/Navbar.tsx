@@ -34,20 +34,18 @@ const Navbar = () => {
     const handleClickOutside = (event: MouseEvent | TouchEvent) => {
       const target = event.target as Node;
 
-      if (
-        cartButtonRef.current?.contains(target) ||
-        userButtonRef.current?.contains(target) ||
-        menuButtonRef.current?.contains(target)
-      ) {
-        return;
-      }
-
       const clickedOutsideCart =
-        cartRef.current && !cartRef.current.contains(target);
+        cartRef.current &&
+        !cartRef.current.contains(target) &&
+        !cartButtonRef.current?.contains(target);
       const clickedOutsideUser =
-        userRef.current && !userRef.current.contains(target);
+        userRef.current &&
+        !userRef.current.contains(target) &&
+        !userButtonRef.current?.contains(target);
       const clickedOutsideMenu =
-        menuRef.current && !menuRef.current.contains(target);
+        menuRef.current &&
+        !menuRef.current.contains(target) &&
+        !menuButtonRef.current?.contains(target);
 
       if (clickedOutsideCart && clickedOutsideUser && clickedOutsideMenu) {
         setCartOpen(false);
@@ -58,7 +56,7 @@ const Navbar = () => {
 
     window.addEventListener("scroll", handleScroll);
     document.addEventListener("mouseup", handleClickOutside);
-    document.addEventListener("touchstart", handleClickOutside); // ✅ mobile tap fix
+    document.addEventListener("touchstart", handleClickOutside);
 
     return () => {
       window.removeEventListener("scroll", handleScroll);
