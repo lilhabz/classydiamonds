@@ -156,57 +156,13 @@ const Home = () => {
           </div>
         </section>
 
-        {/* 🛍️ Shop by Category Section */}
-        <section className="py-16 sm:py-20 w-full px-4 sm:px-10">
-          <h2 className="text-2xl sm:text-3xl font-semibold text-center mb-12 sm:mb-16">
-            Shop by Category
-          </h2>
-
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-            {[
-              { name: "Engagement", image: "/category/engagement-cat.jpg" },
-              {
-                name: "Wedding Bands",
-                image: "/category/wedding-band-cat.jpg",
-              },
-              { name: "Rings", image: "/category/ring-cat.jpg" },
-              { name: "Bracelets", image: "/category/bracelet-cat.jpg" },
-              { name: "Necklaces", image: "/category/necklace-cat.jpg" },
-              { name: "Earrings", image: "/category/earring-cat.jpg" },
-            ].map((category, index) => (
-              <Link
-                key={category.name}
-                href={`/category/${category.name
-                  .toLowerCase()
-                  .replace(/\s+/g, "-")}`}
-                className="group relative rounded-xl overflow-hidden shadow-md hover:shadow-xl hover:scale-105 transition-transform duration-300"
-              >
-                <div className="relative aspect-[4/3] w-full">
-                  <Image
-                    src={category.image}
-                    alt={category.name}
-                    fill
-                    priority={index < 3}
-                    className="rounded-xl object-cover z-0"
-                  />
-                  <div className="absolute inset-0 bg-black/30 z-10" />
-                  <span className="absolute inset-0 flex items-center justify-center text-sm sm:text-base font-semibold text-white z-20">
-                    {category.name}
-                  </span>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </section>
-
         {/* 🎁 Gifts for Him & Her Section (⛓️ Matched Size with Category) */}
         <section className="py-16 sm:py-20 px-4 sm:px-10 w-full">
           <h2 className="text-2xl sm:text-3xl font-semibold text-center mb-12 sm:mb-16">
             Gifts for Him & Her
           </h2>
 
-          {/* 🔁 Match layout and aspect ratio to Shop by Category */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 justify-center">
             {[
               { name: "For Him", image: "/category/his-gift-cat.jpg" },
               { name: "For Her", image: "/category/her-gift-cat.jpg" },
