@@ -1,4 +1,4 @@
-// 📂 components/Navbar.tsx – Fully Working + Desktop Dropdown Fix + Mobile Menu Position Fix 💎
+// 📂 components/Navbar.tsx – FULL CODE ✅ with Smart Dropdown Logic, All Menus Tap-Close 💎
 
 "use client";
 
@@ -20,18 +20,18 @@ const Navbar = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
-  const menuButtonRef = useRef<HTMLDivElement>(null);
 
   const cartRef = useRef<HTMLDivElement>(null);
   const userRef = useRef<HTMLDivElement>(null);
   const cartButtonRef = useRef<HTMLButtonElement>(null);
   const userButtonRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const menuButtonRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 50);
 
-    const handleClickOutside = (event: MouseEvent) => {
+    const handleClickOutside = (event: MouseEvent | TouchEvent) => {
       const target = event.target as Node;
 
       if (
@@ -58,9 +58,12 @@ const Navbar = () => {
 
     window.addEventListener("scroll", handleScroll);
     document.addEventListener("mouseup", handleClickOutside);
+    document.addEventListener("touchstart", handleClickOutside); // ✅ mobile tap fix
+
     return () => {
       window.removeEventListener("scroll", handleScroll);
       document.removeEventListener("mouseup", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
     };
   }, []);
 
@@ -75,6 +78,7 @@ const Navbar = () => {
   }, [router]);
 
   const totalQuantity = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+
   const handleRemove = (id: number) => {
     if (confirm("Are you sure you want to remove this item from your cart?")) {
       removeFromCart(id);
@@ -88,11 +92,13 @@ const Navbar = () => {
     }
     setUserMenuOpen((prev) => !prev);
     setCartOpen(false);
+    setMenuOpen(false);
   };
 
   const handleCartToggle = () => {
     setCartOpen((prev) => !prev);
     setUserMenuOpen(false);
+    setMenuOpen(false);
   };
 
   return (
@@ -117,7 +123,7 @@ const Navbar = () => {
             ) : (
               <FiMenu
                 onClick={() => {
-                  setMenuOpen((prev) => !prev); // ✅ toggle on click again
+                  setMenuOpen((prev) => !prev);
                   setUserMenuOpen(false);
                   setCartOpen(false);
                 }}
