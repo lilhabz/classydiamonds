@@ -1,4 +1,4 @@
-// 📄 pages/index.tsx – Home Page (Mobile Swipe Carousel Fixed to Center + Peek) ✅
+// 📄 pages/index.tsx – Home Page (Mobile Layout Fixed for Featured Section) ✅
 
 "use client";
 
@@ -57,66 +57,13 @@ const Home = () => {
           </div>
         </section>
 
-        {/* 💎 Featured Products Section - Mobile Swipe Carousel with Centered Peek */}
+        {/* 💎 Featured Products Section - One Per Row on Mobile */}
         <section className="py-16 sm:py-20 px-4 sm:px-6 max-w-7xl mx-auto">
           <h2 className="text-2xl sm:text-3xl font-semibold text-center mb-12 sm:mb-16">
             Featured Pieces
           </h2>
 
-          <div className="sm:hidden overflow-x-auto scrollbar-hide px-4 -mx-4">
-            <div className="flex gap-6 snap-x snap-mandatory scroll-px-4 justify-center">
-              {productsData.slice(0, 3).map((item, index) => (
-                <div
-                  key={item.id}
-                  className="group bg-[#25304f] rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl hover:ring-2 hover:ring-[#e0e0e0] hover:scale-105 transition-all duration-300 flex flex-col cursor-pointer snap-center min-w-[85%] max-w-[90%]"
-                >
-                  <Link
-                    href={`/product/${item.slug}`}
-                    className="flex-1 flex flex-col"
-                  >
-                    <div className="relative w-full h-72 overflow-hidden">
-                      <Image
-                        src={item.image}
-                        alt={item.name}
-                        fill
-                        priority={index === 0}
-                        className="object-cover group-hover:scale-110 transition-transform duration-300"
-                      />
-                    </div>
-                    <div className="p-6 text-center flex-1 flex flex-col justify-between">
-                      <div>
-                        <h3 className="text-xl font-semibold text-[#cfd2d6] group-hover:text-white transition-colors duration-300">
-                          {item.name}
-                        </h3>
-                        <p className="mt-2 text-gray-400 group-hover:text-white transition-colors duration-300">
-                          ${item.price.toLocaleString()}
-                        </p>
-                      </div>
-                    </div>
-                  </Link>
-                  <div className="p-6 pt-0">
-                    <button
-                      onClick={() =>
-                        addToCart({
-                          id: item.id,
-                          name: item.name,
-                          price: item.price,
-                          image: item.image,
-                          quantity: 1,
-                        })
-                      }
-                      className="w-full px-6 py-3 bg-white text-[#1f2a44] rounded-xl font-semibold hover:bg-gray-100 transition hover:scale-105 cursor-pointer"
-                    >
-                      Add to Cart
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* 🖥️ Desktop Grid - unchanged */}
-          <div className="hidden sm:grid sm:grid-cols-3 sm:gap-10">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-10">
             {productsData.slice(0, 3).map((item, index) => (
               <div
                 key={item.id}
@@ -126,7 +73,7 @@ const Home = () => {
                   href={`/product/${item.slug}`}
                   className="flex-1 flex flex-col"
                 >
-                  <div className="relative w-full h-80 overflow-hidden">
+                  <div className="relative w-full h-72 sm:h-80 overflow-hidden">
                     <Image
                       src={item.image}
                       alt={item.name}
@@ -137,7 +84,7 @@ const Home = () => {
                   </div>
                   <div className="p-6 text-center flex-1 flex flex-col justify-between">
                     <div>
-                      <h3 className="text-2xl font-semibold text-[#cfd2d6] group-hover:text-white transition-colors duration-300">
+                      <h3 className="text-xl sm:text-2xl font-semibold text-[#cfd2d6] group-hover:text-white transition-colors duration-300">
                         {item.name}
                       </h3>
                       <p className="mt-2 text-gray-400 group-hover:text-white transition-colors duration-300">
