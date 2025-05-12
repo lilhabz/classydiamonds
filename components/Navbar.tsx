@@ -115,7 +115,13 @@ const Navbar = () => {
             {menuOpen ? (
               <FiX onClick={() => setMenuOpen(false)} />
             ) : (
-              <FiMenu onClick={() => setMenuOpen(true)} />
+              <FiMenu
+                onClick={() => {
+                  setMenuOpen(true);
+                  setUserMenuOpen(false);
+                  setCartOpen(false);
+                }}
+              />
             )}
           </div>
 
