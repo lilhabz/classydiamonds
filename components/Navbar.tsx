@@ -264,7 +264,7 @@ const Navbar = () => {
       {/* 📱 Mobile Menu Dropdown – ⬇️ moved below navbar */}
       {menuOpen && (
         <div
-          className="md:hidden fixed w-full bg-[#25304f] px-6 py-4 space-y-4 text-[#e0e0e0] text-lg z-40 animate-slide-fade-in"
+          className="md:hidden fixed w-full bg-[#1f2a44]/95 backdrop-blur-sm px-6 py-4 space-y-4 text-[#e0e0e0] text-lg z-40 animate-slide-fade-in transition-all duration-300"
           style={{
             top: scrolled ? "64px" : "80px",
             borderRadius: "0 0 0.75rem 0.75rem",
