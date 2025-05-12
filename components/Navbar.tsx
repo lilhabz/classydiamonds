@@ -117,7 +117,7 @@ const Navbar = () => {
             ) : (
               <FiMenu
                 onClick={() => {
-                  setMenuOpen(true);
+                  setMenuOpen((prev) => !prev); // ✅ toggle on click again
                   setUserMenuOpen(false);
                   setCartOpen(false);
                 }}
