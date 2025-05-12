@@ -20,6 +20,8 @@ const Navbar = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const menuButtonRef = useRef<HTMLDivElement>(null);
 
   const cartRef = useRef<HTMLDivElement>(null);
   const userRef = useRef<HTMLDivElement>(null);
@@ -31,12 +33,27 @@ const Navbar = () => {
 
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Node;
-      if (cartButtonRef.current?.contains(target)) return;
-      if (userButtonRef.current?.contains(target)) return;
-      if (cartRef.current && !cartRef.current.contains(target))
+
+      if (
+        cartButtonRef.current?.contains(target) ||
+        userButtonRef.current?.contains(target) ||
+        menuButtonRef.current?.contains(target)
+      ) {
+        return;
+      }
+
+      const clickedOutsideCart =
+        cartRef.current && !cartRef.current.contains(target);
+      const clickedOutsideUser =
+        userRef.current && !userRef.current.contains(target);
+      const clickedOutsideMenu =
+        menuRef.current && !menuRef.current.contains(target);
+
+      if (clickedOutsideCart && clickedOutsideUser && clickedOutsideMenu) {
         setCartOpen(false);
-      if (userRef.current && !userRef.current.contains(target))
         setUserMenuOpen(false);
+        setMenuOpen(false);
+      }
     };
 
     window.addEventListener("scroll", handleScroll);
@@ -94,7 +111,7 @@ const Navbar = () => {
 
         {/* 📱 Mobile Top Row */}
         <div className="md:hidden flex items-center justify-between w-full px-4 h-full">
-          <div className="text-2xl text-[#e0e0e0]">
+          <div className="text-2xl text-[#e0e0e0]" ref={menuButtonRef}>
             {menuOpen ? (
               <FiX onClick={() => setMenuOpen(false)} />
             ) : (
@@ -264,6 +281,7 @@ const Navbar = () => {
       {/* 📱 Mobile Menu Dropdown – ⬇️ moved below navbar */}
       {menuOpen && (
         <div
+          ref={menuRef}
           className="md:hidden fixed w-full bg-[#1f2a44]/95 backdrop-blur-sm px-6 py-4 space-y-4 text-[#e0e0e0] text-lg z-40 animate-slide-fade-in transition-all duration-300"
           style={{
             top: scrolled ? "64px" : "80px",
