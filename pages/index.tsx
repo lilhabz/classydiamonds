@@ -63,65 +63,70 @@ const Home = () => {
           </div>
         </section>
 
-        {/* 💎 Featured Products Section – Tiffany-Style Pure CSS Horizontal Scroll ✅ */}
-        <section className="py-16 sm:py-20 px-4 sm:px-6 max-w-7xl mx-auto overflow-hidden">
+        {/* 💎 Featured Section – Clean Horizontal Swipe, No Page Expansion ✅ */}
+        <section className="py-16 sm:py-20 px-4 sm:px-6 max-w-7xl mx-auto">
           <h2 className="text-2xl sm:text-3xl font-semibold text-center mb-12 sm:mb-16">
             Featured Pieces
           </h2>
 
-          {/* 📱 Mobile Horizontal Scroll (Tiffany-style) */}
-          <div className="sm:hidden overflow-x-auto whitespace-nowrap -mx-4 px-4">
-            <div className="inline-flex gap-4 pr-4">
-              {productsData.slice(0, 6).map((item, index) => (
-                <div
-                  key={item.id}
-                  className="inline-block align-top bg-[#25304f] rounded-2xl overflow-hidden shadow-lg flex flex-col"
-                  style={{ width: "160px" }} // ✅ Fixed width to match Tiffany’s style
-                >
-                  <Link
-                    href={`/product/${item.slug}`}
-                    className="flex-1 flex flex-col"
+          {/* 📱 Mobile Swipe Row - No Swiper, No Page Overflow */}
+          <div className="sm:hidden overflow-hidden">
+            <div className="overflow-x-auto whitespace-nowrap no-scrollbar">
+              <div className="inline-flex gap-4">
+                {productsData.slice(0, 6).map((item, index) => (
+                  <div
+                    key={item.id}
+                    className="inline-block bg-[#25304f] rounded-2xl shadow-lg flex flex-col"
+                    style={{
+                      width: "calc(100vw - 4rem)", // ✅ Card width fits screen with margin
+                      maxWidth: "280px", // ✅ Hard stop for large phones
+                    }}
                   >
-                    <div className="relative w-full h-48">
-                      <Image
-                        src={item.image}
-                        alt={item.name}
-                        fill
-                        priority={index === 0}
-                        className="object-cover"
-                      />
-                    </div>
-                    <div className="p-4 text-center flex-1 flex flex-col justify-between">
-                      <h3 className="text-sm font-semibold text-[#cfd2d6]">
-                        {item.name}
-                      </h3>
-                      <p className="text-gray-400 text-xs">
-                        ${item.price.toLocaleString()}
-                      </p>
-                    </div>
-                  </Link>
-                  <div className="p-4 pt-0">
-                    <button
-                      onClick={() =>
-                        addToCart({
-                          id: item.id,
-                          name: item.name,
-                          price: item.price,
-                          image: item.image,
-                          quantity: 1,
-                        })
-                      }
-                      className="w-full px-3 py-2 bg-white text-[#1f2a44] text-sm rounded-xl font-semibold hover:bg-gray-100 transition"
+                    <Link
+                      href={`/product/${item.slug}`}
+                      className="flex-1 flex flex-col"
                     >
-                      Add to Cart
-                    </button>
+                      <div className="relative w-full h-60">
+                        <Image
+                          src={item.image}
+                          alt={item.name}
+                          fill
+                          priority={index === 0}
+                          className="object-cover"
+                        />
+                      </div>
+                      <div className="p-4 text-center flex-1 flex flex-col justify-between">
+                        <h3 className="text-sm font-semibold text-[#cfd2d6]">
+                          {item.name}
+                        </h3>
+                        <p className="text-gray-400 text-xs">
+                          ${item.price.toLocaleString()}
+                        </p>
+                      </div>
+                    </Link>
+                    <div className="p-4 pt-0">
+                      <button
+                        onClick={() =>
+                          addToCart({
+                            id: item.id,
+                            name: item.name,
+                            price: item.price,
+                            image: item.image,
+                            quantity: 1,
+                          })
+                        }
+                        className="w-full px-3 py-2 bg-white text-[#1f2a44] text-sm rounded-xl font-semibold hover:bg-gray-100 transition"
+                      >
+                        Add to Cart
+                      </button>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           </div>
 
-          {/* 🖥️ Desktop Grid View – Unchanged */}
+          {/* 🖥️ Desktop Grid - No Change */}
           <div className="hidden sm:grid grid-cols-2 md:grid-cols-3 gap-10">
             {productsData.slice(0, 6).map((item, index) => (
               <div
