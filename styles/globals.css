@@ -2,11 +2,10 @@
 
 /* 🎨 Base Theme Colors */
 :root {
-  --background: #1f2a44; /* Classy dark blue */
-  --foreground: #ffffff; /* White text */
+  --background: #1f2a44;
+  --foreground: #ffffff;
 }
 
-/* 📜 General Body Styles */
 html,
 body {
   margin: 0;
@@ -15,10 +14,9 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
   scroll-behavior: smooth;
-  overflow-x: hidden; /* ✅ Prevent full-site horizontal scrolling */
+  overflow-x: hidden;
 }
 
-/* 🌑 Optional Dark Mode Support */
 @media (prefers-color-scheme: dark) {
   :root {
     --background: #0a0a0a;
@@ -26,26 +24,26 @@ body {
   }
 }
 
-/* 🧼 Hide Scrollbars on Mobile Swipe Sections */
+/* 🧼 Hide Scrollbars */
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
 .no-scrollbar {
-  -ms-overflow-style: none; /* IE/Edge */
-  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
-/* 📱 Scroll Snap Utilities – Needed for Tiffany-style swipe */
-.scroll-snap-x {
-  scroll-snap-type: x mandatory;
-  -webkit-overflow-scrolling: touch;
-}
-.scroll-snap-start {
-  scroll-snap-align: start;
-}
-
-/* ✨ Custom Animations */
+/* 🧩 ADD THIS: Snap Utilities (must be in @layer) */
 @layer utilities {
+  .scroll-snap-x {
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .scroll-snap-start {
+    scroll-snap-align: start;
+  }
+
   .animate-fade-in {
     animation: fadeIn 0.4s ease-out forwards;
   }
@@ -61,7 +59,6 @@ body {
     }
   }
 
-  /* ✨ Smooth Slide + Fade-In (for Cart Dropdown) */
   .animate-slide-fade-in {
     animation: slideFadeIn 0.4s ease-out forwards;
   }

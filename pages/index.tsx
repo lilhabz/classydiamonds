@@ -64,8 +64,8 @@ const Home = () => {
           </h2>
 
           {/* 📱 Mobile Swipe Row – Smooth Snap Style */}
-          <div className="sm:hidden overflow-x-auto no-scrollbar scroll-snap-x px-1">
-            <div className="flex gap-4 w-max px-3">
+          <div className="sm:hidden overflow-x-auto no-scrollbar scroll-snap-x px-4">
+            <div className="flex gap-4 w-max">
               {productsData.slice(0, 6).map((item, index) => (
                 <div
                   key={item.id}
