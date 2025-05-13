@@ -63,23 +63,23 @@ const Home = () => {
           </div>
         </section>
 
-        {/* 💎 Featured Section – Clean Horizontal Swipe, No Page Expansion ✅ */}
+        {/* 💎 Featured Products Section */}
         <section className="py-16 sm:py-20 px-4 sm:px-6 max-w-7xl mx-auto">
           <h2 className="text-2xl sm:text-3xl font-semibold text-center mb-12 sm:mb-16">
             Featured Pieces
           </h2>
 
-          {/* 📱 Mobile Swipe Row - No Swiper, No Page Overflow */}
+          {/* 📱 Mobile Horizontal Scroll */}
           <div className="sm:hidden overflow-hidden">
-            <div className="overflow-x-auto whitespace-nowrap no-scrollbar">
+            <div className="overflow-x-auto whitespace-nowrap overscroll-x-contain">
               <div className="inline-flex gap-4">
                 {productsData.slice(0, 6).map((item, index) => (
                   <div
                     key={item.id}
                     className="inline-block bg-[#25304f] rounded-2xl shadow-lg flex flex-col"
                     style={{
-                      width: "calc(100vw - 4rem)", // ✅ Card width fits screen with margin
-                      maxWidth: "280px", // ✅ Hard stop for large phones
+                      width: "calc(100vw - 4rem)", // Ensures card fits within viewport
+                      maxWidth: "280px",
                     }}
                   >
                     <Link
@@ -126,7 +126,7 @@ const Home = () => {
             </div>
           </div>
 
-          {/* 🖥️ Desktop Grid - No Change */}
+          {/* 🖥️ Desktop Grid View */}
           <div className="hidden sm:grid grid-cols-2 md:grid-cols-3 gap-10">
             {productsData.slice(0, 6).map((item, index) => (
               <div
