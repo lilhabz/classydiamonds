@@ -33,19 +33,18 @@ body {
   scrollbar-width: none; /* Firefox */
 }
 
-/* ✅ Tailwind Custom Utilities – Required for Swipe Snap Behavior */
+/* ✅ Snap Utilities (MOVED OUTSIDE @layer to prevent Vercel purge error) */
+.scroll-snap-x {
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+}
+
+.scroll-snap-start {
+  scroll-snap-align: start;
+}
+
+/* 🌀 Animations – still safe inside @layer utilities */
 @layer utilities {
-  /* 📱 Enables snapping for horizontal scrolling (like Tiffany's) */
-  .scroll-snap-x {
-    scroll-snap-type: x mandatory;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  .scroll-snap-start {
-    scroll-snap-align: start;
-  }
-
-  /* ✨ Fade In Animation */
   .animate-fade-in {
     animation: fadeIn 0.4s ease-out forwards;
   }
@@ -61,7 +60,6 @@ body {
     }
   }
 
-  /* ✨ Slide + Fade In Animation */
   .animate-slide-fade-in {
     animation: slideFadeIn 0.4s ease-out forwards;
   }
@@ -78,7 +76,7 @@ body {
   }
 }
 
-/* 👇 Ensure Tailwind includes the snap utilities in production */
+/* 👻 Tailwind build guard to prevent purge of swipe utilities */
 .hidden-scroll-snap-include {
   @apply scroll-snap-x scroll-snap-start;
 }
