@@ -1,12 +1,6 @@
-// 📄 pages/index.tsx – Home Page (Mobile Layout Fixed for Featured Section) ✅
+// 📄 pages/index.tsx – Final Swipe Section Working 💯
 
 "use client";
-
-import { Swiper, SwiperSlide } from "swiper/react";
-import "swiper/css";
-
-import "swiper/css/pagination";
-import "swiper/css/navigation";
 
 import Link from "next/link";
 import Head from "next/head";
@@ -29,7 +23,7 @@ const Home = () => {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
 
-      <main className="flex flex-col min-h-screen bg-[#1f2a44] text-[#e0e0e0]">
+      <main className="flex flex-col min-h-screen bg-[#1f2a44] text-[#e0e0e0] overflow-x-hidden">
         <div className="h-0" />
 
         {/* 🌟 Hero Section */}
@@ -63,23 +57,23 @@ const Home = () => {
           </div>
         </section>
 
-        {/* 💎 Featured Products Section */}
+        {/* 💎 Featured Products Section – Swipe Fixed */}
         <section className="py-16 sm:py-20 px-4 sm:px-6 max-w-7xl mx-auto">
           <h2 className="text-2xl sm:text-3xl font-semibold text-center mb-12 sm:mb-16">
             Featured Pieces
           </h2>
 
-          {/* 📱 Mobile Horizontal Scroll */}
+          {/* 📱 Mobile Swipe Row – ONLY this section slides */}
           <div className="sm:hidden overflow-hidden">
-            <div className="overflow-x-auto whitespace-nowrap overscroll-x-contain">
+            <div className="overflow-x-auto whitespace-nowrap no-scrollbar -mx-4 px-4">
               <div className="inline-flex gap-4">
                 {productsData.slice(0, 6).map((item, index) => (
                   <div
                     key={item.id}
                     className="inline-block bg-[#25304f] rounded-2xl shadow-lg flex flex-col"
                     style={{
-                      width: "calc(100vw - 4rem)", // Ensures card fits within viewport
-                      maxWidth: "280px",
+                      width: "calc(100vw - 4rem)",
+                      maxWidth: "260px",
                     }}
                   >
                     <Link
@@ -126,7 +120,7 @@ const Home = () => {
             </div>
           </div>
 
-          {/* 🖥️ Desktop Grid View */}
+          {/* 🖥️ Desktop Grid View (Unchanged) */}
           <div className="hidden sm:grid grid-cols-2 md:grid-cols-3 gap-10">
             {productsData.slice(0, 6).map((item, index) => (
               <div
