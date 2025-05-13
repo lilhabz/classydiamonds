@@ -57,19 +57,26 @@ const Home = () => {
           </div>
         </section>
 
-        {/* 💎 Featured Products Section - Mobile Swipeable Carousel */}
+        {/* 💎 Featured Products Section – Mobile Swipe Fixed ✅ */}
         <section className="py-16 sm:py-20 px-4 sm:px-6 max-w-7xl mx-auto">
           <h2 className="text-2xl sm:text-3xl font-semibold text-center mb-12 sm:mb-16">
             Featured Pieces
           </h2>
 
-          {/* 🔄 Mobile swipeable scroll + desktop grid */}
-          <div className="sm:hidden -mx-4 overflow-x-auto px-4 scroll-snap-x scroll-smooth">
-            <div className="flex gap-4 w-max pr-4">
+          {/* 📱 Mobile Swipe Carousel – Shows 2.5 Cards and Prevents Page Sliding */}
+          <div className="sm:hidden">
+            <div
+              className="flex gap-4 overflow-x-auto scroll-smooth snap-x snap-mandatory -mx-4 px-4"
+              style={{
+                WebkitOverflowScrolling: "touch",
+                touchAction: "pan-y",
+                overscrollBehaviorX: "contain",
+              }}
+            >
               {productsData.slice(0, 6).map((item, index) => (
                 <div
                   key={item.id}
-                  className="scroll-snap-start shrink-0 w-[70vw] max-w-xs bg-[#25304f] rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl hover:ring-2 hover:ring-[#e0e0e0] hover:scale-105 transition-all duration-300 flex flex-col"
+                  className="snap-start shrink-0 w-[75vw] max-w-[280px] bg-[#25304f] rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 flex flex-col"
                 >
                   <Link
                     href={`/product/${item.slug}`}
@@ -81,21 +88,19 @@ const Home = () => {
                         alt={item.name}
                         fill
                         priority={index === 0}
-                        className="object-cover group-hover:scale-110 transition-transform duration-300"
+                        className="object-cover"
                       />
                     </div>
-                    <div className="p-6 text-center flex-1 flex flex-col justify-between">
-                      <div>
-                        <h3 className="text-xl font-semibold text-[#cfd2d6] group-hover:text-white transition-colors duration-300">
-                          {item.name}
-                        </h3>
-                        <p className="mt-2 text-gray-400 group-hover:text-white transition-colors duration-300">
-                          ${item.price.toLocaleString()}
-                        </p>
-                      </div>
+                    <div className="p-4 text-center flex-1 flex flex-col justify-between">
+                      <h3 className="text-lg font-semibold text-[#cfd2d6]">
+                        {item.name}
+                      </h3>
+                      <p className="text-gray-400">
+                        ${item.price.toLocaleString()}
+                      </p>
                     </div>
                   </Link>
-                  <div className="p-6 pt-0">
+                  <div className="p-4 pt-0">
                     <button
                       onClick={() =>
                         addToCart({
@@ -106,7 +111,7 @@ const Home = () => {
                           quantity: 1,
                         })
                       }
-                      className="w-full px-6 py-3 bg-white text-[#1f2a44] rounded-xl font-semibold hover:bg-gray-100 transition hover:scale-105 cursor-pointer"
+                      className="w-full px-4 py-2 bg-white text-[#1f2a44] rounded-xl font-semibold hover:bg-gray-100 transition"
                     >
                       Add to Cart
                     </button>
@@ -116,7 +121,7 @@ const Home = () => {
             </div>
           </div>
 
-          {/* 🖥️ Desktop Grid View */}
+          {/* 🖥️ Desktop Grid */}
           <div className="hidden sm:grid grid-cols-2 md:grid-cols-3 gap-10">
             {productsData.slice(0, 6).map((item, index) => (
               <div
@@ -137,14 +142,12 @@ const Home = () => {
                     />
                   </div>
                   <div className="p-6 text-center flex-1 flex flex-col justify-between">
-                    <div>
-                      <h3 className="text-xl sm:text-2xl font-semibold text-[#cfd2d6] group-hover:text-white transition-colors duration-300">
-                        {item.name}
-                      </h3>
-                      <p className="mt-2 text-gray-400 group-hover:text-white transition-colors duration-300">
-                        ${item.price.toLocaleString()}
-                      </p>
-                    </div>
+                    <h3 className="text-xl sm:text-2xl font-semibold text-[#cfd2d6] group-hover:text-white transition-colors duration-300">
+                      {item.name}
+                    </h3>
+                    <p className="mt-2 text-gray-400 group-hover:text-white transition-colors duration-300">
+                      ${item.price.toLocaleString()}
+                    </p>
                   </div>
                 </Link>
                 <div className="p-6 pt-0">
