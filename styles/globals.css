@@ -14,7 +14,7 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
   scroll-behavior: smooth;
-  overflow-x: hidden;
+  overflow-x: hidden; /* ✅ Prevent unwanted side scroll */
 }
 
 @media (prefers-color-scheme: dark) {
@@ -24,17 +24,18 @@ body {
   }
 }
 
-/* 🧼 Hide Scrollbars */
+/* 🧼 Hide Scrollbars for Swipe Areas */
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
 .no-scrollbar {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
+  -ms-overflow-style: none; /* IE/Edge */
+  scrollbar-width: none; /* Firefox */
 }
 
-/* 🧩 ADD THIS: Snap Utilities (must be in @layer) */
+/* ✅ Tailwind Custom Utilities – Required for Swipe Snap Behavior */
 @layer utilities {
+  /* 📱 Enables snapping for horizontal scrolling (like Tiffany's) */
   .scroll-snap-x {
     scroll-snap-type: x mandatory;
     -webkit-overflow-scrolling: touch;
@@ -44,6 +45,7 @@ body {
     scroll-snap-align: start;
   }
 
+  /* ✨ Fade In Animation */
   .animate-fade-in {
     animation: fadeIn 0.4s ease-out forwards;
   }
@@ -59,6 +61,7 @@ body {
     }
   }
 
+  /* ✨ Slide + Fade In Animation */
   .animate-slide-fade-in {
     animation: slideFadeIn 0.4s ease-out forwards;
   }
@@ -73,4 +76,9 @@ body {
       transform: translateY(0);
     }
   }
+}
+
+/* 👇 Ensure Tailwind includes the snap utilities in production */
+.hidden-scroll-snap-include {
+  @apply scroll-snap-x scroll-snap-start;
 }

@@ -300,6 +300,8 @@ const Home = () => {
             </Link>
           </div>
         </section>
+        {/* 🧩 Tailwind Purge Safeguard for Swipe Snap */}
+        <div className="hidden hidden-scroll-snap-include" />
       </main>
     </>
   );
