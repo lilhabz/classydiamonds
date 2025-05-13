@@ -1,4 +1,4 @@
-// 📄 pages/index.tsx – Final Swipe Section Working 💯
+// 📄 pages/index.tsx – Final Swipe Fix + Title Aligned + No Page Overflow 💎
 
 "use client";
 
@@ -57,22 +57,22 @@ const Home = () => {
           </div>
         </section>
 
-        {/* 💎 Featured Products Section – Swipe Fixed */}
+        {/* 💎 Featured Products Section – FINAL SWIPE FIXED ✅ */}
         <section className="py-16 sm:py-20 px-4 sm:px-6 max-w-7xl mx-auto">
           <h2 className="text-2xl sm:text-3xl font-semibold text-center mb-12 sm:mb-16">
             Featured Pieces
           </h2>
 
-          {/* 📱 Mobile Swipe Row – ONLY this section slides */}
+          {/* 📱 Mobile Swipe Row */}
           <div className="sm:hidden overflow-hidden">
-            <div className="overflow-x-auto whitespace-nowrap no-scrollbar -mx-4 px-4">
-              <div className="inline-flex gap-4">
+            <div className="overflow-x-auto no-scrollbar">
+              <div className="inline-flex gap-4 px-4">
                 {productsData.slice(0, 6).map((item, index) => (
                   <div
                     key={item.id}
                     className="inline-block bg-[#25304f] rounded-2xl shadow-lg flex flex-col"
                     style={{
-                      width: "calc(100vw - 4rem)",
+                      width: "calc(100vw - 5rem)", // 📱 Responsive card width
                       maxWidth: "260px",
                     }}
                   >
@@ -120,7 +120,7 @@ const Home = () => {
             </div>
           </div>
 
-          {/* 🖥️ Desktop Grid View (Unchanged) */}
+          {/* 🖥️ Desktop Grid View (unchanged) */}
           <div className="hidden sm:grid grid-cols-2 md:grid-cols-3 gap-10">
             {productsData.slice(0, 6).map((item, index) => (
               <div
