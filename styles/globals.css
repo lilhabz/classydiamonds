@@ -35,6 +35,15 @@ body {
   scrollbar-width: none; /* Firefox */
 }
 
+/* 📱 Scroll Snap Utilities – Needed for Tiffany-style swipe */
+.scroll-snap-x {
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+}
+.scroll-snap-start {
+  scroll-snap-align: start;
+}
+
 /* ✨ Custom Animations */
 @layer utilities {
   .animate-fade-in {
