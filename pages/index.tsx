@@ -64,9 +64,9 @@ const Home = () => {
           </h2>
 
           {/* 📱 Mobile Swipe Row */}
-          <div className="sm:hidden overflow-hidden">
+          <div className="sm:hidden overflow-hidden px-4">
             <div className="overflow-x-auto no-scrollbar">
-              <div className="inline-flex gap-4 px-4">
+              <div className="flex gap-4 w-max">
                 {productsData.slice(0, 6).map((item, index) => (
                   <div
                     key={item.id}
@@ -121,7 +121,7 @@ const Home = () => {
           </div>
 
           {/* 🖥️ Desktop Grid View (unchanged) */}
-          <div className="hidden sm:grid grid-cols-2 md:grid-cols-3 gap-10">
+          <div className="hidden sm:grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-10">
             {productsData.slice(0, 6).map((item, index) => (
               <div
                 key={item.id}
