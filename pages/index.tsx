@@ -63,56 +63,53 @@ const Home = () => {
             Featured Pieces
           </h2>
 
-          {/* 📱 Mobile Swipe Row – Smooth Snap Style */}
-          <div className="sm:hidden overflow-x-auto no-scrollbar scroll-snap-x px-4">
-            <div className="flex gap-4 w-max">
-              {productsData.slice(0, 6).map((item, index) => (
-                <div
-                  key={item.id}
-                  className="flex-shrink-0 scroll-snap-start bg-[#25304f] rounded-2xl shadow-lg flex flex-col"
-                  style={{ width: "calc(100vw - 4rem)", maxWidth: "260px" }}
+          {/* 📱 Mobile Grid View – 2 Columns, 2 Rows */}
+          <div className="grid grid-cols-2 gap-4 sm:hidden px-2">
+            {productsData.slice(0, 4).map((item, index) => (
+              <div
+                key={item.id}
+                className="bg-[#25304f] rounded-2xl shadow-lg flex flex-col"
+              >
+                <Link
+                  href={`/product/${item.slug}`}
+                  className="flex-1 flex flex-col"
                 >
-                  <Link
-                    href={`/product/${item.slug}`}
-                    className="flex-1 flex flex-col"
-                  >
-                    <div className="relative w-full h-60">
-                      <Image
-                        src={item.image}
-                        alt={item.name}
-                        fill
-                        priority={index === 0}
-                        className="object-cover"
-                      />
-                    </div>
-                    <div className="p-4 text-center flex-1 flex flex-col justify-between">
-                      <h3 className="text-sm font-semibold text-[#cfd2d6]">
-                        {item.name}
-                      </h3>
-                      <p className="text-gray-400 text-xs">
-                        ${item.price.toLocaleString()}
-                      </p>
-                    </div>
-                  </Link>
-                  <div className="p-4 pt-0">
-                    <button
-                      onClick={() =>
-                        addToCart({
-                          id: item.id,
-                          name: item.name,
-                          price: item.price,
-                          image: item.image,
-                          quantity: 1,
-                        })
-                      }
-                      className="w-full px-3 py-2 bg-white text-[#1f2a44] text-sm rounded-xl font-semibold hover:bg-gray-100 transition"
-                    >
-                      Add to Cart
-                    </button>
+                  <div className="relative w-full h-48">
+                    <Image
+                      src={item.image}
+                      alt={item.name}
+                      fill
+                      priority={index === 0}
+                      className="object-cover rounded-t-2xl"
+                    />
                   </div>
+                  <div className="p-4 text-center flex-1 flex flex-col justify-between">
+                    <h3 className="text-sm font-semibold text-[#cfd2d6]">
+                      {item.name}
+                    </h3>
+                    <p className="text-gray-400 text-xs">
+                      ${item.price.toLocaleString()}
+                    </p>
+                  </div>
+                </Link>
+                <div className="p-4 pt-0">
+                  <button
+                    onClick={() =>
+                      addToCart({
+                        id: item.id,
+                        name: item.name,
+                        price: item.price,
+                        image: item.image,
+                        quantity: 1,
+                      })
+                    }
+                    className="w-full px-3 py-2 bg-white text-[#1f2a44] text-sm rounded-xl font-semibold hover:bg-gray-100 transition"
+                  >
+                    Add to Cart
+                  </button>
                 </div>
-              ))}
-            </div>
+              </div>
+            ))}
           </div>
 
           {/* 🖥️ Desktop Grid View */}
