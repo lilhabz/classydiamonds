@@ -2,6 +2,12 @@
 
 "use client";
 
+import { Swiper, SwiperSlide } from "swiper/react";
+import "swiper/css";
+
+import "swiper/css/pagination";
+import "swiper/css/navigation";
+
 import Link from "next/link";
 import Head from "next/head";
 import Image from "next/image";
@@ -57,68 +63,65 @@ const Home = () => {
           </div>
         </section>
 
-        {/* 💎 Featured Products Section – Mobile Swipe Fixed ✅ */}
+        {/* 💎 Featured Products Carousel - SwiperJS Version ✅ */}
         <section className="py-16 sm:py-20 px-4 sm:px-6 max-w-7xl mx-auto">
           <h2 className="text-2xl sm:text-3xl font-semibold text-center mb-12 sm:mb-16">
             Featured Pieces
           </h2>
 
-          {/* 📱 Mobile Swipe Carousel – Shows 2.5 Cards and Prevents Page Sliding */}
-          <div className="sm:hidden">
-            <div
-              className="flex gap-4 overflow-x-auto scroll-smooth snap-x snap-mandatory -mx-4 px-4"
-              style={{
-                WebkitOverflowScrolling: "touch",
-                touchAction: "pan-y",
-                overscrollBehaviorX: "contain",
-              }}
+          <div className="block sm:hidden">
+            <Swiper
+              spaceBetween={16}
+              slidesPerView={2.3} // Show 2 full, peek 3rd
+              grabCursor={true}
+              centeredSlides={false}
+              style={{ paddingRight: "16px" }} // adds padding to right edge
             >
               {productsData.slice(0, 6).map((item, index) => (
-                <div
-                  key={item.id}
-                  className="snap-start shrink-0 w-[75vw] max-w-[280px] bg-[#25304f] rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 flex flex-col"
-                >
-                  <Link
-                    href={`/product/${item.slug}`}
-                    className="flex-1 flex flex-col"
-                  >
-                    <div className="relative w-full h-64 overflow-hidden">
-                      <Image
-                        src={item.image}
-                        alt={item.name}
-                        fill
-                        priority={index === 0}
-                        className="object-cover"
-                      />
-                    </div>
-                    <div className="p-4 text-center flex-1 flex flex-col justify-between">
-                      <h3 className="text-lg font-semibold text-[#cfd2d6]">
-                        {item.name}
-                      </h3>
-                      <p className="text-gray-400">
-                        ${item.price.toLocaleString()}
-                      </p>
-                    </div>
-                  </Link>
-                  <div className="p-4 pt-0">
-                    <button
-                      onClick={() =>
-                        addToCart({
-                          id: item.id,
-                          name: item.name,
-                          price: item.price,
-                          image: item.image,
-                          quantity: 1,
-                        })
-                      }
-                      className="w-full px-4 py-2 bg-white text-[#1f2a44] rounded-xl font-semibold hover:bg-gray-100 transition"
+                <SwiperSlide key={item.id}>
+                  <div className="bg-[#25304f] rounded-2xl overflow-hidden shadow-lg flex flex-col">
+                    <Link
+                      href={`/product/${item.slug}`}
+                      className="flex-1 flex flex-col"
                     >
-                      Add to Cart
-                    </button>
+                      <div className="relative w-full h-64">
+                        <Image
+                          src={item.image}
+                          alt={item.name}
+                          fill
+                          priority={index === 0}
+                          className="object-cover"
+                        />
+                      </div>
+                      <div className="p-4 text-center flex-1 flex flex-col justify-between">
+                        <h3 className="text-lg font-semibold text-[#cfd2d6]">
+                          {item.name}
+                        </h3>
+                        <p className="text-gray-400">
+                          ${item.price.toLocaleString()}
+                        </p>
+                      </div>
+                    </Link>
+                    <div className="p-4 pt-0">
+                      <button
+                        onClick={() =>
+                          addToCart({
+                            id: item.id,
+                            name: item.name,
+                            price: item.price,
+                            image: item.image,
+                            quantity: 1,
+                          })
+                        }
+                        className="w-full px-4 py-2 bg-white text-[#1f2a44] rounded-xl font-semibold hover:bg-gray-100 transition"
+                      >
+                        Add to Cart
+                      </button>
+                    </div>
                   </div>
-                </div>
+                </SwiperSlide>
               ))}
-            </div>
+            </Swiper>
           </div>
 
           {/* 🖥️ Desktop Grid */}
