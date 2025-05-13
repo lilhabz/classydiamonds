@@ -63,28 +63,31 @@ const Home = () => {
           </div>
         </section>
 
-        {/* 💎 Featured Products Carousel - SwiperJS Version ✅ */}
+        {/* 💎 Featured Products Section – Mobile Swipe Carousel + Desktop Grid ✅ */}
         <section className="py-16 sm:py-20 px-4 sm:px-6 max-w-7xl mx-auto">
           <h2 className="text-2xl sm:text-3xl font-semibold text-center mb-12 sm:mb-16">
             Featured Pieces
           </h2>
 
+          {/* 📱 Mobile Swipe Carousel (SwiperJS) – shows 2.3 items w/ peek & clean scrolling */}
           <div className="block sm:hidden">
             <Swiper
-              spaceBetween={16}
-              slidesPerView={2.3} // Show 2 full, peek 3rd
+              spaceBetween={12}
+              slidesPerView={2.3}
               grabCursor={true}
-              centeredSlides={false}
-              style={{ paddingRight: "16px" }} // adds padding to right edge
+              loop={false}
+              watchOverflow={true}
+              resistanceRatio={0.85}
+              style={{ paddingRight: "1rem" }} // 👉 ensures last card scrolls fully into view
             >
               {productsData.slice(0, 6).map((item, index) => (
                 <SwiperSlide key={item.id}>
-                  <div className="bg-[#25304f] rounded-2xl overflow-hidden shadow-lg flex flex-col">
+                  <div className="w-[90%] mx-auto bg-[#25304f] rounded-2xl overflow-hidden shadow-lg flex flex-col">
                     <Link
                       href={`/product/${item.slug}`}
                       className="flex-1 flex flex-col"
                     >
-                      <div className="relative w-full h-64">
+                      <div className="relative w-full h-60">
                         <Image
                           src={item.image}
                           alt={item.name}
@@ -94,10 +97,10 @@ const Home = () => {
                         />
                       </div>
                       <div className="p-4 text-center flex-1 flex flex-col justify-between">
-                        <h3 className="text-lg font-semibold text-[#cfd2d6]">
+                        <h3 className="text-base font-semibold text-[#cfd2d6]">
                           {item.name}
                         </h3>
-                        <p className="text-gray-400">
+                        <p className="text-gray-400 text-sm">
                           ${item.price.toLocaleString()}
                         </p>
                       </div>
@@ -124,7 +127,7 @@ const Home = () => {
             </Swiper>
           </div>
 
-          {/* 🖥️ Desktop Grid */}
+          {/* 🖥️ Desktop Grid View – unchanged from your original */}
           <div className="hidden sm:grid grid-cols-2 md:grid-cols-3 gap-10">
             {productsData.slice(0, 6).map((item, index) => (
               <div
@@ -145,12 +148,14 @@ const Home = () => {
                     />
                   </div>
                   <div className="p-6 text-center flex-1 flex flex-col justify-between">
-                    <h3 className="text-xl sm:text-2xl font-semibold text-[#cfd2d6] group-hover:text-white transition-colors duration-300">
-                      {item.name}
-                    </h3>
-                    <p className="mt-2 text-gray-400 group-hover:text-white transition-colors duration-300">
-                      ${item.price.toLocaleString()}
-                    </p>
+                    <div>
+                      <h3 className="text-xl sm:text-2xl font-semibold text-[#cfd2d6] group-hover:text-white transition-colors duration-300">
+                        {item.name}
+                      </h3>
+                      <p className="mt-2 text-gray-400 group-hover:text-white transition-colors duration-300">
+                        ${item.price.toLocaleString()}
+                      </p>
+                    </div>
                   </div>
                 </Link>
                 <div className="p-6 pt-0">
