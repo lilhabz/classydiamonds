@@ -57,14 +57,68 @@ const Home = () => {
           </div>
         </section>
 
-        {/* 💎 Featured Products Section - One Per Row on Mobile */}
+        {/* 💎 Featured Products Section - Mobile Swipeable Carousel */}
         <section className="py-16 sm:py-20 px-4 sm:px-6 max-w-7xl mx-auto">
           <h2 className="text-2xl sm:text-3xl font-semibold text-center mb-12 sm:mb-16">
             Featured Pieces
           </h2>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-10">
-            {productsData.slice(0, 3).map((item, index) => (
+          {/* 🔄 Mobile swipeable scroll + desktop grid */}
+          <div className="sm:hidden -mx-4 overflow-x-auto px-4 scroll-snap-x scroll-smooth">
+            <div className="flex gap-4 w-max pr-4">
+              {productsData.slice(0, 6).map((item, index) => (
+                <div
+                  key={item.id}
+                  className="scroll-snap-start shrink-0 w-[70vw] max-w-xs bg-[#25304f] rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl hover:ring-2 hover:ring-[#e0e0e0] hover:scale-105 transition-all duration-300 flex flex-col"
+                >
+                  <Link
+                    href={`/product/${item.slug}`}
+                    className="flex-1 flex flex-col"
+                  >
+                    <div className="relative w-full h-64 overflow-hidden">
+                      <Image
+                        src={item.image}
+                        alt={item.name}
+                        fill
+                        priority={index === 0}
+                        className="object-cover group-hover:scale-110 transition-transform duration-300"
+                      />
+                    </div>
+                    <div className="p-6 text-center flex-1 flex flex-col justify-between">
+                      <div>
+                        <h3 className="text-xl font-semibold text-[#cfd2d6] group-hover:text-white transition-colors duration-300">
+                          {item.name}
+                        </h3>
+                        <p className="mt-2 text-gray-400 group-hover:text-white transition-colors duration-300">
+                          ${item.price.toLocaleString()}
+                        </p>
+                      </div>
+                    </div>
+                  </Link>
+                  <div className="p-6 pt-0">
+                    <button
+                      onClick={() =>
+                        addToCart({
+                          id: item.id,
+                          name: item.name,
+                          price: item.price,
+                          image: item.image,
+                          quantity: 1,
+                        })
+                      }
+                      className="w-full px-6 py-3 bg-white text-[#1f2a44] rounded-xl font-semibold hover:bg-gray-100 transition hover:scale-105 cursor-pointer"
+                    >
+                      Add to Cart
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* 🖥️ Desktop Grid View */}
+          <div className="hidden sm:grid grid-cols-2 md:grid-cols-3 gap-10">
+            {productsData.slice(0, 6).map((item, index) => (
               <div
                 key={item.id}
                 className="group bg-[#25304f] rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl hover:ring-2 hover:ring-[#e0e0e0] hover:scale-105 transition-all duration-300 flex flex-col cursor-pointer"
