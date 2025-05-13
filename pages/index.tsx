@@ -63,26 +63,25 @@ const Home = () => {
           </div>
         </section>
 
-        {/* 💎 Featured Products Section – Mobile Swipe Carousel + Desktop Grid ✅ */}
-        <section className="py-16 sm:py-20 px-4 sm:px-6 max-w-7xl mx-auto">
+        {/* 💎 Featured Products Section – Final Swipe Fix with No Site Scroll ✅ */}
+        <section className="py-16 sm:py-20 px-4 sm:px-6 max-w-7xl mx-auto overflow-hidden">
           <h2 className="text-2xl sm:text-3xl font-semibold text-center mb-12 sm:mb-16">
             Featured Pieces
           </h2>
 
-          {/* 📱 Mobile Swipe Carousel (SwiperJS) – shows 2.3 items w/ peek & clean scrolling */}
-          <div className="block sm:hidden">
+          {/* 📱 SwiperJS Carousel - 1.2 slides, only horizontal inside this block */}
+          <div className="sm:hidden overflow-hidden">
             <Swiper
               spaceBetween={12}
-              slidesPerView={2.3}
+              slidesPerView={1.2} // ✅ Show 1 full + part of 2nd
               grabCursor={true}
               loop={false}
               watchOverflow={true}
               resistanceRatio={0.85}
-              style={{ paddingRight: "1rem" }} // 👉 ensures last card scrolls fully into view
             >
               {productsData.slice(0, 6).map((item, index) => (
                 <SwiperSlide key={item.id}>
-                  <div className="w-[90%] mx-auto bg-[#25304f] rounded-2xl overflow-hidden shadow-lg flex flex-col">
+                  <div className="bg-[#25304f] rounded-2xl overflow-hidden shadow-lg flex flex-col w-full max-w-xs mx-auto">
                     <Link
                       href={`/product/${item.slug}`}
                       className="flex-1 flex flex-col"
@@ -127,7 +126,7 @@ const Home = () => {
             </Swiper>
           </div>
 
-          {/* 🖥️ Desktop Grid View – unchanged from your original */}
+          {/* 🖥️ Desktop Grid View */}
           <div className="hidden sm:grid grid-cols-2 md:grid-cols-3 gap-10">
             {productsData.slice(0, 6).map((item, index) => (
               <div
