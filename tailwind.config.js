@@ -1,11 +1,14 @@
-// tailwind.config.js
-
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   content: [
     "./pages/**/*.{js,ts,jsx,tsx}",
     "./app/**/*.{js,ts,jsx,tsx}",
     "./components/**/*.{js,ts,jsx,tsx}",
+  ],
+  safelist: [
+    "scroll-snap-x",
+    "scroll-snap-start",
+    "hidden-scroll-snap-include",
   ],
   theme: {
     extend: {

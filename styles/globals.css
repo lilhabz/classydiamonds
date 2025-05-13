@@ -29,11 +29,11 @@ body {
   display: none;
 }
 .no-scrollbar {
-  -ms-overflow-style: none; /* IE/Edge */
-  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
-/* ✅ Snap Utilities (MOVED OUTSIDE @layer to prevent Vercel purge error) */
+/* ✅ Scroll Snap Classes (do NOT use @apply) */
 .scroll-snap-x {
   scroll-snap-type: x mandatory;
   -webkit-overflow-scrolling: touch;
@@ -43,7 +43,7 @@ body {
   scroll-snap-align: start;
 }
 
-/* 🌀 Animations – still safe inside @layer utilities */
+/* 🌀 Animations – Safe in @layer */
 @layer utilities {
   .animate-fade-in {
     animation: fadeIn 0.4s ease-out forwards;
@@ -76,7 +76,7 @@ body {
   }
 }
 
-/* 👻 Tailwind build guard to prevent purge of swipe utilities */
+/* ✅ Safeguard Vercel build from purging important scroll classes */
 .hidden-scroll-snap-include {
-  @apply scroll-snap-x scroll-snap-start;
+  display: none;
 }
