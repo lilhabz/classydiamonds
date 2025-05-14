@@ -1,4 +1,4 @@
-// 📄 pages/jewelry.tsx – Optimized for Mobile Speed 🚀
+// 📄 pages/jewelry.tsx – Full Merge: Mobile + Desktop Optimized 🚀🖥️📱
 
 "use client";
 
@@ -25,6 +25,7 @@ export default function JewelryPage() {
 
   return (
     <div className="min-h-screen flex flex-col bg-[#1f2a44] text-[#e0e0e0]">
+      {/* 🌐 Page Metadata */}
       <Head>
         <title>Jewelry Collection | Classy Diamonds</title>
         <meta
@@ -36,15 +37,16 @@ export default function JewelryPage() {
 
       <Navbar />
 
-      {/* 🌟 Hero Section – Now with Next.js <Image /> ✅ */}
+      {/* 🌟 Hero Section – Optimized for LCP */}
       <section className="-mt-20 relative w-full h-[80vh] flex items-center justify-center text-center overflow-hidden">
         <div className="absolute inset-0">
           <Image
             src="/hero-jewelry.jpg"
             alt="Jewelry Hero Background"
-            fill // ✅ Full container sizing
+            fill
+            priority // 🚀 Improves desktop & mobile LCP
+            sizes="100vw"
             className="object-cover w-full h-full"
-            priority // ✅ Load early for LCP
           />
           <div className="absolute inset-0 bg-black opacity-50 pointer-events-none" />
         </div>
@@ -88,7 +90,7 @@ export default function JewelryPage() {
         </div>
       </section>
 
-      {/* 💎 Jewelry Collection Grid */}
+      {/* 💎 Jewelry Grid */}
       <section className="py-16 sm:py-20 px-4 sm:px-6 max-w-7xl mx-auto">
         <h2 className="text-2xl sm:text-3xl font-semibold text-center mb-12">
           Our Jewelry
@@ -99,8 +101,9 @@ export default function JewelryPage() {
           to celebrate life's most treasured moments.
         </p>
 
+        {/* 🛒 Product Grid – Responsive + Optimized */}
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
-          {jewelryData.slice(0, visibleCount).map((product) => (
+          {jewelryData.slice(0, visibleCount).map((product, index) => (
             <div key={product.id} className="group hover:cursor-pointer">
               <div className="bg-[#25304f] rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl hover:ring-2 hover:ring-[#e0e0e0] hover:scale-105 transition-all duration-300 flex flex-col h-full">
                 <div className="flex-1 flex flex-col">
@@ -109,11 +112,13 @@ export default function JewelryPage() {
                       <Image
                         src={product.image}
                         alt={product.name}
-                        width={500}
-                        height={500}
+                        fill
+                        priority={index < 4} // ✅ Priority load top 4 for faster desktop UX
+                        sizes="(min-width: 1024px) 25vw, 50vw" // ✅ Adaptive sizing
                         className="object-cover w-full h-full group-hover:scale-110 transition-transform duration-300"
                       />
                     </div>
+
                     <div className="p-4 text-center">
                       <h3 className="text-lg sm:text-xl font-semibold text-[#cfd2d6] group-hover:text-white transition-colors duration-300">
                         {product.name}
@@ -125,6 +130,7 @@ export default function JewelryPage() {
                   </Link>
                 </div>
 
+                {/* ➕ Add to Cart Button */}
                 <div className="p-6 pt-0">
                   <button
                     onClick={(e) => {
@@ -147,8 +153,10 @@ export default function JewelryPage() {
           ))}
         </div>
 
+        {/* 🔽 Scroll Target for Load More */}
         <div ref={productsEndRef} />
 
+        {/* ➕ Load More Button */}
         {visibleCount < jewelryData.length ? (
           <div className="flex justify-center mt-12">
             <button
