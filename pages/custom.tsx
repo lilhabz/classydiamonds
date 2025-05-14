@@ -1,8 +1,11 @@
-// 📄 pages/custom.tsx - Custom Jewelry Page (Mobile Optimized)
+// 📄 pages/custom.tsx - Custom Jewelry Page (Mobile Optimized + Hero Image Fixed)
 
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import Head from "next/head";
+import Image from "next/image"; // ✅ Add Next.js Image
+
+import heroImage from "../public/hero-custom.jpg"; // ✅ Your optimized hero image
 
 export default function CustomPage() {
   return (
@@ -19,16 +22,19 @@ export default function CustomPage() {
 
       <Navbar />
 
-      {/* 🌟 Hero Section with Background Image */}
+      {/* 🌟 Hero Section with Next.js Image */}
       <section className="-mt-20 relative w-full h-[70vh] sm:h-[75vh] md:h-[80vh] flex items-center justify-center text-center overflow-hidden">
-        {/* 🖼️ Hero Background Image */}
+        {/* 🖼️ Optimized Background Image */}
         <div className="absolute inset-0 z-0">
-          <img
-            src="/hero-custom.jpg"
+          <Image
+            src={heroImage}
             alt="Custom Jewelry Background"
-            className="w-full h-full object-cover"
+            fill
+            priority
+            placeholder="empty"
+            className="object-cover"
+            sizes="(max-width: 768px) 100vw, 100vw"
           />
-          {/* 🌑 Overlay */}
           <div className="absolute inset-0 bg-black opacity-50 pointer-events-none" />
         </div>
 
@@ -49,7 +55,6 @@ export default function CustomPage() {
         <h2 className="text-2xl sm:text-3xl font-semibold text-center mb-12 sm:mb-16">
           How It Works
         </h2>
-
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8">
           {[
             {
@@ -89,7 +94,6 @@ export default function CustomPage() {
         <h2 className="text-2xl sm:text-3xl font-semibold text-center mb-12 sm:mb-16">
           Custom Creations
         </h2>
-
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 sm:gap-8">
           {[1, 2, 3].map((i) => (
             <div
@@ -122,6 +126,8 @@ export default function CustomPage() {
           </a>
         </div>
       </section>
+
+      <Footer />
     </div>
   );
 }
