@@ -1,11 +1,11 @@
-// 📄 pages/custom.tsx - Custom Jewelry Page (Mobile Optimized + Hero Image Fixed)
+// 📄 pages/custom.tsx – Custom Jewelry Page (Optimized for Mobile + Hero LCP Fix + Footer Included)
 
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import Head from "next/head";
-import Image from "next/image"; // ✅ Add Next.js Image
+import Image from "next/image";
 
-import heroImage from "../public/hero-custom.jpg"; // ✅ Your optimized hero image
+import heroImage from "../public/hero-custom.jpg";
 
 export default function CustomPage() {
   return (
@@ -22,9 +22,8 @@ export default function CustomPage() {
 
       <Navbar />
 
-      {/* 🌟 Hero Section with Next.js Image */}
+      {/* 🌟 Hero Section with Optimized LCP */}
       <section className="-mt-20 relative w-full h-[70vh] sm:h-[75vh] md:h-[80vh] flex items-center justify-center text-center overflow-hidden">
-        {/* 🖼️ Optimized Background Image */}
         <div className="absolute inset-0 z-0">
           <Image
             src={heroImage}
@@ -38,7 +37,6 @@ export default function CustomPage() {
           <div className="absolute inset-0 bg-black opacity-50 pointer-events-none" />
         </div>
 
-        {/* ✨ Hero Text */}
         <div className="relative z-10 px-4">
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-6">
             Create Your Dream Piece
@@ -56,36 +54,28 @@ export default function CustomPage() {
           How It Works
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8">
-          {[
-            {
-              title: "1. Consultation",
-              desc: "Meet with Ned to discuss your vision, style, and ideas.",
-            },
-            {
-              title: "2. Design Sketch",
-              desc: "Receive a detailed sketch tailored to your dream piece.",
-            },
-            {
-              title: "3. Crafting",
-              desc: "Watch your vision come to life with masterful craftsmanship.",
-            },
-            {
-              title: "4. Delivery",
-              desc: "Receive your custom piece, crafted to perfection.",
-            },
-          ].map((step, index) => (
-            <div
-              key={index}
-              className="group bg-[#25304f] rounded-2xl shadow-md hover:shadow-2xl hover:scale-105 transition-all duration-300 p-6 sm:p-8 text-center hover:cursor-pointer"
-            >
-              <h3 className="text-lg sm:text-xl font-semibold mb-4 text-[#cfd2d6] group-hover:text-white transition-colors">
-                {step.title}
-              </h3>
-              <p className="text-[#cfd2d6] group-hover:text-white transition-colors text-sm sm:text-base">
-                {step.desc}
-              </p>
-            </div>
-          ))}
+          {["Consultation", "Design Sketch", "Crafting", "Delivery"].map(
+            (step, index) => (
+              <div
+                key={index}
+                className="group bg-[#25304f] rounded-2xl shadow-md hover:shadow-2xl hover:scale-105 transition-all duration-300 p-6 sm:p-8 text-center hover:cursor-pointer"
+              >
+                <h3 className="text-lg sm:text-xl font-semibold mb-4 text-[#cfd2d6] group-hover:text-white transition-colors">
+                  {index + 1}. {step}
+                </h3>
+                <p className="text-[#cfd2d6] group-hover:text-white transition-colors text-sm sm:text-base">
+                  {
+                    [
+                      "Meet with Ned to discuss your vision, style, and ideas.",
+                      "Receive a detailed sketch tailored to your dream piece.",
+                      "Watch your vision come to life with masterful craftsmanship.",
+                      "Receive your custom piece, crafted to perfection.",
+                    ][index]
+                  }
+                </p>
+              </div>
+            )
+          )}
         </div>
       </section>
 
