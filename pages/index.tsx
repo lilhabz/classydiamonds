@@ -1,4 +1,4 @@
-// 📄 pages/index.tsx – Cleaned & Desktop-Optimized ✅
+// 📄 pages/index.tsx – Tiffany Swipe Rebuild 💎
 
 "use client";
 
@@ -26,7 +26,7 @@ const Home = () => {
       <main className="flex flex-col min-h-screen bg-[#1f2a44] text-[#e0e0e0] overflow-x-hidden">
         <div className="h-0" />
 
-        {/* 🌟 Hero Section (priority loaded for LCP) */}
+        {/* 🌟 Hero Section */}
         <section className="-mt-20 relative w-full h-[80vh] flex items-center justify-center text-center overflow-hidden">
           <div className="absolute inset-0">
             <div className="relative w-full h-full">
@@ -34,7 +34,6 @@ const Home = () => {
                 src="/hero-home.jpg"
                 alt="Hero Background"
                 fill
-                priority // 🚀 Boost LCP score
                 sizes="100vw"
                 className="w-full h-full object-cover"
               />
@@ -58,13 +57,13 @@ const Home = () => {
           </div>
         </section>
 
-        {/* 💎 Featured Products Section – Optimized */}
+        {/* 💎 Featured Products Section – Tiffany Swipe Fixed ✅ */}
         <section className="py-16 sm:py-20 px-4 sm:px-6 max-w-7xl mx-auto">
           <h2 className="text-2xl sm:text-3xl font-semibold text-center mb-12 sm:mb-16">
             Featured Pieces
           </h2>
 
-          {/* 📱 Mobile Grid – Unchanged */}
+          {/* 📱 Mobile Grid View – 2 Columns, 2 Rows */}
           <div className="grid grid-cols-2 gap-4 sm:hidden px-2">
             {productsData.slice(0, 4).map((item, index) => (
               <div
@@ -80,7 +79,6 @@ const Home = () => {
                       src={item.image}
                       alt={item.name}
                       fill
-                      sizes="50vw"
                       priority={index === 0}
                       className="object-cover rounded-t-2xl"
                     />
@@ -114,7 +112,7 @@ const Home = () => {
             ))}
           </div>
 
-          {/* 🖥️ Desktop Grid – Optimized */}
+          {/* 🖥️ Desktop Grid View */}
           <div className="hidden sm:grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-10">
             {productsData.slice(0, 6).map((item, index) => (
               <div
@@ -130,8 +128,7 @@ const Home = () => {
                       src={item.image}
                       alt={item.name}
                       fill
-                      sizes="(min-width: 1024px) 25vw, 33vw"
-                      priority={index < 3}
+                      priority={index === 0}
                       className="object-cover group-hover:scale-110 transition-transform duration-300"
                     />
                   </div>
@@ -167,7 +164,7 @@ const Home = () => {
           </div>
         </section>
 
-        {/* 🛍️ Shop by Category (Images optimized with sizes) */}
+        {/* 🛍️ Shop by Category Section */}
         <section className="py-16 sm:py-20 w-full px-4 sm:px-10">
           <h2 className="text-2xl sm:text-3xl font-semibold text-center mb-12 sm:mb-16">
             Shop by Category
@@ -197,7 +194,6 @@ const Home = () => {
                     src={category.image}
                     alt={category.name}
                     fill
-                    sizes="(min-width: 1024px) 16vw, 50vw"
                     priority={index < 3}
                     className="rounded-xl object-cover z-0"
                   />
@@ -211,12 +207,13 @@ const Home = () => {
           </div>
         </section>
 
-        {/* 🎁 Gifts for Him & Her Section – Unchanged except priority/index */}
+        {/* 🎁 Gifts for Him & Her Section (Centered Cards Under Title) */}
         <section className="py-16 sm:py-20 px-4 sm:px-10 w-full">
           <h2 className="text-2xl sm:text-3xl font-semibold text-center mb-12 sm:mb-16">
             Gifts for Him & Her
           </h2>
 
+          {/* 🔧 Centering the two cards */}
           <div className="grid grid-cols-2 gap-4 justify-center max-w-2xl mx-auto">
             {[
               { name: "For Him", image: "/category/his-gift-cat.jpg" },
@@ -234,8 +231,7 @@ const Home = () => {
                     src={gift.image}
                     alt={gift.name}
                     fill
-                    sizes="(min-width: 1024px) 25vw, 50vw"
-                    priority={index === 0}
+                    priority={index < 1}
                     className="object-cover z-0 rounded-xl group-hover:scale-110 transition-transform duration-300"
                   />
                   <div className="absolute inset-0 bg-black/40 z-10" />
@@ -248,7 +244,7 @@ const Home = () => {
           </div>
         </section>
 
-        {/* 📜 About / Why / CTA – No image, leave as-is */}
+        {/* 🛠️ About Section */}
         <section className="py-16 sm:py-20 px-4 sm:px-6 bg-[#1f2a44]">
           <div className="max-w-4xl mx-auto text-center">
             <h2 className="text-2xl sm:text-3xl font-semibold mb-6 sm:mb-8">
@@ -256,30 +252,42 @@ const Home = () => {
             </h2>
             <p className="text-base sm:text-lg text-[#cfd2d6] leading-relaxed">
               Classy Diamonds was founded on a promise: to create jewelry that
-              stands the test of time...
+              stands the test of time. Every piece we offer is designed with
+              precision, built from premium materials, and backed by a legacy of
+              trust. This isn’t just jewelry — it’s generational craftsmanship
+              you can count on.
             </p>
           </div>
         </section>
 
+        {/* 💎 Why Choose Us Section */}
         <section className="py-16 sm:py-20 px-4 sm:px-6 bg-[#1f2a44]">
           <div className="max-w-4xl mx-auto text-center">
             <h2 className="text-3xl sm:text-4xl font-bold mb-8 sm:mb-10">
               Why Choose Classy Diamonds?
             </h2>
             <p className="text-base sm:text-lg text-[#cfd2d6] leading-relaxed">
-              With over 30 years in the jewelry industry...
+              With over 30 years in the jewelry industry, we’ve built our name
+              on excellence, independence, and unmatched attention to detail.
+              Our clients—from London to Australia—choose us because we deliver
+              personal service, ethical sourcing, and timeless beauty in every
+              creation.
             </p>
           </div>
         </section>
 
-        {/* 🛠️ Custom CTA */}
+        {/* ✍️ Custom Jewelry CTA */}
         <section className="bg-[#1f2a44] py-16 sm:py-20 px-4 sm:px-6">
           <div className="max-w-5xl mx-auto text-center">
             <h2 className="text-3xl sm:text-4xl font-bold mb-8">
               Bring Your Vision to Life
             </h2>
             <p className="text-base sm:text-lg text-[#cfd2d6] mb-8 leading-relaxed">
-              Whether you’re imagining a one-of-a-kind engagement ring...
+              Whether you’re imagining a one-of-a-kind engagement ring or
+              redesigning a meaningful family heirloom, Ned brings decades of
+              expertise to every detail. At Classy Diamonds, custom jewelry
+              isn’t just made — it’s imagined with you, for you, and crafted by
+              hand with heart.
             </p>
             <Link
               href="/custom"
@@ -289,12 +297,12 @@ const Home = () => {
             </Link>
           </div>
         </section>
-
-        {/* 🚨 Vercel Purge Safe Class for Scroll */}
+        {/* 🧩 Tailwind Purge Safeguard for Swipe Snap */}
         <div className="hidden hidden-scroll-snap-include" />
       </main>
     </>
   );
 };
 
-export default Home;
+export default Home; // 🏠 Home Page
+// ✅
