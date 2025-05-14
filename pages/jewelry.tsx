@@ -1,4 +1,4 @@
-// 📄 pages/jewelry.tsx - Jewelry Collection Page (Mobile Optimized)
+// 📄 pages/jewelry.tsx – Optimized for Mobile Speed 🚀
 
 "use client";
 
@@ -7,25 +7,24 @@ import Footer from "../components/Footer";
 import Image from "next/image";
 import Link from "next/link";
 import Head from "next/head";
-import { useCart } from "@/context/CartContext"; // 🛒 Cart context
-import { jewelryData } from "@/data/jewelryData"; // 💎 Jewelry products
-import { useState, useRef } from "react"; // 🧠 Hooks for Load More + Scroll
+import { useCart } from "@/context/CartContext";
+import { jewelryData } from "@/data/jewelryData";
+import { useState, useRef } from "react";
 
 export default function JewelryPage() {
-  const { addToCart } = useCart(); // 🛒 Add to cart function
-  const [visibleCount, setVisibleCount] = useState(8); // 📦 Start with 8 items
-  const productsEndRef = useRef<HTMLDivElement>(null); // 🔽 Scroll target for Load More
+  const { addToCart } = useCart();
+  const [visibleCount, setVisibleCount] = useState(8);
+  const productsEndRef = useRef<HTMLDivElement>(null);
 
   const handleLoadMore = () => {
     setVisibleCount((prev) => prev + 4);
     setTimeout(() => {
       productsEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    }, 300); // 📜 Delay for smooth transition
+    }, 300);
   };
 
   return (
     <div className="min-h-screen flex flex-col bg-[#1f2a44] text-[#e0e0e0]">
-      {/* 🌐 Head Metadata */}
       <Head>
         <title>Jewelry Collection | Classy Diamonds</title>
         <meta
@@ -37,20 +36,19 @@ export default function JewelryPage() {
 
       <Navbar />
 
-      {/* 🌟 Hero Section */}
+      {/* 🌟 Hero Section – Now with Next.js <Image /> ✅ */}
       <section className="-mt-20 relative w-full h-[80vh] flex items-center justify-center text-center overflow-hidden">
-        {/* 🖼️ Background image */}
         <div className="absolute inset-0">
-          <img
+          <Image
             src="/hero-jewelry.jpg"
             alt="Jewelry Hero Background"
-            className="w-full h-full object-cover"
+            fill // ✅ Full container sizing
+            className="object-cover w-full h-full"
+            priority // ✅ Load early for LCP
           />
-          {/* 🌑 Dark overlay with touch passthrough */}
           <div className="absolute inset-0 bg-black opacity-50 pointer-events-none" />
         </div>
 
-        {/* ✨ Hero Content */}
         <div className="relative z-10 px-4">
           <h1 className="text-3xl md:text-6xl font-bold mb-6 text-[#e0e0e0]">
             Jewelry Collection
@@ -101,15 +99,13 @@ export default function JewelryPage() {
           to celebrate life's most treasured moments.
         </p>
 
-        {/* 🛒 Product Cards */}
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
           {jewelryData.slice(0, visibleCount).map((product) => (
             <div key={product.id} className="group hover:cursor-pointer">
               <div className="bg-[#25304f] rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl hover:ring-2 hover:ring-[#e0e0e0] hover:scale-105 transition-all duration-300 flex flex-col h-full">
                 <div className="flex-1 flex flex-col">
                   <Link href={`/product/${product.slug}`} className="flex-1">
-                    {/* 📸 Product Image */}
-                    <div className="w-full h-44 sm:h-48 overflow-hidden">
+                    <div className="w-full h-44 sm:h-48 overflow-hidden relative">
                       <Image
                         src={product.image}
                         alt={product.name}
@@ -118,8 +114,6 @@ export default function JewelryPage() {
                         className="object-cover w-full h-full group-hover:scale-110 transition-transform duration-300"
                       />
                     </div>
-
-                    {/* 📝 Product Info */}
                     <div className="p-4 text-center">
                       <h3 className="text-lg sm:text-xl font-semibold text-[#cfd2d6] group-hover:text-white transition-colors duration-300">
                         {product.name}
@@ -131,7 +125,6 @@ export default function JewelryPage() {
                   </Link>
                 </div>
 
-                {/* 🛒 Add to Cart Button */}
                 <div className="p-6 pt-0">
                   <button
                     onClick={(e) => {
@@ -154,10 +147,8 @@ export default function JewelryPage() {
           ))}
         </div>
 
-        {/* 🔽 Scroll Anchor */}
         <div ref={productsEndRef} />
 
-        {/* ➕ Load More or End Message */}
         {visibleCount < jewelryData.length ? (
           <div className="flex justify-center mt-12">
             <button
@@ -183,4 +174,3 @@ export default function JewelryPage() {
     </div>
   );
 }
-//aa
