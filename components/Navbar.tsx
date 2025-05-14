@@ -113,24 +113,25 @@ const Navbar = () => {
           </div>
         )}
 
-        {/* 📱 Mobile Top Row */}
+        {/* 📱 Mobile Layout */}
         <div className="md:hidden flex items-center justify-between w-full px-4 h-full">
           <div className="text-2xl text-[#e0e0e0]" ref={menuButtonRef}>
-            {menuOpen ? (
-              <FiX onClick={() => setMenuOpen(false)} />
-            ) : (
-              <FiMenu
-                onClick={() => {
-                  setMenuOpen((prev) => !prev);
-                  setUserMenuOpen(false);
-                  setCartOpen(false);
-                }}
-              />
-            )}
+            <button
+              aria-label={menuOpen ? "Close menu" : "Open menu"}
+              onClick={() => {
+                setMenuOpen((prev) => !prev);
+                setUserMenuOpen(false);
+                setCartOpen(false);
+              }}
+              className="cursor-pointer"
+            >
+              {menuOpen ? <FiX /> : <FiMenu />}
+            </button>
           </div>
 
           <Link
             href="/"
+            aria-label="Go to homepage"
             className="text-[#e0e0e0] font-bold text-lg text-center hover:text-white hover:scale-105 transition-transform duration-300"
           >
             <div>
@@ -145,6 +146,7 @@ const Navbar = () => {
             <button
               ref={userButtonRef}
               onClick={handleUserToggle}
+              aria-label="Account menu"
               className="cursor-pointer hover:text-white"
             >
               <FiUser />
@@ -152,6 +154,7 @@ const Navbar = () => {
             <button
               ref={cartButtonRef}
               onClick={handleCartToggle}
+              aria-label="View cart"
               className="relative cursor-pointer hover:text-white"
             >
               <FiShoppingCart />
@@ -206,6 +209,7 @@ const Navbar = () => {
           <div className="flex items-center gap-4 text-[#e0e0e0] text-xl">
             <Link
               href="/search"
+              aria-label="Search"
               className="cursor-pointer hover:text-white hover:scale-105 transition-transform duration-300"
             >
               <FiSearch />
@@ -214,11 +218,11 @@ const Navbar = () => {
               <button
                 ref={userButtonRef}
                 onClick={handleUserToggle}
+                aria-label="Account menu"
                 className="cursor-pointer hover:text-white hover:scale-105 transition-transform duration-300"
               >
                 <FiUser />
               </button>
-              {/* ✅ Desktop User Dropdown - Now fully clickable */}
               {userMenuOpen && (
                 <div
                   ref={userRef}
@@ -246,8 +250,7 @@ const Navbar = () => {
                       </a>
                     </Link>
                   ))}
-
-                  {(session?.user as any)?.isAdmin && (
+                  {session?.user?.isAdmin && (
                     <button
                       onMouseDown={(e) => {
                         e.preventDefault();
@@ -275,6 +278,7 @@ const Navbar = () => {
             <button
               ref={cartButtonRef}
               onClick={handleCartToggle}
+              aria-label="View cart"
               className="relative cursor-pointer hover:text-white hover:scale-105 transition-transform duration-300"
             >
               <FiShoppingCart />
