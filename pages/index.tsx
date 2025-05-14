@@ -1,4 +1,4 @@
-// 📄 pages/index.tsx – Tiffany Swipe Rebuild 💎
+// 📄 pages/index.tsx – Tiffany Swipe Rebuild 💎 (Now with Desktop Accessibility Fixes ♿)
 
 "use client";
 
@@ -28,13 +28,14 @@ const Home = () => {
 
         {/* 🌟 Hero Section */}
         <section className="-mt-20 relative w-full h-[80vh] flex items-center justify-center text-center overflow-hidden">
-          <div className="absolute inset-0">
+          <div className="absolute inset-0" aria-hidden="true">
             <div className="relative w-full h-full">
               <Image
                 src="/hero-home.jpg"
-                alt="Hero Background"
+                alt="Showcase of elegant jewelry collection"
                 fill
                 sizes="100vw"
+                priority
                 className="w-full h-full object-cover"
               />
             </div>
@@ -49,7 +50,11 @@ const Home = () => {
               Discover handcrafted engagement rings, wedding bands, and fine
               jewelry built to last a lifetime.
             </p>
-            <Link href="/jewelry" className="inline-block">
+            <Link
+              href="/jewelry"
+              className="inline-block"
+              aria-label="Go to Jewelry Collection"
+            >
               <button className="px-8 py-4 bg-[#e0e0e0] text-[#1f2a44] rounded-full text-lg font-semibold hover:bg-white hover:scale-105 transition-transform duration-300">
                 Shop Now
               </button>
@@ -57,13 +62,13 @@ const Home = () => {
           </div>
         </section>
 
-        {/* 💎 Featured Products Section – Tiffany Swipe Fixed ✅ */}
+        {/* 💎 Featured Products Section */}
         <section className="py-16 sm:py-20 px-4 sm:px-6 max-w-7xl mx-auto">
           <h2 className="text-2xl sm:text-3xl font-semibold text-center mb-12 sm:mb-16">
             Featured Pieces
           </h2>
 
-          {/* 📱 Mobile Grid View – 2 Columns, 2 Rows */}
+          {/* 📱 Mobile Grid View */}
           <div className="grid grid-cols-2 gap-4 sm:hidden px-2">
             {productsData.slice(0, 4).map((item, index) => (
               <div
@@ -73,11 +78,12 @@ const Home = () => {
                 <Link
                   href={`/product/${item.slug}`}
                   className="flex-1 flex flex-col"
+                  aria-label={`View ${item.name}`}
                 >
                   <div className="relative w-full h-48">
                     <Image
                       src={item.image}
-                      alt={item.name}
+                      alt={`Product image of ${item.name}`}
                       fill
                       priority={index === 0}
                       className="object-cover rounded-t-2xl"
@@ -104,6 +110,7 @@ const Home = () => {
                       })
                     }
                     className="w-full px-3 py-2 bg-white text-[#1f2a44] text-sm rounded-xl font-semibold hover:bg-gray-100 transition"
+                    aria-label={`Add ${item.name} to cart`}
                   >
                     Add to Cart
                   </button>
@@ -122,13 +129,15 @@ const Home = () => {
                 <Link
                   href={`/product/${item.slug}`}
                   className="flex-1 flex flex-col"
+                  aria-label={`View ${item.name}`}
                 >
                   <div className="relative w-full h-72 sm:h-80 overflow-hidden">
                     <Image
                       src={item.image}
-                      alt={item.name}
+                      alt={`Product image of ${item.name}`}
                       fill
                       priority={index === 0}
+                      sizes="(min-width: 1024px) 25vw, 33vw"
                       className="object-cover group-hover:scale-110 transition-transform duration-300"
                     />
                   </div>
@@ -155,6 +164,7 @@ const Home = () => {
                       })
                     }
                     className="w-full px-6 py-3 bg-white text-[#1f2a44] rounded-xl font-semibold hover:bg-gray-100 transition hover:scale-105 cursor-pointer"
+                    aria-label={`Add ${item.name} to cart`}
                   >
                     Add to Cart
                   </button>
