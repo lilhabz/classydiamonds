@@ -1,5 +1,6 @@
 // 📄 pages/contact.tsx - Full Page (Hero, About, Map, Forms w/ Uploads + Validation + Dropdown + Single Submit)
 
+import Image from "next/image";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { FaPhoneAlt, FaEnvelope } from "react-icons/fa";
@@ -114,10 +115,13 @@ export default function ContactPage() {
       <section className="-mt-20 relative w-full h-[60vh] sm:h-[70vh] md:h-[75vh] flex items-center justify-center text-center overflow-hidden">
         {/* 🖼️ Hero Background Image */}
         <div className="absolute inset-0 z-0">
-          <img
+          <Image
             src="/hero-contact.jpg"
             alt="Contact Background"
-            className="w-full h-full object-cover"
+            fill
+            priority
+            sizes="100vw"
+            className="object-cover"
           />
           <div className="absolute inset-0 bg-black opacity-50 pointer-events-none" />
         </div>
@@ -136,13 +140,16 @@ export default function ContactPage() {
       {/* 🧑‍🏭 About Section */}
       <section className="px-4 sm:px-6 py-16 sm:py-20 max-w-7xl mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
-          <div className="w-full h-80 sm:h-96 overflow-hidden rounded-2xl shadow-lg">
-            <img
+          <div className="w-full h-80 sm:h-96 overflow-hidden rounded-2xl shadow-lg relative">
+            <Image
               src="/ned.jpg"
               alt="Ned - Classy Diamonds"
-              className="w-full h-full object-cover"
+              fill
+              sizes="(min-width: 768px) 50vw, 100vw"
+              className="object-cover"
             />
           </div>
+
           <div className="text-center md:text-left">
             <h2 className="text-2xl sm:text-3xl font-semibold mb-6 sm:mb-8">
               About Us
