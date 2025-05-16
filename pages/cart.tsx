@@ -2,8 +2,6 @@
 
 "use client";
 
-import Navbar from "../components/Navbar";
-import Footer from "../components/Footer";
 import Head from "next/head";
 import Link from "next/link";
 import { useCart } from "@/context/CartContext";
@@ -16,7 +14,9 @@ export default function CartPage() {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
+    phone: "", // 📞 Add phone input
     address: "",
+    notes: "", // 📝 Add order notes (optional engraving, ring size, etc.)
   });
 
   const [isLoading, setIsLoading] = useState(false);
@@ -26,7 +26,9 @@ export default function CartPage() {
     0
   );
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
@@ -42,7 +44,11 @@ export default function CartPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           items: cartItems,
-          email: formData.email, // ✅ pass email to backend
+          name: formData.name,
+          email: formData.email,
+          phone: formData.phone,
+          address: formData.address,
+          notes: formData.notes,
         }),
       });
 
@@ -73,8 +79,6 @@ export default function CartPage() {
         <title>Your Cart | Classy Diamonds</title>
         <meta name="description" content="Cart, summary, and checkout." />
       </Head>
-
-      <Navbar />
 
       {/* 📦 Main Layout */}
       <main className="flex flex-col lg:flex-row px-4 sm:px-6 pt-24 pb-32 max-w-7xl mx-auto w-full gap-10">
@@ -155,6 +159,14 @@ export default function CartPage() {
             Total: ${total.toLocaleString()}
           </p>
 
+          {/* 🛒 Continue Shopping */}
+          <Link
+            href="/jewelry"
+            className="text-sm text-white underline hover:text-gray-300"
+          >
+            ← Continue Shopping
+          </Link>
+
           {/* 📟 Checkout Info */}
           <form onSubmit={handleCheckout} className="flex flex-col gap-4 mt-4">
             <input
@@ -177,12 +189,29 @@ export default function CartPage() {
             />
             <input
               type="text"
+              name="phone"
+              placeholder="Phone Number"
+              required
+              value={formData.phone}
+              onChange={handleInputChange}
+              className="px-4 py-2 rounded bg-white text-[#1f2a44]"
+            />
+            <input
+              type="text"
               name="address"
               placeholder="Shipping Address"
               required
               value={formData.address}
               onChange={handleInputChange}
               className="px-4 py-2 rounded bg-white text-[#1f2a44]"
+            />
+            <textarea
+              name="notes"
+              placeholder="Order Notes (engraving, ring size, delivery instructions, etc.)"
+              value={formData.notes}
+              onChange={handleInputChange}
+              className="px-4 py-2 rounded bg-white text-[#1f2a44]"
+              rows={3}
             />
             <button
               type="submit"

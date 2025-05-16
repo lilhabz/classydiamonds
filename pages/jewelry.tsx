@@ -2,8 +2,6 @@
 
 "use client";
 
-import Navbar from "../components/Navbar";
-import Footer from "../components/Footer";
 import Image from "next/image";
 import Link from "next/link";
 import Head from "next/head";
@@ -34,8 +32,6 @@ export default function JewelryPage() {
         />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
-
-      <Navbar />
 
       {/* 🌟 Hero Section – Optimized for LCP */}
       <section className="-mt-20 relative w-full h-[80vh] flex items-center justify-center text-center overflow-hidden">
