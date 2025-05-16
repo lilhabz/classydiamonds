@@ -114,7 +114,7 @@ export default function ContactPage() {
   return (
     <div className="min-h-screen flex flex-col bg-[#1f2a44] text-[#e0e0e0]">
       {/* 🌟 Hero Section - Preloaded for LCP */}
-      <section className="-mt-20 relative w-full min-h-[70vh] h-[calc(100vh-80px)] flex items-center justify-center text-center overflow-hidden">
+      <section className="-mt-20 relative w-full h-[80vh] flex items-center justify-center text-center overflow-hidden">
         <div className="absolute inset-0 z-0">
           <Image
             src="/hero-contact.jpg"
