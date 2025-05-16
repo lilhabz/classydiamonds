@@ -6,8 +6,7 @@ import { useRouter } from "next/router";
 import Head from "next/head";
 import Image from "next/image";
 import Link from "next/link";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
+
 import { useCart } from "@/context/CartContext";
 import { jewelryData } from "@/data/jewelryData";
 import { useState, useRef } from "react";
@@ -45,8 +44,6 @@ export default function CategoryPage() {
           content={`Explore our stunning collection of ${prettyCategory} at Classy Diamonds.`}
         />
       </Head>
-
-      <Navbar />
 
       {/* 🌟 Hero Section */}
       <section className="-mt-20 relative w-full h-[60vh] flex items-center justify-center text-center overflow-hidden">
@@ -141,8 +138,7 @@ export default function CategoryPage() {
           </div>
         )}
       </section>
-
-      <Footer />
     </div>
   );
 }
+// 📄 pages/category/[category].tsx
