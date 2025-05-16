@@ -14,9 +14,9 @@ export default function CartPage() {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
-    phone: "", // 📞 Add phone input
+    phone: "", // 📞 Phone number
     address: "",
-    notes: "", // 📝 Add order notes (optional engraving, ring size, etc.)
+    notes: "", // 📝 Order notes (e.g., engraving, ring size, etc.)
   });
 
   const [isLoading, setIsLoading] = useState(false);
@@ -207,7 +207,7 @@ export default function CartPage() {
             />
             <textarea
               name="notes"
-              placeholder="Order Notes (engraving, ring size, delivery instructions, etc.)"
+              placeholder="Order Notes (e.g. engraving, ring size, delivery instructions)"
               value={formData.notes}
               onChange={handleInputChange}
               className="px-4 py-2 rounded bg-white text-[#1f2a44]"
