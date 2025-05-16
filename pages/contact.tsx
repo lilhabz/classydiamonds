@@ -304,10 +304,12 @@ export default function ContactPage() {
                 </div>
 
                 {customPreview && (
-                  <img
+                  <Image
                     src={customPreview}
-                    alt="Preview"
-                    className="mt-2 w-24 h-24 object-cover rounded-xl"
+                    alt="Uploaded Preview"
+                    width={96}
+                    height={96}
+                    className="mt-2 object-cover rounded-xl"
                   />
                 )}
                 <button
@@ -398,10 +400,12 @@ export default function ContactPage() {
               </div>
 
               {messagePreview && (
-                <img
-                  src={messagePreview}
-                  alt="Preview"
-                  className="mt-2 w-24 h-24 object-cover rounded-xl"
+                <Image
+                  src={customPreview}
+                  alt="Uploaded Preview"
+                  width={96}
+                  height={96}
+                  className="mt-2 object-cover rounded-xl"
                 />
               )}
               <button
