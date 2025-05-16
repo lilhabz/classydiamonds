@@ -235,6 +235,7 @@ export default function ContactPage() {
                   required
                   className="p-4 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
                 />
+
                 <input
                   name="email"
                   type="email"
@@ -305,13 +306,14 @@ export default function ContactPage() {
 
                 {customPreview && (
                   <Image
-                    src={customPreview}
+                    src={customPreview as string} // ✅ Force TS to treat it as a string
                     alt="Uploaded Preview"
                     width={96}
                     height={96}
                     className="mt-2 object-cover rounded-xl"
                   />
                 )}
+
                 <button
                   type="submit"
                   disabled={isSubmitting}
@@ -399,15 +401,6 @@ export default function ContactPage() {
                 />
               </div>
 
-              {messagePreview && (
-                <Image
-                  src={customPreview}
-                  alt="Uploaded Preview"
-                  width={96}
-                  height={96}
-                  className="mt-2 object-cover rounded-xl"
-                />
-              )}
               <button
                 type="submit"
                 disabled={isSubmitting}
