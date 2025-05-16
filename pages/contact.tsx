@@ -284,7 +284,7 @@ export default function ContactPage() {
                     Upload Image
                   </label>
                   <input
-                    id="messageFile"
+                    id="customFileInput"
                     type="file"
                     accept="image/*"
                     onChange={(e) => {
@@ -300,6 +300,7 @@ export default function ContactPage() {
                   <img
                     src={customPreview}
                     alt="Preview"
+                    loading="lazy"
                     className="mt-2 w-24 h-24 object-cover rounded-xl"
                   />
                 )}
@@ -394,6 +395,7 @@ export default function ContactPage() {
                 <img
                   src={messagePreview}
                   alt="Preview"
+                  loading="lazy"
                   className="mt-2 w-24 h-24 object-cover rounded-xl"
                 />
               )}
