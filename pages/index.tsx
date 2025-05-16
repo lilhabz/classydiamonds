@@ -55,7 +55,7 @@ const Home = () => {
               className="inline-block"
               aria-label="Go to Jewelry Collection"
             >
-              <button className="px-8 py-4 bg-[#e0e0e0] text-[#1f2a44] rounded-full text-lg font-semibold hover:bg-white hover:scale-105 transition-transform duration-300">
+              <button className="px-8 py-4 bg-[#e0e0e0] text-[#1f2a44] rounded-full text-lg font-semibold hover:bg-white hover:scale-105 transition-transform duration-300 cursor-pointer">
                 Shop Now
               </button>
             </Link>
