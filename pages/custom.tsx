@@ -1,7 +1,5 @@
 // 📄 pages/custom.tsx – Custom Jewelry Page (Optimized for Mobile + Hero LCP Fix + Footer Included)
 
-import Navbar from "../components/Navbar";
-import Footer from "../components/Footer";
 import Head from "next/head";
 import Image from "next/image";
 
@@ -19,8 +17,6 @@ export default function CustomPage() {
         />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
-
-      <Navbar />
 
       {/* 🌟 Hero Section with Optimized LCP */}
       <section className="-mt-20 relative w-full h-[70vh] sm:h-[75vh] md:h-[80vh] flex items-center justify-center text-center overflow-hidden">
@@ -116,8 +112,6 @@ export default function CustomPage() {
           </a>
         </div>
       </section>
-
-      <Footer />
     </div>
   );
 }
