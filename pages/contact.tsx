@@ -1,4 +1,4 @@
-// 📄 pages/contact.tsx - Full Page (Hero, About, Map, Forms w/ Uploads + Validation + Dropdown + Single Submit)
+// 📄 pages/contact.tsx - Optimized Full Page (Accessibility + Performance Fixes + LCP Hint)
 
 import Image from "next/image";
 import Navbar from "../components/Navbar";
@@ -111,7 +111,7 @@ export default function ContactPage() {
     <div className="min-h-screen flex flex-col bg-[#1f2a44] text-[#e0e0e0]">
       <Navbar />
 
-      {/* 🌟 Hero Section */}
+      {/* 🌟 Hero Section - Preloaded for LCP */}
       <section className="-mt-20 relative w-full h-[60vh] sm:h-[70vh] md:h-[75vh] flex items-center justify-center text-center overflow-hidden">
         <div className="absolute inset-0 z-0">
           <Image
