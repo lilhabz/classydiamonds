@@ -111,9 +111,8 @@ export default function ContactPage() {
     <div className="min-h-screen flex flex-col bg-[#1f2a44] text-[#e0e0e0]">
       <Navbar />
 
-      {/* 🌟 Hero Section with Background Image */}
+      {/* 🌟 Hero Section */}
       <section className="-mt-20 relative w-full h-[60vh] sm:h-[70vh] md:h-[75vh] flex items-center justify-center text-center overflow-hidden">
-        {/* 🖼️ Hero Background Image */}
         <div className="absolute inset-0 z-0">
           <Image
             src="/hero-contact.jpg"
@@ -125,8 +124,6 @@ export default function ContactPage() {
           />
           <div className="absolute inset-0 bg-black opacity-50 pointer-events-none" />
         </div>
-
-        {/* ✨ Hero Text Content */}
         <div className="relative z-10 px-4">
           <h1 className="text-3xl sm:text-4xl font-serif font-semibold mb-6 text-white">
             Contact Classy Diamonds
@@ -149,7 +146,6 @@ export default function ContactPage() {
               className="object-cover"
             />
           </div>
-
           <div className="text-center md:text-left">
             <h2 className="text-2xl sm:text-3xl font-semibold mb-6 sm:mb-8">
               About Us
@@ -179,7 +175,6 @@ export default function ContactPage() {
       {/* 📍 Contact Info + Map */}
       <section className="px-4 sm:px-6 py-16 sm:py-20 max-w-7xl mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
-          {/* 📞 Contact Info Block */}
           <div className="bg-[#25304f] rounded-2xl shadow-lg p-8 sm:p-10 flex flex-col gap-8 text-center md:text-left hover:shadow-2xl transition-shadow duration-300">
             <div className="flex flex-col items-center md:items-start">
               <FaPhoneAlt className="text-3xl mb-2 text-[#e0e0e0]" />
@@ -194,15 +189,13 @@ export default function ContactPage() {
               </p>
             </div>
           </div>
-
-          {/* 🗺️ Google Map Card */}
           <div className="w-full h-60 sm:h-64 rounded-2xl overflow-hidden shadow-lg">
             <iframe
               src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d6062.453504254061!2d-74.2965584!3d40.558669599999995!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x89c3b5c5e191bbb5%3A0x6ec9ad5e4e09ad39!2sWoodbridge%20Jewelry%20Exchange!5e0!3m2!1sen!2sus!4v1746210843513!5m2!1sen!2sus"
               width="100%"
               height="100%"
               style={{ border: 0 }}
-              allowFullScreen={true}
+              allowFullScreen
               loading="lazy"
               referrerPolicy="no-referrer-when-downgrade"
             ></iframe>
@@ -235,7 +228,6 @@ export default function ContactPage() {
                   required
                   className="p-4 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
                 />
-
                 <input
                   name="email"
                   type="email"
@@ -305,15 +297,12 @@ export default function ContactPage() {
                 </div>
 
                 {customPreview && (
-                  <Image
-                    src={customPreview as string} // ✅ Force TS to treat it as a string
-                    alt="Uploaded Preview"
-                    width={96}
-                    height={96}
-                    className="mt-2 object-cover rounded-xl"
+                  <img
+                    src={customPreview}
+                    alt="Preview"
+                    className="mt-2 w-24 h-24 object-cover rounded-xl"
                   />
                 )}
-
                 <button
                   type="submit"
                   disabled={isSubmitting}
@@ -401,6 +390,13 @@ export default function ContactPage() {
                 />
               </div>
 
+              {messagePreview && (
+                <img
+                  src={messagePreview}
+                  alt="Preview"
+                  className="mt-2 w-24 h-24 object-cover rounded-xl"
+                />
+              )}
               <button
                 type="submit"
                 disabled={isSubmitting}
