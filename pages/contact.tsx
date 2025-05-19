@@ -236,8 +236,8 @@ export default function ContactPage() {
           </div>
         </section>
 
-        {/* 📝 Forms Section */}
-        <section className="px-4 sm:px-6 py-16 sm:py-20 max-w-7xl mx-auto">
+        {/* 📝 Forms Section (No bottom space – flush with footer) */}
+        <section className="px-4 sm:px-6 pt-16 sm:pt-20 max-w-7xl mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
             {/* 💍 Custom Jewelry Form with offset anchor fix */}
             <div className="relative">
@@ -251,7 +251,7 @@ export default function ContactPage() {
               {/* 🔽 Mobile Toggle */}
               <div className="sm:hidden w-full">
                 <button
-                  onClick={() => setShowCustom((prev) => !prev)} // or setShowMessage
+                  onClick={() => setShowCustom((prev) => !prev)}
                   className="w-full text-left bg-[#25304f] text-[#e0e0e0] font-semibold px-6 py-4 border-t border-b border-[#1f2a44]"
                 >
                   Start Your Custom Jewelry Creation
@@ -375,11 +375,14 @@ export default function ContactPage() {
               {/* 🔽 Mobile Toggle */}
               <div className="sm:hidden w-full">
                 <button
-                  onClick={() => setShowMessage((prev) => !prev)} // or setShowMessage
+                  onClick={() => setShowMessage((prev) => !prev)}
                   className="w-full text-left bg-[#25304f] text-[#e0e0e0] font-semibold px-6 py-4 border-t border-b border-[#1f2a44]"
                 >
                   Send Us a Message
-                  <span className="float-right">{showCustom ? "▲" : "▼"}</span>
+                  <span className="float-right">
+                    {showMessage ? "▲" : "▼"}
+                  </span>{" "}
+                  {/* ✅ Fixed arrow */}
                 </button>
               </div>
 
