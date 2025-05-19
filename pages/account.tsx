@@ -1,8 +1,9 @@
-// 📄 pages/account.tsx – Full E-Commerce Account Page 💎
+// 📄 pages/account.tsx – Full E-Commerce Account Page 💎 + UX Enhancements
 
 import { GetServerSideProps } from "next";
 import { getSession, signOut } from "next-auth/react";
 import clientPromise from "@/lib/mongodb";
+import Link from "next/link";
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
   const session = await getSession(context);
@@ -40,17 +41,34 @@ export default function AccountPage({ session, orders }: any) {
     <div className="bg-[#1f2a36] text-white min-h-screen px-4 py-10">
       <div className="max-w-4xl mx-auto space-y-10">
         {/* 👤 Profile Info */}
-        <div className="bg-white/10 backdrop-blur p-6 rounded-2xl shadow-lg text-center">
-          <h2 className="text-2xl font-bold mb-2">Welcome 👋</h2>
-          <p className="text-lg font-semibold">{name}</p>
-          <p className="text-sm text-gray-300 mb-4">{email}</p>
+        <div className="bg-white/10 backdrop-blur p-6 rounded-2xl shadow-lg">
+          <h2 className="text-2xl font-bold mb-2 text-center">Welcome 👋</h2>
+          <div className="text-center">
+            <p className="text-lg font-semibold">{name}</p>
+            <p className="text-sm text-gray-300 mb-6">{email}</p>
+            <button
+              onClick={() => signOut({ callbackUrl: "/" })}
+              className="bg-red-500 hover:bg-red-600 text-white px-6 py-2 rounded-lg transition"
+            >
+              Sign Out
+            </button>
+          </div>
 
-          <button
-            onClick={() => signOut({ callbackUrl: "/" })}
-            className="bg-red-500 hover:bg-red-600 text-white px-6 py-2 rounded-lg transition"
-          >
-            Sign Out
-          </button>
+          {/* 🔐 Profile Actions */}
+          <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+            <button className="w-full bg-[#2a374f] hover:bg-[#364763] rounded-lg px-4 py-3 text-left">
+              ✏️ Edit Profile Info
+            </button>
+            <button className="w-full bg-[#2a374f] hover:bg-[#364763] rounded-lg px-4 py-3 text-left">
+              🔑 Change Password
+            </button>
+            <Link
+              href="/custom"
+              className="w-full block bg-[#2a374f] hover:bg-[#364763] rounded-lg px-4 py-3 text-left"
+            >
+              💍 Start a Custom Jewelry Request
+            </Link>
+          </div>
         </div>
 
         {/* 📦 Order History */}
