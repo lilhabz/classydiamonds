@@ -25,7 +25,7 @@ export default function CategoryPage() {
     bracelets: "/category-hero/bracelet-hero.jpg",
     earrings: "/category-hero/earring-hero.jpg",
     "wedding-bands": "/category-hero/wedding-band-hero.jpg",
-    "engagement-rings": "/category-hero/engagement-ring-hero.jpg",
+    engagement: "/category-hero/engagement-ring-hero.jpg",
     necklaces: "/category-hero/necklace-hero.jpg",
   };
 
