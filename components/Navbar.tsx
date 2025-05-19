@@ -448,6 +448,32 @@ const Navbar = () => {
           )}
         </div>
       )}
+      {/* 🛒 Cart Dropdown – ✅ restored */}
+      {cartOpen && (
+        <div
+          ref={cartRef}
+          className="fixed right-0 w-80 bg-[#1f2a44]/95 backdrop-blur-sm shadow-lg text-sm text-white z-40 animate-slide-fade-in transition-all duration-300"
+          style={{
+            top: scrolled ? "64px" : "80px",
+            borderRadius: "0 0 0.75rem 0.75rem",
+            padding: "1rem 1.5rem",
+          }}
+        >
+          {/* ...cart content here... */}
+        </div>
+      )}
+
+      {/* 🔲 Tap-Off Overlay (Mobile Only) */}
+      {(menuOpen || cartOpen || userMenuOpen) && (
+        <div
+          className="fixed inset-0 z-30 md:hidden"
+          onClick={() => {
+            setMenuOpen(false);
+            setCartOpen(false);
+            setUserMenuOpen(false);
+          }}
+        />
+      )}
     </>
   );
 };
