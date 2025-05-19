@@ -95,7 +95,7 @@ export default function CategoryPage() {
               {prettyCategory}
             </h1>
             {heroSubtitle && (
-              <p className="mt-2 text-base sm:text-lg text-[#d0d0d0] max-w-xl">
+              <p className="mt-2 text-base sm:text-lg text-[#cfd2d6] max-w-xl">
                 {heroSubtitle}
               </p>
             )}
