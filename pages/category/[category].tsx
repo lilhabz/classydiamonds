@@ -33,7 +33,7 @@ export default function CategoryPage() {
   const categoryImagePosition: { [key: string]: string } = {
     rings: "object-[center_75%]", // 🔽 Move down to show more ring
     bracelets: "object-center",
-    earrings: "object-center brightness-135", // ✨ Brightened more
+    earrings: "object-center brightness-150", // ✨ Brightened more
     "wedding-bands": "object-center",
     engagement: "object-[center_65%]", // 🔽 Move down to reveal ring text-free
     necklaces: "object-[center_30%]", // 🔼 Move up to see necklace clearer
