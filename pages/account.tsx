@@ -1,4 +1,4 @@
-// 📄 pages/account.tsx – Full E-Commerce Account Page 💎 + UX Enhancements
+// 📄 pages/account.tsx – Full E-Commerce Account Page 💎 + UX Enhancements + Recent Orders Preview
 
 import { GetServerSideProps } from "next";
 import { getSession, signOut } from "next-auth/react";
@@ -71,15 +71,25 @@ export default function AccountPage({ session, orders }: any) {
           </div>
         </div>
 
-        {/* 📦 Order History */}
+        {/* 📦 Recent Orders Preview */}
         <div className="bg-white/10 backdrop-blur p-6 rounded-2xl shadow-lg">
-          <h3 className="text-xl font-bold mb-4">Order History 📦</h3>
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-xl font-bold">Recent Orders 📦</h3>
+            {orders.length > 3 && (
+              <Link
+                href="/account/orders"
+                className="text-sm text-blue-400 hover:underline"
+              >
+                View All Orders →
+              </Link>
+            )}
+          </div>
 
           {orders.length === 0 ? (
             <p className="text-gray-400">You haven't placed any orders yet.</p>
           ) : (
             <div className="space-y-6">
-              {orders.map((order: any) => (
+              {orders.slice(0, 3).map((order: any) => (
                 <div
                   key={order._id}
                   className="border border-gray-600 rounded-lg p-4 bg-[#2a374f]"
@@ -111,20 +121,6 @@ export default function AccountPage({ session, orders }: any) {
                       </span>
                     </div>
                   </div>
-
-                  {/* 📬 Address */}
-                  {order.address && (
-                    <div className="mt-4 text-sm text-gray-300">
-                      <p className="font-medium text-white">
-                        Shipping Address:
-                      </p>
-                      <p>
-                        {order.address.street}, {order.address.city},{" "}
-                        {order.address.state} {order.address.zip},{" "}
-                        {order.address.country}
-                      </p>
-                    </div>
-                  )}
 
                   {/* 📃 Items */}
                   <div className="mt-4 text-sm text-gray-300">
