@@ -1,4 +1,4 @@
-// 📤 pages/api/checkout.ts – Stripe Checkout Session
+// 📤 pages/api/checkout.ts – Stripe Checkout Session (UPDATED for structured address)
 
 import type { NextApiRequest, NextApiResponse } from "next";
 import Stripe from "stripe";
@@ -38,6 +38,9 @@ export default async function handler(
         };
       });
 
+    // 📦 Flatten address for metadata (Stripe metadata must be strings)
+    const addressString = `${address.street}, ${address.city}, ${address.state} ${address.zip}, ${address.country}`;
+
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
       mode: "payment",
@@ -47,7 +50,12 @@ export default async function handler(
       metadata: {
         customer_name: name,
         customer_email: email,
-        customer_address: address,
+        customer_address: addressString,
+        address_street: address.street,
+        address_city: address.city,
+        address_state: address.state,
+        address_zip: address.zip,
+        address_country: address.country,
         items: JSON.stringify(items),
       },
     });

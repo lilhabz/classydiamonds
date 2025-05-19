@@ -143,14 +143,21 @@ export default async function handler(
             customerName,
             customerEmail,
             customerAddress,
+            address: {
+              street: metadata.address_street || "",
+              city: metadata.address_city || "",
+              state: metadata.address_state || "",
+              zip: metadata.address_zip || "",
+              country: metadata.address_country || "",
+            },
             items,
             amount: amountTotal,
             currency: session.currency || "usd",
             paymentStatus: session.payment_status || "unpaid",
             stripeSessionId: session.id,
             createdAt: new Date(),
-            shipped: false, // ✅ Required for admin to display correctly
-            archived: false, // ✅ Required for filtering
+            shipped: false,
+            archived: false,
           });
 
           console.log("✅ Order saved to MongoDB (via webhook)");
