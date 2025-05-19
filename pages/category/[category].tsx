@@ -80,7 +80,7 @@ export default function CategoryPage() {
             priority
           />
           <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-            <h1 className="text-3xl sm:text-5xl font-bold text-white capitalize">
+            <h1 className="text-3xl sm:text-5xl font-bold text-[#e0e0e0] capitalize">
               {prettyCategory}
             </h1>
           </div>
