@@ -152,10 +152,10 @@ export default function ContactPage() {
             <div className="absolute inset-0 bg-black opacity-50 pointer-events-none" />
           </div>
           <div className="relative z-10 px-4">
-            <h1 className="text-3xl sm:text-4xl font-serif font-semibold mb-6 text-white">
+            <h1 className="text-3xl sm:text-4xl font-serif font-semibold mb-6 text-[#e0e0e0]">
               Contact Classy Diamonds
             </h1>
-            <p className="text-gray-300 max-w-2xl mx-auto text-base sm:text-lg">
+            <p className="text-[#e0e0e0] max-w-2xl mx-auto text-base sm:text-lg">
               Turning dreams into reality for nearly 30 years.
             </p>
           </div>

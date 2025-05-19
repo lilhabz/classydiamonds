@@ -34,10 +34,10 @@ export default function CustomPage() {
         </div>
 
         <div className="relative z-10 px-4">
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-6">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-6 text-[#e0e0e0]">
             Create Your Dream Piece
           </h1>
-          <p className="text-base sm:text-lg md:text-xl max-w-2xl text-[#cfd2d6] mx-auto">
+          <p className="text-base sm:text-lg md:text-xl max-w-2xl text-[#e0e0e0] mx-auto">
             Work one-on-one with Ned to design a piece that tells your unique
             story.
           </p>

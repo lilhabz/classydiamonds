@@ -51,7 +51,7 @@ export default function JewelryPage() {
           <h1 className="text-3xl md:text-6xl font-bold mb-6 text-[#e0e0e0]">
             Jewelry Collection
           </h1>
-          <p className="text-base md:text-xl max-w-2xl mx-auto text-[#cfd2d6]">
+          <p className="text-base md:text-xl max-w-2xl mx-auto text-[#e0e0e0]">
             Discover timeless pieces designed to capture every moment, crafted
             with passion and precision.
           </p>
