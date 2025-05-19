@@ -14,6 +14,8 @@ export default function ContactPage() {
   const [customPreview, setCustomPreview] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showMap, setShowMap] = useState(false);
+  const [showCustom, setShowCustom] = useState(false);
+  const [showMessage, setShowMessage] = useState(false);
 
   useEffect(() => {
     const timeout = setTimeout(() => setShowMap(true), 1500);
@@ -245,204 +247,237 @@ export default function ContactPage() {
                 className="absolute -top-24"
                 aria-hidden="true"
               />
-              <div className="bg-[#25304f] p-8 sm:p-10 rounded-2xl shadow-lg">
-                <h2 className="text-2xl sm:text-3xl font-serif font-semibold mb-6 text-center">
-                  Start Your Custom Jewelry Creation
-                </h2>
-                <form
-                  className="flex flex-col space-y-6"
-                  onSubmit={(e) => handleSubmit(e, "custom")}
-                >
-                  <input
-                    name="name"
-                    placeholder="Full Name"
-                    required
-                    className="p-4 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
-                  />
-                  <input
-                    name="email"
-                    type="email"
-                    placeholder="Email Address"
-                    required
-                    className="p-4 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
-                  />
-                  <input
-                    name="phone"
-                    placeholder="Phone Number"
-                    required
-                    className="p-4 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
-                  />
-                  <select
-                    name="preference"
-                    required
-                    className="p-4 rounded-xl bg-[#1f2a36] text-gray-400"
-                  >
-                    <option value="" disabled selected hidden>
-                      Preferred Contact Method
-                    </option>
-                    <option value="Call">Call</option>
-                    <option value="Text">Text</option>
-                    <option value="Email">Email</option>
-                  </select>
-                  <select
-                    name="type"
-                    required
-                    className="p-4 rounded-xl bg-[#1f2a36] text-gray-400"
-                  >
-                    <option value="" disabled selected hidden>
-                      Select Jewelry Type
-                    </option>
-                    <option>Engagement Ring</option>
-                    <option>Wedding Band</option>
-                    <option>Earrings</option>
-                    <option>Necklace</option>
-                    <option>Bracelet</option>
-                    <option>Pendant</option>
-                  </select>
-                  <textarea
-                    name="customMessage"
-                    placeholder="Describe your vision or ideas..."
-                    rows={5}
-                    required
-                    className="p-4 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
-                  />
-                  {/* 📤 Upload Image Button (Refined Style) */}
-                  <div className="flex flex-col items-start space-y-2 w-full">
-                    <label
-                      htmlFor="messageFile"
-                      className="inline-block bg-white text-[#1f2a44] font-semibold py-2 px-6 rounded-lg cursor-pointer hover:shadow-lg hover:scale-105 transition"
-                    >
-                      Upload Image
-                    </label>
-                    <input
-                      id="customFileInput"
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        setMessageFile(file || null);
-                        if (file) setMessagePreview(URL.createObjectURL(file));
-                      }}
-                      className="hidden"
-                    />
-                  </div>
 
-                  {customPreview && (
-                    <img
-                      src={customPreview}
-                      alt="Preview"
-                      loading="lazy"
-                      className="mt-2 w-24 h-24 object-cover rounded-xl"
-                    />
-                  )}
-                  <button
-                    type="submit"
-                    disabled={isSubmitting}
-                    className="bg-white text-[#1f2a44] font-semibold py-4 rounded-xl hover:shadow-lg hover:scale-105 transition hover:cursor-pointer"
+              {/* 🔽 Mobile Toggle */}
+              <div className="sm:hidden mb-4">
+                <button
+                  onClick={() => setShowCustom((prev) => !prev)}
+                  className="w-full flex justify-between items-center bg-[#25304f] text-[#e0e0e0] font-semibold px-4 py-3 rounded-xl"
+                >
+                  Start Your Custom Jewelry Creation
+                  <span>{showCustom ? "▲" : "▼"}</span>
+                </button>
+              </div>
+
+              {/* 🔽 Collapsible Form */}
+              <div className={`${showCustom ? "block" : "hidden"} sm:block`}>
+                <div className="bg-[#25304f] p-8 sm:p-10 rounded-2xl shadow-lg">
+                  <h2 className="text-2xl sm:text-3xl font-serif font-semibold mb-6 text-center">
+                    Start Your Custom Jewelry Creation
+                  </h2>
+                  <form
+                    className="flex flex-col space-y-6"
+                    onSubmit={(e) => handleSubmit(e, "custom")}
                   >
-                    Submit Custom Request
-                  </button>
-                  {customStatus && (
-                    <p className="text-sm text-green-400 mt-2">
-                      {customStatus}
-                    </p>
-                  )}
-                </form>
+                    <input
+                      name="name"
+                      placeholder="Full Name"
+                      required
+                      className="p-4 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
+                    />
+                    <input
+                      name="email"
+                      type="email"
+                      placeholder="Email Address"
+                      required
+                      className="p-4 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
+                    />
+                    <input
+                      name="phone"
+                      placeholder="Phone Number"
+                      required
+                      className="p-4 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
+                    />
+                    <select
+                      name="preference"
+                      required
+                      className="p-4 rounded-xl bg-[#1f2a36] text-gray-400"
+                    >
+                      <option value="" disabled selected hidden>
+                        Preferred Contact Method
+                      </option>
+                      <option value="Call">Call</option>
+                      <option value="Text">Text</option>
+                      <option value="Email">Email</option>
+                    </select>
+                    <select
+                      name="type"
+                      required
+                      className="p-4 rounded-xl bg-[#1f2a36] text-gray-400"
+                    >
+                      <option value="" disabled selected hidden>
+                        Select Jewelry Type
+                      </option>
+                      <option>Engagement Ring</option>
+                      <option>Wedding Band</option>
+                      <option>Earrings</option>
+                      <option>Necklace</option>
+                      <option>Bracelet</option>
+                      <option>Pendant</option>
+                    </select>
+                    <textarea
+                      name="customMessage"
+                      placeholder="Describe your vision or ideas..."
+                      rows={5}
+                      required
+                      className="p-4 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
+                    />
+                    <div className="flex flex-col items-start space-y-2 w-full">
+                      <label
+                        htmlFor="customFileInput"
+                        className="inline-block bg-white text-[#1f2a44] font-semibold py-2 px-6 rounded-lg cursor-pointer hover:shadow-lg hover:scale-105 transition"
+                      >
+                        Upload Image
+                      </label>
+                      <input
+                        id="customFileInput"
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          setMessageFile(file || null);
+                          if (file)
+                            setMessagePreview(URL.createObjectURL(file));
+                        }}
+                        className="hidden"
+                      />
+                    </div>
+
+                    {customPreview && (
+                      <img
+                        src={customPreview}
+                        alt="Preview"
+                        loading="lazy"
+                        className="mt-2 w-24 h-24 object-cover rounded-xl"
+                      />
+                    )}
+                    <button
+                      type="submit"
+                      disabled={isSubmitting}
+                      className="bg-white text-[#1f2a44] font-semibold py-4 rounded-xl hover:shadow-lg hover:scale-105 transition hover:cursor-pointer"
+                    >
+                      Submit Custom Request
+                    </button>
+                    {customStatus && (
+                      <p className="text-sm text-green-400 mt-2">
+                        {customStatus}
+                      </p>
+                    )}
+                  </form>
+                </div>
               </div>
             </div>
 
             {/* 📬 General Message Form */}
-            <div className="bg-[#25304f] p-8 sm:p-10 rounded-2xl shadow-lg">
-              <h2 className="text-2xl sm:text-3xl font-serif font-semibold mb-6 text-center hover:cursor-pointer">
-                Send Us a Message
-              </h2>
-              <form
-                className="flex flex-col space-y-6"
-                onSubmit={(e) => handleSubmit(e, "message")}
-              >
-                <input
-                  name="name"
-                  placeholder="Full Name"
-                  required
-                  className="p-4 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
-                />
-                <input
-                  name="email"
-                  type="email"
-                  placeholder="Email Address"
-                  required
-                  className="p-4 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
-                />
-                <input
-                  name="phone"
-                  placeholder="Phone Number"
-                  required
-                  className="p-4 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
-                />
-                <select
-                  name="preference"
-                  required
-                  className="p-4 rounded-xl bg-[#1f2a36] text-gray-400"
-                >
-                  <option value="" disabled selected hidden>
-                    Preferred Contact Method
-                  </option>
-                  <option value="Call">Call</option>
-                  <option value="Text">Text</option>
-                  <option value="Email">Email</option>
-                </select>
-                <input
-                  name="sku"
-                  placeholder="SKU # (optional)"
-                  className="p-4 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
-                />
-                <textarea
-                  name="message"
-                  placeholder="Your Message"
-                  rows={5}
-                  required
-                  className="p-4 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
-                />
-                {/* 📤 Upload Image Button (Refined Style) */}
-                <div className="flex flex-col items-start space-y-2 w-full">
-                  <label
-                    htmlFor="messageFile"
-                    className="inline-block bg-white text-[#1f2a44] font-semibold py-2 px-6 rounded-lg cursor-pointer hover:shadow-lg hover:scale-105 transition"
-                  >
-                    Upload Image
-                  </label>
-                  <input
-                    id="messageFile"
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      setMessageFile(file || null);
-                      if (file) setMessagePreview(URL.createObjectURL(file));
-                    }}
-                    className="hidden"
-                  />
-                </div>
-
-                {messagePreview && (
-                  <img
-                    src={messagePreview}
-                    alt="Preview"
-                    loading="lazy"
-                    className="mt-2 w-24 h-24 object-cover rounded-xl"
-                  />
-                )}
+            <div className="relative">
+              {/* 🔽 Mobile Toggle */}
+              <div className="sm:hidden mb-4">
                 <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="bg-white text-[#1f2a44] font-semibold py-4 rounded-xl hover:shadow-lg hover:scale-105 transition hover:cursor-pointer"
+                  onClick={() => setShowMessage((prev) => !prev)}
+                  className="w-full flex justify-between items-center bg-[#25304f] text-[#e0e0e0] font-semibold px-4 py-3 rounded-xl"
                 >
-                  Submit Message
+                  Send Us a Message
+                  <span>{showMessage ? "▲" : "▼"}</span>
                 </button>
-                {messageStatus && (
-                  <p className="text-sm text-green-400 mt-2">{messageStatus}</p>
-                )}
-              </form>
+              </div>
+
+              {/* 🔽 Collapsible Form */}
+              <div className={`${showMessage ? "block" : "hidden"} sm:block`}>
+                <div className="bg-[#25304f] p-8 sm:p-10 rounded-2xl shadow-lg">
+                  <h2 className="text-2xl sm:text-3xl font-serif font-semibold mb-6 text-center hover:cursor-pointer">
+                    Send Us a Message
+                  </h2>
+                  <form
+                    className="flex flex-col space-y-6"
+                    onSubmit={(e) => handleSubmit(e, "message")}
+                  >
+                    <input
+                      name="name"
+                      placeholder="Full Name"
+                      required
+                      className="p-4 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
+                    />
+                    <input
+                      name="email"
+                      type="email"
+                      placeholder="Email Address"
+                      required
+                      className="p-4 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
+                    />
+                    <input
+                      name="phone"
+                      placeholder="Phone Number"
+                      required
+                      className="p-4 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
+                    />
+                    <select
+                      name="preference"
+                      required
+                      className="p-4 rounded-xl bg-[#1f2a36] text-gray-400"
+                    >
+                      <option value="" disabled selected hidden>
+                        Preferred Contact Method
+                      </option>
+                      <option value="Call">Call</option>
+                      <option value="Text">Text</option>
+                      <option value="Email">Email</option>
+                    </select>
+                    <input
+                      name="sku"
+                      placeholder="SKU # (optional)"
+                      className="p-4 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
+                    />
+                    <textarea
+                      name="message"
+                      placeholder="Your Message"
+                      rows={5}
+                      required
+                      className="p-4 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
+                    />
+                    <div className="flex flex-col items-start space-y-2 w-full">
+                      <label
+                        htmlFor="messageFile"
+                        className="inline-block bg-white text-[#1f2a44] font-semibold py-2 px-6 rounded-lg cursor-pointer hover:shadow-lg hover:scale-105 transition"
+                      >
+                        Upload Image
+                      </label>
+                      <input
+                        id="messageFile"
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          setMessageFile(file || null);
+                          if (file)
+                            setMessagePreview(URL.createObjectURL(file));
+                        }}
+                        className="hidden"
+                      />
+                    </div>
+
+                    {messagePreview && (
+                      <img
+                        src={messagePreview}
+                        alt="Preview"
+                        loading="lazy"
+                        className="mt-2 w-24 h-24 object-cover rounded-xl"
+                      />
+                    )}
+                    <button
+                      type="submit"
+                      disabled={isSubmitting}
+                      className="bg-white text-[#1f2a44] font-semibold py-4 rounded-xl hover:shadow-lg hover:scale-105 transition hover:cursor-pointer"
+                    >
+                      Submit Message
+                    </button>
+                    {messageStatus && (
+                      <p className="text-sm text-green-400 mt-2">
+                        {messageStatus}
+                      </p>
+                    )}
+                  </form>
+                </div>
+              </div>
             </div>
           </div>
         </section>
