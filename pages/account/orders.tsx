@@ -1,10 +1,11 @@
-// 📄 pages/account/orders.tsx – Full Order History Page 💎 + Images + Pagination
+// 📄 pages/account/orders.tsx – Full Order History Page 💎 + Images + Pagination + Filters + PDF
 
 import { GetServerSideProps } from "next";
 import { getSession } from "next-auth/react";
 import clientPromise from "@/lib/mongodb";
 import Link from "next/link";
 import Image from "next/image";
+import { useRouter } from "next/router";
 
 const ORDERS_PER_PAGE = 5;
 
@@ -21,18 +22,20 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
   }
 
   const page = parseInt((context.query.page as string) || "1", 10);
+  const shippedFilter = context.query.shipped;
   const skip = (page - 1) * ORDERS_PER_PAGE;
 
   const client = await clientPromise;
   const db = client.db();
 
-  const totalOrders = await db
-    .collection("orders")
-    .countDocuments({ customerEmail: session.user?.email });
+  const filter: any = { customerEmail: session.user?.email };
+  if (shippedFilter === "true") filter.shipped = true;
+  if (shippedFilter === "false") filter.shipped = false;
 
+  const totalOrders = await db.collection("orders").countDocuments(filter);
   const orders = await db
     .collection("orders")
-    .find({ customerEmail: session.user?.email })
+    .find(filter)
     .sort({ createdAt: -1 })
     .skip(skip)
     .limit(ORDERS_PER_PAGE)
@@ -44,15 +47,62 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
       orders: JSON.parse(JSON.stringify(orders)),
       currentPage: page,
       totalPages: Math.ceil(totalOrders / ORDERS_PER_PAGE),
+      shippedFilter: shippedFilter || null,
     },
   };
 };
 
-export default function OrdersPage({ orders, currentPage, totalPages }: any) {
+export default function OrdersPage({
+  orders,
+  currentPage,
+  totalPages,
+  shippedFilter,
+}: any) {
+  const router = useRouter();
+
+  const handleFilterChange = (value: string) => {
+    router.push({
+      pathname: "/account/orders",
+      query: { page: 1, shipped: value },
+    });
+  };
+
   return (
     <div className="bg-[#1f2a36] text-white min-h-screen px-4 py-10">
       <div className="max-w-4xl mx-auto space-y-8">
         <h1 className="text-2xl font-bold text-center">Your Orders 📦</h1>
+
+        {/* 🔍 Filters */}
+        <div className="flex justify-center gap-4">
+          <button
+            onClick={() => handleFilterChange("")}
+            className={`px-4 py-1 rounded ${
+              !shippedFilter ? "bg-blue-500" : "bg-[#2a374f] hover:bg-blue-500"
+            }`}
+          >
+            All
+          </button>
+          <button
+            onClick={() => handleFilterChange("false")}
+            className={`px-4 py-1 rounded ${
+              shippedFilter === "false"
+                ? "bg-blue-500"
+                : "bg-[#2a374f] hover:bg-blue-500"
+            }`}
+          >
+            Processing
+          </button>
+          <button
+            onClick={() => handleFilterChange("true")}
+            className={`px-4 py-1 rounded ${
+              shippedFilter === "true"
+                ? "bg-blue-500"
+                : "bg-[#2a374f] hover:bg-blue-500"
+            }`}
+          >
+            Shipped
+          </button>
+        </div>
 
         {orders.length === 0 ? (
           <p className="text-gray-400 text-center">No orders found.</p>
@@ -124,6 +174,13 @@ export default function OrdersPage({ orders, currentPage, totalPages }: any) {
                     ))}
                   </ul>
                 </div>
+
+                {/* 📄 Receipt Placeholder */}
+                <div className="text-right mt-4">
+                  <button className="text-blue-400 hover:underline text-sm">
+                    Download Receipt (PDF)
+                  </button>
+                </div>
               </div>
             ))}
 
@@ -131,15 +188,22 @@ export default function OrdersPage({ orders, currentPage, totalPages }: any) {
             <div className="flex justify-center items-center gap-6 pt-6">
               {currentPage > 1 && (
                 <Link
-                  href={`/account/orders?page=${currentPage - 1}`}
+                  href={`/account/orders?page=${currentPage - 1}${
+                    shippedFilter ? `&shipped=${shippedFilter}` : ""
+                  }`}
                   className="text-blue-400 hover:underline text-sm"
                 >
                   ← Previous
                 </Link>
               )}
+              <span className="text-sm text-gray-300">
+                Page {currentPage} of {totalPages}
+              </span>
               {currentPage < totalPages && (
                 <Link
-                  href={`/account/orders?page=${currentPage + 1}`}
+                  href={`/account/orders?page=${currentPage + 1}${
+                    shippedFilter ? `&shipped=${shippedFilter}` : ""
+                  }`}
                   className="text-blue-400 hover:underline text-sm"
                 >
                   Next →
