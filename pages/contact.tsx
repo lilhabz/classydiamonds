@@ -375,7 +375,7 @@ export default function ContactPage() {
               {/* 🔽 Mobile Toggle */}
               <div className="sm:hidden w-full">
                 <button
-                  onClick={() => setShowCustom((prev) => !prev)} // or setShowMessage
+                  onClick={() => setShowMessage((prev) => !prev)} // or setShowMessage
                   className="w-full text-left bg-[#25304f] text-[#e0e0e0] font-semibold px-6 py-4 border-t border-b border-[#1f2a44]"
                 >
                   Send Us a Message
