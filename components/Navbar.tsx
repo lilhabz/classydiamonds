@@ -175,6 +175,7 @@ const Navbar = () => {
 
         {/* 💻 Desktop Layout */}
         <div className="hidden md:flex flex-wrap items-center justify-between gap-y-4 px-4 py-2 w-full">
+          {/* 🔷 Left: Logo */}
           <div className="flex items-center space-x-4">
             <Link
               href="/"
@@ -185,14 +186,9 @@ const Navbar = () => {
                 A Cut Above The Rest
               </span>
             </Link>
-            {session && (
-              <p className="hidden lg:block text-sm text-white font-light mt-1">
-                Welcome,{" "}
-                {session.user?.name?.split(" ")[0] || session.user?.email}
-              </p>
-            )}
           </div>
 
+          {/* 🔗 Center: Navigation Links */}
           <nav className="flex flex-wrap justify-center gap-6 text-[#e0e0e0] font-semibold text-sm">
             {"Home Jewelry Custom Contact".split(" ").map((name) => {
               const href = `/${name === "Home" ? "" : name.toLowerCase()}`;
@@ -212,14 +208,16 @@ const Navbar = () => {
             })}
           </nav>
 
+          {/* 👤 🔒 💳 🔍 Right: User Info + Icons */}
           <div className="flex items-center gap-4 text-[#e0e0e0] text-xl">
-            <Link
-              href="/search"
-              aria-label="Search"
-              className="cursor-pointer hover:text-white hover:scale-105 transition-transform duration-300"
-            >
-              <FiSearch />
-            </Link>
+            {/* 🧑 First Name (left of icon) */}
+            {session?.user?.name && (
+              <span className="hidden lg:inline text-sm font-medium text-white mr-1">
+                {session.user.name.split(" ")[0]}
+              </span>
+            )}
+
+            {/* 👤 User Icon + Dropdown */}
             <div className="relative">
               <button
                 ref={userButtonRef}
@@ -228,11 +226,6 @@ const Navbar = () => {
                 className="cursor-pointer hover:text-white hover:scale-105 transition-transform duration-300 flex items-center gap-2"
               >
                 <FiUser />
-                {session?.user?.name && (
-                  <span className="hidden lg:inline text-sm font-medium text-white">
-                    {session.user.name.split(" ")[0]}
-                  </span>
-                )}
               </button>
               {userMenuOpen && (
                 <div
@@ -286,6 +279,8 @@ const Navbar = () => {
                 </div>
               )}
             </div>
+
+            {/* 🛒 Cart Icon */}
             <button
               ref={cartButtonRef}
               onClick={handleCartToggle}
@@ -299,6 +294,15 @@ const Navbar = () => {
                 </span>
               )}
             </button>
+
+            {/* 🔍 Search Icon – moved to far right */}
+            <Link
+              href="/search"
+              aria-label="Search"
+              className="cursor-pointer hover:text-white hover:scale-105 transition-transform duration-300"
+            >
+              <FiSearch />
+            </Link>
           </div>
         </div>
       </header>
