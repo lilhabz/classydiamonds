@@ -29,14 +29,14 @@ export default function CategoryPage() {
     necklaces: "/category-hero/necklace-hero.jpg",
   };
 
-  // 🎯 Individual object position tweaks per category
+  // 🎯 Individual object position tweaks per category (revised)
   const categoryImagePosition: { [key: string]: string } = {
-    rings: "object-[center_15%]", // 💍 Move up to show the ring
+    rings: "object-[center_65%]", // 🔽 Move down to show more ring
     bracelets: "object-center",
-    earrings: "object-center brightness-110", // ✨ Brighten image
+    earrings: "object-center brightness-125", // ✨ Brightened more
     "wedding-bands": "object-center",
-    engagement: "object-[center_20%]", // 💎 Move up so text doesn't cover ring
-    necklaces: "object-[center_65%]", // 👑 Bring down a little
+    engagement: "object-[center_70%]", // 🔽 Move down to reveal ring text-free
+    necklaces: "object-[center_35%]", // 🔼 Move up to see necklace clearer
   };
 
   const heroImage = categoryHeroImages[category?.toLowerCase()] || null;
