@@ -1,4 +1,4 @@
-// 📄 pages/category/[category].tsx - Dynamic Category Page
+// 📄 pages/category/[category].tsx – Optimized for Performance, A11Y, SEO, Mobile 💎
 
 "use client";
 
@@ -18,6 +18,18 @@ export default function CategoryPage() {
 
   const [visibleCount, setVisibleCount] = useState(8);
   const productsEndRef = useRef<HTMLDivElement>(null);
+
+  // 🧭 Control which image goes with which category
+  const categoryHeroImages: { [key: string]: string } = {
+    rings: "/category-hero/ring-hero.jpg",
+    bracelets: "/category-hero/bracelet-hero.jpg",
+    earrings: "/category-hero/earring-hero.jpg",
+    "wedding-bands": "/category-hero/wedding-band-hero.jpg",
+    "engagement-rings": "/category-hero/engagement-ring-hero.jpg",
+    necklaces: "/category-hero/necklace-hero.jpg",
+  };
+
+  const heroImage = categoryHeroImages[category?.toLowerCase()] || null;
 
   const filteredProducts = jewelryData.filter((product) =>
     product.slug.includes(category?.toLowerCase().replace(/-/g, " "))
@@ -45,53 +57,51 @@ export default function CategoryPage() {
         />
       </Head>
 
-      {/* 🌟 Hero Section */}
-      <section className="-mt-20 relative w-full h-[60vh] flex items-center justify-center text-center overflow-hidden">
-        <div className="absolute inset-0">
-          <img
-            src={`/category/${category}-hero.jpg`}
-            alt={`${prettyCategory} Hero`}
-            className="w-full h-full object-cover"
+      {/* 🌟 Hero Section - Dynamic per category */}
+      {heroImage && (
+        <section className="relative w-full h-[40vh] sm:h-[50vh] overflow-hidden">
+          <Image
+            src={heroImage}
+            alt={`${prettyCategory} category banner`}
+            fill
+            className="object-cover"
+            priority
           />
-          <div className="absolute inset-0 bg-black opacity-50" />
-        </div>
-
-        <div className="relative z-10 px-4">
-          <h1 className="text-4xl md:text-5xl font-bold mb-4">
-            {prettyCategory}
-          </h1>
-          <p className="text-lg max-w-2xl mx-auto text-[#cfd2d6]">
-            Browse our handpicked selection of {prettyCategory?.toLowerCase()},
-            crafted to elevate your style.
-          </p>
-        </div>
-      </section>
+          <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+            <h1 className="text-3xl sm:text-5xl font-bold text-white capitalize">
+              {prettyCategory}
+            </h1>
+          </div>
+        </section>
+      )}
 
       {/* 💍 Product Grid */}
-      <section className="py-20 px-6 max-w-7xl mx-auto">
-        <h2 className="text-3xl font-semibold text-center mb-12">
+      <section className="py-20 px-4 sm:px-6 max-w-7xl mx-auto">
+        <h2 className="text-2xl sm:text-3xl font-semibold text-center mb-12">
           {prettyCategory} Pieces
         </h2>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
           {filteredProducts.slice(0, visibleCount).map((product) => (
-            <div key={product.id} className="group hover:cursor-pointer">
-              <div className="bg-[#25304f] rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl hover:ring-2 hover:ring-[#e0e0e0] hover:scale-105 transition-all duration-300 flex flex-col h-full">
-                <Link href={`/product/${product.slug}`} className="flex-1">
-                  <div className="w-full h-48 overflow-hidden">
+            <div key={product.id} className="group">
+              <div className="bg-[#25304f] rounded-2xl overflow-hidden shadow-lg hover:ring-2 hover:ring-white hover:scale-105 transition-transform duration-300 flex flex-col h-full">
+                <Link
+                  href={`/product/${product.slug}`}
+                  className="flex-1 focus:outline-none"
+                >
+                  <div className="w-full h-48 relative">
                     <Image
                       src={product.image}
                       alt={product.name}
-                      width={500}
-                      height={500}
-                      className="object-cover w-full h-full group-hover:scale-110 transition-transform duration-300"
+                      fill
+                      className="object-cover group-hover:scale-110 transition-transform duration-300"
                     />
                   </div>
                   <div className="p-4 text-center">
-                    <h3 className="text-xl font-semibold text-[#cfd2d6] group-hover:text-white transition-colors duration-300">
+                    <h3 className="text-lg font-semibold text-[#cfd2d6] group-hover:text-white">
                       {product.name}
                     </h3>
-                    <p className="mt-2 text-gray-400 group-hover:text-white transition-colors duration-300">
+                    <p className="mt-1 text-gray-400 group-hover:text-white">
                       ${product.price.toLocaleString()}
                     </p>
                   </div>
@@ -99,6 +109,7 @@ export default function CategoryPage() {
 
                 <div className="p-6 pt-0">
                   <button
+                    type="button"
                     onClick={(e) => {
                       e.preventDefault();
                       addToCart({
@@ -109,7 +120,7 @@ export default function CategoryPage() {
                         quantity: 1,
                       });
                     }}
-                    className="w-full px-6 py-3 bg-white text-[#1f2a44] rounded-xl font-semibold transition-all duration-300 transform hover:scale-110 hover:bg-gray-200 hover:font-bold cursor-pointer"
+                    className="w-full px-6 py-3 bg-white text-[#1f2a44] rounded-xl font-semibold transition-all duration-300 hover:scale-105 hover:bg-gray-200 cursor-pointer"
                   >
                     Add to Cart
                   </button>
@@ -126,8 +137,9 @@ export default function CategoryPage() {
         {visibleCount < filteredProducts.length ? (
           <div className="flex justify-center mt-12">
             <button
+              type="button"
               onClick={handleLoadMore}
-              className="px-8 py-4 bg-[#e0e0e0] text-[#1f2a44] rounded-full font-semibold text-lg hover:bg-white hover:scale-105 transition-transform duration-300"
+              className="px-8 py-4 bg-[#e0e0e0] text-[#1f2a44] rounded-full font-semibold text-lg hover:bg-white hover:scale-105 transition-transform"
             >
               Load More
             </button>
@@ -141,4 +153,3 @@ export default function CategoryPage() {
     </div>
   );
 }
-// 📄 pages/category/[category].tsx
