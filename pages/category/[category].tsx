@@ -31,17 +31,28 @@ export default function CategoryPage() {
 
   // 🎯 Individual object position tweaks per category (revised)
   const categoryImagePosition: { [key: string]: string } = {
-    rings: "object-[center_75%]", // 🔽 Move down to show more ring
+    rings: "object-[center_75%]",
     bracelets: "object-center",
-    earrings: "object-[center_25%] brightness-275", // ✨ Brightened more
+    earrings: "object-[center_25%] brightness-275",
     "wedding-bands": "object-center",
-    engagement: "object-[center_65%]", // 🔽 Move down to reveal ring text-free
-    necklaces: "object-[center_30%]", // 🔼 Move up to see necklace clearer
+    engagement: "object-[center_65%]",
+    necklaces: "object-[center_30%]",
+  };
+
+  // 💬 Hero subtitle per category
+  const categoryHeroSubtitles: { [key: string]: string } = {
+    rings: "Timeless designs that sparkle forever",
+    bracelets: "Refined elegance for every wrist",
+    earrings: "Statement pieces that shine bright",
+    "wedding-bands": "Symbolizing eternal commitment",
+    engagement: "Crafted to capture forever",
+    necklaces: "Luxury that completes any look",
   };
 
   const heroImage = categoryHeroImages[category?.toLowerCase()] || null;
   const heroImageClass =
     categoryImagePosition[category?.toLowerCase()] || "object-center";
+  const heroSubtitle = categoryHeroSubtitles[category?.toLowerCase()] || "";
 
   const filteredProducts = jewelryData.filter((product) =>
     product.slug.includes(category?.toLowerCase().replace(/-/g, " "))
@@ -79,10 +90,15 @@ export default function CategoryPage() {
             className={`object-cover ${heroImageClass}`}
             priority
           />
-          <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center text-center px-4">
             <h1 className="text-3xl sm:text-5xl font-bold text-[#e0e0e0] capitalize">
               {prettyCategory}
             </h1>
+            {heroSubtitle && (
+              <p className="mt-2 text-base sm:text-lg text-[#d0d0d0] max-w-xl">
+                {heroSubtitle}
+              </p>
+            )}
           </div>
         </section>
       )}
