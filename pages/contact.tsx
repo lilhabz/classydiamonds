@@ -200,7 +200,7 @@ export default function ContactPage() {
         </section>
 
         {/* 📍 Contact Info + Lazy Loaded Map */}
-        <section className="px-4 sm:px-6 py-16 sm:py-20 max-w-7xl mx-auto">
+        <section className="px-4 sm:px-6 lg:px-12 xl:px-20 py-16 sm:py-20 max-w-screen-xl mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
             <div className="bg-[#25304f] rounded-2xl shadow-lg p-8 sm:p-10 flex flex-col gap-8 text-center md:text-left hover:shadow-2xl transition-shadow duration-300">
               <div className="flex flex-col items-center md:items-start">
