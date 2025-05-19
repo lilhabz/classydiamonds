@@ -46,7 +46,7 @@ const Home = () => {
             <h1 className="text-3xl sm:text-4xl md:text-6xl font-bold mb-6 text-[#e0e0e0]">
               Timeless Elegance
             </h1>
-            <p className="text-base sm:text-lg md:text-xl max-w-2xl mx-auto [#e0e0e0] mb-8">
+            <p className="text-base sm:text-lg md:text-xl max-w-2xl mx-auto text-[#e0e0e0] mb-8">
               Discover handcrafted engagement rings, wedding bands, and fine
               jewelry built to last a lifetime.
             </p>
