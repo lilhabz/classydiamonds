@@ -236,26 +236,30 @@ export default function ContactPage() {
           </div>
         </section>
 
-        {/* 📝 Forms Section (No bottom space – flush with footer) */}
-        <section className="px-4 sm:px-6 pt-16 sm:pt-20 max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-            {/* 💍 Custom Jewelry Form with offset anchor fix */}
+        {/* 📝 Forms Section (Mobile = Flush Edge-to-Edge, No Gaps) */}
+        <section className="pt-16 sm:pt-20">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-0">
+            {" "}
+            {/* 👈 no gap on desktop either */}
+            {/* 💍 Custom Jewelry Form */}
             <div className="relative">
-              {/* 🔧 Invisible scroll anchor offset for navbar spacing */}
+              {/* 🔧 Anchor Offset */}
               <div
                 id="custom-form"
                 className="absolute -top-24"
                 aria-hidden="true"
               />
 
-              {/* 🔽 Mobile Toggle */}
-              <div className="sm:hidden w-full">
+              {/* 🔽 Mobile Toggle Button */}
+              <div className="sm:hidden">
                 <button
                   onClick={() => setShowCustom((prev) => !prev)}
-                  className="w-full text-left bg-[#25304f] text-[#e0e0e0] font-semibold px-6 py-4 border-t border-b border-[#1f2a44]"
+                  className="w-screen text-left bg-[#25304f] text-[#e0e0e0] font-semibold px-6 py-4 border-b border-[#1f2a44]"
                 >
                   Start Your Custom Jewelry Creation
-                  <span className="float-right">{showCustom ? "▲" : "▼"}</span>
+                  <span className="float-right pr-2">
+                    {showCustom ? "▲" : "▼"}
+                  </span>
                 </button>
               </div>
 
@@ -263,7 +267,7 @@ export default function ContactPage() {
               <div
                 className={`w-full ${showCustom ? "block" : "hidden"} sm:block`}
               >
-                <div className="w-full bg-[#25304f] p-6 sm:p-10 border-b border-[#1f2a44] rounded-none">
+                <div className="bg-[#25304f] p-6 sm:p-10 border-b border-[#1f2a44]">
                   <h2 className="text-2xl sm:text-3xl font-serif font-semibold mb-6 text-center">
                     Start Your Custom Jewelry Creation
                   </h2>
@@ -298,9 +302,9 @@ export default function ContactPage() {
                       <option value="" disabled selected hidden>
                         Preferred Contact Method
                       </option>
-                      <option value="Call">Call</option>
-                      <option value="Text">Text</option>
-                      <option value="Email">Email</option>
+                      <option>Call</option>
+                      <option>Text</option>
+                      <option>Email</option>
                     </select>
                     <select
                       name="type"
@@ -324,10 +328,10 @@ export default function ContactPage() {
                       required
                       className="p-4 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
                     />
-                    <div className="flex flex-col items-start space-y-2 w-full">
+                    <div className="flex flex-col items-start space-y-2">
                       <label
                         htmlFor="customFileInput"
-                        className="inline-block bg-white text-[#1f2a44] font-semibold py-2 px-6 rounded-lg cursor-pointer hover:shadow-lg hover:scale-105 transition"
+                        className="bg-white text-[#1f2a44] font-semibold py-2 px-6 rounded-lg cursor-pointer hover:shadow-lg hover:scale-105 transition"
                       >
                         Upload Image
                       </label>
@@ -344,7 +348,6 @@ export default function ContactPage() {
                         className="hidden"
                       />
                     </div>
-
                     {customPreview && (
                       <img
                         src={customPreview}
@@ -356,7 +359,7 @@ export default function ContactPage() {
                     <button
                       type="submit"
                       disabled={isSubmitting}
-                      className="bg-white text-[#1f2a44] font-semibold py-4 rounded-xl hover:shadow-lg hover:scale-105 transition hover:cursor-pointer"
+                      className="bg-white text-[#1f2a44] font-semibold py-4 rounded-xl hover:shadow-lg hover:scale-105 transition"
                     >
                       Submit Custom Request
                     </button>
@@ -369,20 +372,18 @@ export default function ContactPage() {
                 </div>
               </div>
             </div>
-
             {/* 📬 General Message Form */}
             <div className="relative">
-              {/* 🔽 Mobile Toggle */}
-              <div className="sm:hidden w-full">
+              {/* 🔽 Mobile Toggle Button */}
+              <div className="sm:hidden">
                 <button
                   onClick={() => setShowMessage((prev) => !prev)}
-                  className="w-full text-left bg-[#25304f] text-[#e0e0e0] font-semibold px-6 py-4 border-t border-b border-[#1f2a44]"
+                  className="w-screen text-left bg-[#25304f] text-[#e0e0e0] font-semibold px-6 py-4 border-b border-[#1f2a44]"
                 >
                   Send Us a Message
-                  <span className="float-right">
+                  <span className="float-right pr-2">
                     {showMessage ? "▲" : "▼"}
-                  </span>{" "}
-                  {/* ✅ Fixed arrow */}
+                  </span>
                 </button>
               </div>
 
@@ -392,8 +393,8 @@ export default function ContactPage() {
                   showMessage ? "block" : "hidden"
                 } sm:block`}
               >
-                <div className="w-full bg-[#25304f] p-6 sm:p-10 border-b border-[#1f2a44] rounded-none">
-                  <h2 className="text-2xl sm:text-3xl font-serif font-semibold mb-6 text-center hover:cursor-pointer">
+                <div className="bg-[#25304f] p-6 sm:p-10 border-b border-[#1f2a44]">
+                  <h2 className="text-2xl sm:text-3xl font-serif font-semibold mb-6 text-center">
                     Send Us a Message
                   </h2>
                   <form
@@ -427,9 +428,9 @@ export default function ContactPage() {
                       <option value="" disabled selected hidden>
                         Preferred Contact Method
                       </option>
-                      <option value="Call">Call</option>
-                      <option value="Text">Text</option>
-                      <option value="Email">Email</option>
+                      <option>Call</option>
+                      <option>Text</option>
+                      <option>Email</option>
                     </select>
                     <input
                       name="sku"
@@ -443,10 +444,10 @@ export default function ContactPage() {
                       required
                       className="p-4 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
                     />
-                    <div className="flex flex-col items-start space-y-2 w-full">
+                    <div className="flex flex-col items-start space-y-2">
                       <label
                         htmlFor="messageFile"
-                        className="inline-block bg-white text-[#1f2a44] font-semibold py-2 px-6 rounded-lg cursor-pointer hover:shadow-lg hover:scale-105 transition"
+                        className="bg-white text-[#1f2a44] font-semibold py-2 px-6 rounded-lg cursor-pointer hover:shadow-lg hover:scale-105 transition"
                       >
                         Upload Image
                       </label>
@@ -463,7 +464,6 @@ export default function ContactPage() {
                         className="hidden"
                       />
                     </div>
-
                     {messagePreview && (
                       <img
                         src={messagePreview}
@@ -475,7 +475,7 @@ export default function ContactPage() {
                     <button
                       type="submit"
                       disabled={isSubmitting}
-                      className="bg-white text-[#1f2a44] font-semibold py-4 rounded-xl hover:shadow-lg hover:scale-105 transition hover:cursor-pointer"
+                      className="bg-white text-[#1f2a44] font-semibold py-4 rounded-xl hover:shadow-lg hover:scale-105 transition"
                     >
                       Submit Message
                     </button>
