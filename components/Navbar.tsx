@@ -71,8 +71,11 @@ const Navbar = () => {
       setCartOpen(false);
       setUserMenuOpen(false);
     };
-    window.addEventListener("popstate", handleRouteChange);
-    return () => window.removeEventListener("popstate", handleRouteChange);
+
+    router.events.on("routeChangeStart", handleRouteChange);
+    return () => {
+      router.events.off("routeChangeStart", handleRouteChange);
+    };
   }, [router]);
 
   const totalQuantity = cartItems.reduce((sum, item) => sum + item.quantity, 0);
