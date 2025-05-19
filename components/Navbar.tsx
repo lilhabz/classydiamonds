@@ -147,15 +147,16 @@ const Navbar = () => {
               ref={userButtonRef}
               onClick={handleUserToggle}
               aria-label="Account menu"
-              className="cursor-pointer hover:text-white hover:scale-105 transition-transform duration-300 flex items-center gap-2"
+              className="cursor-pointer hover:text-white flex items-center gap-1"
             >
               <FiUser />
               {session?.user?.name && (
-                <span className="hidden lg:inline text-sm font-medium text-white">
+                <span className="text-sm font-medium text-white">
                   {session.user.name.split(" ")[0]}
                 </span>
               )}
             </button>
+
             <button
               ref={cartButtonRef}
               onClick={handleCartToggle}
