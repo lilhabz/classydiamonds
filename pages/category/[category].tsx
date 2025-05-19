@@ -29,7 +29,19 @@ export default function CategoryPage() {
     necklaces: "/category-hero/necklace-hero.jpg",
   };
 
+  // 🎯 Individual object position tweaks per category
+  const categoryImagePosition: { [key: string]: string } = {
+    rings: "object-[center_15%]", // 💍 Move up to show the ring
+    bracelets: "object-center",
+    earrings: "object-center brightness-110", // ✨ Brighten image
+    "wedding-bands": "object-center",
+    engagement: "object-[center_20%]", // 💎 Move up so text doesn't cover ring
+    necklaces: "object-[center_65%]", // 👑 Bring down a little
+  };
+
   const heroImage = categoryHeroImages[category?.toLowerCase()] || null;
+  const heroImageClass =
+    categoryImagePosition[category?.toLowerCase()] || "object-center";
 
   const filteredProducts = jewelryData.filter((product) =>
     product.slug.includes(category?.toLowerCase().replace(/-/g, " "))
@@ -64,7 +76,7 @@ export default function CategoryPage() {
             src={heroImage}
             alt={`${prettyCategory} category banner`}
             fill
-            className="object-cover"
+            className={`object-cover ${heroImageClass}`}
             priority
           />
           <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
