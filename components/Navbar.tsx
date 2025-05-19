@@ -149,12 +149,12 @@ const Navbar = () => {
               aria-label="Account menu"
               className="cursor-pointer hover:text-white flex items-center gap-1"
             >
-              <FiUser />
               {session?.user?.name && (
                 <span className="text-sm font-medium text-white">
                   {session.user.name.split(" ")[0]}
                 </span>
               )}
+              <FiUser />
             </button>
 
             <button
