@@ -385,7 +385,9 @@ export default function ContactPage() {
 
               {/* 🔽 Collapsible Form */}
               <div
-                className={`w-full ${showCustom ? "block" : "hidden"} sm:block`}
+                className={`w-full ${
+                  showMessage ? "block" : "hidden"
+                } sm:block`}
               >
                 <div className="w-full bg-[#25304f] p-6 sm:p-10 border-b border-[#1f2a44] rounded-none">
                   <h2 className="text-2xl sm:text-3xl font-serif font-semibold mb-6 text-center hover:cursor-pointer">
