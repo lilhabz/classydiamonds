@@ -249,19 +249,21 @@ export default function ContactPage() {
               />
 
               {/* 🔽 Mobile Toggle */}
-              <div className="sm:hidden mb-4">
+              <div className="sm:hidden w-full">
                 <button
-                  onClick={() => setShowCustom((prev) => !prev)}
-                  className="w-full flex justify-between items-center bg-[#25304f] text-[#e0e0e0] font-semibold px-4 py-3 rounded-xl"
+                  onClick={() => setShowCustom((prev) => !prev)} // or setShowMessage
+                  className="w-full text-left bg-[#25304f] text-[#e0e0e0] font-semibold px-6 py-4 border-t border-b border-[#1f2a44]"
                 >
                   Start Your Custom Jewelry Creation
-                  <span>{showCustom ? "▲" : "▼"}</span>
+                  <span className="float-right">{showCustom ? "▲" : "▼"}</span>
                 </button>
               </div>
 
               {/* 🔽 Collapsible Form */}
-              <div className={`${showCustom ? "block" : "hidden"} sm:block`}>
-                <div className="bg-[#25304f] p-8 sm:p-10 rounded-2xl shadow-lg">
+              <div
+                className={`w-full ${showCustom ? "block" : "hidden"} sm:block`}
+              >
+                <div className="w-full bg-[#25304f] p-6 sm:p-10 border-b border-[#1f2a44] rounded-none">
                   <h2 className="text-2xl sm:text-3xl font-serif font-semibold mb-6 text-center">
                     Start Your Custom Jewelry Creation
                   </h2>
@@ -371,13 +373,13 @@ export default function ContactPage() {
             {/* 📬 General Message Form */}
             <div className="relative">
               {/* 🔽 Mobile Toggle */}
-              <div className="sm:hidden mb-4">
+              <div className="sm:hidden w-full">
                 <button
-                  onClick={() => setShowMessage((prev) => !prev)}
-                  className="w-full flex justify-between items-center bg-[#25304f] text-[#e0e0e0] font-semibold px-4 py-3 rounded-xl"
+                  onClick={() => setShowCustom((prev) => !prev)} // or setShowMessage
+                  className="w-full text-left bg-[#25304f] text-[#e0e0e0] font-semibold px-6 py-4 border-t border-b border-[#1f2a44]"
                 >
                   Send Us a Message
-                  <span>{showMessage ? "▲" : "▼"}</span>
+                  <span className="float-right">{showCustom ? "▲" : "▼"}</span>
                 </button>
               </div>
 
