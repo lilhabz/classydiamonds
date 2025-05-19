@@ -450,10 +450,22 @@ const Navbar = () => {
         </div>
       )}
 
-      {/* 🔲 Tap-Off Overlay (Mobile Only) */}
+      {/* 🔲 Tap-Off Overlay – Mobile Only */}
       {(menuOpen || cartOpen || userMenuOpen) && (
         <div
           className="fixed inset-0 z-30 md:hidden"
+          onClick={() => {
+            setMenuOpen(false);
+            setCartOpen(false);
+            setUserMenuOpen(false);
+          }}
+        />
+      )}
+
+      {/* 🔲 Tap-Off Overlay – Desktop Only */}
+      {(menuOpen || cartOpen || userMenuOpen) && (
+        <div
+          className="hidden md:block fixed inset-0 z-30"
           onClick={() => {
             setMenuOpen(false);
             setCartOpen(false);
