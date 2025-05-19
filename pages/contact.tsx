@@ -384,8 +384,10 @@ export default function ContactPage() {
               </div>
 
               {/* 🔽 Collapsible Form */}
-              <div className={`${showMessage ? "block" : "hidden"} sm:block`}>
-                <div className="bg-[#25304f] p-8 sm:p-10 rounded-2xl shadow-lg">
+              <div
+                className={`w-full ${showCustom ? "block" : "hidden"} sm:block`}
+              >
+                <div className="w-full bg-[#25304f] p-6 sm:p-10 border-b border-[#1f2a44] rounded-none">
                   <h2 className="text-2xl sm:text-3xl font-serif font-semibold mb-6 text-center hover:cursor-pointer">
                     Send Us a Message
                   </h2>
