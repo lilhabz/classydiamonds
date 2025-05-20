@@ -27,8 +27,9 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
 
 export default function EditProfile({ session }: any) {
   const router = useRouter();
-  const [name, setName] = useState(session.user.name || "");
-  const [email, setEmail] = useState(session.user.email || "");
+  const [name, setName] = useState(session?.user?.name ?? "");
+  const [email, setEmail] = useState(session?.user?.email ?? "");
+
   const [status, setStatus] = useState("");
   const [loading, setLoading] = useState(false);
 
