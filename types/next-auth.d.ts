@@ -1,18 +1,29 @@
-// types/next-auth.d.ts
+// 📄 types/next-auth.d.ts
 
-import NextAuth from "next-auth";
+import NextAuth, { DefaultSession, DefaultUser } from "next-auth";
 
 declare module "next-auth" {
   interface Session {
     user: {
-      name?: string | null;
-      email?: string | null;
+      id: string;
+      name: string;
+      email: string;
       image?: string | null;
-      isAdmin: boolean; // ✅ This tells TypeScript it's safe to use
-    };
+      isAdmin: boolean;
+    } & DefaultSession["user"];
   }
 
-  interface User {
+  interface User extends DefaultUser {
+    id: string;
     isAdmin: boolean;
+  }
+}
+
+declare module "next-auth/jwt" {
+  interface JWT {
+    id?: string;
+    name?: string;
+    email?: string;
+    isAdmin?: boolean;
   }
 }

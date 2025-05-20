@@ -1,4 +1,4 @@
-// 📄 pages/api/auth/[...nextauth].ts – Handles login, Google/Credentials providers, and adds admin to session 🛠️
+// 📄 pages/api/auth/[...nextauth].ts – Handles login, Google/Credentials providers, and adds admin + user info to session 🛠️
 
 import NextAuth from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
@@ -39,7 +39,7 @@ export const authOptions = {
           id: user._id.toString(),
           name: user.name,
           email: user.email,
-          isAdmin: user.isAdmin || false, // 🛡️ Include isAdmin from DB
+          isAdmin: user.isAdmin || false,
         };
       },
     }),
@@ -49,17 +49,22 @@ export const authOptions = {
     strategy: "jwt" as const,
   },
   callbacks: {
-    // ✅ Add admin flag to JWT token
+    // ✅ Add user info to JWT
     async jwt({ token, user }: { token: JWT; user?: User }) {
       if (user) {
+        token.id = user.id;
+        token.name = user.name ?? undefined; // 👈 convert null to undefined
+        token.email = user.email ?? undefined; // 👈 convert null to undefined
         token.isAdmin = (user as any).isAdmin ?? false;
       }
       return token;
     },
-
-    // ✅ Add admin flag to session for client-side access
+    // ✅ Send user info from JWT into session
     async session({ session, token }: { session: Session; token: JWT }) {
       if (session.user) {
+        session.user.id = token.id as string;
+        session.user.name = token.name as string;
+        session.user.email = token.email as string;
         (session.user as any).isAdmin = token.isAdmin ?? false;
       }
       return session;
