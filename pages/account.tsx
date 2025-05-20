@@ -62,10 +62,16 @@ export default function AccountPage({ session, orders }: any) {
         {/* 👤 Profile Info */}
         <div className="bg-white/10 backdrop-blur p-6 rounded-2xl shadow-lg">
           <h2 className="text-2xl font-bold mb-2 text-center">
-            Welcome 👋 {name}
+            {/* ✅ Safely display first name or fallback */}
+            Welcome 👋 {name || "User"}
           </h2>
+
           <div className="text-center">
-            <p className="text-sm text-gray-300 mb-6">{email}</p>
+            {/* ✅ Email from session or fallback */}
+            <p className="text-sm text-gray-300 mb-6">
+              {email || "Email not available"}
+            </p>
+
             <button
               onClick={() => signOut({ callbackUrl: "/" })}
               className="bg-red-500 hover:bg-red-600 text-white px-6 py-2 rounded-lg transition"
@@ -88,6 +94,7 @@ export default function AccountPage({ session, orders }: any) {
             >
               🔑 Change Password
             </button>
+
             <div className="sm:col-span-2 flex flex-col sm:flex-row gap-4">
               <Link
                 href="/contact?open=custom#custom-form"
