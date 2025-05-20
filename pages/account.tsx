@@ -176,7 +176,17 @@ export default function AccountPage({ session, orders }: any) {
 
         {/* 📬 Messages + Custom Requests Section */}
         <div className="bg-white/10 backdrop-blur p-6 rounded-2xl shadow-lg">
-          <h3 className="text-xl font-bold mb-4">Your Messages 💬</h3>
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-xl font-bold">Your Messages 💬</h3>
+            {messages.length > 3 && (
+              <Link
+                href="/account/messages"
+                className="text-sm text-blue-400 hover:underline"
+              >
+                View All Messages →
+              </Link>
+            )}
+          </div>
 
           {messages.length === 0 ? (
             <p className="text-gray-400">
