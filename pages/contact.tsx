@@ -1,9 +1,9 @@
-// 📄 pages/contact.tsx – Updated: Auto Expand by URL Param + Desktop Form Layout Fix 💎
+// 📄 pages/contact.tsx – Updated: Auto Expand by URL Param + Desktop Scroll Fix + Form Width 💎
 
 import Head from "next/head";
 import Image from "next/image";
 import { FaPhoneAlt, FaEnvelope } from "react-icons/fa";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/router";
 
 export default function ContactPage() {
@@ -19,10 +19,29 @@ export default function ContactPage() {
   const [showCustom, setShowCustom] = useState(false);
   const [showMessage, setShowMessage] = useState(false);
 
-  // 🌐 Expand form based on query param
+  const customRef = useRef<HTMLDivElement | null>(null);
+  const messageRef = useRef<HTMLDivElement | null>(null);
+
+  // 🌐 Expand form + scroll to anchor based on query param
   useEffect(() => {
-    if (router.query.open === "custom") setShowCustom(true);
-    if (router.query.open === "message") setShowMessage(true);
+    if (router.query.open === "custom") {
+      setShowCustom(true);
+      setTimeout(() => {
+        customRef.current?.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+      }, 300);
+    }
+    if (router.query.open === "message") {
+      setShowMessage(true);
+      setTimeout(() => {
+        messageRef.current?.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+      }, 300);
+    }
   }, [router.query]);
 
   useEffect(() => {
@@ -246,11 +265,12 @@ export default function ContactPage() {
 
         {/* 📝 Forms Section (Mobile = Flush Edge-to-Edge, No Gaps) */}
         <section className="pt-16 sm:pt-20">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-0">
-            {" "}
-            {/* 👈 no gap on desktop either */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-0 max-w-screen-xl mx-auto">
             {/* 💍 Custom Jewelry Form */}
-            <div className="relative">
+            <div
+              ref={customRef}
+              className="relative px-4 sm:px-6 xl:px-10 max-w-3xl mx-auto w-full"
+            >
               {/* 🔧 Anchor Offset */}
               <div
                 id="custom-form"
@@ -262,7 +282,7 @@ export default function ContactPage() {
               <div className="sm:hidden">
                 <button
                   onClick={() => setShowCustom((prev) => !prev)}
-                  className="w-screen text-left bg-[#25304f] text-[#e0e0e0] font-semibold px-6 py-4 border-b border-[#1f2a44]"
+                  className="w-full text-left bg-[#25304f] text-[#e0e0e0] font-semibold px-6 py-4 border-b border-[#1f2a44]"
                 >
                   Start Your Custom Jewelry Creation
                   <span className="float-right pr-2">
@@ -275,7 +295,7 @@ export default function ContactPage() {
               <div
                 className={`w-full ${showCustom ? "block" : "hidden"} sm:block`}
               >
-                <div className="bg-[#25304f] p-6 sm:p-10 border-b border-[#1f2a44]">
+                <div className="bg-[#25304f] p-6 sm:p-10 border-b border-[#1f2a44] rounded-b-xl">
                   <h2 className="text-2xl sm:text-3xl font-serif font-semibold mb-6 text-center">
                     Start Your Custom Jewelry Creation
                   </h2>
@@ -307,7 +327,7 @@ export default function ContactPage() {
                       required
                       className="p-4 rounded-xl bg-[#1f2a36] text-gray-400"
                     >
-                      <option value="" disabled selected hidden>
+                      <option value="" disabled hidden selected>
                         Preferred Contact Method
                       </option>
                       <option>Call</option>
@@ -319,7 +339,7 @@ export default function ContactPage() {
                       required
                       className="p-4 rounded-xl bg-[#1f2a36] text-gray-400"
                     >
-                      <option value="" disabled selected hidden>
+                      <option value="" disabled hidden selected>
                         Select Jewelry Type
                       </option>
                       <option>Engagement Ring</option>
@@ -349,9 +369,8 @@ export default function ContactPage() {
                         accept="image/*"
                         onChange={(e) => {
                           const file = e.target.files?.[0];
-                          setMessageFile(file || null);
-                          if (file)
-                            setMessagePreview(URL.createObjectURL(file));
+                          setCustomFile(file || null);
+                          if (file) setCustomPreview(URL.createObjectURL(file));
                         }}
                         className="hidden"
                       />
@@ -380,13 +399,24 @@ export default function ContactPage() {
                 </div>
               </div>
             </div>
-            {/* 📬 General Message Form */}
-            <div className="relative">
+
+            {/* 📨 General Message Form */}
+            <div
+              ref={messageRef}
+              className="relative px-4 sm:px-6 xl:px-10 max-w-3xl mx-auto w-full"
+            >
+              {/* 🔧 Anchor Offset */}
+              <div
+                id="message-form"
+                className="absolute -top-24"
+                aria-hidden="true"
+              />
+
               {/* 🔽 Mobile Toggle Button */}
               <div className="sm:hidden">
                 <button
                   onClick={() => setShowMessage((prev) => !prev)}
-                  className="w-screen text-left bg-[#25304f] text-[#e0e0e0] font-semibold px-6 py-4 border-b border-[#1f2a44]"
+                  className="w-full text-left bg-[#25304f] text-[#e0e0e0] font-semibold px-6 py-4 border-b border-[#1f2a44]"
                 >
                   Send Us a Message
                   <span className="float-right pr-2">
@@ -401,7 +431,7 @@ export default function ContactPage() {
                   showMessage ? "block" : "hidden"
                 } sm:block`}
               >
-                <div className="bg-[#25304f] p-6 sm:p-10 border-b border-[#1f2a44]">
+                <div className="bg-[#25304f] p-6 sm:p-10 border-b border-[#1f2a44] rounded-b-xl">
                   <h2 className="text-2xl sm:text-3xl font-serif font-semibold mb-6 text-center">
                     Send Us a Message
                   </h2>
@@ -433,7 +463,7 @@ export default function ContactPage() {
                       required
                       className="p-4 rounded-xl bg-[#1f2a36] text-gray-400"
                     >
-                      <option value="" disabled selected hidden>
+                      <option value="" disabled hidden selected>
                         Preferred Contact Method
                       </option>
                       <option>Call</option>
