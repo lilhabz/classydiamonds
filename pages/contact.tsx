@@ -292,9 +292,7 @@ export default function ContactPage() {
               </div>
 
               {/* 📩 Form Body */}
-              <div
-                className={`w-full ${showCustom ? "block" : "hidden"} sm:block`}
-              >
+              <div className={`w-full ${showCustom ? "block" : "hidden"}`}>
                 <div className="bg-[#25304f] p-6 sm:p-10 border-b border-[#1f2a44] rounded-b-xl">
                   <h2 className="text-2xl sm:text-3xl font-serif font-semibold mb-6 text-center">
                     Start Your Custom Jewelry Creation
@@ -426,11 +424,7 @@ export default function ContactPage() {
               </div>
 
               {/* 📩 Form Body */}
-              <div
-                className={`w-full ${
-                  showMessage ? "block" : "hidden"
-                } sm:block`}
-              >
+              <div className={`w-full ${showMessage ? "block" : "hidden"}`}>
                 <div className="bg-[#25304f] p-6 sm:p-10 border-b border-[#1f2a44] rounded-b-xl">
                   <h2 className="text-2xl sm:text-3xl font-serif font-semibold mb-6 text-center">
                     Send Us a Message
