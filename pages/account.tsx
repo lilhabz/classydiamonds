@@ -42,6 +42,10 @@ export default function AccountPage({ session, orders }: any) {
   const router = useRouter();
 
   const [messages, setMessages] = useState([]);
+  // 🐛 DEBUG: Log session to browser console
+  useEffect(() => {
+    console.log("🔍 Session debug:", session);
+  }, [session]);
 
   useEffect(() => {
     const fetchMessages = async () => {
