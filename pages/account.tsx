@@ -1,4 +1,4 @@
-// 📄 pages/account.tsx – Account Page 💎 + Orders + Messages + Custom Requests + Navigation + Form Link Buttons
+// 📄 pages/account.tsx – Account Page 💎 + Full Profile Display
 
 import { useSession } from "next-auth/react";
 import { GetServerSideProps } from "next";
@@ -10,10 +10,6 @@ import { useRouter } from "next/router";
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
   const session = await getSession(context);
-
-  // 🐛 DEBUG: Log session to server console
-  console.log("💡 Server session:", session);
-
   if (!session) {
     return {
       redirect: {
@@ -34,7 +30,6 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
 
   return {
     props: {
-      // ✅ only pass orders, since session is now handled client-side with useSession()
       orders: JSON.parse(JSON.stringify(orders)),
     },
   };
@@ -42,17 +37,12 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
 
 export default function AccountPage({ orders }: any) {
   const { data: session } = useSession();
-
   const fullName = session?.user?.name ?? "User";
-  const name = fullName?.split(" ")[0]; // 🪪 Get first name only
+  const name = fullName?.split(" ")[0];
   const email = session?.user?.email ?? "Not available";
   const router = useRouter();
 
   const [messages, setMessages] = useState([]);
-  // 🐛 DEBUG: Log session to browser console
-  useEffect(() => {
-    console.log("🔍 Session debug:", session);
-  }, [session]);
 
   useEffect(() => {
     const fetchMessages = async () => {
@@ -73,22 +63,47 @@ export default function AccountPage({ orders }: any) {
         {/* 👤 Profile Info */}
         <div className="bg-white/10 backdrop-blur p-6 rounded-2xl shadow-lg">
           <h2 className="text-2xl font-bold mb-2 text-center">
-            {/* ✅ Safely display first name or fallback */}
             Welcome 👋 {name || "User"}
           </h2>
 
-          <div className="text-center">
-            {/* ✅ Email from session or fallback */}
-            <p className="text-sm text-gray-300 mb-6">
+          <div className="text-center mb-6">
+            <p className="text-sm text-gray-300">
               {email || "Email not available"}
             </p>
-
             <button
               onClick={() => signOut({ callbackUrl: "/" })}
-              className="bg-red-500 hover:bg-red-600 text-white px-6 py-2 rounded-lg transition"
+              className="bg-red-500 hover:bg-red-600 text-white px-6 py-2 rounded-lg transition mt-4"
             >
               Sign Out
             </button>
+          </div>
+
+          {/* 📋 Display Full Profile Info */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-300">
+            <div>
+              <span className="text-white font-medium">Phone:</span>{" "}
+              {session?.user?.phone || "Not provided"}
+            </div>
+            <div>
+              <span className="text-white font-medium">Address:</span>{" "}
+              {session?.user?.address || "Not provided"}
+            </div>
+            <div>
+              <span className="text-white font-medium">City:</span>{" "}
+              {session?.user?.city || "Not provided"}
+            </div>
+            <div>
+              <span className="text-white font-medium">State:</span>{" "}
+              {session?.user?.state || "Not provided"}
+            </div>
+            <div>
+              <span className="text-white font-medium">ZIP Code:</span>{" "}
+              {session?.user?.zip || "Not provided"}
+            </div>
+            <div>
+              <span className="text-white font-medium">Country:</span>{" "}
+              {session?.user?.country || "Not provided"}
+            </div>
           </div>
 
           {/* 🔐 Profile Actions */}
@@ -105,7 +120,6 @@ export default function AccountPage({ orders }: any) {
             >
               🔑 Change Password
             </button>
-
             <div className="sm:col-span-2 flex flex-col sm:flex-row gap-4">
               <Link
                 href="/contact?open=custom#custom-form"

@@ -1,4 +1,4 @@
-// 📄 pages/api/account/update-profile.ts – Update User Profile Info ✏️
+// 📄 pages/api/account/update-profile.ts – Update Full User Profile Info ✏️
 
 import type { NextApiRequest, NextApiResponse } from "next";
 import { getSession } from "next-auth/react";
@@ -17,8 +17,10 @@ export default async function handler(
     return res.status(401).json({ error: "Unauthorized" });
   }
 
-  const { name, email } = req.body;
+  // 🆕 Include all fields from the edit form
+  const { name, email, phone, address, city, state, zip, country } = req.body;
 
+  // ✅ Basic validation
   if (!name || !email) {
     return res.status(400).json({ error: "Name and email are required." });
   }
@@ -26,9 +28,22 @@ export default async function handler(
   try {
     const client = await clientPromise;
     const db = client.db();
-    const result = await db
-      .collection("users")
-      .updateOne({ email: session.user.email }, { $set: { name, email } });
+
+    const result = await db.collection("users").updateOne(
+      { email: session.user.email },
+      {
+        $set: {
+          name,
+          email,
+          phone,
+          address,
+          city,
+          state,
+          zip,
+          country,
+        },
+      }
+    );
 
     if (result.modifiedCount === 0) {
       return res.status(400).json({ error: "No changes made." });

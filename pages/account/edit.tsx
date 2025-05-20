@@ -1,9 +1,8 @@
-// 📄 pages/account/edit.tsx – Edit Profile Page ✏️
+// 📄 pages/account/edit.tsx – Edit Profile Page ✏️ (Expanded with Full Account Info)
 
 import { GetServerSideProps } from "next";
 import { getSession } from "next-auth/react";
 import { useState } from "react";
-import clientPromise from "@/lib/mongodb";
 import { useRouter } from "next/router";
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
@@ -27,8 +26,16 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
 
 export default function EditProfile({ session }: any) {
   const router = useRouter();
+
+  // ✏️ Fields from session or blank fallback
   const [name, setName] = useState(session?.user?.name ?? "");
   const [email, setEmail] = useState(session?.user?.email ?? "");
+  const [phone, setPhone] = useState(session?.user?.phone ?? "");
+  const [address, setAddress] = useState(session?.user?.address ?? "");
+  const [city, setCity] = useState(session?.user?.city ?? "");
+  const [state, setState] = useState(session?.user?.state ?? "");
+  const [zip, setZip] = useState(session?.user?.zip ?? "");
+  const [country, setCountry] = useState(session?.user?.country ?? "");
 
   const [status, setStatus] = useState("");
   const [loading, setLoading] = useState(false);
@@ -40,7 +47,16 @@ export default function EditProfile({ session }: any) {
     const res = await fetch("/api/account/update-profile", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, email }),
+      body: JSON.stringify({
+        name,
+        email,
+        phone,
+        address,
+        city,
+        state,
+        zip,
+        country,
+      }),
     });
 
     const data = await res.json();
@@ -59,6 +75,7 @@ export default function EditProfile({ session }: any) {
       <div className="max-w-md mx-auto bg-white/10 backdrop-blur p-6 rounded-2xl shadow-lg">
         <h1 className="text-2xl font-bold mb-6 text-center">Edit Profile ✏️</h1>
 
+        {/* 🧍 Name */}
         <label className="block text-sm mb-1">Name</label>
         <input
           type="text"
@@ -67,6 +84,7 @@ export default function EditProfile({ session }: any) {
           onChange={(e) => setName(e.target.value)}
         />
 
+        {/* 📧 Email */}
         <label className="block text-sm mb-1">Email</label>
         <input
           type="email"
@@ -75,6 +93,61 @@ export default function EditProfile({ session }: any) {
           onChange={(e) => setEmail(e.target.value)}
         />
 
+        {/* 📞 Phone */}
+        <label className="block text-sm mb-1">Phone</label>
+        <input
+          type="tel"
+          className="w-full mb-4 px-4 py-2 rounded bg-[#2a374f] text-white"
+          value={phone}
+          onChange={(e) => setPhone(e.target.value)}
+        />
+
+        {/* 🏠 Address */}
+        <label className="block text-sm mb-1">Street Address</label>
+        <input
+          type="text"
+          className="w-full mb-4 px-4 py-2 rounded bg-[#2a374f] text-white"
+          value={address}
+          onChange={(e) => setAddress(e.target.value)}
+        />
+
+        {/* 🏙️ City */}
+        <label className="block text-sm mb-1">City</label>
+        <input
+          type="text"
+          className="w-full mb-4 px-4 py-2 rounded bg-[#2a374f] text-white"
+          value={city}
+          onChange={(e) => setCity(e.target.value)}
+        />
+
+        {/* 🧭 State */}
+        <label className="block text-sm mb-1">State</label>
+        <input
+          type="text"
+          className="w-full mb-4 px-4 py-2 rounded bg-[#2a374f] text-white"
+          value={state}
+          onChange={(e) => setState(e.target.value)}
+        />
+
+        {/* 🧾 ZIP */}
+        <label className="block text-sm mb-1">ZIP Code</label>
+        <input
+          type="text"
+          className="w-full mb-4 px-4 py-2 rounded bg-[#2a374f] text-white"
+          value={zip}
+          onChange={(e) => setZip(e.target.value)}
+        />
+
+        {/* 🌍 Country */}
+        <label className="block text-sm mb-1">Country</label>
+        <input
+          type="text"
+          className="w-full mb-6 px-4 py-2 rounded bg-[#2a374f] text-white"
+          value={country}
+          onChange={(e) => setCountry(e.target.value)}
+        />
+
+        {/* 💾 Save Button */}
         <button
           onClick={handleUpdate}
           disabled={loading}

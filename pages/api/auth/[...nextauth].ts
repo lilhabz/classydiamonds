@@ -1,4 +1,4 @@
-// 📄 pages/api/auth/[...nextauth].ts – Handles login, Google/Credentials providers, and adds admin + user info to session 🛠️
+// 📄 pages/api/auth/[...nextauth].ts – Handles login, Google/Credentials providers, full session fields, and admin access 🛠️
 
 import NextAuth from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
@@ -40,6 +40,14 @@ export const authOptions = {
           name: user.name,
           email: user.email,
           isAdmin: user.isAdmin || false,
+
+          // 🆕 Extended fields from MongoDB
+          phone: user.phone || "",
+          address: user.address || "",
+          city: user.city || "",
+          state: user.state || "",
+          zip: user.zip || "",
+          country: user.country || "",
         };
       },
     }),
@@ -49,23 +57,40 @@ export const authOptions = {
     strategy: "jwt" as const,
   },
   callbacks: {
-    // ✅ Add user info to JWT
+    // ✅ Add all user info to JWT
     async jwt({ token, user }: { token: JWT; user?: User }) {
       if (user) {
         token.id = user.id;
-        token.name = user.name ?? undefined; // 👈 convert null to undefined
-        token.email = user.email ?? undefined; // 👈 convert null to undefined
+        token.name = user.name ?? undefined;
+        token.email = user.email ?? undefined;
         token.isAdmin = (user as any).isAdmin ?? false;
+
+        // 🆕 Include extended fields
+        token.phone = (user as any).phone ?? "";
+        token.address = (user as any).address ?? "";
+        token.city = (user as any).city ?? "";
+        token.state = (user as any).state ?? "";
+        token.zip = (user as any).zip ?? "";
+        token.country = (user as any).country ?? "";
       }
       return token;
     },
-    // ✅ Send user info from JWT into session
+
+    // ✅ Add all fields to session.user
     async session({ session, token }: { session: Session; token: JWT }) {
       if (session.user) {
         session.user.id = token.id as string;
         session.user.name = token.name as string;
         session.user.email = token.email as string;
         (session.user as any).isAdmin = token.isAdmin ?? false;
+
+        // 🆕 Populate session with extended fields
+        (session.user as any).phone = token.phone ?? "";
+        (session.user as any).address = token.address ?? "";
+        (session.user as any).city = token.city ?? "";
+        (session.user as any).state = token.state ?? "";
+        (session.user as any).zip = token.zip ?? "";
+        (session.user as any).country = token.country ?? "";
       }
       return session;
     },
