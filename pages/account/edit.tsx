@@ -5,6 +5,7 @@ import { GetServerSideProps } from "next";
 import { getSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
+import Breadcrumbs from "@/components/Breadcrumbs";
 
 // ✅ Server-side auth guard
 export const getServerSideProps: GetServerSideProps = async (context) => {
@@ -87,6 +88,10 @@ export default function EditProfile() {
   return (
     <div className="bg-[#1f2a36] text-white min-h-screen px-4 py-10">
       <div className="max-w-md mx-auto bg-white/10 backdrop-blur p-6 rounded-2xl shadow-lg">
+        <Breadcrumbs
+          customLabels={{ account: "Account", edit: "Edit Profile" }}
+        />
+
         <h1 className="text-2xl font-bold mb-6 text-center">Edit Profile ✏️</h1>
 
         {/* 🧍 Name */}
