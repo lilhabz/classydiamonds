@@ -1,4 +1,4 @@
-// 📄 pages/account/edit.tsx – Edit Profile Page ✏️ (Hybrid Auth + Live Prefill)
+// 📄 pages/account/edit.tsx – Edit Profile Page ✏️ (Breadcrumb Aligned Left Under Navbar)
 
 import { useSession } from "next-auth/react";
 import { GetServerSideProps } from "next";
@@ -21,7 +21,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
   }
 
   return {
-    props: {}, // we no longer pass session here, only guard access
+    props: {},
   };
 };
 
@@ -41,7 +41,6 @@ export default function EditProfile() {
   const [status, setStatus] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // ✅ Prefill form fields with live session data
   useEffect(() => {
     if (session?.user) {
       setName(session.user.name ?? "");
@@ -87,11 +86,15 @@ export default function EditProfile() {
 
   return (
     <div className="bg-[#1f2a36] text-white min-h-screen px-4 py-10">
-      <div className="max-w-md mx-auto bg-white/10 backdrop-blur p-6 rounded-2xl shadow-lg">
+      {/* 🧭 Breadcrumbs aligned under navbar and left-aligned */}
+      <div className="max-w-md mx-auto mb-6 px-2">
         <Breadcrumbs
           customLabels={{ account: "Account", edit: "Edit Profile" }}
         />
+      </div>
 
+      {/* 📄 Edit Profile Form Card */}
+      <div className="max-w-md mx-auto bg-white/10 backdrop-blur p-6 rounded-2xl shadow-lg">
         <h1 className="text-2xl font-bold mb-6 text-center">Edit Profile ✏️</h1>
 
         {/* 🧍 Name */}
