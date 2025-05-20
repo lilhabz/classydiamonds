@@ -86,14 +86,14 @@ export default function EditProfile() {
 
   return (
     <div className="bg-[#1f2a36] text-white min-h-screen px-4 py-10">
-      {/* 🧭 Breadcrumbs aligned under navbar and left-aligned */}
-      <div className="max-w-md mx-auto mb-6 px-2">
+      {/* 🧭 Breadcrumb container – spans wider than form */}
+      <div className="max-w-6xl mx-auto px-4 mb-6">
         <Breadcrumbs
           customLabels={{ account: "Account", edit: "Edit Profile" }}
         />
       </div>
 
-      {/* 📄 Edit Profile Form Card */}
+      {/* 📄 Edit Profile Form Card – centered card below breadcrumbs */}
       <div className="max-w-md mx-auto bg-white/10 backdrop-blur p-6 rounded-2xl shadow-lg">
         <h1 className="text-2xl font-bold mb-6 text-center">Edit Profile ✏️</h1>
 
