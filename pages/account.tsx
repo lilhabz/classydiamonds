@@ -1,9 +1,11 @@
-// 📄 pages/account.tsx – Full E-Commerce Account Page 💎 + UX Enhancements + Recent Orders Preview
+// 📄 pages/account.tsx – Account Page 💎 + Orders + Messages + Custom Requests + Navigation
 
 import { GetServerSideProps } from "next";
 import { getSession, signOut } from "next-auth/react";
 import clientPromise from "@/lib/mongodb";
 import Link from "next/link";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/router";
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
   const session = await getSession(context);
@@ -36,6 +38,22 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
 export default function AccountPage({ session, orders }: any) {
   const name = session?.user?.name ?? "User";
   const email = session?.user?.email ?? "Not available";
+  const router = useRouter();
+
+  const [messages, setMessages] = useState([]);
+
+  useEffect(() => {
+    const fetchMessages = async () => {
+      try {
+        const res = await fetch("/api/account/messages");
+        const data = await res.json();
+        setMessages(data);
+      } catch (err) {
+        console.error("❌ Failed to load messages:", err);
+      }
+    };
+    fetchMessages();
+  }, []);
 
   return (
     <div className="bg-[#1f2a36] text-white min-h-screen px-4 py-10">
@@ -56,10 +74,16 @@ export default function AccountPage({ session, orders }: any) {
 
           {/* 🔐 Profile Actions */}
           <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-            <button className="w-full bg-[#2a374f] hover:bg-[#364763] rounded-lg px-4 py-3 text-left">
+            <button
+              onClick={() => router.push("/account/edit")}
+              className="w-full bg-[#2a374f] hover:bg-[#364763] rounded-lg px-4 py-3 text-left"
+            >
               ✏️ Edit Profile Info
             </button>
-            <button className="w-full bg-[#2a374f] hover:bg-[#364763] rounded-lg px-4 py-3 text-left">
+            <button
+              onClick={() => router.push("/account/password")}
+              className="w-full bg-[#2a374f] hover:bg-[#364763] rounded-lg px-4 py-3 text-left"
+            >
               🔑 Change Password
             </button>
             <Link
@@ -133,6 +157,50 @@ export default function AccountPage({ session, orders }: any) {
                         </li>
                       ))}
                     </ul>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* 📬 Messages + Custom Requests Section */}
+        <div className="bg-white/10 backdrop-blur p-6 rounded-2xl shadow-lg">
+          <h3 className="text-xl font-bold mb-4">Your Messages 💬</h3>
+
+          {messages.length === 0 ? (
+            <p className="text-gray-400">
+              You haven’t submitted any messages or requests yet.
+            </p>
+          ) : (
+            <div className="space-y-4">
+              {messages.map((msg: any) => (
+                <div
+                  key={msg._id}
+                  className="border border-gray-600 rounded-lg p-4 bg-[#2a374f]"
+                >
+                  <div className="text-sm">
+                    <p className="text-gray-400 mb-1">
+                      {msg.formCategory === "custom"
+                        ? "🔧 Custom Request"
+                        : "📨 Message"}{" "}
+                      submitted on {new Date(msg.submittedAt).toLocaleString()}
+                    </p>
+                    {msg.type && (
+                      <p className="text-white">
+                        <strong>Type:</strong> {msg.type}
+                      </p>
+                    )}
+                    {msg.preference && (
+                      <p className="text-white">
+                        <strong>Preferred Contact:</strong> {msg.preference}
+                      </p>
+                    )}
+                    {(msg.message || msg.customMessage) && (
+                      <p className="text-white whitespace-pre-wrap mt-2">
+                        {msg.message || msg.customMessage}
+                      </p>
+                    )}
                   </div>
                 </div>
               ))}
