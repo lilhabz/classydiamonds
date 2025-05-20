@@ -1,4 +1,4 @@
-// 📄 pages/account.tsx – Account Page 💎 + Orders + Messages + Custom Requests + Navigation
+// 📄 pages/account.tsx – Account Page 💎 + Orders + Messages + Custom Requests + Navigation + Form Link Buttons
 
 import { GetServerSideProps } from "next";
 import { getSession, signOut } from "next-auth/react";
@@ -86,12 +86,20 @@ export default function AccountPage({ session, orders }: any) {
             >
               🔑 Change Password
             </button>
-            <Link
-              href="/custom"
-              className="w-full block bg-[#2a374f] hover:bg-[#364763] rounded-lg px-4 py-3 text-left"
-            >
-              💍 Start a Custom Jewelry Request
-            </Link>
+            <div className="sm:col-span-2 flex flex-col sm:flex-row gap-4">
+              <Link
+                href="/contact?open=custom#custom-form"
+                className="flex-1 block bg-[#2a374f] hover:bg-[#364763] rounded-lg px-4 py-3 text-left"
+              >
+                💍 Start a Custom Jewelry Request
+              </Link>
+              <Link
+                href="/contact?open=message#message-form"
+                className="flex-1 block bg-[#2a374f] hover:bg-[#364763] rounded-lg px-4 py-3 text-left"
+              >
+                📨 Submit a Message
+              </Link>
+            </div>
           </div>
         </div>
 

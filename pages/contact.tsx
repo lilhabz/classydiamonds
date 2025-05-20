@@ -1,11 +1,13 @@
-// 📄 pages/contact.tsx - Optimized Full Page (Accessibility + SEO Fixes + LCP + Lazy Map)
+// 📄 pages/contact.tsx – Updated: Auto Expand by URL Param + Desktop Form Layout Fix 💎
 
 import Head from "next/head";
 import Image from "next/image";
 import { FaPhoneAlt, FaEnvelope } from "react-icons/fa";
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/router";
 
 export default function ContactPage() {
+  const router = useRouter();
   const [messageStatus, setMessageStatus] = useState("");
   const [customStatus, setCustomStatus] = useState("");
   const [messageFile, setMessageFile] = useState<File | null>(null);
@@ -16,6 +18,12 @@ export default function ContactPage() {
   const [showMap, setShowMap] = useState(false);
   const [showCustom, setShowCustom] = useState(false);
   const [showMessage, setShowMessage] = useState(false);
+
+  // 🌐 Expand form based on query param
+  useEffect(() => {
+    if (router.query.open === "custom") setShowCustom(true);
+    if (router.query.open === "message") setShowMessage(true);
+  }, [router.query]);
 
   useEffect(() => {
     const timeout = setTimeout(() => setShowMap(true), 1500);
