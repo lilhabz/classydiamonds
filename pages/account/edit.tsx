@@ -158,7 +158,18 @@ export default function EditProfile({ session }: any) {
           {loading ? "Saving..." : "Save Changes"}
         </button>
 
-        {status && <p className="mt-4 text-center text-sm">{status}</p>}
+        {/* ✅ Styled confirmation or error message */}
+        {status && (
+          <div
+            className={`mt-4 text-center rounded-lg px-4 py-3 text-sm ${
+              status.startsWith("✅")
+                ? "bg-green-600 text-white"
+                : "bg-red-600 text-white"
+            }`}
+          >
+            {status}
+          </div>
+        )}
       </div>
     </div>
   );
