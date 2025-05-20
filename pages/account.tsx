@@ -9,6 +9,8 @@ import { useRouter } from "next/router";
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
   const session = await getSession(context);
+  // 🐛 DEBUG: Log session to server console
+  console.log("💡 Server session:", session);
 
   if (!session) {
     return {
