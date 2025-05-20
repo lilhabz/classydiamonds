@@ -36,7 +36,8 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
 };
 
 export default function AccountPage({ session, orders }: any) {
-  const name = session?.user?.name ?? "User";
+  const fullName = session?.user?.name ?? "User";
+  const name = fullName?.split(" ")[0]; // 🪪 Get first name only
   const email = session?.user?.email ?? "Not available";
   const router = useRouter();
 
@@ -57,12 +58,13 @@ export default function AccountPage({ session, orders }: any) {
 
   return (
     <div className="bg-[#1f2a36] text-white min-h-screen px-4 py-10">
-      <div className="max-w-4xl mx-auto space-y-10">
+      <div className="max-w-5xl mx-auto space-y-10">
         {/* 👤 Profile Info */}
         <div className="bg-white/10 backdrop-blur p-6 rounded-2xl shadow-lg">
-          <h2 className="text-2xl font-bold mb-2 text-center">Welcome 👋</h2>
+          <h2 className="text-2xl font-bold mb-2 text-center">
+            Welcome 👋 {name}
+          </h2>
           <div className="text-center">
-            <p className="text-lg font-semibold">{name}</p>
             <p className="text-sm text-gray-300 mb-6">{email}</p>
             <button
               onClick={() => signOut({ callbackUrl: "/" })}
