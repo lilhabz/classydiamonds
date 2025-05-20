@@ -1,8 +1,28 @@
-// 📄 pages/account/edit.tsx – Edit Profile Page ✏️ (Live Session Prefill)
+// 📄 pages/account/edit.tsx – Edit Profile Page ✏️ (Hybrid Auth + Live Prefill)
 
 import { useSession } from "next-auth/react";
-import { useState, useEffect } from "react";
+import { GetServerSideProps } from "next";
+import { getSession } from "next-auth/react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
+
+// ✅ Server-side auth guard
+export const getServerSideProps: GetServerSideProps = async (context) => {
+  const session = await getSession(context);
+
+  if (!session) {
+    return {
+      redirect: {
+        destination: "/auth",
+        permanent: false,
+      },
+    };
+  }
+
+  return {
+    props: {}, // we no longer pass session here, only guard access
+  };
+};
 
 export default function EditProfile() {
   const router = useRouter();
@@ -20,7 +40,7 @@ export default function EditProfile() {
   const [status, setStatus] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // ✅ Prefill session values into fields
+  // ✅ Prefill form fields with live session data
   useEffect(() => {
     if (session?.user) {
       setName(session.user.name ?? "");
@@ -56,7 +76,7 @@ export default function EditProfile() {
     const data = await res.json();
     if (res.ok) {
       setStatus("✅ Profile updated successfully.");
-      router.reload(); // 🔄 refresh to pull updated session
+      router.reload();
     } else {
       setStatus(`❌ ${data.error}`);
     }
