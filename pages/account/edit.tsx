@@ -1,5 +1,6 @@
 // 📄 pages/account/edit.tsx – Edit Profile Page ✏️ (Expanded with Full Account Info)
 
+import { useSession, signOut, update } from "next-auth/react";
 import { GetServerSideProps } from "next";
 import { getSession } from "next-auth/react";
 import { useState } from "react";
@@ -62,7 +63,7 @@ export default function EditProfile({ session }: any) {
     const data = await res.json();
     if (res.ok) {
       setStatus("✅ Profile updated successfully.");
-      router.replace(router.asPath);
+      await update(); // 🔄 refresh session values in place
     } else {
       setStatus(`❌ ${data.error}`);
     }
