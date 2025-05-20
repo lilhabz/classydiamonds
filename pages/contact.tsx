@@ -274,24 +274,24 @@ export default function ContactPage() {
               {/* 🔧 Anchor Offset */}
               <div
                 id="custom-form"
-                className="absolute -top-24"
+                className="absolute -top-32"
                 aria-hidden="true"
               />
 
-              {/* 🔽 Mobile Toggle Button */}
-              <div className="sm:hidden">
+              {/* 🔽 Toggle Button (Both Mobile & Desktop for Consistency) */}
+              <div className="w-full">
                 <button
                   onClick={() => setShowCustom((prev) => !prev)}
                   className="w-full text-left bg-[#25304f] text-[#e0e0e0] font-semibold px-6 py-4 border-b border-[#1f2a44]"
                 >
-                  Start Your Custom Jewelry Creation
+                  💍 Start Your Custom Jewelry Creation
                   <span className="float-right pr-2">
                     {showCustom ? "▲" : "▼"}
                   </span>
                 </button>
               </div>
 
-              {/* 🔽 Collapsible Form */}
+              {/* 📩 Form Body */}
               <div
                 className={`w-full ${showCustom ? "block" : "hidden"} sm:block`}
               >
@@ -408,24 +408,24 @@ export default function ContactPage() {
               {/* 🔧 Anchor Offset */}
               <div
                 id="message-form"
-                className="absolute -top-24"
+                className="absolute -top-32"
                 aria-hidden="true"
               />
 
-              {/* 🔽 Mobile Toggle Button */}
-              <div className="sm:hidden">
+              {/* 🔽 Toggle Button (Both Mobile & Desktop) */}
+              <div className="w-full">
                 <button
                   onClick={() => setShowMessage((prev) => !prev)}
                   className="w-full text-left bg-[#25304f] text-[#e0e0e0] font-semibold px-6 py-4 border-b border-[#1f2a44]"
                 >
-                  Send Us a Message
+                  📨 Send Us a Message
                   <span className="float-right pr-2">
                     {showMessage ? "▲" : "▼"}
                   </span>
                 </button>
               </div>
 
-              {/* 🔽 Collapsible Form */}
+              {/* 📩 Form Body */}
               <div
                 className={`w-full ${
                   showMessage ? "block" : "hidden"
