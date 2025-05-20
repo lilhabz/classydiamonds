@@ -1,46 +1,38 @@
-// 📄 pages/account/edit.tsx – Edit Profile Page ✏️ (Expanded with Full Account Info)
+// 📄 pages/account/edit.tsx – Edit Profile Page ✏️ (Live Session Prefill)
 
-import { useSession, signOut } from "next-auth/react";
-
-import { GetServerSideProps } from "next";
-import { getSession } from "next-auth/react";
-import { useState } from "react";
+import { useSession } from "next-auth/react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 
-export const getServerSideProps: GetServerSideProps = async (context) => {
-  const session = await getSession(context);
-
-  if (!session) {
-    return {
-      redirect: {
-        destination: "/auth",
-        permanent: false,
-      },
-    };
-  }
-
-  return {
-    props: {
-      session,
-    },
-  };
-};
-
-export default function EditProfile({ session }: any) {
+export default function EditProfile() {
   const router = useRouter();
+  const { data: session } = useSession();
 
-  // ✏️ Fields from session or blank fallback
-  const [name, setName] = useState(session?.user?.name ?? "");
-  const [email, setEmail] = useState(session?.user?.email ?? "");
-  const [phone, setPhone] = useState(session?.user?.phone ?? "");
-  const [address, setAddress] = useState(session?.user?.address ?? "");
-  const [city, setCity] = useState(session?.user?.city ?? "");
-  const [state, setState] = useState(session?.user?.state ?? "");
-  const [zip, setZip] = useState(session?.user?.zip ?? "");
-  const [country, setCountry] = useState(session?.user?.country ?? "");
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [address, setAddress] = useState("");
+  const [city, setCity] = useState("");
+  const [state, setState] = useState("");
+  const [zip, setZip] = useState("");
+  const [country, setCountry] = useState("");
 
   const [status, setStatus] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // ✅ Prefill session values into fields
+  useEffect(() => {
+    if (session?.user) {
+      setName(session.user.name ?? "");
+      setEmail(session.user.email ?? "");
+      setPhone(session.user.phone ?? "");
+      setAddress(session.user.address ?? "");
+      setCity(session.user.city ?? "");
+      setState(session.user.state ?? "");
+      setZip(session.user.zip ?? "");
+      setCountry(session.user.country ?? "");
+    }
+  }, [session]);
 
   const handleUpdate = async () => {
     setLoading(true);
@@ -64,7 +56,7 @@ export default function EditProfile({ session }: any) {
     const data = await res.json();
     if (res.ok) {
       setStatus("✅ Profile updated successfully.");
-      router.reload();
+      router.reload(); // 🔄 refresh to pull updated session
     } else {
       setStatus(`❌ ${data.error}`);
     }
