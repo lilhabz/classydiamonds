@@ -87,7 +87,7 @@ export default function EditProfile() {
   return (
     <div className="bg-[#1f2a36] text-white min-h-screen px-4 py-10">
       {/* 🧭 Breadcrumb container – pushed up under navbar */}
-      <div className="pl-4 pr-4 sm:pl-8 sm:pr-8 mb-6 -mt-4">
+      <div className="pl-4 pr-4 sm:pl-8 sm:pr-8 mb-6 -mt-2">
         <Breadcrumbs
           customLabels={{ account: "Account", edit: "Edit Profile" }}
         />
