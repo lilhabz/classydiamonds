@@ -1,5 +1,6 @@
 // 📄 pages/account.tsx – Account Page 💎 + Orders + Messages + Custom Requests + Navigation + Form Link Buttons
 
+import { useSession } from "next-auth/react";
 import { GetServerSideProps } from "next";
 import { getSession, signOut } from "next-auth/react";
 import clientPromise from "@/lib/mongodb";
@@ -9,6 +10,7 @@ import { useRouter } from "next/router";
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
   const session = await getSession(context);
+
   // 🐛 DEBUG: Log session to server console
   console.log("💡 Server session:", session);
 
@@ -23,6 +25,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
 
   const client = await clientPromise;
   const db = client.db();
+
   const orders = await db
     .collection("orders")
     .find({ customerEmail: session.user?.email })
@@ -31,13 +34,15 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
 
   return {
     props: {
-      session,
+      // ✅ only pass orders, since session is now handled client-side with useSession()
       orders: JSON.parse(JSON.stringify(orders)),
     },
   };
 };
 
-export default function AccountPage({ session, orders }: any) {
+export default function AccountPage({ orders }: any) {
+  const { data: session } = useSession();
+
   const fullName = session?.user?.name ?? "User";
   const name = fullName?.split(" ")[0]; // 🪪 Get first name only
   const email = session?.user?.email ?? "Not available";
