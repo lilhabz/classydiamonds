@@ -1,8 +1,8 @@
-// 📄 pages/api/account/update-profile.ts – Update Full User Profile Info ✏️
+// 📄 pages/api/account/update-profile.ts – Update Full User Profile Info ✏️ (JWT-safe)
 
 import type { NextApiRequest, NextApiResponse } from "next";
-import { getSession } from "next-auth/react";
 import clientPromise from "@/lib/mongodb";
+import { getToken } from "next-auth/jwt";
 
 export default async function handler(
   req: NextApiRequest,
@@ -12,15 +12,16 @@ export default async function handler(
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const session = await getSession({ req });
-  if (!session?.user?.email) {
+  // 🔐 Use JWT-safe token instead of getSession()
+  const token = await getToken({ req });
+  if (!token?.email) {
     return res.status(401).json({ error: "Unauthorized" });
   }
 
-  // 🆕 Include all fields from the edit form
+  // 🧾 Pull data from the POST body
   const { name, email, phone, address, city, state, zip, country } = req.body;
 
-  // ✅ Basic validation
+  // ✅ Validate required fields
   if (!name || !email) {
     return res.status(400).json({ error: "Name and email are required." });
   }
@@ -29,8 +30,9 @@ export default async function handler(
     const client = await clientPromise;
     const db = client.db();
 
+    // 🛠️ Update user profile using email from JWT token
     const result = await db.collection("users").updateOne(
-      { email: session.user.email },
+      { email: token.email },
       {
         $set: {
           name,
