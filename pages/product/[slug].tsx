@@ -1,4 +1,4 @@
-// 📄 pages/product/[slug].tsx – Dynamic Product Detail Page (SEO + Accessibility + Performance Optimized)
+// 📄 pages/product/[slug].tsx – Breadcrumb Added + SEO/A11Y Optimized
 
 "use client";
 
@@ -7,19 +7,16 @@ import { productsData } from "@/data/productsData";
 import { useCart } from "@/context/CartContext";
 import Head from "next/head";
 import Image from "next/image";
+import Breadcrumbs from "@/components/Breadcrumbs";
 
 export default function ProductPage() {
   const router = useRouter();
   const { slug } = router.query;
   const { addToCart } = useCart();
 
-  if (!slug) {
-    return null; // ⏳ Wait for the slug to be ready
-  }
+  if (!slug) return null;
 
-  // 🔍 Find the product by slug
   const product = productsData.find((item) => item.slug === slug);
-
   if (!product) {
     return (
       <div className="min-h-screen flex flex-col bg-[#1f2a44] text-[#e0e0e0] items-center justify-center">
@@ -33,7 +30,6 @@ export default function ProductPage() {
 
   return (
     <>
-      {/* 🧠 SEO Head Tags */}
       <Head>
         <title>{product.name} | Classy Diamonds</title>
         <meta name="description" content={product.description} />
@@ -53,11 +49,14 @@ export default function ProductPage() {
         />
       </Head>
 
-      {/* 💎 Page Container - Nav & Footer are global */}
       <div className="min-h-screen flex flex-col bg-[#1f2a44] text-[#e0e0e0]">
-        {/* 🚀 Hero Product Section */}
-        <section className="-mt-20 pt-32 pb-16 px-6 max-w-7xl mx-auto flex flex-col md:flex-row items-center gap-12">
-          {/* 🖼 Product Image */}
+        {/* 🗺 Breadcrumb */}
+        <div className="pl-4 pr-4 sm:pl-8 sm:pr-8 mb-6 mt-6">
+          <Breadcrumbs customLabels={{ product: product.name }} />
+        </div>
+
+        {/* 💎 Product Detail Section */}
+        <section className="pt-10 pb-16 px-6 max-w-7xl mx-auto flex flex-col md:flex-row items-center gap-12">
           <div className="w-full md:w-1/2 overflow-hidden rounded-2xl shadow-lg">
             <Image
               src={product.image}
@@ -70,7 +69,6 @@ export default function ProductPage() {
             />
           </div>
 
-          {/* 📜 Product Info */}
           <div className="w-full md:w-1/2 flex flex-col gap-6">
             <h1 className="text-4xl font-bold text-white">{product.name}</h1>
             <p className="text-lg text-[#cfd2d6]">{product.description}</p>
@@ -78,7 +76,6 @@ export default function ProductPage() {
               ${product.price.toLocaleString()}
             </p>
 
-            {/* 🛒 Add to Cart Button */}
             <button
               onClick={() =>
                 addToCart({
