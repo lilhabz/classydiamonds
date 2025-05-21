@@ -1,4 +1,4 @@
-// 📄 pages/account/orders.tsx – Fresh Data Upgrade 💎
+// 📄 pages/account/orders.tsx – Breadcrumb Added + Fresh Data Upgrade 💎
 
 import { GetServerSideProps } from "next";
 import { getSession } from "next-auth/react";
@@ -6,6 +6,7 @@ import clientPromise from "@/lib/mongodb";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/router";
+import Breadcrumbs from "@/components/Breadcrumbs";
 
 const ORDERS_PER_PAGE = 5;
 
@@ -86,6 +87,12 @@ export default function OrdersPage({
 
   return (
     <div className="bg-[#1f2a36] text-white min-h-screen px-4 py-10">
+      <div className="pl-4 pr-4 sm:pl-8 sm:pr-8 mb-6 -mt-2">
+        <Breadcrumbs
+          customLabels={{ account: "Account", orders: "Order History" }}
+        />
+      </div>
+
       <div className="max-w-4xl mx-auto space-y-8">
         <h1 className="text-2xl font-bold text-center">
           {user?.name?.split(" ")[0] || "Your"} Orders 📦
