@@ -84,6 +84,7 @@ export default function ProductPage() {
               [slug]: product.name,
             }}
             customPaths={{
+              [slug]: `/product/${slug}`,
               category: `/category/${category}`,
             }}
           />
