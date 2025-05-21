@@ -1,14 +1,13 @@
-// 📄 pages/account/password.tsx – Change Password Page 🛡️💎
+// 📄 pages/account/password.tsx – Change Password Page 🛡️💎 (Improved UI + Breadcrumb)
 
 import { useState } from "react";
 import Head from "next/head";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import { useSession } from "next-auth/react";
-import { useRouter } from "next/router";
+import Breadcrumbs from "@/components/Breadcrumbs";
 
 export default function ChangePasswordPage() {
   const { data: session } = useSession();
-  const router = useRouter();
 
   const [oldPassword, setOldPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -86,8 +85,15 @@ export default function ChangePasswordPage() {
         <title>Change Password | Classy Diamonds</title>
       </Head>
 
-      <main className="bg-[#1f2a36] text-white min-h-screen flex items-center justify-center px-4 py-12">
-        <div className="w-full max-w-md bg-white/10 backdrop-blur p-8 rounded-2xl shadow-lg">
+      <main className="bg-[#1f2a36] text-white min-h-screen px-4 py-10">
+        {/* 🧭 Breadcrumb */}
+        <div className="pl-4 pr-4 sm:pl-8 sm:pr-8 mb-6 -mt-2">
+          <Breadcrumbs
+            customLabels={{ account: "Account", password: "Change Password" }}
+          />
+        </div>
+
+        <div className="max-w-md mx-auto bg-white/10 backdrop-blur p-8 rounded-2xl shadow-lg">
           <h2 className="text-2xl font-bold mb-6 text-center">
             🔑 Change Your Password
           </h2>
@@ -171,15 +177,6 @@ export default function ChangePasswordPage() {
               {loading ? "Updating..." : "Update Password"}
             </button>
           </form>
-
-          <div className="text-center mt-6">
-            <button
-              onClick={() => router.push("/account")}
-              className="text-blue-400 text-sm hover:underline"
-            >
-              ← Back to Account
-            </button>
-          </div>
         </div>
       </main>
     </>
