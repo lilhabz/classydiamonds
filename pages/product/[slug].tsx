@@ -1,4 +1,4 @@
-// 📄 pages/product/[slug].tsx – Breadcrumb Added + SEO/A11Y Optimized
+// 📄 pages/product/[slug].tsx – Breadcrumb Added + SEO/A11Y Optimized ✅
 
 "use client";
 
@@ -8,6 +8,7 @@ import { useCart } from "@/context/CartContext";
 import Head from "next/head";
 import Image from "next/image";
 import Breadcrumbs from "@/components/Breadcrumbs";
+import Link from "next/link";
 
 export default function ProductPage() {
   const router = useRouter();
@@ -28,8 +29,11 @@ export default function ProductPage() {
     );
   }
 
+  const category = product.category || "jewelry";
+
   return (
     <>
+      {/* 🧠 SEO Head Tags */}
       <Head>
         <title>{product.name} | Classy Diamonds</title>
         <meta name="description" content={product.description} />
@@ -49,14 +53,24 @@ export default function ProductPage() {
         />
       </Head>
 
+      {/* 💎 Page Container */}
       <div className="min-h-screen flex flex-col bg-[#1f2a44] text-[#e0e0e0]">
         {/* 🗺 Breadcrumb */}
         <div className="pl-4 pr-4 sm:pl-8 sm:pr-8 mb-6 mt-6">
-          <Breadcrumbs customLabels={{ product: product.name }} />
+          <Breadcrumbs
+            customLabels={{
+              category: category.replace(/-/g, " "),
+              product: product.name,
+            }}
+            customPaths={{
+              category: `/category/${category}`,
+            }}
+          />
         </div>
 
         {/* 💎 Product Detail Section */}
         <section className="pt-10 pb-16 px-6 max-w-7xl mx-auto flex flex-col md:flex-row items-center gap-12">
+          {/* 🖼 Product Image */}
           <div className="w-full md:w-1/2 overflow-hidden rounded-2xl shadow-lg">
             <Image
               src={product.image}
@@ -69,6 +83,7 @@ export default function ProductPage() {
             />
           </div>
 
+          {/* 📜 Product Info */}
           <div className="w-full md:w-1/2 flex flex-col gap-6">
             <h1 className="text-4xl font-bold text-white">{product.name}</h1>
             <p className="text-lg text-[#cfd2d6]">{product.description}</p>

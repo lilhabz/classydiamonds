@@ -1,4 +1,4 @@
-// /data/productsData.ts
+// /data/productsData.ts (featured with categories added)
 
 export const productsData = [
   {
@@ -9,6 +9,7 @@ export const productsData = [
     image: "/products/placeholder.jpg",
     description:
       "A stunning handcrafted diamond ring perfect for your special moment.",
+    category: "rings",
   },
   {
     id: 2,
@@ -17,6 +18,7 @@ export const productsData = [
     price: 1800,
     image: "/products/placeholder.jpg",
     description: "A luxurious gold tennis bracelet with elegant craftsmanship.",
+    category: "bracelets",
   },
   {
     id: 3,
@@ -25,6 +27,7 @@ export const productsData = [
     price: 2500,
     image: "/products/placeholder.jpg",
     description: "A gorgeous sapphire pendant necklace set in fine gold.",
+    category: "necklaces",
   },
   {
     id: 4,
@@ -33,5 +36,6 @@ export const productsData = [
     price: 950,
     image: "/products/placeholder.jpg",
     description: "Elegant pearl drop earrings perfect for special occasions.",
+    category: "earrings",
   },
 ];
