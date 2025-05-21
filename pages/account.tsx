@@ -1,8 +1,8 @@
-// 📄 pages/account.tsx – Account Page 💎 + Full Profile Display
+// 📄 pages/account.tsx – Account Page 💎 + Full Profile Display + Mobile Fix ✅
 
-import { useSession } from "next-auth/react";
+import { useSession, signOut } from "next-auth/react";
 import { GetServerSideProps } from "next";
-import { getSession, signOut } from "next-auth/react";
+import { getSession } from "next-auth/react";
 import clientPromise from "@/lib/mongodb";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -22,6 +22,24 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
   const client = await clientPromise;
   const db = client.db();
 
+  // 🧠 Fetch user data directly from DB to avoid stale session cache (mobile bug fix)
+  const user = await db.collection("users").findOne(
+    { email: session.user.email },
+    {
+      projection: {
+        _id: 0,
+        name: 1,
+        email: 1,
+        phone: 1,
+        address: 1,
+        city: 1,
+        state: 1,
+        zip: 1,
+        country: 1,
+      },
+    }
+  );
+
   const orders = await db
     .collection("orders")
     .find({ customerEmail: session.user?.email })
@@ -30,17 +48,19 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
 
   return {
     props: {
+      user: JSON.parse(JSON.stringify(user)), // to safely pass to client
       orders: JSON.parse(JSON.stringify(orders)),
     },
   };
 };
 
-export default function AccountPage({ orders }: any) {
+export default function AccountPage({ user, orders }: any) {
   const { data: session } = useSession();
-  const fullName = session?.user?.name ?? "User";
-  const name = fullName?.split(" ")[0];
-  const email = session?.user?.email ?? "Not available";
   const router = useRouter();
+
+  const fullName = user?.name ?? "User";
+  const firstName = fullName?.split(" ")[0];
+  const email = user?.email ?? "Not available";
 
   const [messages, setMessages] = useState([]);
 
@@ -63,13 +83,11 @@ export default function AccountPage({ orders }: any) {
         {/* 👤 Profile Info */}
         <div className="bg-white/10 backdrop-blur p-6 rounded-2xl shadow-lg">
           <h2 className="text-2xl font-bold mb-2 text-center">
-            Welcome 👋 {name || "User"}
+            Welcome 👋 {firstName}
           </h2>
 
           <div className="text-center mb-6">
-            <p className="text-sm text-gray-300">
-              {email || "Email not available"}
-            </p>
+            <p className="text-sm text-gray-300">{email}</p>
             <button
               onClick={() => signOut({ callbackUrl: "/" })}
               className="bg-red-500 hover:bg-red-600 text-white px-6 py-2 rounded-lg transition mt-4"
@@ -82,27 +100,27 @@ export default function AccountPage({ orders }: any) {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-300">
             <div>
               <span className="text-white font-medium">Phone:</span>{" "}
-              {session?.user?.phone || "Not provided"}
+              {user?.phone || "Not provided"}
             </div>
             <div>
               <span className="text-white font-medium">Address:</span>{" "}
-              {session?.user?.address || "Not provided"}
+              {user?.address || "Not provided"}
             </div>
             <div>
               <span className="text-white font-medium">City:</span>{" "}
-              {session?.user?.city || "Not provided"}
+              {user?.city || "Not provided"}
             </div>
             <div>
               <span className="text-white font-medium">State:</span>{" "}
-              {session?.user?.state || "Not provided"}
+              {user?.state || "Not provided"}
             </div>
             <div>
               <span className="text-white font-medium">ZIP Code:</span>{" "}
-              {session?.user?.zip || "Not provided"}
+              {user?.zip || "Not provided"}
             </div>
             <div>
               <span className="text-white font-medium">Country:</span>{" "}
-              {session?.user?.country || "Not provided"}
+              {user?.country || "Not provided"}
             </div>
           </div>
 

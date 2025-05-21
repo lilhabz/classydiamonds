@@ -1,4 +1,4 @@
-// 📄 pages/account/orders.tsx – Full Order History Page 💎 + Images + Pagination + Filters + PDF
+// 📄 pages/account/orders.tsx – Fresh Data Upgrade 💎
 
 import { GetServerSideProps } from "next";
 import { getSession } from "next-auth/react";
@@ -11,7 +11,6 @@ const ORDERS_PER_PAGE = 5;
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
   const session = await getSession(context);
-
   if (!session) {
     return {
       redirect: {
@@ -21,12 +20,12 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
     };
   }
 
+  const client = await clientPromise;
+  const db = client.db();
+
   const page = parseInt((context.query.page as string) || "1", 10);
   const shippedFilter = context.query.shipped;
   const skip = (page - 1) * ORDERS_PER_PAGE;
-
-  const client = await clientPromise;
-  const db = client.db();
 
   const filter: any = { customerEmail: session.user?.email };
   if (shippedFilter === "true") filter.shipped = true;
@@ -41,9 +40,26 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
     .limit(ORDERS_PER_PAGE)
     .toArray();
 
+  const user = await db.collection("users").findOne(
+    { email: session.user.email },
+    {
+      projection: {
+        _id: 0,
+        name: 1,
+        email: 1,
+        phone: 1,
+        address: 1,
+        city: 1,
+        state: 1,
+        zip: 1,
+        country: 1,
+      },
+    }
+  );
+
   return {
     props: {
-      session,
+      user: JSON.parse(JSON.stringify(user)),
       orders: JSON.parse(JSON.stringify(orders)),
       currentPage: page,
       totalPages: Math.ceil(totalOrders / ORDERS_PER_PAGE),
@@ -53,6 +69,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
 };
 
 export default function OrdersPage({
+  user,
   orders,
   currentPage,
   totalPages,
@@ -70,7 +87,9 @@ export default function OrdersPage({
   return (
     <div className="bg-[#1f2a36] text-white min-h-screen px-4 py-10">
       <div className="max-w-4xl mx-auto space-y-8">
-        <h1 className="text-2xl font-bold text-center">Your Orders 📦</h1>
+        <h1 className="text-2xl font-bold text-center">
+          {user?.name?.split(" ")[0] || "Your"} Orders 📦
+        </h1>
 
         {/* 🔍 Filters */}
         <div className="flex justify-center gap-4">

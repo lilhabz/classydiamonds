@@ -1,4 +1,4 @@
-// 📄 pages/account/messages.tsx – View All Messages Page 💬 + Pagination + Layout Match
+// 📄 pages/account/messages.tsx – Fresh Data Upgrade 💬 (Real-Time MongoDB)
 
 import { GetServerSideProps } from "next";
 import { getSession } from "next-auth/react";
@@ -8,7 +8,6 @@ import Link from "next/link";
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
   const session = await getSession(context);
-
   if (!session) {
     return {
       redirect: {
@@ -20,25 +19,36 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
 
   const client = await clientPromise;
   const db = client.db();
+
+  const user = await db.collection("users").findOne(
+    { email: session.user.email },
+    {
+      projection: {
+        _id: 0,
+        name: 1,
+        email: 1,
+      },
+    }
+  );
+
   const allMessages = await db
     .collection("messages")
-    .find({ email: session.user?.email })
+    .find({ email: session.user.email })
     .sort({ submittedAt: -1 })
     .toArray();
 
   return {
     props: {
-      session,
+      user: JSON.parse(JSON.stringify(user)),
       messages: JSON.parse(JSON.stringify(allMessages)),
     },
   };
 };
 
-export default function AllMessagesPage({ messages }: any) {
+export default function AllMessagesPage({ user, messages }: any) {
   const [page, setPage] = useState(1);
   const perPage = 5;
   const totalPages = Math.ceil(messages.length / perPage);
-
   const currentMessages = messages.slice((page - 1) * perPage, page * perPage);
 
   return (
@@ -46,7 +56,9 @@ export default function AllMessagesPage({ messages }: any) {
       <div className="max-w-5xl mx-auto space-y-10">
         {/* 🧭 Page Title */}
         <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-bold">All Messages & Requests 💬</h1>
+          <h1 className="text-2xl font-bold">
+            {user?.name?.split(" ")[0] || "Your"}'s Messages 💬
+          </h1>
           <Link
             href="/account"
             className="text-sm text-blue-400 hover:underline"
