@@ -1,23 +1,38 @@
-// 📄 pages/product/[slug].tsx – Breadcrumb Added + SEO/A11Y Optimized ✅
+// 📄 pages/product/[slug].tsx – Breadcrumb Fixed + SEO/A11Y Optimized ✅
 
 "use client";
 
 import { useRouter } from "next/router";
 import { productsData } from "@/data/productsData";
+import { jewelryData } from "@/data/jewelryData";
 import { useCart } from "@/context/CartContext";
 import Head from "next/head";
 import Image from "next/image";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import Link from "next/link";
 
+// 🛠 Extended type to support `description`
+type ProductType = {
+  id: number;
+  name: string;
+  price: number;
+  image: string;
+  slug: string;
+  category: string;
+  description?: string;
+};
+
 export default function ProductPage() {
   const router = useRouter();
   const { slug } = router.query;
   const { addToCart } = useCart();
 
-  if (!slug) return null;
+  if (!slug || typeof slug !== "string") return null;
 
-  const product = productsData.find((item) => item.slug === slug);
+  // 🔄 Search both featured and full collection
+  const allProducts: ProductType[] = [...productsData, ...jewelryData];
+  const product = allProducts.find((item) => item.slug === slug);
+
   if (!product) {
     return (
       <div className="min-h-screen flex flex-col bg-[#1f2a44] text-[#e0e0e0] items-center justify-center">
@@ -36,13 +51,19 @@ export default function ProductPage() {
       {/* 🧠 SEO Head Tags */}
       <Head>
         <title>{product.name} | Classy Diamonds</title>
-        <meta name="description" content={product.description} />
+        <meta
+          name="description"
+          content={product.description || product.name}
+        />
         <meta name="robots" content="index, follow" />
         <meta
           property="og:title"
           content={`${product.name} | Classy Diamonds`}
         />
-        <meta property="og:description" content={product.description} />
+        <meta
+          property="og:description"
+          content={product.description || product.name}
+        />
         <meta
           property="og:image"
           content={`https://classydiamonds.vercel.app${product.image}`}
@@ -60,7 +81,7 @@ export default function ProductPage() {
           <Breadcrumbs
             customLabels={{
               category: category.replace(/-/g, " "),
-              product: product.name,
+              [slug]: product.name,
             }}
             customPaths={{
               category: `/category/${category}`,
@@ -86,7 +107,9 @@ export default function ProductPage() {
           {/* 📜 Product Info */}
           <div className="w-full md:w-1/2 flex flex-col gap-6">
             <h1 className="text-4xl font-bold text-white">{product.name}</h1>
-            <p className="text-lg text-[#cfd2d6]">{product.description}</p>
+            <p className="text-lg text-[#cfd2d6]">
+              {product.description || "Beautiful handcrafted piece."}
+            </p>
             <p className="text-2xl font-semibold text-white">
               ${product.price.toLocaleString()}
             </p>
