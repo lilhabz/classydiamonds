@@ -80,12 +80,12 @@ export default function ProductPage() {
         <div className="pl-4 pr-4 sm:pl-8 sm:pr-8 mb-6 mt-6">
           <Breadcrumbs
             customLabels={{
-              category: category.replace(/-/g, " "),
+              [category]: category.replace(/-/g, " "),
               [slug]: product.name,
             }}
             customPaths={{
+              [category]: `/category/${category}`,
               [slug]: `/product/${slug}`,
-              category: `/category/${category}`,
             }}
           />
         </div>
