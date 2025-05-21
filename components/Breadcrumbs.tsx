@@ -1,19 +1,24 @@
-// 📂 components/Breadcrumbs.tsx
+// 📂 components/Breadcrumbs.tsx – Now supports customPaths ✅
 
 import Link from "next/link";
 import { useRouter } from "next/router";
-import slugify from "slugify";
 
 export default function Breadcrumbs({
   customLabels = {},
+  customPaths = {},
 }: {
   customLabels?: Record<string, string>;
+  customPaths?: Record<string, string>;
 }) {
   const router = useRouter();
   const segments = router.asPath.split("?")[0].split("/").filter(Boolean);
 
-  const buildHref = (index: number) =>
-    "/" + segments.slice(0, index + 1).join("/");
+  const buildHref = (index: number) => {
+    const segmentKey = segments[index];
+    return (
+      customPaths[segmentKey] || "/" + segments.slice(0, index + 1).join("/")
+    );
+  };
 
   return (
     <nav className="text-sm text-gray-400 mb-4 px-2">
@@ -27,7 +32,7 @@ export default function Breadcrumbs({
           const href = buildHref(i);
           const label =
             customLabels[seg] ??
-            seg.replace(/-/g, " ").replace(/^\w/, (c) => c.toUpperCase());
+            seg.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
           return (
             <li key={i} className="flex items-center">
               <span className="mx-1">›</span>
