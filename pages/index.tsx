@@ -1,4 +1,4 @@
-// 📄 pages/index.tsx – 💎 (Now with Desktop Accessibility Fixes ♿)
+// 📄 pages/index.tsx – Tiffany Swipe Rebuild 💎 (Now with Desktop Accessibility Fixes ♿)
 
 "use client";
 
@@ -201,6 +201,7 @@ const Home = () => {
                     scroll: "true", // ✅ tells /jewelry to scroll on load
                   },
                 }}
+                scroll={false} // prevents instant jump so we can smooth scroll later
                 className="group relative rounded-xl overflow-hidden shadow-md hover:shadow-xl hover:scale-105 transition-transform duration-300"
               >
                 <div className="relative aspect-[4/3] w-full">
