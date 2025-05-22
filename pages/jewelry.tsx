@@ -65,7 +65,7 @@ export default function JewelryPage() {
         const navEl = document.querySelector("nav");
         const navHeight = navEl ? navEl.clientHeight : 0;
         window.scrollTo({
-          top: headerY - navHeight - 50, // 10px padding from navbar
+          top: headerY - navHeight - 60, // 10px padding from navbar
           behavior: "smooth",
         });
       }
