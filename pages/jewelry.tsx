@@ -1,4 +1,4 @@
-// 📄 pages/jewelry.tsx – Now with Category Filtering + Dynamic Title/Meta ✅
+// 📄 pages/jewelry.tsx – Filter System Updated + Scroll Fix 💎
 
 "use client";
 
@@ -16,6 +16,7 @@ export default function JewelryPage() {
   const [filteredCategory, setFilteredCategory] = useState<string | null>(null);
   const productsEndRef = useRef<HTMLDivElement>(null);
   const productGridRef = useRef<HTMLDivElement>(null);
+  const headerRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -44,7 +45,7 @@ export default function JewelryPage() {
       shallow: true,
     });
     setTimeout(() => {
-      productGridRef.current?.scrollIntoView({ behavior: "smooth" });
+      headerRef.current?.scrollIntoView({ behavior: "smooth" });
     }, 100);
   };
 
@@ -95,48 +96,54 @@ export default function JewelryPage() {
       </section>
 
       {/* 💎 Jewelry Grid */}
-      <section className="pb-16 sm:pb-20 px-4 sm:px-6 max-w-7xl mx-auto">
-        <h2 className="text-2xl sm:text-3xl font-semibold text-center mb-4 sm:mb-6">
-          {filteredCategory
-            ? filteredCategory
-                .replace(/-/g, " ")
-                .replace(/\b\w/g, (l) => l.toUpperCase())
-            : "Our Jewelry"}
-        </h2>
+      <section className="pt-32 pb-16 sm:pb-20 px-4 sm:px-6 max-w-7xl mx-auto">
+        <div ref={headerRef}>
+          <h2 className="text-2xl sm:text-3xl font-semibold text-center mb-4 sm:mb-6">
+            {filteredCategory
+              ? filteredCategory
+                  .replace(/-/g, " ")
+                  .replace(/\b\w/g, (l) => l.toUpperCase())
+              : "Our Jewelry"}
+          </h2>
 
-        <p className="text-center text-[#cfd2d6] max-w-2xl mx-auto mb-12 sm:mb-12 text-base sm:text-lg">
-          Browse our exclusive collection of fine jewelry, meticulously crafted
-          to celebrate life's most treasured moments.
-        </p>
+          <p className="text-center text-[#cfd2d6] max-w-2xl mx-auto mb-12 sm:mb-12 text-base sm:text-lg">
+            Browse our exclusive collection of fine jewelry, meticulously
+            crafted to celebrate life's most treasured moments.
+          </p>
 
-        {/* 🧭 Filter Buttons Below Description */}
-        <div className="flex flex-wrap gap-3 justify-center mb-16">
-          {[
-            "All",
-            "Engagement",
-            "Wedding Bands",
-            "Rings",
-            "Bracelets",
-            "Necklaces",
-            "Earrings",
-          ].map((cat) => (
-            <button
-              key={cat}
-              onClick={() =>
-                handleFilter(
-                  cat === "All" ? null : cat.toLowerCase().replace(/\s+/g, "-")
-                )
-              }
-              className={`px-5 py-2 rounded-full text-sm font-semibold transition ${
-                filteredCategory ===
-                (cat === "All" ? null : cat.toLowerCase().replace(/\s+/g, "-"))
-                  ? "bg-white text-[#1f2a44]"
-                  : "bg-[#25304f] text-white hover:bg-[#2f3b5e]"
-              }`}
-            >
-              {cat}
-            </button>
-          ))}
+          {/* 🧭 Filter Buttons Below Description */}
+          <div className="flex flex-wrap gap-3 justify-center mb-16">
+            {[
+              "All",
+              "Engagement",
+              "Wedding Bands",
+              "Rings",
+              "Bracelets",
+              "Necklaces",
+              "Earrings",
+            ].map((cat) => (
+              <button
+                key={cat}
+                onClick={() =>
+                  handleFilter(
+                    cat === "All"
+                      ? null
+                      : cat.toLowerCase().replace(/\s+/g, "-")
+                  )
+                }
+                className={`px-5 py-2 rounded-full text-sm font-semibold transition ${
+                  filteredCategory ===
+                  (cat === "All"
+                    ? null
+                    : cat.toLowerCase().replace(/\s+/g, "-"))
+                    ? "bg-white text-[#1f2a44]"
+                    : "bg-[#25304f] text-white hover:bg-[#2f3b5e]"
+                }`}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
         </div>
 
         <div
