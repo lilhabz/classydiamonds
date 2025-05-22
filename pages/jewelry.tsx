@@ -27,15 +27,43 @@ export default function JewelryPage() {
   // 🧭 Router for shallow pushes on filter change
   const router = useRouter();
 
-  // 🎯 On mount & query change, sync filter state
   useEffect(() => {
     const queryCategory = router.query.category;
+    const shouldScroll = router.query.scroll === "true";
+
     if (typeof queryCategory === "string") {
       setFilteredCategory(queryCategory.toLowerCase());
+
+      if (shouldScroll) {
+        setTimeout(() => {
+          if (headerRef.current) {
+            const headerY =
+              headerRef.current.getBoundingClientRect().top +
+              window.pageYOffset;
+            const navEl = document.querySelector("nav");
+            const navHeight = navEl ? navEl.clientHeight : 0;
+
+            window.scrollTo({
+              top: headerY - navHeight - 60, // ✅ match your working offset
+              behavior: "smooth",
+            });
+
+            // 🧼 Optional: Clean up scroll=true from the URL
+            router.replace(
+              {
+                pathname: "/jewelry",
+                query: { category: router.query.category },
+              },
+              undefined,
+              { shallow: true }
+            );
+          }
+        }, 300);
+      }
     } else {
       setFilteredCategory(null);
     }
-  }, [router.query.category]);
+  }, [router.query.category, router.query.scroll]);
 
   // 🔄 Apply filter to full data
   const filteredProducts = filteredCategory
