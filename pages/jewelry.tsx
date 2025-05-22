@@ -45,7 +45,10 @@ export default function JewelryPage() {
       shallow: true,
     });
     setTimeout(() => {
-      headerRef.current?.scrollIntoView({ behavior: "smooth" });
+      window.scrollTo({
+        top: headerRef.current?.offsetTop! - 100, // 🛠 Adjust scroll to sit above heading
+        behavior: "smooth",
+      });
     }, 100);
   };
 
