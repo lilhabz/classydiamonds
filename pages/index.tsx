@@ -76,7 +76,7 @@ const Home = () => {
                 className="bg-[#25304f] rounded-2xl shadow-lg flex flex-col"
               >
                 <Link
-                  href={`/product/${item.slug}`}
+                  href={`/category/${item.category}/${item.slug}`}
                   className="flex-1 flex flex-col"
                   aria-label={`View ${item.name}`}
                 >
@@ -127,7 +127,7 @@ const Home = () => {
                 className="group bg-[#25304f] rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl hover:ring-2 hover:ring-[#e0e0e0] hover:scale-105 transition-all duration-300 flex flex-col cursor-pointer"
               >
                 <Link
-                  href={`/product/${item.slug}`}
+                  href={`/category/${item.category}/${item.slug}`}
                   className="flex-1 flex flex-col"
                   aria-label={`View ${item.name}`}
                 >

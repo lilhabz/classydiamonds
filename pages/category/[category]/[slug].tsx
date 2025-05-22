@@ -1,17 +1,15 @@
-// 📄 pages/product/[slug].tsx – Breadcrumb Fixed + SEO/A11Y Optimized ✅
+// 📄 pages/category/[category]/[slug].tsx – Final Product Page with Breadcrumb Fix ✅
 
 "use client";
 
 import { useRouter } from "next/router";
 import { productsData } from "@/data/productsData";
-import { jewelryData as fullJewelryData } from "@/data/jewelryData";
+import { jewelryData } from "@/data/jewelryData";
 import { useCart } from "@/context/CartContext";
 import Head from "next/head";
 import Image from "next/image";
 import Breadcrumbs from "@/components/Breadcrumbs";
-import Link from "next/link";
 
-// 🛠 Extended type to support `description`
 type ProductType = {
   id: number;
   name: string;
@@ -24,19 +22,25 @@ type ProductType = {
 
 export default function ProductPage() {
   const router = useRouter();
-  const { slug } = router.query;
+  const { slug, category } = router.query;
   const { addToCart } = useCart();
 
-  if (!slug || typeof slug !== "string") return null;
+  if (
+    !slug ||
+    typeof slug !== "string" ||
+    !category ||
+    typeof category !== "string"
+  ) {
+    return null;
+  }
 
-  // 🔄 Combine featured + full collection
-  const allProducts: ProductType[] = [...productsData, ...fullJewelryData];
+  const allProducts: ProductType[] = [...productsData, ...jewelryData];
   const product = allProducts.find((item) => item.slug === slug);
 
   if (!product) {
     return (
-      <div className="min-h-screen flex flex-col bg-[#1f2a44] text-[#e0e0e0] items-center justify-center">
-        <h1 className="text-3xl font-bold mb-4">Product Not Found</h1>
+      <div className="min-h-screen flex flex-col items-center justify-center text-white bg-[#1f2a44]">
+        <h1 className="text-3xl font-bold mb-2">Product Not Found</h1>
         <p className="text-lg text-gray-400">
           Sorry, we couldn't find that item.
         </p>
@@ -44,12 +48,13 @@ export default function ProductPage() {
     );
   }
 
-  // 🧭 Fix: always use valid category (lowercase)
-  const category = product.category?.toLowerCase() || "jewelry";
+  const capitalizedCategory = category
+    .replace(/-/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase());
 
   return (
     <>
-      {/* 🧠 SEO Head Tags */}
+      {/* 🧠 SEO */}
       <Head>
         <title>{product.name} | Classy Diamonds</title>
         <meta
@@ -71,26 +76,27 @@ export default function ProductPage() {
         />
         <meta
           property="og:url"
-          content={`https://classydiamonds.vercel.app/product/${product.slug}`}
+          content={`https://classydiamonds.vercel.app/category/${category}/${slug}`}
         />
       </Head>
 
-      {/* 💎 Page Container */}
+      {/* 💎 Page */}
       <div className="min-h-screen flex flex-col bg-[#1f2a44] text-[#e0e0e0]">
-        <Breadcrumbs
-          customLabels={{
-            product: category
-              .replace(/-/g, " ")
-              .replace(/\b\w/g, (c) => c.toUpperCase()),
-            [slug]: product.name,
-          }}
-          customPaths={{
-            product: `/category/${category}`,
-            [slug]: `/product/${slug}`,
-          }}
-        />
+        {/* 🧭 Breadcrumb */}
+        <div className="pl-4 pr-4 sm:pl-8 sm:pr-8 mt-6 mb-6">
+          <Breadcrumbs
+            customLabels={{
+              [category]: capitalizedCategory,
+              [slug]: product.name,
+            }}
+            customPaths={{
+              [category]: `/category/${category}`,
+              [slug]: `/category/${category}/${slug}`,
+            }}
+          />
+        </div>
 
-        {/* 💎 Product Detail Section */}
+        {/* 📦 Product Details */}
         <section className="pt-10 pb-16 px-6 max-w-7xl mx-auto flex flex-col md:flex-row items-center gap-12">
           {/* 🖼 Product Image */}
           <div className="w-full md:w-1/2 overflow-hidden rounded-2xl shadow-lg">
@@ -105,7 +111,7 @@ export default function ProductPage() {
             />
           </div>
 
-          {/* 📜 Product Info */}
+          {/* 📋 Product Info */}
           <div className="w-full md:w-1/2 flex flex-col gap-6">
             <h1 className="text-4xl font-bold text-white">{product.name}</h1>
             <p className="text-lg text-[#cfd2d6]">

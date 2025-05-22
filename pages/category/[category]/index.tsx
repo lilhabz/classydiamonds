@@ -1,4 +1,4 @@
-// 📄 pages/category/[category].tsx – Optimized for Performance, A11Y, SEO, Mobile 💎
+// 📄 pages/category/[category]/index.tsx – Category Product Grid (Final Version) ✅
 
 "use client";
 
@@ -19,7 +19,6 @@ export default function CategoryPage() {
   const [visibleCount, setVisibleCount] = useState(8);
   const productsEndRef = useRef<HTMLDivElement>(null);
 
-  // 🧭 Control which image goes with which category
   const categoryHeroImages: { [key: string]: string } = {
     rings: "/category-hero/ring-hero.jpg",
     bracelets: "/category-hero/bracelet-hero.jpg",
@@ -29,7 +28,6 @@ export default function CategoryPage() {
     necklaces: "/category-hero/necklace-hero.jpg",
   };
 
-  // 🎯 Individual object position tweaks per category (revised)
   const categoryImagePosition: { [key: string]: string } = {
     rings: "object-[center_75%]",
     bracelets: "object-center",
@@ -39,7 +37,6 @@ export default function CategoryPage() {
     necklaces: "object-[center_30%]",
   };
 
-  // 💬 Hero subtitle per category
   const categoryHeroSubtitles: { [key: string]: string } = {
     rings: "Timeless designs that sparkle forever",
     bracelets: "Refined elegance for every wrist",
@@ -54,8 +51,8 @@ export default function CategoryPage() {
     categoryImagePosition[category?.toLowerCase()] || "object-center";
   const heroSubtitle = categoryHeroSubtitles[category?.toLowerCase()] || "";
 
-  const filteredProducts = jewelryData.filter((product) =>
-    product.slug.includes(category?.toLowerCase().replace(/-/g, " "))
+  const filteredProducts = jewelryData.filter(
+    (product) => product.category.toLowerCase() === category?.toLowerCase()
   );
 
   const handleLoadMore = () => {
@@ -80,7 +77,7 @@ export default function CategoryPage() {
         />
       </Head>
 
-      {/* 🌟 Hero Section - Dynamic per category */}
+      {/* 🌟 Hero Section */}
       {heroImage && (
         <section className="relative w-full h-[40vh] sm:h-[50vh] overflow-hidden">
           <Image
@@ -114,7 +111,7 @@ export default function CategoryPage() {
             <div key={product.id} className="group">
               <div className="bg-[#25304f] rounded-2xl overflow-hidden shadow-lg hover:ring-2 hover:ring-white hover:scale-105 transition-transform duration-300 flex flex-col h-full">
                 <Link
-                  href={`/product/${product.slug}`}
+                  href={`/category/${product.category}/${product.slug}`}
                   className="flex-1 focus:outline-none"
                 >
                   <div className="w-full h-48 relative">
@@ -158,10 +155,10 @@ export default function CategoryPage() {
           ))}
         </div>
 
-        {/* 🔽 Smooth Scroll Anchor */}
+        {/* 🔽 Scroll anchor */}
         <div ref={productsEndRef} />
 
-        {/* ➕ Load More or No More */}
+        {/* ➕ Load More */}
         {visibleCount < filteredProducts.length ? (
           <div className="flex justify-center mt-12">
             <button
