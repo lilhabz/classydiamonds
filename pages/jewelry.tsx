@@ -1,4 +1,4 @@
-// 📄 pages/jewelry.tsx – Now with Category Filtering Below Title ✅
+// 📄 pages/jewelry.tsx – Now with Category Filtering + Dynamic Title/Meta ✅
 
 "use client";
 
@@ -48,14 +48,24 @@ export default function JewelryPage() {
     }, 100);
   };
 
+  const pageTitle = filteredCategory
+    ? `${filteredCategory
+        .replace(/-/g, " ")
+        .replace(/\b\w/g, (l) => l.toUpperCase())} | Classy Diamonds`
+    : "Jewelry Collection | Classy Diamonds";
+
+  const pageDescription = filteredCategory
+    ? `Explore fine ${filteredCategory.replace(
+        /-/g,
+        " "
+      )} from Classy Diamonds. Beautiful, handcrafted pieces for every moment.`
+    : "Explore timeless engagement rings, wedding bands, necklaces, earrings, and more, crafted with passion at Classy Diamonds.";
+
   return (
     <div className="min-h-screen flex flex-col bg-[#1f2a44] text-[#e0e0e0]">
       <Head>
-        <title>Jewelry Collection | Classy Diamonds</title>
-        <meta
-          name="description"
-          content="Explore timeless engagement rings, wedding bands, necklaces, earrings, and more, crafted with passion at Classy Diamonds."
-        />
+        <title>{pageTitle}</title>
+        <meta name="description" content={pageDescription} />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
 
@@ -87,7 +97,11 @@ export default function JewelryPage() {
       {/* 💎 Jewelry Grid */}
       <section className="pb-16 sm:pb-20 px-4 sm:px-6 max-w-7xl mx-auto">
         <h2 className="text-2xl sm:text-3xl font-semibold text-center mb-4 sm:mb-6">
-          Our Jewelry
+          {filteredCategory
+            ? filteredCategory
+                .replace(/-/g, " ")
+                .replace(/\b\w/g, (l) => l.toUpperCase())
+            : "Our Jewelry"}
         </h2>
 
         {/* 🧭 Filter Buttons Below Title */}
@@ -208,3 +222,4 @@ export default function JewelryPage() {
     </div>
   );
 }
+// 📄
