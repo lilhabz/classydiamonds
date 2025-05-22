@@ -77,21 +77,18 @@ export default function ProductPage() {
 
       {/* 💎 Page Container */}
       <div className="min-h-screen flex flex-col bg-[#1f2a44] text-[#e0e0e0]">
-        {/* 🗺 Breadcrumb */}
-        <div className="pl-4 pr-4 sm:pl-8 sm:pr-8 mb-6 mt-6">
-          <Breadcrumbs
-            customLabels={{
-              category: category
-                .replace(/-/g, " ")
-                .replace(/\b\w/g, (c) => c.toUpperCase()), // Capitalize
-              [slug]: product.name,
-            }}
-            customPaths={{
-              category: `/category/${category.toLowerCase()}`, // ✅ Fix: lowercase for URL
-              [slug]: `/product/${slug}`,
-            }}
-          />
-        </div>
+        <Breadcrumbs
+          customLabels={{
+            product: category
+              .replace(/-/g, " ")
+              .replace(/\b\w/g, (c) => c.toUpperCase()),
+            [slug]: product.name,
+          }}
+          customPaths={{
+            product: `/category/${category}`,
+            [slug]: `/product/${slug}`,
+          }}
+        />
 
         {/* 💎 Product Detail Section */}
         <section className="pt-10 pb-16 px-6 max-w-7xl mx-auto flex flex-col md:flex-row items-center gap-12">
