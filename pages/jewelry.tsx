@@ -42,7 +42,7 @@ export default function JewelryPage() {
         if (headerRef.current) {
           const headerY =
             headerRef.current.getBoundingClientRect().top + window.pageYOffset;
-          const navEl = document.querySelector("nav");
+          const navEl = document.querySelector("header");
           const navHeight = navEl ? navEl.clientHeight : 0;
 
           window.scrollTo({
@@ -85,7 +85,7 @@ export default function JewelryPage() {
       if (headerRef.current) {
         const headerY =
           headerRef.current.getBoundingClientRect().top + window.pageYOffset;
-        const navEl = document.querySelector("nav");
+        const navEl = document.querySelector("header");
         const navHeight = navEl ? navEl.clientHeight : 0;
         window.scrollTo({
           top: headerY - navHeight - 60,
