@@ -29,7 +29,7 @@ export default function ProductPage() {
 
   if (!slug || typeof slug !== "string") return null;
 
-  // 🔄 Search both featured and full collection
+  // 🔄 Combine featured + full collection
   const allProducts: ProductType[] = [...productsData, ...fullJewelryData];
   const product = allProducts.find((item) => item.slug === slug);
 
@@ -44,7 +44,8 @@ export default function ProductPage() {
     );
   }
 
-  const category = product.category || "jewelry";
+  // 🧭 Fix: always use valid category (lowercase)
+  const category = product.category?.toLowerCase() || "jewelry";
 
   return (
     <>
@@ -86,7 +87,7 @@ export default function ProductPage() {
               [slug]: product.name,
             }}
             customPaths={{
-              category: `/category/${category}`,
+              category: `/category/${category.toLowerCase()}`, // ✅ Fix: lowercase for URL
               [slug]: `/product/${slug}`,
             }}
           />
