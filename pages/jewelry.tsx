@@ -1,4 +1,4 @@
-// 📄 pages/jewelry.tsx – Smooth Scroll Fix from Home 💎
+// 📄 pages/jewelry.tsx – Unified Scroll Logic 💎 (Home + Filters behave exactly the same)
 
 "use client";
 
@@ -18,48 +18,52 @@ export default function JewelryPage() {
   const headerRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
+  // ✅ Track scroll trigger and category in sync
+  const scrollTriggered = useRef(false);
+
   useEffect(() => {
     const queryCategory = router.query.category;
     const shouldScroll = router.query.scroll === "true";
 
     if (typeof queryCategory === "string") {
       setFilteredCategory(queryCategory.toLowerCase());
-
-      if (shouldScroll) {
-        // 🧼 Prevent janky scroll-from-bottom by disabling auto-scroll entirely
-        window.scrollTo(0, 0);
-
-        const handleScrollAfterPaint = () => {
-          if (headerRef.current) {
-            const headerY =
-              headerRef.current.getBoundingClientRect().top +
-              window.pageYOffset;
-            const navEl = document.querySelector("nav");
-            const navHeight = navEl ? navEl.clientHeight : 0;
-
-            window.scrollTo({
-              top: headerY - navHeight - 60,
-              behavior: "smooth",
-            });
-
-            // 🧽 Clean up URL param
-            router.replace(
-              {
-                pathname: "/jewelry",
-                query: { category: router.query.category },
-              },
-              undefined,
-              { shallow: true }
-            );
-          }
-        };
-
-        requestAnimationFrame(() => setTimeout(handleScrollAfterPaint, 300));
-      }
+      scrollTriggered.current = shouldScroll;
     } else {
       setFilteredCategory(null);
     }
   }, [router.query.category, router.query.scroll]);
+
+  useEffect(() => {
+    // 🔁 This fires only after filteredCategory is set
+    if (!scrollTriggered.current || !filteredCategory) return;
+
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        if (headerRef.current) {
+          const headerY =
+            headerRef.current.getBoundingClientRect().top + window.pageYOffset;
+          const navEl = document.querySelector("nav");
+          const navHeight = navEl ? navEl.clientHeight : 0;
+
+          window.scrollTo({
+            top: headerY - navHeight - 60,
+            behavior: "smooth",
+          });
+
+          // ✅ Clear scroll flag and clean URL
+          scrollTriggered.current = false;
+          router.replace(
+            {
+              pathname: "/jewelry",
+              query: { category: router.query.category },
+            },
+            undefined,
+            { shallow: true }
+          );
+        }
+      }, 300);
+    });
+  }, [filteredCategory]);
 
   const filteredProducts = filteredCategory
     ? jewelryData.filter((p) => p.category.toLowerCase() === filteredCategory)
