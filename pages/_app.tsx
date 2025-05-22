@@ -18,18 +18,27 @@ export default function App({
   const router = useRouter();
 
   useEffect(() => {
-    // ✅ Prevent scroll restoration jumping to bottom
+    // ✅ Prevent browser from auto-restoring scroll (fixes jump)
     if ("scrollRestoration" in window.history) {
       window.history.scrollRestoration = "manual";
     }
 
-    const handleRouteChangeStart = () => {
-      window.scrollTo(0, 0); // 🧹 Start every route at the top
+    const handleBeforeUnload = () => {
+      if ("scrollRestoration" in window.history) {
+        window.history.scrollRestoration = "auto";
+      }
     };
 
+    const handleRouteChangeStart = () => {
+      // 🧹 Scroll to top on route changes
+      window.scrollTo(0, 0);
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
     router.events.on("routeChangeStart", handleRouteChangeStart);
 
     return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
       router.events.off("routeChangeStart", handleRouteChangeStart);
       if ("scrollRestoration" in window.history) {
         window.history.scrollRestoration = "auto";

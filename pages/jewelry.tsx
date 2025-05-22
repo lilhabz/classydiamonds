@@ -1,4 +1,4 @@
-// 📄 pages/jewelry.tsx – Unified Scroll Logic 💎 (Home + Filters behave exactly the same)
+// 📄 pages/jewelry.tsx – Scroll Fix 🔧 (No More Bounce)
 
 "use client";
 
@@ -18,7 +18,6 @@ export default function JewelryPage() {
   const headerRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
-  // ✅ Track scroll trigger and category in sync
   const scrollTriggered = useRef(false);
 
   useEffect(() => {
@@ -34,35 +33,35 @@ export default function JewelryPage() {
   }, [router.query.category, router.query.scroll]);
 
   useEffect(() => {
-    // 🔁 This fires only after filteredCategory is set
     if (!scrollTriggered.current || !filteredCategory) return;
 
-    requestAnimationFrame(() => {
-      setTimeout(() => {
-        if (headerRef.current) {
-          const headerY =
-            headerRef.current.getBoundingClientRect().top + window.pageYOffset;
-          const navEl = document.querySelector("header");
-          const navHeight = navEl ? navEl.clientHeight : 0;
+    const scrollToHeader = () => {
+      if (!headerRef.current) return;
 
-          window.scrollTo({
-            top: headerY - navHeight - 60,
-            behavior: "smooth",
-          });
+      const headerY =
+        headerRef.current.getBoundingClientRect().top + window.pageYOffset;
+      const navEl = document.querySelector("header");
+      const navHeight = navEl ? navEl.clientHeight : 0;
 
-          // ✅ Clear scroll flag and clean URL
-          scrollTriggered.current = false;
-          router.replace(
-            {
-              pathname: "/jewelry",
-              query: { category: router.query.category },
-            },
-            undefined,
-            { shallow: true }
-          );
-        }
-      }, 300);
-    });
+      window.scrollTo({
+        top: headerY - navHeight - 60,
+        behavior: "smooth",
+      });
+
+      scrollTriggered.current = false;
+      router.replace(
+        {
+          pathname: "/jewelry",
+          query: { category: router.query.category },
+        },
+        undefined,
+        { shallow: true }
+      );
+    };
+
+    // ✅ Scroll after full paint (no bounce)
+    const timeout = setTimeout(scrollToHeader, 0);
+    return () => clearTimeout(timeout);
   }, [filteredCategory]);
 
   const filteredProducts = filteredCategory
