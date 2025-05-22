@@ -1,4 +1,4 @@
-// 📄 pages/jewelry.tsx – Scroll Fix 🔧 (No More Bounce)
+// 📄 pages/jewelry.tsx – Restore Scroll Logic to Fix Filters Bounce
 
 "use client";
 
@@ -14,30 +14,23 @@ export default function JewelryPage() {
   const { addToCart } = useCart();
   const [visibleCount, setVisibleCount] = useState(8);
   const [filteredCategory, setFilteredCategory] = useState<string | null>(null);
-  const productsEndRef = useRef<HTMLDivElement>(null);
   const headerRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
-  const scrollTriggered = useRef(false);
-
   useEffect(() => {
     const queryCategory = router.query.category;
-    const shouldScroll = router.query.scroll === "true";
-
     if (typeof queryCategory === "string") {
       setFilteredCategory(queryCategory.toLowerCase());
-      scrollTriggered.current = shouldScroll;
     } else {
       setFilteredCategory(null);
     }
-  }, [router.query.category, router.query.scroll]);
+  }, [router.query.category]);
 
   useEffect(() => {
-    if (!scrollTriggered.current || !filteredCategory) return;
+    if (!filteredCategory) return;
 
     const scrollToHeader = () => {
       if (!headerRef.current) return;
-
       const headerY =
         headerRef.current.getBoundingClientRect().top + window.pageYOffset;
       const navEl = document.querySelector("header");
@@ -47,20 +40,10 @@ export default function JewelryPage() {
         top: headerY - navHeight - 60,
         behavior: "smooth",
       });
-
-      scrollTriggered.current = false;
-      router.replace(
-        {
-          pathname: "/jewelry",
-          query: { category: router.query.category },
-        },
-        undefined,
-        { shallow: true }
-      );
     };
 
-    // ✅ Scroll after full paint (no bounce)
-    const timeout = setTimeout(scrollToHeader, 0);
+    // Scroll smoothly after the page renders
+    const timeout = setTimeout(scrollToHeader, 100);
     return () => clearTimeout(timeout);
   }, [filteredCategory]);
 
@@ -70,9 +53,6 @@ export default function JewelryPage() {
 
   const handleLoadMore = () => {
     setVisibleCount((prev) => prev + 4);
-    setTimeout(() => {
-      productsEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    }, 300);
   };
 
   const handleFilter = (cat: string | null) => {
@@ -80,18 +60,6 @@ export default function JewelryPage() {
     router.push(cat ? `/jewelry?category=${cat}` : "/jewelry", undefined, {
       shallow: true,
     });
-    setTimeout(() => {
-      if (headerRef.current) {
-        const headerY =
-          headerRef.current.getBoundingClientRect().top + window.pageYOffset;
-        const navEl = document.querySelector("header");
-        const navHeight = navEl ? navEl.clientHeight : 0;
-        window.scrollTo({
-          top: headerY - navHeight - 60,
-          behavior: "smooth",
-        });
-      }
-    }, 100);
   };
 
   const pageTitle = filteredCategory
