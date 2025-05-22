@@ -1,4 +1,4 @@
-// 📄 pages/jewelry.tsx – Filter System Updated + Scroll Fix 💎
+// 📄 pages/jewelry.tsx – Smooth Scroll Fix from Home 💎
 
 "use client";
 
@@ -11,20 +11,11 @@ import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/router";
 
 export default function JewelryPage() {
-  // 🛒 Cart Context
   const { addToCart } = useCart();
-
-  // 🔢 Visible count for "Load More"
   const [visibleCount, setVisibleCount] = useState(8);
-
-  // 🔍 Current filter category (slug form)
   const [filteredCategory, setFilteredCategory] = useState<string | null>(null);
-
-  // 📌 Refs for scrolling targets
   const productsEndRef = useRef<HTMLDivElement>(null);
   const headerRef = useRef<HTMLDivElement>(null);
-
-  // 🧭 Router for shallow pushes on filter change
   const router = useRouter();
 
   useEffect(() => {
@@ -35,60 +26,57 @@ export default function JewelryPage() {
       setFilteredCategory(queryCategory.toLowerCase());
 
       if (shouldScroll) {
-        // 🎯 Wait for DOM to paint, then scroll down once
-        requestAnimationFrame(() => {
-          setTimeout(() => {
-            if (headerRef.current) {
-              const headerY =
-                headerRef.current.getBoundingClientRect().top +
-                window.pageYOffset;
-              const navEl = document.querySelector("nav");
-              const navHeight = navEl ? navEl.clientHeight : 0;
+        // 🧼 Prevent janky scroll-from-bottom by disabling auto-scroll entirely
+        window.scrollTo(0, 0);
 
-              window.scrollTo({
-                top: headerY - navHeight - 60,
-                behavior: "smooth",
-              });
+        const handleScrollAfterPaint = () => {
+          if (headerRef.current) {
+            const headerY =
+              headerRef.current.getBoundingClientRect().top +
+              window.pageYOffset;
+            const navEl = document.querySelector("nav");
+            const navHeight = navEl ? navEl.clientHeight : 0;
 
-              // 🧼 Clean up scroll param
-              router.replace(
-                {
-                  pathname: "/jewelry",
-                  query: { category: router.query.category },
-                },
-                undefined,
-                { shallow: true }
-              );
-            }
-          }, 300); // wait for full paint
-        });
+            window.scrollTo({
+              top: headerY - navHeight - 60,
+              behavior: "smooth",
+            });
+
+            // 🧽 Clean up URL param
+            router.replace(
+              {
+                pathname: "/jewelry",
+                query: { category: router.query.category },
+              },
+              undefined,
+              { shallow: true }
+            );
+          }
+        };
+
+        requestAnimationFrame(() => setTimeout(handleScrollAfterPaint, 300));
       }
     } else {
       setFilteredCategory(null);
     }
   }, [router.query.category, router.query.scroll]);
 
-  // 🔄 Apply filter to full data
   const filteredProducts = filteredCategory
     ? jewelryData.filter((p) => p.category.toLowerCase() === filteredCategory)
     : jewelryData;
 
-  // ➕ Load more items
   const handleLoadMore = () => {
     setVisibleCount((prev) => prev + 4);
-    // 🌀 Scroll to bottom of grid after loading
     setTimeout(() => {
       productsEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }, 300);
   };
 
-  // 📂 Handle filter button clicks
   const handleFilter = (cat: string | null) => {
     setFilteredCategory(cat);
     router.push(cat ? `/jewelry?category=${cat}` : "/jewelry", undefined, {
       shallow: true,
     });
-    // 🛠 Scroll so header sits just under navbar
     setTimeout(() => {
       if (headerRef.current) {
         const headerY =
@@ -96,14 +84,13 @@ export default function JewelryPage() {
         const navEl = document.querySelector("nav");
         const navHeight = navEl ? navEl.clientHeight : 0;
         window.scrollTo({
-          top: headerY - navHeight - 60, // 10px padding from navbar
+          top: headerY - navHeight - 60,
           behavior: "smooth",
         });
       }
     }, 100);
   };
 
-  // 📝 SEO titles & descriptions
   const pageTitle = filteredCategory
     ? `${filteredCategory
         .replace(/-/g, " ")
@@ -118,7 +105,6 @@ export default function JewelryPage() {
 
   return (
     <div className="min-h-screen flex flex-col bg-[#1f2a44] text-[#e0e0e0]">
-      {/* 🧾 Head Metadata */}
       <Head>
         <title>{pageTitle}</title>
         <meta name="description" content={pageDescription} />
@@ -151,7 +137,6 @@ export default function JewelryPage() {
 
       {/* 💎 Jewelry Grid Section */}
       <section className="pt-32 pb-16 sm:pb-20 px-4 sm:px-6 max-w-7xl mx-auto">
-        {/* 📌 Header & Filters */}
         <div ref={headerRef}>
           <h2 className="text-2xl sm:text-3xl font-semibold text-center mb-4 sm:mb-6">
             {filteredCategory
@@ -193,8 +178,6 @@ export default function JewelryPage() {
               );
             })}
           </div>
-
-          {/* 🚧 Future: add sorting dropdown here */}
         </div>
 
         {/* 🖼️ Product Grid */}
@@ -247,10 +230,8 @@ export default function JewelryPage() {
           ))}
         </div>
 
-        {/* 📍 Scroll Target */}
         <div ref={productsEndRef} />
 
-        {/* 🔄 Load More or CTA */}
         {visibleCount < filteredProducts.length ? (
           <div className="flex justify-center mt-12">
             <button
