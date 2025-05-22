@@ -11,7 +11,10 @@ export default function Breadcrumbs({
   customPaths?: Record<string, string>;
 }) {
   const router = useRouter();
-  const segments = router.asPath.split("?")[0].split("/").filter(Boolean);
+  const segments = router.asPath
+    .split("?")[0]
+    .split("/")
+    .filter((s) => Boolean(s) && s !== "category"); // ✅ ignore "category"
 
   const buildHref = (index: number) => {
     const segmentKey = segments[index];
