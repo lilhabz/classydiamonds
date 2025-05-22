@@ -46,7 +46,7 @@ export default function JewelryPage() {
     });
     setTimeout(() => {
       window.scrollTo({
-        top: headerRef.current?.offsetTop! - 300, // 🛠 Adjust scroll to sit above heading
+        top: headerRef.current?.offsetTop! - 250, // 🛠 Adjust scroll to sit above heading
         behavior: "smooth",
       });
     }, 100);
