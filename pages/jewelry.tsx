@@ -1,4 +1,4 @@
-// 📄 pages/jewelry.tsx – Now with Category Filtering via URL Param + Buttons 💎
+// 📄 pages/jewelry.tsx – Now with Category Filtering Below Title ✅
 
 "use client";
 
@@ -84,8 +84,13 @@ export default function JewelryPage() {
         </div>
       </section>
 
-      {/* 🧭 Filter Buttons */}
-      <section className="pt-16 px-4 sm:px-6 max-w-7xl mx-auto">
+      {/* 💎 Jewelry Grid */}
+      <section className="pb-16 sm:pb-20 px-4 sm:px-6 max-w-7xl mx-auto">
+        <h2 className="text-2xl sm:text-3xl font-semibold text-center mb-4 sm:mb-6">
+          Our Jewelry
+        </h2>
+
+        {/* 🧭 Filter Buttons Below Title */}
         <div className="flex flex-wrap gap-3 justify-center mb-12">
           {[
             "All",
@@ -114,13 +119,6 @@ export default function JewelryPage() {
             </button>
           ))}
         </div>
-      </section>
-
-      {/* 💎 Jewelry Grid */}
-      <section className="py-16 sm:py-20 px-4 sm:px-6 max-w-7xl mx-auto">
-        <h2 className="text-2xl sm:text-3xl font-semibold text-center mb-12">
-          Our Jewelry
-        </h2>
 
         <p className="text-center text-[#cfd2d6] max-w-2xl mx-auto mb-12 sm:mb-16 text-base sm:text-lg">
           Browse our exclusive collection of fine jewelry, meticulously crafted
