@@ -1,4 +1,4 @@
-// 📄 pages/_app.tsx – Now with Scroll Fix + SpeedInsights 🧠
+// 📄 pages/_app.tsx – Final Scroll Restoration Fix 💎
 
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import "@/styles/globals.css";
@@ -9,22 +9,31 @@ import Footer from "@/components/Footer";
 import { CartProvider } from "@/context/CartContext";
 
 import { useEffect } from "react";
-import { useRouter } from "next/router"; // 👈 Add this
+import { useRouter } from "next/router";
 
 export default function App({
   Component,
   pageProps: { session, ...pageProps },
 }: AppProps) {
-  const router = useRouter(); // 👈 Use the router
+  const router = useRouter();
 
   useEffect(() => {
+    // ✅ Prevent scroll restoration jumping to bottom
+    if ("scrollRestoration" in window.history) {
+      window.history.scrollRestoration = "manual";
+    }
+
     const handleRouteChangeStart = () => {
-      window.scrollTo(0, 0); // 🧹 Reset scroll BEFORE navigation
+      window.scrollTo(0, 0); // 🧹 Start every route at the top
     };
 
     router.events.on("routeChangeStart", handleRouteChangeStart);
+
     return () => {
       router.events.off("routeChangeStart", handleRouteChangeStart);
+      if ("scrollRestoration" in window.history) {
+        window.history.scrollRestoration = "auto";
+      }
     };
   }, [router]);
 
