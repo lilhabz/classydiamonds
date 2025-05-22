@@ -1,4 +1,4 @@
-// 📄 pages/jewelry.tsx – Full Merge: Mobile + Desktop Optimized 🚀🖥️📱
+// 📄 pages/jewelry.tsx – Fixed Product Links + Shop by Category Restored ✅
 
 "use client";
 
@@ -33,14 +33,14 @@ export default function JewelryPage() {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
 
-      {/* 🌟 Hero Section – Optimized for LCP */}
+      {/* 🌟 Hero Section */}
       <section className="-mt-20 relative w-full h-[80vh] flex items-center justify-center text-center overflow-hidden">
         <div className="absolute inset-0">
           <Image
             src="/hero-jewelry.jpg"
             alt="Jewelry Hero Background"
             fill
-            priority // 🚀 Improves desktop & mobile LCP
+            priority
             sizes="100vw"
             className="object-cover w-full h-full"
           />
@@ -66,21 +66,19 @@ export default function JewelryPage() {
 
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-6 sm:gap-8 text-center">
           {[
-            { name: "Engagement" },
-            { name: "Wedding Bands" },
-            { name: "Rings" },
-            { name: "Bracelets" },
-            { name: "Necklaces" },
-            { name: "Earrings" },
+            "Engagement",
+            "Wedding Bands",
+            "Rings",
+            "Bracelets",
+            "Necklaces",
+            "Earrings",
           ].map((category) => (
             <Link
-              key={category.name}
-              href={`/category/${category.name
-                .toLowerCase()
-                .replace(/\s+/g, "-")}`}
+              key={category}
+              href={`/category/${category.toLowerCase().replace(/\s+/g, "-")}`}
               className="group bg-[#25304f] rounded-2xl overflow-hidden shadow-md hover:shadow-2xl hover:scale-105 transition-all duration-300 flex items-center justify-center py-8 sm:py-10 text-base sm:text-lg font-semibold text-[#cfd2d6] hover:text-white cursor-pointer"
             >
-              {category.name}
+              {category}
             </Link>
           ))}
         </div>
@@ -97,20 +95,22 @@ export default function JewelryPage() {
           to celebrate life's most treasured moments.
         </p>
 
-        {/* 🛒 Product Grid – Responsive + Optimized */}
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
           {jewelryData.slice(0, visibleCount).map((product, index) => (
             <div key={product.id} className="group hover:cursor-pointer">
               <div className="bg-[#25304f] rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl hover:ring-2 hover:ring-[#e0e0e0] hover:scale-105 transition-all duration-300 flex flex-col h-full">
                 <div className="flex-1 flex flex-col">
-                  <Link href={`/product/${product.slug}`} className="flex-1">
+                  <Link
+                    href={`/category/${product.category}/${product.slug}`}
+                    className="flex-1"
+                  >
                     <div className="w-full h-44 sm:h-48 overflow-hidden relative">
                       <Image
                         src={product.image}
                         alt={product.name}
                         fill
-                        priority={index < 4} // ✅ Priority load top 4 for faster desktop UX
-                        sizes="(min-width: 1024px) 25vw, 50vw" // ✅ Adaptive sizing
+                        priority={index < 4}
+                        sizes="(min-width: 1024px) 25vw, 50vw"
                         className="object-cover w-full h-full group-hover:scale-110 transition-transform duration-300"
                       />
                     </div>
@@ -126,7 +126,6 @@ export default function JewelryPage() {
                   </Link>
                 </div>
 
-                {/* ➕ Add to Cart Button */}
                 <div className="p-6 pt-0">
                   <button
                     onClick={(e) => {
@@ -149,10 +148,8 @@ export default function JewelryPage() {
           ))}
         </div>
 
-        {/* 🔽 Scroll Target for Load More */}
         <div ref={productsEndRef} />
 
-        {/* ➕ Load More Button */}
         {visibleCount < jewelryData.length ? (
           <div className="flex justify-center mt-12">
             <button
