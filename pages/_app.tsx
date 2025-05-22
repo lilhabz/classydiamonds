@@ -1,6 +1,6 @@
-// 📄 pages/_app.tsx – Global Styles & Scroll Restoration
+// 📄 pages/_app.tsx – Conditional Scroll Restoration Fix 💎
 
-import "@/styles/globals.css"; // ← restore this!
+import "@/styles/globals.css";
 import { useEffect } from "react";
 import { useRouter } from "next/router";
 import type { AppProps } from "next/app";
@@ -16,17 +16,23 @@ export default function App({
   const router = useRouter();
 
   useEffect(() => {
-    // Prevent browser auto-restoring scroll
+    // ✅ Prevent browser from auto-restoring scroll
     if ("scrollRestoration" in window.history) {
       window.history.scrollRestoration = "manual";
     }
 
-    const handleRouteChangeStart = () => {
-      // Always jump to top on navigation
-      window.scrollTo(0, 0);
+    // 🧹 Only scroll to top on full route changes (skip same-page query changes)
+    const handleRouteChangeStart = (url: string) => {
+      const toPath = url.split("?")[0];
+      const fromPath = router.asPath.split("?")[0];
+      if (toPath !== fromPath) {
+        window.scrollTo(0, 0);
+      }
     };
 
+    // 🎯 Listen for route changes
     router.events.on("routeChangeStart", handleRouteChangeStart);
+
     return () => {
       router.events.off("routeChangeStart", handleRouteChangeStart);
       if ("scrollRestoration" in window.history) {
