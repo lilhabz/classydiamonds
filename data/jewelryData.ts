@@ -1,4 +1,4 @@
-// 📄 data/jewelryData.ts - Full Jewelry Collection (12 Demo Products)
+// 📄 data/jewelryData.ts – Full Jewelry Collection (12 Demo Products)
 
 export const jewelryData = [
   {

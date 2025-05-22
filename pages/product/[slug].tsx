@@ -4,7 +4,7 @@
 
 import { useRouter } from "next/router";
 import { productsData } from "@/data/productsData";
-import { jewelryData } from "@/data/jewelryData";
+import { jewelryData as fullJewelryData } from "@/data/jewelryData";
 import { useCart } from "@/context/CartContext";
 import Head from "next/head";
 import Image from "next/image";
@@ -30,7 +30,7 @@ export default function ProductPage() {
   if (!slug || typeof slug !== "string") return null;
 
   // 🔄 Search both featured and full collection
-  const allProducts: ProductType[] = [...productsData, ...jewelryData];
+  const allProducts: ProductType[] = [...productsData, ...fullJewelryData];
   const product = allProducts.find((item) => item.slug === slug);
 
   if (!product) {
@@ -80,11 +80,13 @@ export default function ProductPage() {
         <div className="pl-4 pr-4 sm:pl-8 sm:pr-8 mb-6 mt-6">
           <Breadcrumbs
             customLabels={{
-              [category]: category.replace(/-/g, " "),
+              category: category
+                .replace(/-/g, " ")
+                .replace(/\b\w/g, (c) => c.toUpperCase()), // Capitalize
               [slug]: product.name,
             }}
             customPaths={{
-              [category]: `/category/${category}`,
+              category: `/category/${category}`,
               [slug]: `/product/${slug}`,
             }}
           />
