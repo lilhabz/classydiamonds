@@ -35,30 +35,34 @@ export default function JewelryPage() {
       setFilteredCategory(queryCategory.toLowerCase());
 
       if (shouldScroll) {
-        setTimeout(() => {
-          if (headerRef.current) {
-            const headerY =
-              headerRef.current.getBoundingClientRect().top +
-              window.pageYOffset;
-            const navEl = document.querySelector("nav");
-            const navHeight = navEl ? navEl.clientHeight : 0;
+        // ⏳ Delay scroll until browser paints frame
+        requestAnimationFrame(() => {
+          setTimeout(() => {
+            if (headerRef.current) {
+              const headerY =
+                headerRef.current.getBoundingClientRect().top +
+                window.pageYOffset;
+              const navEl = document.querySelector("nav");
+              const navHeight = navEl ? navEl.clientHeight : 0;
 
-            window.scrollTo({
-              top: headerY - navHeight - 60, // ✅ match your working offset
-              behavior: "smooth",
-            });
+              // ✅ Scroll smoothly from top of page
+              window.scrollTo({
+                top: headerY - navHeight - 60,
+                behavior: "smooth",
+              });
 
-            // 🧼 Optional: Clean up scroll=true from the URL
-            router.replace(
-              {
-                pathname: "/jewelry",
-                query: { category: router.query.category },
-              },
-              undefined,
-              { shallow: true }
-            );
-          }
-        }, 300);
+              // 🧼 Clean up URL
+              router.replace(
+                {
+                  pathname: "/jewelry",
+                  query: { category: router.query.category },
+                },
+                undefined,
+                { shallow: true }
+              );
+            }
+          }, 200); // 🕒 Small delay ensures layout is ready
+        });
       }
     } else {
       setFilteredCategory(null);
