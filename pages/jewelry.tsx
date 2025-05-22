@@ -1,4 +1,4 @@
-// 📄 pages/jewelry.tsx – Fixed Product Links + Shop by Category Restored ✅
+// 📄 pages/jewelry.tsx – Now with Category Filtering via URL Param ✅
 
 "use client";
 
@@ -7,12 +7,28 @@ import Link from "next/link";
 import Head from "next/head";
 import { useCart } from "@/context/CartContext";
 import { jewelryData } from "@/data/jewelryData";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
+import { useRouter } from "next/router";
 
 export default function JewelryPage() {
   const { addToCart } = useCart();
   const [visibleCount, setVisibleCount] = useState(8);
+  const [filteredCategory, setFilteredCategory] = useState<string | null>(null);
   const productsEndRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
+
+  useEffect(() => {
+    const queryCategory = router.query.category;
+    if (typeof queryCategory === "string") {
+      setFilteredCategory(queryCategory.toLowerCase());
+    } else {
+      setFilteredCategory(null);
+    }
+  }, [router.query.category]);
+
+  const filteredProducts = filteredCategory
+    ? jewelryData.filter((p) => p.category.toLowerCase() === filteredCategory)
+    : jewelryData;
 
   const handleLoadMore = () => {
     setVisibleCount((prev) => prev + 4);
@@ -75,7 +91,9 @@ export default function JewelryPage() {
           ].map((category) => (
             <Link
               key={category}
-              href={`/category/${category.toLowerCase().replace(/\s+/g, "-")}`}
+              href={`/jewelry?category=${category
+                .toLowerCase()
+                .replace(/\s+/g, "-")}`}
               className="group bg-[#25304f] rounded-2xl overflow-hidden shadow-md hover:shadow-2xl hover:scale-105 transition-all duration-300 flex items-center justify-center py-8 sm:py-10 text-base sm:text-lg font-semibold text-[#cfd2d6] hover:text-white cursor-pointer"
             >
               {category}
@@ -96,7 +114,7 @@ export default function JewelryPage() {
         </p>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
-          {jewelryData.slice(0, visibleCount).map((product, index) => (
+          {filteredProducts.slice(0, visibleCount).map((product, index) => (
             <div key={product.id} className="group hover:cursor-pointer">
               <div className="bg-[#25304f] rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl hover:ring-2 hover:ring-[#e0e0e0] hover:scale-105 transition-all duration-300 flex flex-col h-full">
                 <div className="flex-1 flex flex-col">
@@ -150,7 +168,7 @@ export default function JewelryPage() {
 
         <div ref={productsEndRef} />
 
-        {visibleCount < jewelryData.length ? (
+        {visibleCount < filteredProducts.length ? (
           <div className="flex justify-center mt-12">
             <button
               onClick={handleLoadMore}
