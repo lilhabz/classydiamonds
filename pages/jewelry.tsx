@@ -104,8 +104,13 @@ export default function JewelryPage() {
             : "Our Jewelry"}
         </h2>
 
-        {/* 🧭 Filter Buttons Below Title */}
-        <div className="flex flex-wrap gap-3 justify-center mb-12">
+        <p className="text-center text-[#cfd2d6] max-w-2xl mx-auto mb-12 sm:mb-12 text-base sm:text-lg">
+          Browse our exclusive collection of fine jewelry, meticulously crafted
+          to celebrate life's most treasured moments.
+        </p>
+
+        {/* 🧭 Filter Buttons Below Description */}
+        <div className="flex flex-wrap gap-3 justify-center mb-16">
           {[
             "All",
             "Engagement",
@@ -133,11 +138,6 @@ export default function JewelryPage() {
             </button>
           ))}
         </div>
-
-        <p className="text-center text-[#cfd2d6] max-w-2xl mx-auto mb-12 sm:mb-16 text-base sm:text-lg">
-          Browse our exclusive collection of fine jewelry, meticulously crafted
-          to celebrate life's most treasured moments.
-        </p>
 
         <div
           ref={productGridRef}
@@ -222,4 +222,3 @@ export default function JewelryPage() {
     </div>
   );
 }
-// 📄
