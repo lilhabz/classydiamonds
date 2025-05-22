@@ -1,5 +1,3 @@
-// 📄 pages/jewelry.tsx – Restore Scroll Logic to Fix Filters Bounce
-
 "use client";
 
 import Image from "next/image";
@@ -15,6 +13,7 @@ export default function JewelryPage() {
   const [visibleCount, setVisibleCount] = useState(8);
   const [filteredCategory, setFilteredCategory] = useState<string | null>(null);
   const headerRef = useRef<HTMLDivElement>(null);
+  const productsEndRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -42,7 +41,6 @@ export default function JewelryPage() {
       });
     };
 
-    // Scroll smoothly after the page renders
     const timeout = setTimeout(scrollToHeader, 100);
     return () => clearTimeout(timeout);
   }, [filteredCategory]);
@@ -53,6 +51,9 @@ export default function JewelryPage() {
 
   const handleLoadMore = () => {
     setVisibleCount((prev) => prev + 4);
+    setTimeout(() => {
+      productsEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, 300);
   };
 
   const handleFilter = (cat: string | null) => {
@@ -82,7 +83,7 @@ export default function JewelryPage() {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
 
-      {/* 🌟 Hero Section */}
+      {/* Hero Section */}
       <section className="-mt-20 relative w-full h-[80vh] flex items-center justify-center text-center overflow-hidden">
         <div className="absolute inset-0">
           <Image
@@ -106,7 +107,7 @@ export default function JewelryPage() {
         </div>
       </section>
 
-      {/* 💎 Jewelry Grid Section */}
+      {/* Jewelry Grid Section */}
       <section className="pt-32 pb-16 sm:pb-20 px-4 sm:px-6 max-w-7xl mx-auto">
         <div ref={headerRef}>
           <h2 className="text-2xl sm:text-3xl font-semibold text-center mb-4 sm:mb-6">
@@ -121,7 +122,7 @@ export default function JewelryPage() {
             crafted to celebrate life's most treasured moments.
           </p>
 
-          {/* 🧭 Filter Buttons */}
+          {/* Filter Buttons */}
           <div className="flex flex-wrap gap-3 justify-center mb-16">
             {[
               "All",
@@ -151,7 +152,7 @@ export default function JewelryPage() {
           </div>
         </div>
 
-        {/* 🖼️ Product Grid */}
+        {/* Product Grid */}
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
           {filteredProducts.slice(0, visibleCount).map((product, index) => (
             <div key={product.id} className="group hover:cursor-pointer">
