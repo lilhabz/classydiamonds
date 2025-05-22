@@ -1,4 +1,4 @@
-// 📄 pages/jewelry.tsx – Now with Category Filtering via URL Param ✅
+// 📄 pages/jewelry.tsx – Now with Category Filtering via URL Param + Buttons 💎
 
 "use client";
 
@@ -15,6 +15,7 @@ export default function JewelryPage() {
   const [visibleCount, setVisibleCount] = useState(8);
   const [filteredCategory, setFilteredCategory] = useState<string | null>(null);
   const productsEndRef = useRef<HTMLDivElement>(null);
+  const productGridRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -37,9 +38,18 @@ export default function JewelryPage() {
     }, 300);
   };
 
+  const handleFilter = (cat: string | null) => {
+    setFilteredCategory(cat);
+    router.push(cat ? `/jewelry?category=${cat}` : "/jewelry", undefined, {
+      shallow: true,
+    });
+    setTimeout(() => {
+      productGridRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, 100);
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-[#1f2a44] text-[#e0e0e0]">
-      {/* 🌐 Page Metadata */}
       <Head>
         <title>Jewelry Collection | Classy Diamonds</title>
         <meta
@@ -74,30 +84,34 @@ export default function JewelryPage() {
         </div>
       </section>
 
-      {/* 🛍️ Shop by Category */}
-      <section className="py-16 sm:py-20 px-4 sm:px-6 max-w-7xl mx-auto">
-        <h2 className="text-2xl sm:text-3xl font-semibold text-center mb-12 sm:mb-16">
-          Shop by Category
-        </h2>
-
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-6 sm:gap-8 text-center">
+      {/* 🧭 Filter Buttons */}
+      <section className="pt-16 px-4 sm:px-6 max-w-7xl mx-auto">
+        <div className="flex flex-wrap gap-3 justify-center mb-12">
           {[
+            "All",
             "Engagement",
             "Wedding Bands",
             "Rings",
             "Bracelets",
             "Necklaces",
             "Earrings",
-          ].map((category) => (
-            <Link
-              key={category}
-              href={`/jewelry?category=${category
-                .toLowerCase()
-                .replace(/\s+/g, "-")}`}
-              className="group bg-[#25304f] rounded-2xl overflow-hidden shadow-md hover:shadow-2xl hover:scale-105 transition-all duration-300 flex items-center justify-center py-8 sm:py-10 text-base sm:text-lg font-semibold text-[#cfd2d6] hover:text-white cursor-pointer"
+          ].map((cat) => (
+            <button
+              key={cat}
+              onClick={() =>
+                handleFilter(
+                  cat === "All" ? null : cat.toLowerCase().replace(/\s+/g, "-")
+                )
+              }
+              className={`px-5 py-2 rounded-full text-sm font-semibold transition ${
+                filteredCategory ===
+                (cat === "All" ? null : cat.toLowerCase().replace(/\s+/g, "-"))
+                  ? "bg-white text-[#1f2a44]"
+                  : "bg-[#25304f] text-white hover:bg-[#2f3b5e]"
+              }`}
             >
-              {category}
-            </Link>
+              {cat}
+            </button>
           ))}
         </div>
       </section>
@@ -113,7 +127,10 @@ export default function JewelryPage() {
           to celebrate life's most treasured moments.
         </p>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
+        <div
+          ref={productGridRef}
+          className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6"
+        >
           {filteredProducts.slice(0, visibleCount).map((product, index) => (
             <div key={product.id} className="group hover:cursor-pointer">
               <div className="bg-[#25304f] rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl hover:ring-2 hover:ring-[#e0e0e0] hover:scale-105 transition-all duration-300 flex flex-col h-full">
