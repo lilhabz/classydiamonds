@@ -35,10 +35,7 @@ export default function JewelryPage() {
       setFilteredCategory(queryCategory.toLowerCase());
 
       if (shouldScroll) {
-        // ⬆️ Force page to top before smooth scroll
-        window.scrollTo({ top: 0 });
-
-        // 🎯 Then scroll to heading after layout settles
+        // 🎯 Wait for DOM to paint, then scroll down once
         requestAnimationFrame(() => {
           setTimeout(() => {
             if (headerRef.current) {
@@ -53,7 +50,7 @@ export default function JewelryPage() {
                 behavior: "smooth",
               });
 
-              // 🧼 Clean URL
+              // 🧼 Clean up scroll param
               router.replace(
                 {
                   pathname: "/jewelry",
@@ -63,7 +60,7 @@ export default function JewelryPage() {
                 { shallow: true }
               );
             }
-          }, 300); // 🔁 Delay ensures full layout is painted
+          }, 300); // wait for full paint
         });
       }
     } else {
