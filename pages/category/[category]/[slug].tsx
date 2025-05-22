@@ -86,10 +86,12 @@ export default function ProductPage() {
         <div className="pl-4 pr-4 sm:pl-8 sm:pr-8 mt-6 mb-6">
           <Breadcrumbs
             customLabels={{
+              category: "", // 👈 hides the 'category' segment
               [category]: capitalizedCategory,
               [slug]: product.name,
             }}
             customPaths={{
+              category: "/", // 👈 makes sure it doesn't link
               [category]: `/category/${category}`,
               [slug]: `/category/${category}/${slug}`,
             }}
