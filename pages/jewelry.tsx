@@ -1,4 +1,4 @@
-// 📄 pages/jewelry.tsx – Unified Scroll & Filter Smooth Scroll 💎
+// 📄 pages/jewelry.tsx – Unified Scroll Logic 💎
 
 "use client";
 
@@ -11,52 +11,64 @@ import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/router";
 
 export default function JewelryPage() {
+  // 🛒 Cart context
   const { addToCart } = useCart();
-  const [visibleCount, setVisibleCount] = useState(8);
-  const [filteredCategory, setFilteredCategory] = useState<string | null>(null);
-  const headerRef = useRef<HTMLDivElement>(null);
-  const productsEndRef = useRef<HTMLDivElement>(null);
-  const router = useRouter();
 
-  // 📥 Sync filter state from URL
+  // 🔢 Load-more count
+  const [visibleCount, setVisibleCount] = useState(8);
+
+  // 🔍 Active category slug
+  const [filteredCategory, setFilteredCategory] = useState<string | null>(null);
+
+  // 📌 Ref to the category header
+  const headerRef = useRef<HTMLDivElement>(null);
+
+  const router = useRouter();
+  // 🚩 Track whether we should auto-scroll
+  const scrollTriggered = useRef(false);
+
+  // 🛠 Sync category & scroll flag on query changes
   useEffect(() => {
-    const category = router.query.category;
+    const { category, scroll } = router.query;
     if (typeof category === "string") {
-      setFilteredCategory(category.toLowerCase());
+      setFilteredCategory(category);
+      scrollTriggered.current = scroll === "true";
     } else {
       setFilteredCategory(null);
     }
-    // On every navigation, ensure we start at the top
-    window.scrollTo(0, 0);
-  }, [router.query.category]);
+  }, [router.query]);
 
-  // 🔽 Smooth scroll to header when coming from Home with scroll=true
+  // 🏃‍♂️ When flagged, scroll down to the header, then clear the flag & URL
   useEffect(() => {
-    if (router.query.scroll !== "true" || !filteredCategory) return;
+    if (!filteredCategory || !scrollTriggered.current) return;
 
-    const timeout = setTimeout(() => {
+    const id = setTimeout(() => {
       if (!headerRef.current) return;
       const headerY =
         headerRef.current.getBoundingClientRect().top + window.pageYOffset;
-      const navHeight = document.querySelector("header")?.clientHeight || 0;
+      const navHeight = document.querySelector("header")?.clientHeight ?? 0;
 
       window.scrollTo({
-        top: headerY - navHeight - 60,
+        top: headerY - navHeight - 60, // adjust as needed
         behavior: "smooth",
       });
 
-      // 🧼 Remove scroll param so internal filters don't re-trigger
+      scrollTriggered.current = false;
+      // remove `scroll` param for a clean URL
       router.replace(
-        { pathname: "/jewelry", query: { category: filteredCategory } },
+        {
+          pathname: "/jewelry",
+          query: { category: filteredCategory },
+        },
         undefined,
         { shallow: true }
       );
     }, 100);
 
-    return () => clearTimeout(timeout);
-  }, [filteredCategory, router.query.scroll]);
+    return () => clearTimeout(id);
+  }, [filteredCategory]);
 
-  // 🔄 Compute filtered products
+  // 🔄 Filter the data
   const filteredProducts = filteredCategory
     ? jewelryData.filter((p) => p.category.toLowerCase() === filteredCategory)
     : jewelryData;
@@ -64,21 +76,21 @@ export default function JewelryPage() {
   // ➕ Load more handler
   const handleLoadMore = () => {
     setVisibleCount((prev) => prev + 4);
-    setTimeout(() => {
-      productsEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    }, 300);
   };
 
-  // 🧭 Filter button handler
+  // 🔘 Filter button clicks now include `scroll=true`
   const handleFilter = (cat: string | null) => {
     router.push(
-      cat ? { pathname: "/jewelry", query: { category: cat } } : "/jewelry",
+      {
+        pathname: "/jewelry",
+        query: { category: cat || undefined, scroll: "true" },
+      },
       undefined,
       { shallow: true }
     );
   };
 
-  // 📝 SEO titles & descriptions
+  // 📝 SEO metadata
   const pageTitle = filteredCategory
     ? `${filteredCategory
         .replace(/-/g, " ")
@@ -88,12 +100,11 @@ export default function JewelryPage() {
     ? `Explore fine ${filteredCategory.replace(
         /-/g,
         " "
-      )} from Classy Diamonds. Beautiful, handcrafted pieces for every moment.`
-    : "Explore timeless engagement rings, wedding bands, necklaces, earrings, and more, crafted with passion at Classy Diamonds.";
+      )} from Classy Diamonds.`
+    : "Explore timeless engagement rings, wedding bands, necklaces, earrings, and more.";
 
   return (
     <div className="min-h-screen flex flex-col bg-[#1f2a44] text-[#e0e0e0]">
-      {/* 🧾 Head Metadata */}
       <Head>
         <title>{pageTitle}</title>
         <meta name="description" content={pageDescription} />
@@ -114,31 +125,31 @@ export default function JewelryPage() {
           <div className="absolute inset-0 bg-black opacity-50 pointer-events-none" />
         </div>
         <div className="relative z-10 px-4">
-          <h1 className="text-3xl md:text-6xl font-bold mb-6 text-[#e0e0e0]">
+          <h1 className="text-3xl md:text-6xl font-bold mb-6">
             Jewelry Collection
           </h1>
-          <p className="text-base md:text-xl max-w-2xl mx-auto text-[#e0e0e0]">
-            Discover timeless pieces designed to capture every moment, crafted
-            with passion and precision.
+          <p className="text-base md:text-xl max-w-2xl mx-auto">
+            Discover timeless pieces crafted with passion.
           </p>
         </div>
       </section>
 
-      {/* 💎 Jewelry Grid Section */}
-      <section className="pt-32 pb-16 sm:pb-20 px-4 sm:px-6 max-w-7xl mx-auto">
-        {/* 📌 Header & Filters */}
+      {/* 💎 Grid & Filters */}
+      <section className="pt-32 pb-16 px-4 sm:px-6 max-w-7xl mx-auto">
+        {/* 📍 The header we scroll to */}
         <div ref={headerRef}>
-          <h2 className="text-2xl sm:text-3xl font-semibold text-center mb-4 sm:mb-6">
+          <h2 className="text-2xl sm:text-3xl font-semibold text-center mb-6">
             {filteredCategory
               ? filteredCategory
                   .replace(/-/g, " ")
                   .replace(/\b\w/g, (l) => l.toUpperCase())
               : "Our Jewelry"}
           </h2>
-          <p className="text-center text-[#cfd2d6] max-w-2xl mx-auto mb-12 text-base sm:text-lg">
-            Browse our exclusive collection of fine jewelry, meticulously
-            crafted to celebrate life's most treasured moments.
+          <p className="text-center text-[#cfd2d6] mb-12">
+            Browse our exclusive collection.
           </p>
+
+          {/* 🧭 Category Buttons */}
           <div className="flex flex-wrap gap-3 justify-center mb-16">
             {[
               "All",
@@ -170,77 +181,46 @@ export default function JewelryPage() {
 
         {/* 🖼️ Product Grid */}
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
-          {filteredProducts.slice(0, visibleCount).map((product, index) => (
-            <div key={product.id} className="group hover:cursor-pointer">
-              <div className="bg-[#25304f] rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl hover:ring-2 hover:ring-[#e0e0e0] hover:scale-105 transition-all duration-300 flex flex-col h-full">
-                <Link
-                  href={`/category/${product.category}/${product.slug}`}
-                  className="flex-1"
-                >
-                  <div className="w-full h-44 sm:h-48 overflow-hidden relative">
+          {filteredProducts.slice(0, visibleCount).map((product) => (
+            <div key={product.id} className="group">
+              <div className="bg-[#25304f] rounded-2xl overflow-hidden shadow-lg flex flex-col h-full">
+                <Link href={`/category/${product.category}/${product.slug}`}>
+                  <div className="w-full h-44 sm:h-48 relative">
                     <Image
                       src={product.image}
                       alt={product.name}
                       fill
-                      priority={index < 4}
-                      sizes="(min-width: 1024px) 25vw, 50vw"
-                      className="object-cover w-full h-full group-hover:scale-110 transition-transform duration-300"
+                      className="object-cover group-hover:scale-110 transition"
                     />
                   </div>
                   <div className="p-4 text-center">
-                    <h3 className="text-lg sm:text-xl font-semibold text-[#cfd2d6] group-hover:text-white transition-colors duration-300">
-                      {product.name}
-                    </h3>
-                    <p className="mt-2 text-gray-400 group-hover:text-white transition-colors duration-300">
-                      ${product.price.toLocaleString()}
-                    </p>
+                    <h3 className="font-semibold">{product.name}</h3>
+                    <p>${product.price.toLocaleString()}</p>
                   </div>
                 </Link>
-                <div className="p-6 pt-0">
-                  <button
-                    onClick={(e) => {
-                      e.preventDefault();
-                      addToCart({
-                        id: product.id,
-                        name: product.name,
-                        price: product.price,
-                        image: product.image,
-                        quantity: 1,
-                      });
-                    }}
-                    className="w-full px-6 py-3 bg-white text-[#1f2a44] rounded-xl font-semibold transition-all duration-300 transform hover:scale-110 hover:bg-gray-200 hover:font-bold cursor-pointer"
-                  >
-                    Add to Cart
-                  </button>
-                </div>
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    addToCart({ ...product, quantity: 1 });
+                  }}
+                  className="m-4 px-4 py-2 bg-white text-[#1f2a44] rounded"
+                >
+                  Add to Cart
+                </button>
               </div>
             </div>
           ))}
         </div>
 
-        {/* 📍 Scroll Target for “Load More” */}
-        <div ref={productsEndRef} />
-
-        {/* 🔄 Load More or CTA */}
-        {visibleCount < filteredProducts.length ? (
+        {/* ➕ Load More */}
+        {visibleCount < filteredProducts.length && (
           <div className="flex justify-center mt-12">
             <button
               onClick={handleLoadMore}
-              className="px-8 py-4 bg-[#e0e0e0] text-[#1f2a44] rounded-full font-semibold text-base sm:text-lg hover:bg-white hover:scale-105 transition-transform duration-300"
+              className="px-8 py-4 bg-[#e0e0e0] text-[#1f2a44] rounded-full"
             >
               Load More
             </button>
-          </div>
-        ) : (
-          <div className="text-center mt-12 text-base sm:text-lg text-gray-400">
-            🎉 You’ve seen it all!
-            <div className="mt-6">
-              <Link href="/custom">
-                <button className="px-8 py-4 bg-[#e0e0e0] text-[#1f2a44] rounded-full font-semibold text-base sm:text-lg hover:bg-white hover:scale-105 transition-transform duration-300">
-                  Create Your Own Piece
-                </button>
-              </Link>
-            </div>
           </div>
         )}
       </section>
