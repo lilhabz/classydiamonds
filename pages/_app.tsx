@@ -1,4 +1,4 @@
-// 📄 pages/_app.tsx – Final Scroll Restoration Fix 💎
+// 📄 pages/_app.tsx – Final Scroll Fix 💎
 
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import "@/styles/globals.css";
@@ -18,28 +18,30 @@ export default function App({
   const router = useRouter();
 
   useEffect(() => {
-    // ✅ Prevent browser from auto-restoring scroll (fixes jump)
+    // 🧹 Prevent browser restoring old scroll on back/forward
     if ("scrollRestoration" in window.history) {
       window.history.scrollRestoration = "manual";
     }
 
-    const handleBeforeUnload = () => {
-      if ("scrollRestoration" in window.history) {
-        window.history.scrollRestoration = "auto";
-      }
-    };
-
+    // 🧼 Scroll to top as soon as route starts changing
     const handleRouteChangeStart = () => {
-      // 🧹 Scroll to top on route changes
-      window.scrollTo(0, 0);
+      window.scrollTo({ top: 0, left: 0, behavior: "auto" });
     };
 
-    window.addEventListener("beforeunload", handleBeforeUnload);
+    // ✅ Ensure we're at top again after render
+    const handleRouteChangeComplete = () => {
+      requestAnimationFrame(() => {
+        window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+      });
+    };
+
+    // 🎯 Listen for Next.js routing events
     router.events.on("routeChangeStart", handleRouteChangeStart);
+    router.events.on("routeChangeComplete", handleRouteChangeComplete);
 
     return () => {
-      window.removeEventListener("beforeunload", handleBeforeUnload);
       router.events.off("routeChangeStart", handleRouteChangeStart);
+      router.events.off("routeChangeComplete", handleRouteChangeComplete);
       if ("scrollRestoration" in window.history) {
         window.history.scrollRestoration = "auto";
       }
@@ -49,6 +51,7 @@ export default function App({
   return (
     <SessionProvider session={session}>
       <CartProvider>
+        {/* 🌐 Global Site Layout */}
         <Navbar />
         <div className="pt-20 flex flex-col min-h-screen bg-[#1f2a44] text-[#e0e0e0]">
           <Component {...pageProps} />
