@@ -194,7 +194,7 @@ const Home = () => {
             ].map((category, index) => (
               <Link
                 key={category.name}
-                href={`/category/${category.name
+                href={`/jewelry?category=${category.name
                   .toLowerCase()
                   .replace(/\s+/g, "-")}`}
                 className="group relative rounded-xl overflow-hidden shadow-md hover:shadow-xl hover:scale-105 transition-transform duration-300"
