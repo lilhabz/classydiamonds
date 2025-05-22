@@ -1,3 +1,5 @@
+// 📄 pages/jewelry.tsx – Unified Scroll & Filter Smooth Scroll 💎
+
 "use client";
 
 import Image from "next/image";
@@ -16,39 +18,50 @@ export default function JewelryPage() {
   const productsEndRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
+  // 📥 Sync filter state from URL
   useEffect(() => {
-    const queryCategory = router.query.category;
-    if (typeof queryCategory === "string") {
-      setFilteredCategory(queryCategory.toLowerCase());
+    const category = router.query.category;
+    if (typeof category === "string") {
+      setFilteredCategory(category.toLowerCase());
     } else {
       setFilteredCategory(null);
     }
+    // On every navigation, ensure we start at the top
+    window.scrollTo(0, 0);
   }, [router.query.category]);
 
+  // 🔽 Smooth scroll to header when coming from Home with scroll=true
   useEffect(() => {
-    if (!filteredCategory) return;
+    if (router.query.scroll !== "true" || !filteredCategory) return;
 
-    const scrollToHeader = () => {
+    const timeout = setTimeout(() => {
       if (!headerRef.current) return;
       const headerY =
         headerRef.current.getBoundingClientRect().top + window.pageYOffset;
-      const navEl = document.querySelector("header");
-      const navHeight = navEl ? navEl.clientHeight : 0;
+      const navHeight = document.querySelector("header")?.clientHeight || 0;
 
       window.scrollTo({
         top: headerY - navHeight - 60,
         behavior: "smooth",
       });
-    };
 
-    const timeout = setTimeout(scrollToHeader, 100);
+      // 🧼 Remove scroll param so internal filters don't re-trigger
+      router.replace(
+        { pathname: "/jewelry", query: { category: filteredCategory } },
+        undefined,
+        { shallow: true }
+      );
+    }, 100);
+
     return () => clearTimeout(timeout);
-  }, [filteredCategory]);
+  }, [filteredCategory, router.query.scroll]);
 
+  // 🔄 Compute filtered products
   const filteredProducts = filteredCategory
     ? jewelryData.filter((p) => p.category.toLowerCase() === filteredCategory)
     : jewelryData;
 
+  // ➕ Load more handler
   const handleLoadMore = () => {
     setVisibleCount((prev) => prev + 4);
     setTimeout(() => {
@@ -56,13 +69,16 @@ export default function JewelryPage() {
     }, 300);
   };
 
+  // 🧭 Filter button handler
   const handleFilter = (cat: string | null) => {
-    setFilteredCategory(cat);
-    router.push(cat ? `/jewelry?category=${cat}` : "/jewelry", undefined, {
-      shallow: true,
-    });
+    router.push(
+      cat ? { pathname: "/jewelry", query: { category: cat } } : "/jewelry",
+      undefined,
+      { shallow: true }
+    );
   };
 
+  // 📝 SEO titles & descriptions
   const pageTitle = filteredCategory
     ? `${filteredCategory
         .replace(/-/g, " ")
@@ -77,13 +93,14 @@ export default function JewelryPage() {
 
   return (
     <div className="min-h-screen flex flex-col bg-[#1f2a44] text-[#e0e0e0]">
+      {/* 🧾 Head Metadata */}
       <Head>
         <title>{pageTitle}</title>
         <meta name="description" content={pageDescription} />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
 
-      {/* Hero Section */}
+      {/* 🌟 Hero Section */}
       <section className="-mt-20 relative w-full h-[80vh] flex items-center justify-center text-center overflow-hidden">
         <div className="absolute inset-0">
           <Image
@@ -107,8 +124,9 @@ export default function JewelryPage() {
         </div>
       </section>
 
-      {/* Jewelry Grid Section */}
+      {/* 💎 Jewelry Grid Section */}
       <section className="pt-32 pb-16 sm:pb-20 px-4 sm:px-6 max-w-7xl mx-auto">
+        {/* 📌 Header & Filters */}
         <div ref={headerRef}>
           <h2 className="text-2xl sm:text-3xl font-semibold text-center mb-4 sm:mb-6">
             {filteredCategory
@@ -121,8 +139,6 @@ export default function JewelryPage() {
             Browse our exclusive collection of fine jewelry, meticulously
             crafted to celebrate life's most treasured moments.
           </p>
-
-          {/* Filter Buttons */}
           <div className="flex flex-wrap gap-3 justify-center mb-16">
             {[
               "All",
@@ -152,7 +168,7 @@ export default function JewelryPage() {
           </div>
         </div>
 
-        {/* Product Grid */}
+        {/* 🖼️ Product Grid */}
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
           {filteredProducts.slice(0, visibleCount).map((product, index) => (
             <div key={product.id} className="group hover:cursor-pointer">
@@ -202,8 +218,10 @@ export default function JewelryPage() {
           ))}
         </div>
 
+        {/* 📍 Scroll Target for “Load More” */}
         <div ref={productsEndRef} />
 
+        {/* 🔄 Load More or CTA */}
         {visibleCount < filteredProducts.length ? (
           <div className="flex justify-center mt-12">
             <button
@@ -215,7 +233,7 @@ export default function JewelryPage() {
           </div>
         ) : (
           <div className="text-center mt-12 text-base sm:text-lg text-gray-400">
-            🎉 You've seen all our beautiful jewelry!
+            🎉 You’ve seen it all!
             <div className="mt-6">
               <Link href="/custom">
                 <button className="px-8 py-4 bg-[#e0e0e0] text-[#1f2a44] rounded-full font-semibold text-base sm:text-lg hover:bg-white hover:scale-105 transition-transform duration-300">
