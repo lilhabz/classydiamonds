@@ -1,5 +1,8 @@
 /* styles/globals.css */
 
+/* 1️⃣ Bring in your Tailwind build via import */
+@import "tailwindcss";
+
 /* 🎨 Base Theme Colors */
 :root {
   --background: #1f2a44;
