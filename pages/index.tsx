@@ -259,7 +259,7 @@ const Home = () => {
         </section>
 
         {/* 🛠️ About Section */}
-        <section className="py-16 sm:py-20 px-4 sm:px-6 bg-[#1f2a44]">
+        <section className="py-16 sm:py-20 px-4 sm:px-6 --bg-page">
           <div className="max-w-4xl mx-auto text-center">
             <h2 className="text-2xl sm:text-3xl font-semibold mb-6 sm:mb-8">
               Craftsmanship You Can Trust
@@ -275,7 +275,7 @@ const Home = () => {
         </section>
 
         {/* 💎 Why Choose Us Section */}
-        <section className="py-16 sm:py-20 px-4 sm:px-6 bg-[#1f2a44]">
+        <section className="py-16 sm:py-20 px-4 sm:px-6 --bg-page">
           <div className="max-w-4xl mx-auto text-center">
             <h2 className="text-3xl sm:text-4xl font-bold mb-8 sm:mb-10">
               Why Choose Classy Diamonds?
@@ -291,7 +291,7 @@ const Home = () => {
         </section>
 
         {/* ✍️ Custom Jewelry CTA */}
-        <section className="bg-[#1f2a44] py-16 sm:py-20 px-4 sm:px-6">
+        <section className="--bg-page py-16 sm:py-20 px-4 sm:px-6">
           <div className="max-w-5xl mx-auto text-center">
             <h2 className="text-3xl sm:text-4xl font-bold mb-8">
               Bring Your Vision to Life
