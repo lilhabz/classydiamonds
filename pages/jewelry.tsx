@@ -190,32 +190,37 @@ export default function JewelryPage() {
         {/* 🖼️ Product Grid */}
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
           {filteredProducts.slice(0, visibleCount).map((product) => (
-            <div key={product.id} className="group">
-              <div className="bg-[#25304f] rounded-2xl overflow-hidden shadow-lg flex flex-col h-full">
-                <Link href={`/category/${product.category}/${product.slug}`}>
-                  <div className="w-full h-44 sm:h-48 relative">
-                    <Image
-                      src={product.image}
-                      alt={product.name}
-                      fill
-                      className="object-cover group-hover:scale-110 transition"
-                    />
-                  </div>
-                  <div className="p-4 text-center">
-                    <h3 className="font-semibold">{product.name}</h3>
-                    <p>${product.price.toLocaleString()}</p>
-                  </div>
-                </Link>
-                <button
-                  onClick={(e) => {
-                    e.preventDefault();
-                    addToCart({ ...product, quantity: 1 });
-                  }}
-                  className="m-4 px-4 py-2 bg-white text-[#1f2a44] rounded"
-                >
-                  Add to Cart
-                </button>
-              </div>
+            <div
+              key={product.id}
+              className="group bg-[#25304f] rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl hover:scale-105 transition-all duration-300 flex flex-col h-full"
+            >
+              <Link href={`/category/${product.category}/${product.slug}`}>
+                <div className="w-full h-44 sm:h-48 relative">
+                  <Image
+                    src={product.image}
+                    alt={product.name}
+                    fill
+                    className="object-cover group-hover:scale-110 transition"
+                  />
+                </div>
+                <div className="p-4 text-center flex-1 flex flex-col justify-between">
+                  <h3 className="font-semibold text-[#e0e0e0]">
+                    {product.name}
+                  </h3>
+                  <p className="text-[#cfd2d6]">
+                    ${product.price.toLocaleString()}
+                  </p>
+                </div>
+              </Link>
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  addToCart({ ...product, quantity: 1 });
+                }}
+                className="m-4 px-4 py-2 bg-white text-[#1f2a44] rounded"
+              >
+                Add to Cart
+              </button>
             </div>
           ))}
         </div>
