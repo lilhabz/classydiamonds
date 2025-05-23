@@ -228,7 +228,7 @@ export default function JewelryPage() {
           <div className="flex justify-center mt-12">
             <button
               onClick={handleLoadMore}
-              className="px-8 py-4 bg-[#e0e0e0] text-[#1f2a44] rounded-full"
+              className="px-8 py-4 bg-[#e0e0e0] text-[#1f2a44] rounded-full cursor-pointer"
             >
               Load More
             </button>
