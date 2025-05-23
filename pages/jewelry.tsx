@@ -78,16 +78,24 @@ export default function JewelryPage() {
     setVisibleCount((prev) => prev + 4);
   };
 
-  // 🔘 Filter button clicks now include `scroll=true`
-  const handleFilter = (cat: string | null) => {
-    router.push(
-      {
-        pathname: "/jewelry",
-        query: { category: cat || undefined, scroll: "true" },
-      },
-      undefined,
-      { shallow: true }
-    );
+  // 🔘 Updated filter handler: remove scroll param for "All"
+  const handleFilter = (slug: string | null) => {
+    if (slug === null) {
+      // 🔄 Reset to "All" (no query params)
+      router.push({ pathname: "/jewelry", query: {} }, undefined, {
+        shallow: true,
+      });
+    } else {
+      // 🔘 Filter specific category with scroll
+      router.push(
+        {
+          pathname: "/jewelry",
+          query: { category: slug, scroll: "true" },
+        },
+        undefined,
+        { shallow: true }
+      );
+    }
   };
 
   // 📝 SEO metadata
