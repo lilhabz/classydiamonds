@@ -171,7 +171,7 @@ export default function JewelryPage() {
                 <button
                   key={cat}
                   onClick={() => handleFilter(slug)}
-                  className={`px-5 py-2 rounded-full text-sm font-semibold transition ${
+                  className={`px-5 py-2 rounded-full text-sm font-semibold cursor-pointer transition ${
                     filteredCategory === slug
                       ? "bg-white text-[#1f2a44]"
                       : "bg-[#25304f] text-white hover:bg-[#2f3b5e]"
