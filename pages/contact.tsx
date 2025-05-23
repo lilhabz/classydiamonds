@@ -184,7 +184,7 @@ export default function ContactPage() {
             <h1 className="text-3xl sm:text-4xl font-serif font-semibold mb-6 text-[var(--foreground)]">
               Contact Classy Diamonds
             </h1>
-            <p className="text-[#e0e0e0] max-w-2xl mx-auto text-base sm:text-lg">
+            <p className="text-[var(--foreground)] max-w-2xl mx-auto text-base sm:text-lg">
               Turning dreams into reality for nearly 30 years.
             </p>
           </div>
@@ -233,13 +233,13 @@ export default function ContactPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center w-full">
             <div className="bg-[var(--bg-nav)] rounded-2xl shadow-lg p-8 sm:p-10 flex flex-col gap-8 text-center md:text-left hover:shadow-2xl transition-shadow duration-300">
               <div className="flex flex-col items-center md:items-start">
-                <FaPhoneAlt className="text-3xl mb-2 text-[#e0e0e0]" />
+                <FaPhoneAlt className="text-3xl mb-2 text-[var(--foreground)]" />
                 <p className="text-base sm:text-lg text-[#cfd2d6]">
                   +1 (123) 456-7890
                 </p>
               </div>
               <div className="flex flex-col items-center md:items-start">
-                <FaEnvelope className="text-3xl mb-2 text-[#e0e0e0]" />
+                <FaEnvelope className="text-3xl mb-2 text-[var(--foreground)]" />
                 <p className="text-base sm:text-lg text-[#cfd2d6]">
                   info@classydiamonds.com
                 </p>
@@ -282,7 +282,7 @@ export default function ContactPage() {
               <div className="w-full">
                 <button
                   onClick={() => setShowCustom((prev) => !prev)}
-                  className="w-full text-left bg-[#25304f] text-[#e0e0e0] font-semibold px-6 py-4 border-b border-[var(--bg-nav)]"
+                  className="w-full text-left bg-[var(--bg-nav)] text-[var(--foreground)] font-semibold px-6 py-4 border-b border-[var(--bg-nav)]"
                 >
                   💍 Start Your Custom Jewelry Creation
                   <span className="float-right pr-2">
@@ -293,7 +293,7 @@ export default function ContactPage() {
 
               {/* 📩 Form Body */}
               <div className={`w-full ${showCustom ? "block" : "hidden"}`}>
-                <div className="bg-[#25304f] p-6 sm:p-10 border-b border-[#1f2a44] rounded-b-xl">
+                <div className="bg-[var(--bg-nav)] p-6 sm:p-10 border-b border-[var(--bg-nav)] rounded-b-xl">
                   <h2 className="text-2xl sm:text-3xl font-serif font-semibold mb-6 text-center">
                     Start Your Custom Jewelry Creation
                   </h2>
@@ -414,7 +414,7 @@ export default function ContactPage() {
               <div className="w-full">
                 <button
                   onClick={() => setShowMessage((prev) => !prev)}
-                  className="w-full text-left bg-[#25304f] text-[#e0e0e0] font-semibold px-6 py-4 border-b border-[#1f2a44]"
+                  className="w-full text-left bg-[var(--bg-nav)] text-[var(--foreground)] font-semibold px-6 py-4 border-b border-[var(--bg-nav)]"
                 >
                   📨 Send Us a Message
                   <span className="float-right pr-2">
@@ -425,7 +425,7 @@ export default function ContactPage() {
 
               {/* 📩 Form Body */}
               <div className={`w-full ${showMessage ? "block" : "hidden"}`}>
-                <div className="bg-[#25304f] p-6 sm:p-10 border-b border-[#1f2a44] rounded-b-xl">
+                <div className="bg-[var(--bg-nav)] p-6 sm:p-10 border-b border-[var(--bg-nav)] rounded-b-xl">
                   <h2 className="text-2xl sm:text-3xl font-serif font-semibold mb-6 text-center">
                     Send Us a Message
                   </h2>
