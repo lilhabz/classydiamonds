@@ -8,7 +8,7 @@
   /* Navbar background */
   --bg-nav: #1f2a44;
   /* Page/content background (slightly lighter than nav) */
-  --bg-page: #29375e; /* slightly lighter navy for stronger contrast */ /* lighter navy blue for content */
+  --bg-page: #232f4d; /* slightly lighter navy for stronger contrast */ /* lighter navy blue for content */
   /* Foreground (text/icons) */
   --foreground: #e0e0e0;
 }
