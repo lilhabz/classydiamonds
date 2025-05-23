@@ -1,322 +1,242 @@
-// 📄 pages/index.tsx – Tiffany Swipe Rebuild 💎 (Now with Desktop Accessibility Fixes ♿)
+// 📄 pages/jewelry.tsx – Unified Scroll Logic 💎
 
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import Head from "next/head";
-import Image from "next/image";
-
 import { useCart } from "@/context/CartContext";
-import { productsData } from "@/data/productsData";
+import { jewelryData } from "@/data/jewelryData";
+import { useState, useRef, useEffect } from "react";
+import { useRouter } from "next/router";
 
-const Home = () => {
+export default function JewelryPage() {
+  // 🛒 Cart context
   const { addToCart } = useCart();
 
+  // 🔢 Load-more count
+  const [visibleCount, setVisibleCount] = useState(8);
+
+  // 🔍 Active category slug
+  const [filteredCategory, setFilteredCategory] = useState<string | null>(null);
+
+  // 📌 Ref to the category header
+  const headerRef = useRef<HTMLDivElement>(null);
+
+  const router = useRouter();
+  // 🚩 Track whether we should auto-scroll
+  const scrollTriggered = useRef(false);
+
+  // 🛠 Sync category & scroll flag on query changes
+  useEffect(() => {
+    const { category, scroll } = router.query;
+    if (typeof category === "string") {
+      setFilteredCategory(category);
+      scrollTriggered.current = scroll === "true";
+    } else {
+      setFilteredCategory(null);
+    }
+  }, [router.query]);
+
+  // 🏃‍♂️ When flagged, scroll down to the header, then clear the flag & URL
+  useEffect(() => {
+    if (!filteredCategory || !scrollTriggered.current) return;
+
+    const id = setTimeout(() => {
+      if (!headerRef.current) return;
+      const headerY =
+        headerRef.current.getBoundingClientRect().top + window.pageYOffset;
+      const navHeight = document.querySelector("header")?.clientHeight ?? 0;
+
+      window.scrollTo({
+        top: headerY - navHeight - 60, // adjust as needed
+        behavior: "smooth",
+      });
+
+      scrollTriggered.current = false;
+      // remove `scroll` param for a clean URL
+      router.replace(
+        {
+          pathname: "/jewelry",
+          query: { category: filteredCategory },
+        },
+        undefined,
+        { shallow: true }
+      );
+    }, 100);
+
+    return () => clearTimeout(id);
+  }, [filteredCategory]);
+
+  // 🔄 Filter the data
+  const filteredProducts = filteredCategory
+    ? jewelryData.filter((p) => p.category.toLowerCase() === filteredCategory)
+    : jewelryData;
+
+  // ➕ Load more handler
+  const handleLoadMore = () => {
+    setVisibleCount((prev) => prev + 4);
+  };
+
+  // 🔘 Updated filter handler: remove scroll param for "All"
+  const handleFilter = (slug: string | null) => {
+    if (slug === null) {
+      // 🔄 Reset to "All" (no query params)
+      router.push({ pathname: "/jewelry", query: {} }, undefined, {
+        shallow: true,
+      });
+    } else {
+      // 🔘 Filter specific category with scroll
+      router.push(
+        {
+          pathname: "/jewelry",
+          query: { category: slug, scroll: "true" },
+        },
+        undefined,
+        { shallow: true }
+      );
+    }
+  };
+
+  // 📝 SEO metadata
+  const pageTitle = filteredCategory
+    ? `${filteredCategory
+        .replace(/-/g, " ")
+        .replace(/\b\w/g, (l) => l.toUpperCase())} | Classy Diamonds`
+    : "Jewelry Collection | Classy Diamonds";
+  const pageDescription = filteredCategory
+    ? `Explore fine ${filteredCategory.replace(
+        /-/g,
+        " "
+      )} from Classy Diamonds.`
+    : "Explore timeless engagement rings, wedding bands, necklaces, earrings, and more.";
+
   return (
-    <>
+    <div className="min-h-screen flex flex-col bg-[#1f2a44] text-[#e0e0e0]">
       <Head>
-        <title>Classy Diamonds - Fine Jewelry</title>
-        <meta
-          name="description"
-          content="Explore elegant engagement rings, wedding bands, and fine jewelry crafted by Classy Diamonds."
-        />
+        <title>{pageTitle}</title>
+        <meta name="description" content={pageDescription} />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
 
-      <main className="flex flex-col min-h-screen bg-[#1f2a44] text-[#e0e0e0] overflow-x-hidden">
-        <div className="h-0" />
+      {/* 🌟 Hero Section */}
+      <section className="-mt-20 relative w-full h-[80vh] flex items-center justify-center text-center overflow-hidden">
+        <div className="absolute inset-0">
+          <Image
+            src="/hero-jewelry.jpg"
+            alt="Jewelry Hero Background"
+            fill
+            priority
+            sizes="100vw"
+            className="object-cover w-full h-full"
+          />
+          <div className="absolute inset-0 bg-black opacity-50 pointer-events-none" />
+        </div>
+        <div className="relative z-10 px-4">
+          <h1 className="text-3xl md:text-6xl font-bold mb-6">
+            Jewelry Collection
+          </h1>
+          <p className="text-base md:text-xl max-w-2xl mx-auto">
+            Discover timeless pieces crafted with passion.
+          </p>
+        </div>
+      </section>
 
-        {/* 🌟 Hero Section */}
-        <section className="-mt-20 relative w-full h-[80vh] flex items-center justify-center text-center overflow-hidden">
-          <div className="absolute inset-0" aria-hidden="true">
-            <div className="relative w-full h-full">
-              <Image
-                src="/hero-home.jpg"
-                alt="Showcase of elegant jewelry collection"
-                fill
-                sizes="100vw"
-                priority
-                className="w-full h-full object-cover"
-              />
-            </div>
-            <div className="absolute inset-0 bg-black opacity-50 pointer-events-none" />
-          </div>
-
-          <div className="relative z-10 px-4">
-            <h1 className="text-3xl sm:text-4xl md:text-6xl font-bold mb-6 text-[#e0e0e0]">
-              Timeless Elegance
-            </h1>
-            <p className="text-base sm:text-lg md:text-xl max-w-2xl mx-auto text-[#e0e0e0] mb-8">
-              Discover handcrafted engagement rings, wedding bands, and fine
-              jewelry built to last a lifetime.
-            </p>
-            <Link
-              href="/jewelry"
-              className="inline-block"
-              aria-label="Go to Jewelry Collection"
-            >
-              <button className="px-8 py-4 bg-[#e0e0e0] text-[#1f2a44] rounded-full text-lg font-semibold hover:bg-white hover:scale-105 transition-transform duration-300 cursor-pointer">
-                Shop Now
-              </button>
-            </Link>
-          </div>
-        </section>
-
-        {/* 💎 Featured Products Section */}
-        <section className="py-16 sm:py-20 px-4 sm:px-6 max-w-7xl mx-auto">
-          <h2 className="text-2xl sm:text-3xl font-semibold text-center mb-12 sm:mb-16">
-            Featured Pieces
+      {/* 💎 Grid & Filters */}
+      <section className="pt-32 pb-16 px-4 sm:px-6 max-w-7xl mx-auto">
+        {/* 📍 The header we scroll to */}
+        <div ref={headerRef}>
+          <h2 className="text-2xl sm:text-3xl font-semibold text-center mb-6">
+            {filteredCategory
+              ? filteredCategory
+                  .replace(/-/g, " ")
+                  .replace(/\b\w/g, (l) => l.toUpperCase())
+              : "Our Jewelry"}
           </h2>
+          <p className="text-center text-[#cfd2d6] mb-12">
+            Browse our exclusive collection.
+          </p>
 
-          {/* 📱 Mobile Grid View */}
-          <div className="grid grid-cols-2 gap-4 sm:hidden px-2">
-            {productsData.slice(0, 4).map((item, index) => (
-              <div
-                key={item.id}
-                className="bg-[#25304f] rounded-2xl shadow-lg flex flex-col"
-              >
-                <Link
-                  href={`/category/${item.category}/${item.slug}`}
-                  className="flex-1 flex flex-col"
-                  aria-label={`View ${item.name}`}
-                >
-                  <div className="relative w-full h-48">
-                    <Image
-                      src={item.image}
-                      alt={`Product image of ${item.name}`}
-                      fill
-                      priority={index === 0}
-                      className="object-cover rounded-t-2xl"
-                    />
-                  </div>
-                  <div className="p-4 text-center flex-1 flex flex-col justify-between">
-                    <h3 className="text-sm font-semibold text-[#cfd2d6]">
-                      {item.name}
-                    </h3>
-                    <p className="text-gray-400 text-xs">
-                      ${item.price.toLocaleString()}
-                    </p>
-                  </div>
-                </Link>
-                <div className="p-4 pt-0">
-                  <button
-                    onClick={() =>
-                      addToCart({
-                        id: item.id,
-                        name: item.name,
-                        price: item.price,
-                        image: item.image,
-                        quantity: 1,
-                      })
-                    }
-                    className="w-full px-3 py-2 bg-white text-[#1f2a44] text-sm rounded-xl font-semibold hover:bg-gray-100 transition"
-                    aria-label={`Add ${item.name} to cart`}
-                  >
-                    Add to Cart
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* 🖥️ Desktop Grid View */}
-          <div className="hidden sm:grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-10">
-            {productsData.slice(0, 6).map((item, index) => (
-              <div
-                key={item.id}
-                className="group bg-[#25304f] rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl hover:ring-2 hover:ring-[#e0e0e0] hover:scale-105 transition-all duration-300 flex flex-col cursor-pointer"
-              >
-                <Link
-                  href={`/category/${item.category}/${item.slug}`}
-                  className="flex-1 flex flex-col"
-                  aria-label={`View ${item.name}`}
-                >
-                  <div className="relative w-full h-72 sm:h-80 overflow-hidden">
-                    <Image
-                      src={item.image}
-                      alt={`Product image of ${item.name}`}
-                      fill
-                      priority={index === 0}
-                      sizes="(min-width: 1024px) 25vw, 33vw"
-                      className="object-cover group-hover:scale-110 transition-transform duration-300"
-                    />
-                  </div>
-                  <div className="p-6 text-center flex-1 flex flex-col justify-between">
-                    <div>
-                      <h3 className="text-xl sm:text-2xl font-semibold text-[#cfd2d6] group-hover:text-white transition-colors duration-300">
-                        {item.name}
-                      </h3>
-                      <p className="mt-2 text-gray-400 group-hover:text-white transition-colors duration-300">
-                        ${item.price.toLocaleString()}
-                      </p>
-                    </div>
-                  </div>
-                </Link>
-                <div className="p-6 pt-0">
-                  <button
-                    onClick={() =>
-                      addToCart({
-                        id: item.id,
-                        name: item.name,
-                        price: item.price,
-                        image: item.image,
-                        quantity: 1,
-                      })
-                    }
-                    className="w-full px-6 py-3 bg-white text-[#1f2a44] rounded-xl font-semibold hover:bg-gray-100 transition hover:scale-105 cursor-pointer"
-                    aria-label={`Add ${item.name} to cart`}
-                  >
-                    Add to Cart
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* 🛍️ Shop by Category Section */}
-        <section className="py-16 sm:py-20 w-full px-4 sm:px-10">
-          <h2 className="text-2xl sm:text-3xl font-semibold text-center mb-12 sm:mb-16">
-            Shop by Category
-          </h2>
-
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+          {/* 🧭 Category Buttons */}
+          <div className="flex flex-wrap gap-3 justify-center mb-16">
             {[
-              { name: "Engagement", image: "/category/engagement-cat.jpg" },
-              {
-                name: "Wedding Bands",
-                image: "/category/wedding-band-cat.jpg",
-              },
-              { name: "Rings", image: "/category/ring-cat.jpg" },
-              { name: "Bracelets", image: "/category/bracelet-cat.jpg" },
-              { name: "Necklaces", image: "/category/necklace-cat.jpg" },
-              { name: "Earrings", image: "/category/earring-cat.jpg" },
-            ].map((category, index) => (
-              <Link
-                key={category.name}
-                href={{
-                  pathname: "/jewelry",
-                  query: {
-                    category: category.name.toLowerCase().replace(/\s+/g, "-"),
-                    scroll: "true", // ✅ tells /jewelry to scroll on load
-                  },
+              "All",
+              "Engagement",
+              "Wedding Bands",
+              "Rings",
+              "Bracelets",
+              "Necklaces",
+              "Earrings",
+            ].map((cat) => {
+              const slug =
+                cat === "All" ? null : cat.toLowerCase().replace(/\s+/g, "-");
+              return (
+                <button
+                  key={cat}
+                  onClick={() => handleFilter(slug)}
+                  className={`px-5 py-2 rounded-full text-sm font-semibold transition ${
+                    filteredCategory === slug
+                      ? "bg-white text-[#1f2a44]"
+                      : "bg-[#25304f] text-white hover:bg-[#2f3b5e]"
+                  }`}
+                >
+                  {cat}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* 🖼️ Product Grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
+          {filteredProducts.slice(0, visibleCount).map((product) => (
+            <div
+              key={product.id}
+              className="group bg-[#25304f] rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl hover:scale-105 transition-all duration-300 flex flex-col h-full"
+            >
+              <Link href={`/category/${product.category}/${product.slug}`}>
+                <div className="w-full h-44 sm:h-48 relative">
+                  <Image
+                    src={product.image}
+                    alt={product.name}
+                    fill
+                    className="object-cover group-hover:scale-110 transition"
+                  />
+                </div>
+                <div className="p-4 text-center flex-1 flex flex-col justify-between">
+                  <h3 className="font-semibold text-[#e0e0e0]">
+                    {product.name}
+                  </h3>
+                  <p className="text-[#cfd2d6]">
+                    ${product.price.toLocaleString()}
+                  </p>
+                </div>
+              </Link>
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  addToCart({ ...product, quantity: 1 });
                 }}
-                className="group relative rounded-xl overflow-hidden shadow-md hover:shadow-xl hover:scale-105 transition-transform duration-300"
+                className="m-4 px-4 py-2 bg-white text-[#1f2a44] rounded"
               >
-                <div className="relative aspect-[4/3] w-full">
-                  <Image
-                    src={category.image}
-                    alt={category.name}
-                    fill
-                    priority={index < 3}
-                    className="rounded-xl object-cover z-0"
-                  />
-                  <div className="absolute inset-0 bg-black/30 z-10" />
-                  <span className="absolute inset-0 flex items-center justify-center text-sm sm:text-base font-semibold text-white z-20">
-                    {category.name}
-                  </span>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </section>
+                Add to Cart
+              </button>
+            </div>
+          ))}
+        </div>
 
-        {/* 🎁 Gifts for Him & Her Section (Centered Cards Under Title) */}
-        <section className="py-16 sm:py-20 px-4 sm:px-10 w-full">
-          <h2 className="text-2xl sm:text-3xl font-semibold text-center mb-12 sm:mb-16">
-            Gifts for Him & Her
-          </h2>
-
-          {/* 🔧 Centering the two cards */}
-          <div className="grid grid-cols-2 gap-4 justify-center max-w-2xl mx-auto">
-            {[
-              { name: "For Him", image: "/category/his-gift-cat.jpg" },
-              { name: "For Her", image: "/category/her-gift-cat.jpg" },
-            ].map((gift, index) => (
-              <Link
-                key={gift.name}
-                href={`/category/${gift.name
-                  .toLowerCase()
-                  .replace(/\s+/g, "-")}`}
-                className="group relative rounded-xl overflow-hidden shadow-md hover:shadow-xl hover:scale-105 transition-transform duration-300"
-              >
-                <div className="relative aspect-[4/3] w-full">
-                  <Image
-                    src={gift.image}
-                    alt={gift.name}
-                    fill
-                    priority={index < 1}
-                    className="object-cover z-0 rounded-xl group-hover:scale-110 transition-transform duration-300"
-                  />
-                  <div className="absolute inset-0 bg-black/40 z-10" />
-                  <span className="absolute inset-0 flex items-center justify-center text-sm sm:text-base font-semibold text-white z-20">
-                    {gift.name}
-                  </span>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </section>
-
-        {/* 🛠️ About Section */}
-        <section className="py-16 sm:py-20 px-4 sm:px-6 bg-[#1f2a44]">
-          <div className="max-w-4xl mx-auto text-center">
-            <h2 className="text-2xl sm:text-3xl font-semibold mb-6 sm:mb-8">
-              Craftsmanship You Can Trust
-            </h2>
-            <p className="text-base sm:text-lg text-[#cfd2d6] leading-relaxed">
-              Classy Diamonds was founded on a promise: to create jewelry that
-              stands the test of time. Every piece we offer is designed with
-              precision, built from premium materials, and backed by a legacy of
-              trust. This isn’t just jewelry — it’s generational craftsmanship
-              you can count on.
-            </p>
-          </div>
-        </section>
-
-        {/* 💎 Why Choose Us Section */}
-        <section className="py-16 sm:py-20 px-4 sm:px-6 bg-[#1f2a44]">
-          <div className="max-w-4xl mx-auto text-center">
-            <h2 className="text-3xl sm:text-4xl font-bold mb-8 sm:mb-10">
-              Why Choose Classy Diamonds?
-            </h2>
-            <p className="text-base sm:text-lg text-[#cfd2d6] leading-relaxed">
-              With over 30 years in the jewelry industry, we’ve built our name
-              on excellence, independence, and unmatched attention to detail.
-              Our clients—from London to Australia—choose us because we deliver
-              personal service, ethical sourcing, and timeless beauty in every
-              creation.
-            </p>
-          </div>
-        </section>
-
-        {/* ✍️ Custom Jewelry CTA */}
-        <section className="bg-[#1f2a44] py-16 sm:py-20 px-4 sm:px-6">
-          <div className="max-w-5xl mx-auto text-center">
-            <h2 className="text-3xl sm:text-4xl font-bold mb-8">
-              Bring Your Vision to Life
-            </h2>
-            <p className="text-base sm:text-lg text-[#cfd2d6] mb-8 leading-relaxed">
-              Whether you’re imagining a one-of-a-kind engagement ring or
-              redesigning a meaningful family heirloom, Ned brings decades of
-              expertise to every detail. At Classy Diamonds, custom jewelry
-              isn’t just made — it’s imagined with you, for you, and crafted by
-              hand with heart.
-            </p>
-            <Link
-              href="/custom"
-              className="inline-block mt-4 px-8 py-4 bg-[#e0e0e0] text-[#1f2a44] rounded-full font-semibold text-base sm:text-lg hover:bg-white hover:scale-105 transition-transform duration-300"
+        {/* ➕ Load More */}
+        {visibleCount < filteredProducts.length && (
+          <div className="flex justify-center mt-12">
+            <button
+              onClick={handleLoadMore}
+              className="px-8 py-4 bg-[#e0e0e0] text-[#1f2a44] rounded-full"
             >
-              Start Your Custom Piece
-            </Link>
+              Load More
+            </button>
           </div>
-        </section>
-        {/* 🧩 Tailwind Purge Safeguard for Swipe Snap */}
-        <div className="hidden hidden-scroll-snap-include" />
-      </main>
-    </>
+        )}
+      </section>
+    </div>
   );
-};
-
-export default Home; // 🏠 Home Page
-// ✅
+}
