@@ -109,7 +109,7 @@ export default function JewelryPage() {
     : "Explore timeless engagement rings, wedding bands, necklaces, earrings, and more.";
 
   return (
-    <div className="min-h-screen flex flex-col --bg-page text-[#1f2a44]">
+    <div className="min-h-screen flex flex-col bg-[#1f2a44] text-[#e0e0e0]">
       <Head>
         <title>{pageTitle}</title>
         <meta name="description" content={pageDescription} />
