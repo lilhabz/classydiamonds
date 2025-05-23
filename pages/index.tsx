@@ -23,7 +23,7 @@ const Home = () => {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
 
-      <main className="flex flex-col min-h-screen bg-[#1f2a44] text-[#e0e0e0] overflow-x-hidden">
+      <main className="flex flex-col min-h-screen bg-[var(--bg-page)] text-[var(--foreground)] overflow-x-hidden">
         <div className="h-0" />
 
         {/* 🌟 Hero Section */}
