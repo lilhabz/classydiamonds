@@ -522,6 +522,8 @@ export default function ContactPage() {
             </div>
           </div>
         </section>
+        {/* Spacer between forms and footer */}
+        <div className="h-16"></div>
       </div>
     </>
   );
