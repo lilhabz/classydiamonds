@@ -3,17 +3,29 @@
 /* 1️⃣ Bring in your Tailwind build via import */
 @import "tailwindcss";
 
-/* 🎨 Base Theme Colors */
+/* 🎨 Semantic Color Variables */
 :root {
-  --background: #1f2a44;
-  --foreground: #ffffff;
+  /* Navbar background */
+  --bg-nav: #1f2a44;
+  /* Page/content background (slightly lighter than nav) */
+  --bg-page: #25304f;
+  /* Foreground (text/icons) */
+  --foreground: #e0e0e0;
 }
 
+/* Dark mode overrides (when <html> has .dark) */
+html.dark {
+  --bg-nav: #1f2a44;
+  --bg-page: #0a0f1a;
+  --foreground: #ededed;
+}
+
+/* Base element styles */
 html,
 body {
   margin: 0;
   padding: 0;
-  background: var(--background);
+  background: var(--bg-page);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
   scroll-behavior: smooth;
@@ -22,11 +34,9 @@ body {
   min-height: 100dvh; /* Ensures full height on mobile for anchor targets */
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* Ensure the header/nav uses the semantic nav background */
+header {
+  background: var(--bg-nav);
 }
 
 /* 🧼 Hide Scrollbars for Swipe Areas */
