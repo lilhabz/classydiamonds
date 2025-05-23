@@ -305,25 +305,25 @@ export default function ContactPage() {
                       name="name"
                       placeholder="Full Name"
                       required
-                      className="p-4 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
+                      className="p-4 rounded-xl bg-[var(--bg-nav)] text-white placeholder-gray-400"
                     />
                     <input
                       name="email"
                       type="email"
                       placeholder="Email Address"
                       required
-                      className="p-4 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
+                      className="p-4 rounded-xl bg-[var(--bg-nav)] text-white placeholder-gray-400"
                     />
                     <input
                       name="phone"
                       placeholder="Phone Number"
                       required
-                      className="p-4 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
+                      className="p-4 rounded-xl bg-[var(--bg-nav)] text-white placeholder-gray-400"
                     />
                     <select
                       name="preference"
                       required
-                      className="p-4 rounded-xl bg-[#1f2a36] text-gray-400"
+                      className="p-4 rounded-xl bg-[var(--bg-nav)] text-[var(--foreground)]"
                     >
                       <option value="" disabled hidden selected>
                         Preferred Contact Method
@@ -335,7 +335,7 @@ export default function ContactPage() {
                     <select
                       name="type"
                       required
-                      className="p-4 rounded-xl bg-[#1f2a36] text-gray-400"
+                      className="p-4 rounded-xl bg-[var(--bg-nav)] text-[var(--foreground)]"
                     >
                       <option value="" disabled hidden selected>
                         Select Jewelry Type
@@ -352,7 +352,7 @@ export default function ContactPage() {
                       placeholder="Describe your vision or ideas..."
                       rows={5}
                       required
-                      className="p-4 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
+                      className="p-4 rounded-xl bg-[var(--bg-nav)] text-white placeholder-gray-400"
                     />
                     <div className="flex flex-col items-start space-y-2">
                       <label
@@ -437,25 +437,25 @@ export default function ContactPage() {
                       name="name"
                       placeholder="Full Name"
                       required
-                      className="p-4 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
+                      className="p-4 rounded-xl bg-[var(--bg-nav)] text-white placeholder-gray-400"
                     />
                     <input
                       name="email"
                       type="email"
                       placeholder="Email Address"
                       required
-                      className="p-4 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
+                      className="p-4 rounded-xl bg-[var(--bg-nav)] text-white placeholder-gray-400"
                     />
                     <input
                       name="phone"
                       placeholder="Phone Number"
                       required
-                      className="p-4 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
+                      className="p-4 rounded-xl bg-[var(--bg-nav)] text-white placeholder-gray-400"
                     />
                     <select
                       name="preference"
                       required
-                      className="p-4 rounded-xl bg-[#1f2a36] text-gray-400"
+                      className="p-4 rounded-xl bg-[var(--bg-nav)] text-[var(--foreground)]"
                     >
                       <option value="" disabled hidden selected>
                         Preferred Contact Method
@@ -467,14 +467,14 @@ export default function ContactPage() {
                     <input
                       name="sku"
                       placeholder="SKU # (optional)"
-                      className="p-4 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
+                      className="p-4 rounded-xl bg-[var(--bg-nav)] text-white placeholder-gray-400"
                     />
                     <textarea
                       name="message"
                       placeholder="Your Message"
                       rows={5}
                       required
-                      className="p-4 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
+                      className="p-4 rounded-xl bg-[var(--bg-nav)] text-white placeholder-gray-400"
                     />
                     <div className="flex flex-col items-start space-y-2">
                       <label
