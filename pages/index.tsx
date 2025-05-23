@@ -109,7 +109,7 @@ const Home = () => {
                         quantity: 1,
                       })
                     }
-                    className="w-full px-3 py-2 bg-[#e0e0e0] text-[#1f2a44] text-sm rounded-xl font-semibold hover:bg-gray-100 transition"
+                    className="w-full px-3 py-2 bg-[#e0e0e0] text-[#1f2a44] text-sm rounded-xl font-semibold hover:bg-white transition"
                     aria-label={`Add ${item.name} to cart`}
                   >
                     Add to Cart
@@ -163,7 +163,7 @@ const Home = () => {
                         quantity: 1,
                       })
                     }
-                    className="w-full px-6 py-3 bg-[#e0e0e0] text-[#1f2a44] rounded-xl font-semibold hover:bg-gray-100 transition hover:scale-105 cursor-pointer"
+                    className="w-full px-6 py-3 bg-[#e0e0e0] text-[#1f2a44] rounded-xl font-semibold hover:bg-white transition hover:scale-105 cursor-pointer"
                     aria-label={`Add ${item.name} to cart`}
                   >
                     Add to Cart
