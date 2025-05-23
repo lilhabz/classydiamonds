@@ -30,17 +30,19 @@ export default function JewelryPage() {
   // 🛠 Sync category & scroll flag on query changes
   useEffect(() => {
     const { category, scroll } = router.query;
+    // set category filter
     if (typeof category === "string") {
       setFilteredCategory(category);
-      scrollTriggered.current = scroll === "true";
     } else {
       setFilteredCategory(null);
     }
+    // set scroll flag if present
+    scrollTriggered.current = scroll === "true";
   }, [router.query]);
 
-  // 🏃‍♂️ When flagged, scroll down to the header, then clear the flag & URL
+  // 🏃‍♂️ Handle auto-scroll whenever flagged
   useEffect(() => {
-    if (!filteredCategory || !scrollTriggered.current) return;
+    if (!scrollTriggered.current) return;
 
     const id = setTimeout(() => {
       if (!headerRef.current) return;
@@ -54,15 +56,11 @@ export default function JewelryPage() {
       });
 
       scrollTriggered.current = false;
-      // remove `scroll` param for a clean URL
-      router.replace(
-        {
-          pathname: "/jewelry",
-          query: { category: filteredCategory },
-        },
-        undefined,
-        { shallow: true }
-      );
+      // clean URL: include category only if set
+      const newQuery = filteredCategory ? { category: filteredCategory } : {};
+      router.replace({ pathname: "/jewelry", query: newQuery }, undefined, {
+        shallow: true,
+      });
     }, 100);
 
     return () => clearTimeout(id);
@@ -78,13 +76,15 @@ export default function JewelryPage() {
     setVisibleCount((prev) => prev + 4);
   };
 
-  // 🔘 Updated filter handler: remove scroll param for "All"
+  // 🔘 Filter handler: always include scroll flag
   const handleFilter = (slug: string | null) => {
     if (slug === null) {
-      // 🔄 Reset to "All" (no query params)
-      router.push({ pathname: "/jewelry", query: {} }, undefined, {
-        shallow: true,
-      });
+      // 🔄 Reset to "All" with scroll
+      router.push(
+        { pathname: "/jewelry", query: { scroll: "true" } },
+        undefined,
+        { shallow: true }
+      );
     } else {
       // 🔘 Filter specific category with scroll
       router.push(
