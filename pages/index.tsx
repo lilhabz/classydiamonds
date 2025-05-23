@@ -273,7 +273,6 @@ const Home = () => {
             </p>
           </div>
         </section>
-        <br></br>
 
         {/* 💎 Why Choose Us Section */}
         <section className="py-16 sm:py-20 px-4 sm:px-6 --bg-page">

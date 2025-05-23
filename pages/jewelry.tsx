@@ -48,11 +48,7 @@ export default function JewelryPage() {
         headerRef.current.getBoundingClientRect().top + window.pageYOffset;
       const navHeight = document.querySelector("header")?.clientHeight ?? 0;
 
-      window.scrollTo({
-        top: headerY - navHeight - 60, // adjust as needed
-        behavior: "smooth",
-      });
-
+      window.scrollTo({ top: headerY - navHeight - 60, behavior: "smooth" });
       scrollTriggered.current = false;
       const newQuery = filteredCategory ? { category: filteredCategory } : {};
       router.replace({ pathname: "/jewelry", query: newQuery }, undefined, {
@@ -69,9 +65,7 @@ export default function JewelryPage() {
     : jewelryData;
 
   // ➕ Load more handler
-  const handleLoadMore = () => {
-    setVisibleCount((prev) => prev + 4);
-  };
+  const handleLoadMore = () => setVisibleCount((prev) => prev + 4);
 
   // 🔘 Filter handler: always include scroll flag
   const handleFilter = (slug: string | null) => {
@@ -85,10 +79,7 @@ export default function JewelryPage() {
     } else {
       // 🔘 Filter specific category with scroll
       router.push(
-        {
-          pathname: "/jewelry",
-          query: { category: slug, scroll: "true" },
-        },
+        { pathname: "/jewelry", query: { category: slug, scroll: "true" } },
         undefined,
         { shallow: true }
       );
@@ -109,7 +100,7 @@ export default function JewelryPage() {
     : "Explore timeless engagement rings, wedding bands, necklaces, earrings, and more.";
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#1f2a44] text-[#e0e0e0]">
+    <div className="min-h-screen flex flex-col bg-[var(--bg-page)] text-[var(--foreground)]">
       <Head>
         <title>{pageTitle}</title>
         <meta name="description" content={pageDescription} />
@@ -130,10 +121,10 @@ export default function JewelryPage() {
           <div className="absolute inset-0 bg-black opacity-50 pointer-events-none" />
         </div>
         <div className="relative z-10 px-4">
-          <h1 className="text-3xl md:text-6xl font-bold mb-6">
+          <h1 className="text-3xl md:text-6xl font-bold mb-6 text-[var(--foreground)]">
             Jewelry Collection
           </h1>
-          <p className="text-base md:text-xl max-w-2xl mx-auto">
+          <p className="text-base md:text-xl max-w-2xl mx-auto text-[var(--foreground)]">
             Discover timeless pieces crafted with passion.
           </p>
         </div>
@@ -143,7 +134,7 @@ export default function JewelryPage() {
       <section className="pt-32 pb-16 px-4 sm:px-6 max-w-7xl mx-auto">
         {/* 📍 The header we scroll to */}
         <div ref={headerRef}>
-          <h2 className="text-2xl sm:text-3xl font-semibold text-center mb-6">
+          <h2 className="text-2xl sm:text-3xl font-semibold text-center mb-6 text-[var(--foreground)]">
             {filteredCategory
               ? filteredCategory
                   .replace(/-/g, " ")
@@ -173,8 +164,8 @@ export default function JewelryPage() {
                   onClick={() => handleFilter(slug)}
                   className={`px-5 py-2 rounded-full text-sm font-semibold cursor-pointer transition ${
                     filteredCategory === slug
-                      ? "bg-white text-[#1f2a44]"
-                      : "bg-[#25304f] text-white hover:bg-[#2f3b5e]"
+                      ? "bg-white text-[var(--bg-nav)]"
+                      : "bg-[var(--bg-nav)] text-[var(--foreground)] hover:bg-[#2f3b5e]"
                   }`}
                 >
                   {cat}
@@ -189,7 +180,7 @@ export default function JewelryPage() {
           {filteredProducts.slice(0, visibleCount).map((product) => (
             <div
               key={product.id}
-              className="group bg-[#25304f] rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl hover:scale-105 transition-all duration-300 flex flex-col h-full"
+              className="group bg-[var(--bg-nav)] rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl hover:scale-105 transition-all duration-300 flex flex-col h-full"
             >
               <Link href={`/category/${product.category}/${product.slug}`}>
                 <div className="w-full h-44 sm:h-48 relative">
@@ -201,7 +192,7 @@ export default function JewelryPage() {
                   />
                 </div>
                 <div className="p-4 text-center flex-1 flex flex-col justify-between">
-                  <h3 className="font-semibold text-[#e0e0e0]">
+                  <h3 className="font-semibold text-[var(--foreground)]">
                     {product.name}
                   </h3>
                   <p className="text-[#cfd2d6]">
@@ -215,7 +206,7 @@ export default function JewelryPage() {
                   e.preventDefault();
                   addToCart({ ...product, quantity: 1 });
                 }}
-                className="m-4 px-4 py-2 bg-white text-[#1f2a44] rounded-xl font-semibold hover:bg-gray-100 hover:scale-105 hover:shadow-2xl transition-all duration-300 cursor-pointer"
+                className="m-4 px-4 py-2 bg-[var(--foreground)] text-[var(--bg-nav)] rounded-xl font-semibold hover:bg-gray-100 hover:scale-105 hover:shadow-2xl transition-all duration-300 cursor-pointer"
               >
                 Add to Cart
               </button>
@@ -228,7 +219,7 @@ export default function JewelryPage() {
           <div className="flex justify-center mt-12">
             <button
               onClick={handleLoadMore}
-              className="px-8 py-4 bg-[#e0e0e0] text-[#1f2a44] rounded-full cursor-pointer"
+              className="px-8 py-4 bg-[var(--foreground)] text-[var(--bg-nav)] rounded-full cursor-pointer"
             >
               Load More
             </button>
