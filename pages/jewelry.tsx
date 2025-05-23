@@ -30,13 +30,11 @@ export default function JewelryPage() {
   // 🛠 Sync category & scroll flag on query changes
   useEffect(() => {
     const { category, scroll } = router.query;
-    // set category filter
     if (typeof category === "string") {
       setFilteredCategory(category);
     } else {
       setFilteredCategory(null);
     }
-    // set scroll flag if present
     scrollTriggered.current = scroll === "true";
   }, [router.query]);
 
@@ -56,7 +54,6 @@ export default function JewelryPage() {
       });
 
       scrollTriggered.current = false;
-      // clean URL: include category only if set
       const newQuery = filteredCategory ? { category: filteredCategory } : {};
       router.replace({ pathname: "/jewelry", query: newQuery }, undefined, {
         shallow: true,
@@ -212,12 +209,13 @@ export default function JewelryPage() {
                   </p>
                 </div>
               </Link>
+              {/* ✨ Pop-out Add to Cart Button */}
               <button
                 onClick={(e) => {
                   e.preventDefault();
                   addToCart({ ...product, quantity: 1 });
                 }}
-                className="m-4 px-4 py-2 bg-white text-[#1f2a44] rounded"
+                className="m-4 px-4 py-2 bg-white text-[#1f2a44] rounded-xl font-semibold hover:bg-gray-100 hover:scale-105 hover:shadow-2xl transition-all duration-300 cursor-pointer"
               >
                 Add to Cart
               </button>
