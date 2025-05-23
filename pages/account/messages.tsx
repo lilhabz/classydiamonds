@@ -1,182 +1,131 @@
-// 📄 pages/category/[category].tsx – Breadcrumb Added + Optimized 💎
+// 📄 pages/account/messages.tsx – View All Messages Page 💬 + Pagination + Layout Match
 
-"use client";
-
-import { useRouter } from "next/router";
-import Head from "next/head";
-import Image from "next/image";
+import { GetServerSideProps } from "next";
+import { getSession } from "next-auth/react";
+import clientPromise from "@/lib/mongodb";
+import { useState } from "react";
 import Link from "next/link";
-import Breadcrumbs from "@/components/Breadcrumbs";
 
-import { useCart } from "@/context/CartContext";
-import { jewelryData } from "@/data/jewelryData";
-import { useState, useRef } from "react";
+export const getServerSideProps: GetServerSideProps = async (context) => {
+  const session = await getSession(context);
 
-export default function CategoryPage() {
-  const { addToCart } = useCart();
-  const { query } = useRouter();
-  const category = query.category as string;
+  if (!session) {
+    return {
+      redirect: {
+        destination: "/auth",
+        permanent: false,
+      },
+    };
+  }
 
-  const [visibleCount, setVisibleCount] = useState(8);
-  const productsEndRef = useRef<HTMLDivElement>(null);
+  const client = await clientPromise;
+  const db = client.db();
+  const allMessages = await db
+    .collection("messages")
+    .find({ email: session.user?.email })
+    .sort({ submittedAt: -1 })
+    .toArray();
 
-  const categoryHeroImages: { [key: string]: string } = {
-    rings: "/category-hero/ring-hero.jpg",
-    bracelets: "/category-hero/bracelet-hero.jpg",
-    earrings: "/category-hero/earring-hero.jpg",
-    "wedding-bands": "/category-hero/wedding-band-hero.jpg",
-    engagement: "/category-hero/engagement-ring-hero.jpg",
-    necklaces: "/category-hero/necklace-hero.jpg",
+  return {
+    props: {
+      session,
+      messages: JSON.parse(JSON.stringify(allMessages)),
+    },
   };
+};
 
-  const categoryImagePosition: { [key: string]: string } = {
-    rings: "object-[center_75%]",
-    bracelets: "object-center",
-    earrings: "object-[center_25%] brightness-275",
-    "wedding-bands": "object-center",
-    engagement: "object-[center_65%]",
-    necklaces: "object-[center_30%]",
-  };
+export default function AllMessagesPage({ messages }: any) {
+  const [page, setPage] = useState(1);
+  const perPage = 5;
+  const totalPages = Math.ceil(messages.length / perPage);
 
-  const categoryHeroSubtitles: { [key: string]: string } = {
-    rings: "Timeless designs that sparkle forever",
-    bracelets: "Refined elegance for every wrist",
-    earrings: "Statement pieces that shine bright",
-    "wedding-bands": "Symbolizing eternal commitment",
-    engagement: "Crafted to capture forever",
-    necklaces: "Luxury that completes any look",
-  };
-
-  const heroImage = categoryHeroImages[category?.toLowerCase()] || null;
-  const heroImageClass =
-    categoryImagePosition[category?.toLowerCase()] || "object-center";
-  const heroSubtitle = categoryHeroSubtitles[category?.toLowerCase()] || "";
-
-  const filteredProducts = jewelryData.filter((product) =>
-    product.slug.includes(category?.toLowerCase().replace(/-/g, " "))
-  );
-
-  const handleLoadMore = () => {
-    setVisibleCount((prev) => prev + 4);
-    setTimeout(() => {
-      productsEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    }, 300);
-  };
-
-  const prettyCategory = category
-    ?.split("-")
-    .map((word) => word[0].toUpperCase() + word.slice(1))
-    .join(" ");
+  const currentMessages = messages.slice((page - 1) * perPage, page * perPage);
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#1f2a44] text-[#e0e0e0]">
-      <Head>
-        <title>{prettyCategory} | Classy Diamonds</title>
-        <meta
-          name="description"
-          content={`Explore our stunning collection of ${prettyCategory} at Classy Diamonds.`}
-        />
-      </Head>
-
-      {/* 🧭 Breadcrumbs under navbar */}
-      <div className="pl-4 pr-4 sm:pl-8 sm:pr-8 mb-6 mt-6">
-        <Breadcrumbs customLabels={{ category: prettyCategory }} />
-      </div>
-
-      {heroImage && (
-        <section className="relative w-full h-[40vh] sm:h-[50vh] overflow-hidden">
-          <Image
-            src={heroImage}
-            alt={`${prettyCategory} category banner`}
-            fill
-            className={`object-cover ${heroImageClass}`}
-            priority
-          />
-          <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center text-center px-4">
-            <h1 className="text-3xl sm:text-5xl font-bold text-[#e0e0e0] capitalize">
-              {prettyCategory}
-            </h1>
-            {heroSubtitle && (
-              <p className="mt-2 text-base sm:text-lg text-[#e0e0e0] max-w-xl">
-                {heroSubtitle}
-              </p>
-            )}
-          </div>
-        </section>
-      )}
-
-      <section className="py-20 px-4 sm:px-6 max-w-7xl mx-auto">
-        <h2 className="text-2xl sm:text-3xl font-semibold text-center mb-12">
-          {prettyCategory} Pieces
-        </h2>
-
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
-          {filteredProducts.slice(0, visibleCount).map((product) => (
-            <div key={product.id} className="group">
-              <div className="bg-[#25304f] rounded-2xl overflow-hidden shadow-lg hover:ring-2 hover:ring-white hover:scale-105 transition-transform duration-300 flex flex-col h-full">
-                <Link
-                  href={`/product/${product.slug}`}
-                  className="flex-1 focus:outline-none"
-                >
-                  <div className="w-full h-48 relative">
-                    <Image
-                      src={product.image}
-                      alt={product.name}
-                      fill
-                      className="object-cover group-hover:scale-110 transition-transform duration-300"
-                    />
-                  </div>
-                  <div className="p-4 text-center">
-                    <h3 className="text-lg font-semibold text-[#cfd2d6] group-hover:text-white">
-                      {product.name}
-                    </h3>
-                    <p className="mt-1 text-gray-400 group-hover:text-white">
-                      ${product.price.toLocaleString()}
-                    </p>
-                  </div>
-                </Link>
-
-                <div className="p-6 pt-0">
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      addToCart({
-                        id: product.id,
-                        name: product.name,
-                        price: product.price,
-                        image: product.image,
-                        quantity: 1,
-                      });
-                    }}
-                    className="w-full px-6 py-3 bg-white text-[#1f2a44] rounded-xl font-semibold transition-all duration-300 hover:scale-105 hover:bg-gray-200 cursor-pointer"
-                  >
-                    Add to Cart
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
+    <div className="bg-[var(--bg-page)] text-[var(--foreground)] min-h-screen px-4 py-10">
+      <div className="max-w-5xl mx-auto space-y-10">
+        {/* 🧭 Page Title */}
+        <div className="flex justify-between items-center">
+          <h1 className="text-2xl font-bold">All Messages & Requests 💬</h1>
+          <Link
+            href="/account"
+            className="text-sm text-blue-400 hover:underline"
+          >
+            ← Back to Account
+          </Link>
         </div>
 
-        <div ref={productsEndRef} />
-
-        {visibleCount < filteredProducts.length ? (
-          <div className="flex justify-center mt-12">
-            <button
-              type="button"
-              onClick={handleLoadMore}
-              className="px-8 py-4 bg-[#e0e0e0] text-[#1f2a44] rounded-full font-semibold text-lg hover:bg-white hover:scale-105 transition-transform"
-            >
-              Load More
-            </button>
-          </div>
+        {/* 💬 Messages List */}
+        {currentMessages.length === 0 ? (
+          <p className="text-gray-400">
+            You haven’t submitted any messages or requests yet.
+          </p>
         ) : (
-          <div className="text-center mt-12 text-lg text-gray-400">
-            🎉 You’ve explored all our {prettyCategory?.toLowerCase()} pieces!
+          <div className="space-y-6">
+            {currentMessages.map((msg: any) => (
+              <div
+                key={msg._id}
+                className="border border-gray-600 rounded-xl p-4 bg-[var(--bg-nav)]"
+              >
+                <div className="text-sm">
+                  <p className="text-gray-400 mb-1">
+                    {msg.formCategory === "custom"
+                      ? "🔧 Custom Request"
+                      : "📨 Message"}{" "}
+                    submitted on {new Date(msg.submittedAt).toLocaleString()}
+                  </p>
+                  {msg.type && (
+                    <p className="text-[var(--foreground)]">
+                      <strong>Type:</strong> {msg.type}
+                    </p>
+                  )}
+                  {msg.preference && (
+                    <p className="text-[var(--foreground)]">
+                      <strong>Preferred Contact:</strong> {msg.preference}
+                    </p>
+                  )}
+                  {(msg.message || msg.customMessage) && (
+                    <p className="text-[var(--foreground)] whitespace-pre-wrap mt-2">
+                      {msg.message || msg.customMessage}
+                    </p>
+                  )}
+                </div>
+              </div>
+            ))}
           </div>
         )}
-      </section>
+
+        {/* 📄 Pagination Controls */}
+        {totalPages > 1 && (
+          <div className="flex justify-center items-center space-x-4 pt-6">
+            <button
+              disabled={page === 1}
+              onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
+              className={`px-4 py-2 rounded-lg ${
+                page === 1
+                  ? "bg-gray-700 cursor-not-allowed text-gray-400"
+                  : "bg-[var(--bg-nav)] hover:bg-[var(--bg-nav)] text-[var(--foreground)]"
+              }`}
+            >
+              ← Prev
+            </button>
+            <span className="text-sm text-gray-300">
+              Page {page} of {totalPages}
+            </span>
+            <button
+              disabled={page === totalPages}
+              onClick={() => setPage((prev) => Math.min(prev + 1, totalPages))}
+              className={`px-4 py-2 rounded-lg ${
+                page === totalPages
+                  ? "bg-gray-700 cursor-not-allowed text-gray-400"
+                  : "bg-[var(--bg-nav)] hover:bg-[var(--bg-nav)] text-[var(--foreground)]"
+              }`}
+            >
+              Next →
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

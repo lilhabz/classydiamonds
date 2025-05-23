@@ -74,7 +74,7 @@ export default function CartPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#1f2a44] text-[#e0e0e0]">
+    <div className="min-h-screen flex flex-col bg-[var(--bg-page)] text-[var(--foreground)]">
       <Head>
         <title>Your Cart | Classy Diamonds</title>
         <meta name="description" content="Cart, summary, and checkout." />
@@ -89,7 +89,7 @@ export default function CartPage() {
             cartItems.map((item) => (
               <div
                 key={item.id}
-                className="flex flex-col md:flex-row gap-4 items-center bg-[#25304f] rounded-xl p-4 sm:p-6 shadow"
+                className="flex flex-col md:flex-row gap-4 items-center bg-[var(--bg-nav)] rounded-xl p-4 sm:p-6 shadow"
               >
                 <div className="w-full md:w-1/5 h-28 sm:h-32 overflow-hidden rounded-xl">
                   <img
@@ -141,7 +141,7 @@ export default function CartPage() {
               <p>Your cart is empty. Start shopping!</p>
               <Link
                 href="/jewelry"
-                className="mt-4 inline-block px-6 py-3 bg-white text-[#1f2a44] rounded-xl font-semibold hover:bg-gray-100 transition hover:scale-105"
+                className="mt-4 inline-block px-6 py-3 bg-[var(--foreground)] text-[var(--bg-nav)] rounded-xl font-semibold hover:bg-gray-100 transition hover:scale-105"
               >
                 Browse Jewelry
               </Link>
@@ -151,7 +151,7 @@ export default function CartPage() {
 
         {/* 📋 Order Summary + Stripe Checkout */}
         <aside className="lg:w-[35%] bg-[#25304f] rounded-xl p-6 shadow flex flex-col gap-6 sticky top-24 h-fit">
-          <h2 className="text-xl font-bold border-b border-[#2d3a56] pb-2">
+          <h2 className="text-xl font-bold border-b border-[var(--bg-page)] pb-2">
             Order Summary
           </h2>
           <p className="text-sm">Items: {cartItems.length}</p>

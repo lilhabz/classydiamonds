@@ -166,7 +166,7 @@ export default function ContactPage() {
         />
       </Head>
 
-      <div className="min-h-screen flex flex-col bg-[#1f2a44] text-[#e0e0e0]">
+      <div className="min-h-screen flex flex-col bg-[var(--bg-page)] text-[var(--foreground)]">
         {/* 🌟 Hero Section - Optimized for LCP */}
         <section className="-mt-20 relative w-full h-[80vh] flex items-center justify-center text-center overflow-hidden">
           <div className="absolute inset-0 z-0">
@@ -181,7 +181,7 @@ export default function ContactPage() {
             <div className="absolute inset-0 bg-black opacity-50 pointer-events-none" />
           </div>
           <div className="relative z-10 px-4">
-            <h1 className="text-3xl sm:text-4xl font-serif font-semibold mb-6 text-[#e0e0e0]">
+            <h1 className="text-3xl sm:text-4xl font-serif font-semibold mb-6 text-[var(--foreground)]">
               Contact Classy Diamonds
             </h1>
             <p className="text-[#e0e0e0] max-w-2xl mx-auto text-base sm:text-lg">
@@ -231,7 +231,7 @@ export default function ContactPage() {
         {/* 📍 Contact Info + Lazy Loaded Map */}
         <section className="px-4 sm:px-6 lg:px-12 xl:px-20 py-16 sm:py-20 max-w-screen-xl mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center w-full">
-            <div className="bg-[#25304f] rounded-2xl shadow-lg p-8 sm:p-10 flex flex-col gap-8 text-center md:text-left hover:shadow-2xl transition-shadow duration-300">
+            <div className="bg-[var(--bg-nav)] rounded-2xl shadow-lg p-8 sm:p-10 flex flex-col gap-8 text-center md:text-left hover:shadow-2xl transition-shadow duration-300">
               <div className="flex flex-col items-center md:items-start">
                 <FaPhoneAlt className="text-3xl mb-2 text-[#e0e0e0]" />
                 <p className="text-base sm:text-lg text-[#cfd2d6]">
@@ -282,7 +282,7 @@ export default function ContactPage() {
               <div className="w-full">
                 <button
                   onClick={() => setShowCustom((prev) => !prev)}
-                  className="w-full text-left bg-[#25304f] text-[#e0e0e0] font-semibold px-6 py-4 border-b border-[#1f2a44]"
+                  className="w-full text-left bg-[#25304f] text-[#e0e0e0] font-semibold px-6 py-4 border-b border-[var(--bg-nav)]"
                 >
                   💍 Start Your Custom Jewelry Creation
                   <span className="float-right pr-2">

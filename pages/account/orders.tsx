@@ -86,7 +86,7 @@ export default function OrdersPage({
   };
 
   return (
-    <div className="bg-[#1f2a36] text-white min-h-screen px-4 py-10">
+    <div className="bg-[var(--bg-page)] text-[var(--foreground)] min-h-screen px-4 py-10">
       <div className="pl-4 pr-4 sm:pl-8 sm:pr-8 mb-6 -mt-2">
         <Breadcrumbs
           customLabels={{ account: "Account", orders: "Order History" }}
@@ -103,8 +103,10 @@ export default function OrdersPage({
           <button
             onClick={() => handleFilterChange("")}
             className={`px-4 py-1 rounded ${
-              !shippedFilter ? "bg-blue-500" : "bg-[#2a374f] hover:bg-blue-500"
-            }`}
+              !shippedFilter
+                ? "bg-[var(--foreground)] text-[var(--bg-nav)]"
+                : "bg-[var(--bg-nav)] hover:bg-[var(--foreground)] text-[var(--foreground)]"
+            } cursor-pointer`}
           >
             All
           </button>
@@ -112,9 +114,9 @@ export default function OrdersPage({
             onClick={() => handleFilterChange("false")}
             className={`px-4 py-1 rounded ${
               shippedFilter === "false"
-                ? "bg-blue-500"
-                : "bg-[#2a374f] hover:bg-blue-500"
-            }`}
+                ? "bg-[var(--foreground)] text-[var(--bg-nav)]"
+                : "bg-[var(--bg-nav)] hover:bg-[var(--foreground)] text-[var(--foreground)]"
+            } cursor-pointer`}
           >
             Processing
           </button>
@@ -122,9 +124,9 @@ export default function OrdersPage({
             onClick={() => handleFilterChange("true")}
             className={`px-4 py-1 rounded ${
               shippedFilter === "true"
-                ? "bg-blue-500"
-                : "bg-[#2a374f] hover:bg-blue-500"
-            }`}
+                ? "bg-[var(--foreground)] text-[var(--bg-nav)]"
+                : "bg-[var(--bg-nav)] hover:bg-[var(--foreground)] text-[var(--foreground)]"
+            } cursor-pointer`}
           >
             Shipped
           </button>
@@ -137,28 +139,28 @@ export default function OrdersPage({
             {orders.map((order: any) => (
               <div
                 key={order._id}
-                className="border border-gray-600 rounded-lg p-4 bg-[#2a374f]"
+                className="border border-[var(--bg-nav)] rounded-lg p-4 bg-[var(--bg-nav)]"
               >
                 <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-2">
                   <div>
-                    <p className="text-sm text-gray-400">Order ID:</p>
+                    <p className="text-sm text-[#cfd2d6]">Order ID:</p>
                     <p className="text-sm font-semibold break-all">
                       {order.stripeSessionId}
                     </p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-400">Total:</p>
+                    <p className="text-sm text-[#cfd2d6]">Total:</p>
                     <p className="text-sm font-semibold">
                       ${order.amount?.toFixed(2)}{" "}
                       {order.currency?.toUpperCase()}
                     </p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-400">Status:</p>
+                    <p className="text-sm text-[#cfd2d6]">Status:</p>
                     <span
                       className={`text-xs font-bold px-3 py-1 rounded-full inline-block ${
                         order.shipped
-                          ? "bg-green-500 text-white"
+                          ? "bg-green-500 text-[var(--bg-page)]"
                           : "bg-yellow-500 text-black"
                       }`}
                     >
@@ -168,8 +170,10 @@ export default function OrdersPage({
                 </div>
 
                 {order.address && (
-                  <div className="mt-4 text-sm text-gray-300">
-                    <p className="font-medium text-white">Shipping Address:</p>
+                  <div className="mt-4 text-sm text-[#cfd2d6]">
+                    <p className="font-medium text-[var(--foreground)]">
+                      Shipping Address:
+                    </p>
                     <p>
                       {order.address.street}, {order.address.city},{" "}
                       {order.address.state} {order.address.zip},{" "}
@@ -178,8 +182,10 @@ export default function OrdersPage({
                   </div>
                 )}
 
-                <div className="mt-4 text-sm text-gray-300">
-                  <p className="font-medium text-white mb-2">Items:</p>
+                <div className="mt-4 text-sm text-[#cfd2d6]">
+                  <p className="font-medium text-[var(--foreground)] mb-2">
+                    Items:
+                  </p>
                   <ul className="space-y-3">
                     {order.items?.map((item: any, idx: number) => (
                       <li key={idx} className="flex items-center gap-4">
@@ -191,8 +197,10 @@ export default function OrdersPage({
                           className="rounded object-cover"
                         />
                         <div>
-                          <p className="text-white font-medium">{item.name}</p>
-                          <p className="text-sm text-gray-400">
+                          <p className="font-medium text-[var(--foreground)]">
+                            {item.name}
+                          </p>
+                          <p className="text-sm text-[#cfd2d6]">
                             x{item.quantity} – ${item.price * item.quantity}
                           </p>
                         </div>
@@ -203,7 +211,7 @@ export default function OrdersPage({
 
                 {/* 📄 Receipt Placeholder */}
                 <div className="text-right mt-4">
-                  <button className="text-blue-400 hover:underline text-sm">
+                  <button className="text-[var(--foreground)] hover:underline text-sm">
                     Download Receipt (PDF)
                   </button>
                 </div>
@@ -217,12 +225,12 @@ export default function OrdersPage({
                   href={`/account/orders?page=${currentPage - 1}${
                     shippedFilter ? `&shipped=${shippedFilter}` : ""
                   }`}
-                  className="text-blue-400 hover:underline text-sm"
+                  className="text-[var(--foreground)] hover:underline text-sm"
                 >
                   ← Previous
                 </Link>
               )}
-              <span className="text-sm text-gray-300">
+              <span className="text-sm text-[#cfd2d6]">
                 Page {currentPage} of {totalPages}
               </span>
               {currentPage < totalPages && (
@@ -230,7 +238,7 @@ export default function OrdersPage({
                   href={`/account/orders?page=${currentPage + 1}${
                     shippedFilter ? `&shipped=${shippedFilter}` : ""
                   }`}
-                  className="text-blue-400 hover:underline text-sm"
+                  className="text-[var(--foreground)] hover:underline text-sm"
                 >
                   Next →
                 </Link>
@@ -242,7 +250,7 @@ export default function OrdersPage({
         <div className="text-center mt-10">
           <Link
             href="/account"
-            className="inline-block text-blue-400 hover:underline text-sm"
+            className="inline-block text-[var(--foreground)] hover:underline text-sm"
           >
             ← Back to Account Dashboard
           </Link>

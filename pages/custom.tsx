@@ -7,7 +7,7 @@ import heroImage from "../public/hero-custom.jpg";
 
 export default function CustomPage() {
   return (
-    <div className="min-h-screen flex flex-col bg-[#1f2a44] text-[#e0e0e0]">
+    <div className="min-h-screen flex flex-col bg-[var(--bg-page)] text-[var(--foreground)]">
       {/* 🌐 Head Metadata */}
       <Head>
         <title>Custom Jewelry Design | Classy Diamonds</title>
@@ -34,10 +34,10 @@ export default function CustomPage() {
         </div>
 
         <div className="relative z-10 px-4">
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-6 text-[#e0e0e0]">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-6 text-[var(--foreground)]">
             Create Your Dream Piece
           </h1>
-          <p className="text-base sm:text-lg md:text-xl max-w-2xl text-[#e0e0e0] mx-auto">
+          <p className="text-base sm:text-lg md:text-xl max-w-2xl mx-auto text-[var(--foreground)]">
             Work one-on-one with Ned to design a piece that tells your unique
             story.
           </p>
@@ -46,7 +46,7 @@ export default function CustomPage() {
 
       {/* 🧭 How It Works Section */}
       <section className="px-4 sm:px-6 py-16 sm:py-20 max-w-7xl mx-auto">
-        <h2 className="text-2xl sm:text-3xl font-semibold text-center mb-12 sm:mb-16">
+        <h2 className="text-2xl sm:text-3xl font-semibold text-center mb-12 sm:mb-16 text-[var(--foreground)]">
           How It Works
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8">
@@ -54,9 +54,9 @@ export default function CustomPage() {
             (step, index) => (
               <div
                 key={index}
-                className="group bg-[#25304f] rounded-2xl shadow-md hover:shadow-2xl hover:scale-105 transition-all duration-300 p-6 sm:p-8 text-center hover:cursor-pointer"
+                className="group bg-[var(--bg-nav)] rounded-2xl shadow-md hover:shadow-2xl hover:scale-105 transition-all duration-300 p-6 sm:p-8 text-center cursor-pointer"
               >
-                <h3 className="text-lg sm:text-xl font-semibold mb-4 text-[#cfd2d6] group-hover:text-white transition-colors">
+                <h3 className="text-lg sm:text-xl font-semibold mb-4 text-[var(--foreground)] group-hover:text-white transition-colors">
                   {index + 1}. {step}
                 </h3>
                 <p className="text-[#cfd2d6] group-hover:text-white transition-colors text-sm sm:text-base">
@@ -77,16 +77,16 @@ export default function CustomPage() {
 
       {/* 💎 Custom Creations Grid */}
       <section className="px-4 sm:px-6 py-16 sm:py-20 max-w-7xl mx-auto">
-        <h2 className="text-2xl sm:text-3xl font-semibold text-center mb-12 sm:mb-16">
+        <h2 className="text-2xl sm:text-3xl font-semibold text-center mb-12 sm:mb-16 text-[var(--foreground)]">
           Custom Creations
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 sm:gap-8">
           {[1, 2, 3].map((i) => (
             <div
               key={i}
-              className="group bg-[#25304f] rounded-2xl shadow-md hover:shadow-2xl hover:scale-105 transition-all duration-300 flex items-center justify-center h-72 sm:h-80 hover:cursor-pointer"
+              className="group bg-[var(--bg-nav)] rounded-2xl shadow-md hover:shadow-2xl hover:scale-105 transition-all duration-300 flex items-center justify-center h-72 sm:h-80 cursor-pointer"
             >
-              <p className="text-base sm:text-lg text-[#cfd2d6] group-hover:text-white transition-colors">
+              <p className="text-[#cfd2d6] group-hover:text-white transition-colors text-base sm:text-lg">
                 Custom Piece Coming Soon
               </p>
             </div>
@@ -97,16 +97,16 @@ export default function CustomPage() {
       {/* 📣 Call to Action */}
       <section className="py-16 sm:py-20 px-4 sm:px-6">
         <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-2xl sm:text-3xl font-semibold mb-6 sm:mb-8">
+          <h2 className="text-2xl sm:text-3xl font-semibold mb-6 sm:mb-8 text-[var(--foreground)]">
             Ready to Create Your Piece?
           </h2>
-          <p className="text-base sm:text-lg text-[#cfd2d6] mb-6 sm:mb-8 leading-relaxed">
+          <p className="text-base sm:text-lg mb-6 sm:mb-8 leading-relaxed text-[#cfd2d6]">
             Let's bring your vision to life. Reach out today to start designing
             your one-of-a-kind jewelry.
           </p>
           <a
             href="/contact#custom-form"
-            className="inline-block px-8 py-4 bg-[#e0e0e0] text-[#1f2a44] rounded-full font-semibold text-base sm:text-lg hover:bg-white hover:scale-105 transition-transform duration-300"
+            className="inline-block px-8 py-4 bg-[var(--foreground)] text-[var(--bg-nav)] rounded-full font-semibold text-base sm:text-lg hover:bg-white hover:scale-105 transition-transform duration-300 cursor-pointer"
           >
             Start Your Custom Piece
           </a>

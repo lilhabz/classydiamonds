@@ -122,7 +122,7 @@ export default function ArchivedOrdersPage() {
     );
 
   return (
-    <div className="min-h-screen bg-[#1f2a44] text-white p-6">
+    <div className="min-h-screen bg-[var(--bg-page)] text-[var(--foreground)] p-6">
       <Head>
         <title>Archived Orders | Classy Diamonds</title>
       </Head>
@@ -130,7 +130,7 @@ export default function ArchivedOrdersPage() {
       <h1 className="text-3xl font-bold mb-6">🛠️ Admin Dashboard</h1>
 
       {/* 🔗 Admin Navigation Tabs */}
-      <nav className="flex space-x-6 mb-8 border-b border-[#2a374f] pb-4 text-white text-sm font-semibold">
+      <nav className="flex space-x-6 mb-8 border-b border-[var(--bg-nav)] pb-4 text-white text-sm font-semibold">
         <Link href="/admin" className="hover:text-yellow-300">
           📦 Orders
         </Link>
@@ -149,7 +149,7 @@ export default function ArchivedOrdersPage() {
         <input
           type="text"
           placeholder="Search archived orders..."
-          className="w-full sm:w-1/3 mb-2 sm:mb-0 px-4 py-2 rounded bg-[#2e3a58] text-white"
+          className="w-full sm:w-1/3 mb-2 sm:mb-0 px-4 py-2 rounded bg-[var(--bg-nav)] text-white"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
         />
@@ -170,7 +170,7 @@ export default function ArchivedOrdersPage() {
           {paginatedOrders.map((order) => (
             <div
               key={order._id}
-              className="bg-[#25304f] p-6 rounded-xl shadow-md"
+              className="bg-[var(--bg-nav)] p-6 rounded-xl shadow-md"
             >
               <h2 className="text-xl font-semibold mb-1">
                 {order.customerName} ({order.customerEmail})

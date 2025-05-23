@@ -68,7 +68,7 @@ export default function CategoryPage() {
     .join(" ");
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#1f2a44] text-[#e0e0e0]">
+    <div className="min-h-screen flex flex-col bg-[var(--bg-page)] text-[var(--foreground)]">
       <Head>
         <title>{prettyCategory} | Classy Diamonds</title>
         <meta
@@ -88,7 +88,7 @@ export default function CategoryPage() {
             priority
           />
           <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center text-center px-4">
-            <h1 className="text-3xl sm:text-5xl font-bold text-[#e0e0e0] capitalize">
+            <h1 className="text-3xl sm:text-5xl font-bold text-[var(--foreground)] capitalize">
               {prettyCategory}
             </h1>
             {heroSubtitle && (
@@ -109,7 +109,7 @@ export default function CategoryPage() {
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
           {filteredProducts.slice(0, visibleCount).map((product) => (
             <div key={product.id} className="group">
-              <div className="bg-[#25304f] rounded-2xl overflow-hidden shadow-lg hover:ring-2 hover:ring-white hover:scale-105 transition-transform duration-300 flex flex-col h-full">
+              <div className="bg-[var(--bg-nav)] rounded-2xl overflow-hidden shadow-lg hover:ring-2 hover:ring-[var(--foreground)] hover:scale-105 transition-transform duration-300 flex flex-col h-full">
                 <Link
                   href={`/category/${product.category}/${product.slug}`}
                   className="flex-1 focus:outline-none"
@@ -145,7 +145,7 @@ export default function CategoryPage() {
                         quantity: 1,
                       });
                     }}
-                    className="w-full px-6 py-3 bg-white text-[#1f2a44] rounded-xl font-semibold transition-all duration-300 hover:scale-105 hover:bg-gray-200 cursor-pointer"
+                    className="w-full px-6 py-3 bg-[var(--foreground)] text-[var(--bg-nav)] rounded-xl font-semibold transition-all duration-300 hover:scale-105 hover:bg-gray-200 cursor-pointer"
                   >
                     Add to Cart
                   </button>
@@ -164,7 +164,7 @@ export default function CategoryPage() {
             <button
               type="button"
               onClick={handleLoadMore}
-              className="px-8 py-4 bg-[#e0e0e0] text-[#1f2a44] rounded-full font-semibold text-lg hover:bg-white hover:scale-105 transition-transform"
+              className="px-8 py-4 bg-[var(--foreground)] text-[var(--bg-nav)] rounded-full font-semibold text-lg hover:bg-white hover:scale-105 transition-transform"
             >
               Load More
             </button>

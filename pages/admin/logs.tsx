@@ -100,7 +100,7 @@ export default function AdminLogsPage() {
     );
 
   return (
-    <div className="min-h-screen bg-[#1f2a44] text-white p-6">
+    <div className="min-h-screen bg-[var(--bg-page)] text-[var(--foreground)] p-6">
       <Head>
         <title>Admin Logs | Classy Diamonds</title>
       </Head>
@@ -108,7 +108,7 @@ export default function AdminLogsPage() {
       <h1 className="text-3xl font-bold mb-6">🛠️ Admin Dashboard</h1>
 
       {/* 🔗 Admin Navigation Tabs */}
-      <nav className="flex space-x-6 mb-8 border-b border-[#2a374f] pb-4 text-white text-sm font-semibold">
+      <nav className="flex space-x-6 mb-8 border-b border-[var(--bg-nav)] pb-4 text-[var(--foreground)] text-sm font-semibold">
         <Link href="/admin" className="hover:text-yellow-300">
           📦 Orders
         </Link>
@@ -127,7 +127,7 @@ export default function AdminLogsPage() {
         <input
           type="text"
           placeholder="Search by Order ID or Admin..."
-          className="w-full sm:w-1/3 px-4 py-2 rounded bg-[#2e3a58] text-white"
+          className="w-full sm:w-1/3 px-4 py-2 rounded bg-[var(--bg-nav)] text-[var(--foreground)]"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
         />
@@ -146,7 +146,7 @@ export default function AdminLogsPage() {
       ) : (
         <div className="overflow-auto">
           <table className="min-w-full text-left">
-            <thead className="bg-[#2e3a58]">
+            <thead className="bg-[var(--bg-nav)]">
               <tr>
                 <th className="py-2 px-4">🆔 Order ID</th>
                 <th className="py-2 px-4">Action</th>
@@ -159,7 +159,7 @@ export default function AdminLogsPage() {
                 <>
                   <tr
                     key={log._id}
-                    className="border-b border-[#384968] cursor-pointer"
+                    className="border-b border-[var(--bg-nav)] cursor-pointer"
                     onClick={() => fetchOrderDetails(log.orderId)}
                   >
                     <td className="py-2 px-4 text-blue-300 hover:text-blue-400">

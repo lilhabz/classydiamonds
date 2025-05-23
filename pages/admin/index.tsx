@@ -144,14 +144,14 @@ export default function AdminOrdersPage() {
     );
 
   return (
-    <div className="min-h-screen bg-[#1f2a44] text-white p-6">
+    <div className="min-h-screen bg-[var(--bg-page)] text-[var(--foreground)] p-6">
       <Head>
         <title>Admin Orders | Classy Diamonds</title>
       </Head>
 
       <h1 className="text-3xl font-bold mb-6">🛠️ Admin Dashboard</h1>
 
-      <nav className="flex space-x-6 mb-8 border-b border-[#2a374f] pb-4 text-white text-sm font-semibold">
+      <nav className="$1text-[var(--foreground)]$2">
         <Link href="/admin" className="text-yellow-400">
           📦 Orders
         </Link>
@@ -176,7 +176,7 @@ export default function AdminOrdersPage() {
             <input
               type="text"
               placeholder="Search by name, email, or ID..."
-              className="w-full sm:w-1/3 mb-2 sm:mb-0 px-4 py-2 rounded bg-[#2e3a58] text-white"
+              className="$1text-[var(--foreground)]$2"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -184,13 +184,13 @@ export default function AdminOrdersPage() {
               type="date"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
-              className="px-2 py-1 rounded bg-[#2e3a58] text-white"
+              className="$1text-[var(--foreground)]$2"
             />
             <input
               type="date"
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
-              className="px-2 py-1 rounded bg-[#2e3a58] text-white"
+              className="$1text-[var(--foreground)]$2"
             />
             <button
               onClick={downloadCSV}
@@ -204,7 +204,7 @@ export default function AdminOrdersPage() {
             {paginatedOrders.map((order) => (
               <div
                 key={order._id}
-                className="bg-[#25304f] p-6 rounded-xl shadow-md"
+                className="bg-[var(--bg-nav)] p-6 rounded-xl shadow-md"
               >
                 <h2 className="text-xl font-semibold mb-1">
                   {order.customerName} ({order.customerEmail})
@@ -256,7 +256,7 @@ export default function AdminOrdersPage() {
                   className={`px-3 py-1 rounded ${
                     currentPage === index + 1
                       ? "bg-blue-600"
-                      : "bg-[#2e3a58] hover:bg-blue-500"
+                      : "bg-[var(--bg-nav)] hover:bg-blue-500"
                   }`}
                 >
                   {index + 1}

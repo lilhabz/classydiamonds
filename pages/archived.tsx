@@ -90,7 +90,7 @@ export default function ArchivedOrdersPage() {
   );
 
   return (
-    <div className="min-h-screen bg-[#1f2a44] text-white p-6">
+    <div className="min-h-screen bg-[var(--bg-page)] text-[var(--foreground)] p-6">
       <Head>
         <title>Archived Orders | Classy Diamonds</title>
       </Head>
@@ -115,7 +115,7 @@ export default function ArchivedOrdersPage() {
             <input
               type="text"
               placeholder="Search by name, email, or ID..."
-              className="w-full sm:w-1/3 mb-2 sm:mb-0 px-4 py-2 rounded bg-[#2e3a58] text-white"
+              className="w-full sm:w-1/3 mb-2 sm:mb-0 px-4 py-2 rounded bg-[var(--bg-nav)] text-[var(--foreground)]"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -140,7 +140,7 @@ export default function ArchivedOrdersPage() {
               {paginatedOrders.map((order) => (
                 <div
                   key={order._id}
-                  className="bg-[#25304f] rounded-xl p-6 shadow-md"
+                  className="bg-[var(--bg-nav)] rounded-xl p-6 shadow-md"
                 >
                   <h2 className="text-xl font-semibold mb-1">
                     {order.customerName} ({order.customerEmail})

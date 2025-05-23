@@ -1,4 +1,4 @@
-// 📅 pages/success.tsx – Post-Checkout Thank You Page 💎
+// 📄 pages/success.tsx – Post-Checkout Thank You Page 💎
 
 import Head from "next/head";
 import Link from "next/link";
@@ -18,7 +18,7 @@ export default function SuccessPage() {
   }, [clearCart]);
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#1f2a44] text-white">
+    <div className="min-h-screen flex flex-col bg-[var(--bg-page)] text-[var(--foreground)]">
       <Head>
         <title>Thank You | Classy Diamonds</title>
         <meta
@@ -29,7 +29,7 @@ export default function SuccessPage() {
 
       {/* ✅ Confirmation Section */}
       <main className="flex flex-col items-center justify-center flex-grow px-4 pt-28 pb-20 text-center">
-        <div className="bg-[#25304f] rounded-2xl shadow-xl p-8 sm:p-12 max-w-xl">
+        <div className="bg-[var(--bg-nav)] rounded-2xl shadow-xl p-8 sm:p-12 max-w-xl">
           <h1 className="text-3xl sm:text-4xl font-bold text-[#d4af37] mb-4">
             Thank you for your purchase!
           </h1>
@@ -44,7 +44,7 @@ export default function SuccessPage() {
 
           {/* 🛍️ Continue Shopping */}
           <Link href="/jewelry">
-            <div className="inline-block mt-2 px-6 py-3 bg-white text-[#1f2a44] font-semibold rounded-full shadow hover:bg-gray-100 transition hover:scale-105 cursor-pointer">
+            <div className="inline-block mt-2 px-6 py-3 bg-[var(--foreground)] text-[var(--bg-nav)] font-semibold rounded-full shadow hover:bg-gray-100 transition hover:scale-105 cursor-pointer">
               Continue Shopping
             </div>
           </Link>

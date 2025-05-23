@@ -83,8 +83,8 @@ export default function AuthPage() {
   };
 
   return (
-    <div className="bg-[#1f2a44] text-white min-h-screen flex items-center justify-center px-4">
-      <div className="bg-[#25304f] p-8 sm:p-10 rounded-2xl shadow-xl w-full max-w-md">
+    <div className="bg-[var(--bg-page)] text-[var(--foreground)] min-h-screen flex items-center justify-center px-4">
+      <div className="bg-[var(--bg-nav)] p-8 sm:p-10 rounded-2xl shadow-xl w-full max-w-md">
         <h2 className="text-2xl font-bold mb-6 text-center">
           {isLogin ? "Login to Classy Diamonds 💎" : "Create Your Account 💍"}
         </h2>
@@ -98,7 +98,7 @@ export default function AuthPage() {
               placeholder="Full Name"
               value={formData.name}
               onChange={handleChange}
-              className="w-full p-3 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
+              className="w-full p-3 rounded-xl bg-[var(--bg-nav)] text-[var(--foreground)] placeholder-gray-400"
               required
             />
           )}
@@ -145,7 +145,7 @@ export default function AuthPage() {
           {/* ✨ White Login/Signup Button */}
           <button
             type="submit"
-            className="w-full bg-white hover:bg-gray-100 text-[#1f2a44] py-3 rounded-xl font-semibold transition hover:scale-105"
+            className="w-full bg-[var(--foreground)] hover:bg-gray-100 text-[var(--bg-nav)] py-3 rounded-xl font-semibold transition hover:scale-105"
           >
             {isLogin ? "Login" : "Create Account"}
           </button>
@@ -154,7 +154,7 @@ export default function AuthPage() {
         {/* 🧩 Google Auth Button (White Styled) */}
         <button
           onClick={() => signIn("google", { callbackUrl: "/" })}
-          className="w-full flex items-center justify-center mt-4 bg-white hover:bg-gray-100 text-[#1f2a44] font-semibold py-3 rounded-xl transition hover:scale-105"
+          className="w-full flex items-center justify-center mt-4 bg-[var(--foreground)] hover:bg-gray-100 text-[var(--bg-nav)] font-semibold py-3 rounded-xl transition hover:scale-105"
         >
           <FcGoogle className="mr-2 text-xl" /> Continue with Google
         </button>

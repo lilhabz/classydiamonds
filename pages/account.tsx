@@ -79,7 +79,7 @@ export default function AccountPage({ user, orders }: any) {
   }, []);
 
   return (
-    <div className="bg-[#1f2a36] text-white min-h-screen px-4 py-10">
+    <div className="bg-[var(--bg-page)] text-[var(--foreground)] min-h-screen px-4 py-10">
       <div className="max-w-5xl mx-auto space-y-10">
         {/* 👤 Profile Info */}
         <div className="bg-white/10 backdrop-blur p-6 rounded-2xl shadow-lg">
@@ -127,7 +127,7 @@ export default function AccountPage({ user, orders }: any) {
           <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
             <button
               onClick={() => router.push("/account/edit")}
-              className="w-full bg-[#2a374f] hover:bg-[#364763] rounded-lg px-4 py-3 text-left"
+              className="w-full bg-[var(--bg-nav)] hover:bg-[#364763] rounded-lg px-4 py-3 text-left"
             >
               ✏️ Edit Profile Info
             </button>

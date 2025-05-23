@@ -85,7 +85,7 @@ export default function EditProfile() {
   };
 
   return (
-    <div className="bg-[#1f2a36] text-white min-h-screen px-4 py-10">
+    <div className="bg-[var(--bg-page)] text-[var(--foreground)] min-h-screen px-4 py-10">
       {/* 🧭 Breadcrumb container – pushed up under navbar */}
       <div className="pl-4 pr-4 sm:pl-8 sm:pr-8 mb-6 -mt-2">
         <Breadcrumbs
@@ -94,14 +94,14 @@ export default function EditProfile() {
       </div>
 
       {/* 📄 Edit Profile Form Card – centered card below breadcrumbs */}
-      <div className="max-w-md mx-auto bg-white/10 backdrop-blur p-6 rounded-2xl shadow-lg">
+      <div className="max-w-md mx-auto bg-[var(--foreground)]/10 backdrop-blur p-6 rounded-2xl shadow-lg">
         <h1 className="text-2xl font-bold mb-6 text-center">Edit Profile ✏️</h1>
 
         {/* 🧍 Name */}
         <label className="block text-sm mb-1">Name</label>
         <input
           type="text"
-          className="w-full mb-4 px-4 py-2 rounded bg-[#2a374f] text-white"
+          className="w-full mb-4 px-4 py-2 rounded bg-[var(--bg-nav)] text-[var(--foreground)]"
           value={name}
           onChange={(e) => setName(e.target.value)}
         />
@@ -110,7 +110,7 @@ export default function EditProfile() {
         <label className="block text-sm mb-1">Email</label>
         <input
           type="email"
-          className="w-full mb-4 px-4 py-2 rounded bg-[#2a374f] text-white"
+          className="w-full mb-4 px-4 py-2 rounded bg-[var(--bg-nav)] text-[var(--foreground)]"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
@@ -119,7 +119,7 @@ export default function EditProfile() {
         <label className="block text-sm mb-1">Phone</label>
         <input
           type="tel"
-          className="w-full mb-4 px-4 py-2 rounded bg-[#2a374f] text-white"
+          className="w-full mb-4 px-4 py-2 rounded bg-[var(--bg-nav)] text-[var(--foreground)]"
           value={phone}
           onChange={(e) => setPhone(e.target.value)}
         />
@@ -128,7 +128,7 @@ export default function EditProfile() {
         <label className="block text-sm mb-1">Street Address</label>
         <input
           type="text"
-          className="w-full mb-4 px-4 py-2 rounded bg-[#2a374f] text-white"
+          className="w-full mb-4 px-4 py-2 rounded bg-[var(--bg-nav)] text-[var(--foreground)]"
           value={address}
           onChange={(e) => setAddress(e.target.value)}
         />
@@ -137,7 +137,7 @@ export default function EditProfile() {
         <label className="block text-sm mb-1">City</label>
         <input
           type="text"
-          className="w-full mb-4 px-4 py-2 rounded bg-[#2a374f] text-white"
+          className="w-full mb-4 px-4 py-2 rounded bg-[var(--bg-nav)] text-[var(--foreground)]"
           value={city}
           onChange={(e) => setCity(e.target.value)}
         />
@@ -146,7 +146,7 @@ export default function EditProfile() {
         <label className="block text-sm mb-1">State</label>
         <input
           type="text"
-          className="w-full mb-4 px-4 py-2 rounded bg-[#2a374f] text-white"
+          className="w-full mb-4 px-4 py-2 rounded bg-[var(--bg-nav)] text-[var(--foreground)]"
           value={state}
           onChange={(e) => setState(e.target.value)}
         />
@@ -155,7 +155,7 @@ export default function EditProfile() {
         <label className="block text-sm mb-1">ZIP Code</label>
         <input
           type="text"
-          className="w-full mb-4 px-4 py-2 rounded bg-[#2a374f] text-white"
+          className="w-full mb-4 px-4 py-2 rounded bg-[var(--bg-nav)] text-[var(--foreground)]"
           value={zip}
           onChange={(e) => setZip(e.target.value)}
         />
@@ -164,7 +164,7 @@ export default function EditProfile() {
         <label className="block text-sm mb-1">Country</label>
         <input
           type="text"
-          className="w-full mb-6 px-4 py-2 rounded bg-[#2a374f] text-white"
+          className="w-full mb-6 px-4 py-2 rounded bg-[var(--bg-nav)] text-[var(--foreground)]"
           value={country}
           onChange={(e) => setCountry(e.target.value)}
         />
@@ -173,7 +173,7 @@ export default function EditProfile() {
         <button
           onClick={handleUpdate}
           disabled={loading}
-          className="w-full bg-blue-500 hover:bg-blue-600 py-2 rounded text-white font-semibold"
+          className="w-full bg-[var(--foreground)] hover:bg-white py-2 rounded text-[var(--bg-nav)] font-semibold cursor-pointer"
         >
           {loading ? "Saving..." : "Save Changes"}
         </button>
@@ -183,8 +183,8 @@ export default function EditProfile() {
           <div
             className={`mt-4 text-center rounded-lg px-4 py-3 text-sm ${
               status.startsWith("✅")
-                ? "bg-green-600 text-white"
-                : "bg-red-600 text-white"
+                ? "bg-green-600 text-[var(--foreground)]"
+                : "bg-red-600 text-[var(--foreground)]"
             }`}
           >
             {status}

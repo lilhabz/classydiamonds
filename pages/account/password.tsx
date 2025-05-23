@@ -49,9 +49,7 @@ export default function ChangePasswordPage() {
     try {
       const res = await fetch("/api/account/update-password", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           email: session?.user?.email,
           oldPassword,
@@ -85,7 +83,7 @@ export default function ChangePasswordPage() {
         <title>Change Password | Classy Diamonds</title>
       </Head>
 
-      <main className="bg-[#1f2a36] text-white min-h-screen px-4 py-10">
+      <main className="bg-[var(--bg-page)] text-[var(--foreground)] min-h-screen px-4 py-10">
         {/* 🧭 Breadcrumb */}
         <div className="pl-4 pr-4 sm:pl-8 sm:pr-8 mb-6 -mt-2">
           <Breadcrumbs
@@ -93,22 +91,22 @@ export default function ChangePasswordPage() {
           />
         </div>
 
-        <div className="max-w-md mx-auto bg-white/10 backdrop-blur p-8 rounded-2xl shadow-lg">
-          <h2 className="text-2xl font-bold mb-6 text-center">
+        <div className="max-w-md mx-auto bg-[var(--foreground)]/10 backdrop-blur p-8 rounded-2xl shadow-lg">
+          <h2 className="text-2xl font-bold mb-6 text-center text-[var(--foreground)]">
             🔑 Change Your Password
           </h2>
 
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* 🔐 Old Password */}
             <div className="relative">
-              <label className="block text-sm font-medium mb-1">
+              <label className="block text-sm font-medium mb-1 text-[var(--foreground)]">
                 Current Password
               </label>
               <input
                 type={showOld ? "text" : "password"}
                 value={oldPassword}
                 onChange={(e) => setOldPassword(e.target.value)}
-                className="w-full px-4 py-2 rounded-lg bg-[#2a374f] text-white focus:outline-none"
+                className="w-full px-4 py-2 rounded-lg bg-[var(--bg-nav)] text-[var(--foreground)] focus:outline-none"
               />
               <span
                 className="absolute right-3 top-9 text-gray-400 cursor-pointer"
@@ -120,14 +118,14 @@ export default function ChangePasswordPage() {
 
             {/* 🔒 New Password */}
             <div className="relative">
-              <label className="block text-sm font-medium mb-1">
+              <label className="block text-sm font-medium mb-1 text-[var(--foreground)]">
                 New Password
               </label>
               <input
                 type={showNew ? "text" : "password"}
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
-                className="w-full px-4 py-2 rounded-lg bg-[#2a374f] text-white focus:outline-none"
+                className="w-full px-4 py-2 rounded-lg bg-[var(--bg-nav)] text-[var(--foreground)] focus:outline-none"
               />
               <span
                 className="absolute right-3 top-9 text-gray-400 cursor-pointer"
@@ -142,14 +140,14 @@ export default function ChangePasswordPage() {
 
             {/* ✅ Confirm Password */}
             <div className="relative">
-              <label className="block text-sm font-medium mb-1">
+              <label className="block text-sm font-medium mb-1 text-[var(--foreground)]">
                 Confirm New Password
               </label>
               <input
                 type={showConfirm ? "text" : "password"}
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                className="w-full px-4 py-2 rounded-lg bg-[#2a374f] text-white focus:outline-none"
+                className="w-full px-4 py-2 rounded-lg bg-[var(--bg-nav)] text-[var(--foreground)] focus:outline-none"
               />
               <span
                 className="absolute right-3 top-9 text-gray-400 cursor-pointer"
@@ -162,7 +160,9 @@ export default function ChangePasswordPage() {
             {message && (
               <div
                 className={`text-sm mt-2 px-3 py-2 rounded ${
-                  isError ? "bg-red-500 text-white" : "bg-green-500 text-white"
+                  isError
+                    ? "bg-red-500 text-[var(--foreground)]"
+                    : "bg-green-500 text-[var(--foreground)]"
                 }`}
               >
                 {message}
@@ -172,7 +172,7 @@ export default function ChangePasswordPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-blue-500 hover:bg-blue-600 text-white py-2 rounded-lg font-semibold transition"
+              className="w-full bg-[var(--foreground)] hover:bg-white text-[var(--bg-nav)] py-2 rounded-lg font-semibold transition"
             >
               {loading ? "Updating..." : "Update Password"}
             </button>
