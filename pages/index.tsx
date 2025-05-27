@@ -1,16 +1,42 @@
-// 📄 pages/index.tsx – Tiffany Swipe Rebuild 💎 (Now with Desktop Accessibility Fixes ♿)
+// 📄 pages/index.tsx – Tiffany Swipe Rebuild with Server Data Fetch 💎 (Full Code)
 
 "use client";
 
 import Link from "next/link";
 import Head from "next/head";
 import Image from "next/image";
+import { GetServerSideProps } from "next";
 
 import { useCart } from "@/context/CartContext";
+// retained import for reference, not used
 import { productsData } from "@/data/productsData";
 
-const Home = () => {
+interface Product {
+  _id: string;
+  name: string;
+  price: number;
+  image: string;
+  category: string;
+  slug: string;
+}
+
+interface HomeProps {
+  products: Product[];
+}
+
+// Fetch products from the API at request time
+export const getServerSideProps: GetServerSideProps<HomeProps> = async () => {
+  const res = await fetch(`${process.env.NEXTAUTH_URL}/api/products`);
+  const products: Product[] = await res.json();
+  return { props: { products } };
+};
+
+const Home = ({ products }: HomeProps) => {
   const { addToCart } = useCart();
+
+  // Featured: first 6 for desktop, first 4 for mobile
+  const featuredDesktop = products.slice(0, 6);
+  const featuredMobile = products.slice(0, 4);
 
   return (
     <>
@@ -70,9 +96,9 @@ const Home = () => {
 
           {/* 📱 Mobile Grid View */}
           <div className="grid grid-cols-2 gap-4 sm:hidden px-2">
-            {productsData.slice(0, 4).map((item, index) => (
+            {featuredMobile.map((item, index) => (
               <div
-                key={item.id}
+                key={item._id}
                 className="bg-[#25304f] rounded-2xl shadow-lg flex flex-col"
               >
                 <Link
@@ -102,7 +128,7 @@ const Home = () => {
                   <button
                     onClick={() =>
                       addToCart({
-                        id: item.id.toString(), // 🔢 convert to string for CartContext
+                        id: item._id,
                         name: item.name,
                         price: item.price,
                         image: item.image,
@@ -121,9 +147,9 @@ const Home = () => {
 
           {/* 🖥️ Desktop Grid View */}
           <div className="hidden sm:grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-10">
-            {productsData.slice(0, 6).map((item, index) => (
+            {featuredDesktop.map((item, index) => (
               <div
-                key={item.id}
+                key={item._id}
                 className="group bg-[#25304f] rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl hover:ring-2 hover:ring-[#e0e0e0] hover:scale-105 transition-all duration-300 flex flex-col cursor-pointer"
               >
                 <Link
@@ -156,7 +182,7 @@ const Home = () => {
                   <button
                     onClick={() =>
                       addToCart({
-                        id: item.id.toString(), // 🔢 convert to string for CartContext
+                        id: item._id,
                         name: item.name,
                         price: item.price,
                         image: item.image,

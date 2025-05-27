@@ -1,30 +1,60 @@
-// 📄 pages/category/[category]/index.tsx – Category Product Grid (Final Version) with Add-to-Cart Fix 🚀
+// 📄 pages/category/[category]/index.tsx – Category Product Grid with Server Data Fetch 🚀
 
-"use client";
-
-import { useRouter } from "next/router";
+import { GetServerSideProps } from "next";
 import Head from "next/head";
 import Image from "next/image";
 import Link from "next/link";
-
-import { useCart } from "@/context/CartContext";
-import { jewelryData } from "@/data/jewelryData";
 import { useState, useRef } from "react";
+import { useCart } from "@/context/CartContext";
 
-export default function CategoryPage() {
-  // 🎯 Cart Context Hook – for adding items
+interface Product {
+  _id: string;
+  name: string;
+  price: number;
+  image: string;
+  category: string;
+  slug: string;
+}
+
+interface CategoryPageProps {
+  products: Product[];
+  category: string;
+}
+
+// Fetch products by category at request time
+export const getServerSideProps: GetServerSideProps<
+  CategoryPageProps
+> = async ({ query }) => {
+  const cat = query.category as string;
+  const res = await fetch(
+    `${process.env.NEXTAUTH_URL}/api/products?category=${cat}`
+  );
+  const products: Product[] = await res.json();
+  return { props: { products, category: cat } };
+};
+
+export default function CategoryPage({
+  products,
+  category,
+}: CategoryPageProps) {
   const { addToCart } = useCart();
-
-  // 🌐 Router & Query – get selected category
-  const { query } = useRouter();
-  const category = query.category as string;
-
-  // 👁️ Visible Count State – controls "Load More"
   const [visibleCount, setVisibleCount] = useState(8);
   const productsEndRef = useRef<HTMLDivElement>(null);
 
-  // 🖼️ Hero Images & Metadata Maps
-  const categoryHeroImages: { [key: string]: string } = {
+  const handleLoadMore = () => {
+    setVisibleCount((prev) => prev + 4);
+    setTimeout(
+      () => productsEndRef.current?.scrollIntoView({ behavior: "smooth" }),
+      300
+    );
+  };
+
+  const prettyCategory = category
+    .split("-")
+    .map((w) => w[0].toUpperCase() + w.slice(1))
+    .join(" ");
+
+  const categoryHeroImages: Record<string, string> = {
     rings: "/category-hero/ring-hero.jpg",
     bracelets: "/category-hero/bracelet-hero.jpg",
     earrings: "/category-hero/earring-hero.jpg",
@@ -32,8 +62,7 @@ export default function CategoryPage() {
     engagement: "/category-hero/engagement-ring-hero.jpg",
     necklaces: "/category-hero/necklace-hero.jpg",
   };
-
-  const categoryImagePosition: { [key: string]: string } = {
+  const categoryImagePosition: Record<string, string> = {
     rings: "object-[center_75%]",
     bracelets: "object-center",
     earrings: "object-[center_25%] brightness-275",
@@ -41,8 +70,7 @@ export default function CategoryPage() {
     engagement: "object-[center_65%]",
     necklaces: "object-[center_30%]",
   };
-
-  const categoryHeroSubtitles: { [key: string]: string } = {
+  const categoryHeroSubtitles: Record<string, string> = {
     rings: "Timeless designs that sparkle forever",
     bracelets: "Refined elegance for every wrist",
     earrings: "Statement pieces that shine bright",
@@ -51,54 +79,33 @@ export default function CategoryPage() {
     necklaces: "Luxury that completes any look",
   };
 
-  // 🔍 Determine Hero Image & Styles
-  const heroImage = categoryHeroImages[category?.toLowerCase()] || null;
-  const heroImageClass =
-    categoryImagePosition[category?.toLowerCase()] || "object-center";
-  const heroSubtitle = categoryHeroSubtitles[category?.toLowerCase()] || "";
-
-  // 🔎 Filter products by category
-  const filteredProducts = jewelryData.filter(
-    (product) => product.category.toLowerCase() === category?.toLowerCase()
-  );
-
-  // 📥 Load More Handler – increases visible count & scrolls
-  const handleLoadMore = () => {
-    setVisibleCount((prev) => prev + 4);
-    setTimeout(() => {
-      productsEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    }, 300);
-  };
-
-  // 📝 Pretty Category for Titles
-  const prettyCategory = category
-    ?.split("-")
-    .map((word) => word[0].toUpperCase() + word.slice(1))
-    .join(" ");
+  const heroImage = categoryHeroImages[category.toLowerCase()];
+  const heroClass = categoryImagePosition[category.toLowerCase()];
+  const heroSubtitle = categoryHeroSubtitles[category.toLowerCase()];
 
   return (
     <div className="min-h-screen flex flex-col bg-[var(--bg-page)] text-[var(--foreground)]">
-      {/* 🔖 Head Meta */}
+      {/* Head Meta */}
       <Head>
         <title>{prettyCategory} | Classy Diamonds</title>
         <meta
           name="description"
-          content={`Explore our stunning collection of ${prettyCategory} at Classy Diamonds.`}
+          content={`Explore our stunning ${prettyCategory} pieces at Classy Diamonds.`}
         />
       </Head>
 
-      {/* 🌟 Hero Section */}
+      {/* Hero Section */}
       {heroImage && (
         <section className="relative w-full h-[40vh] sm:h-[50vh] overflow-hidden">
           <Image
             src={heroImage}
-            alt={`${prettyCategory} category banner`}
+            alt={`${prettyCategory} banner`}
             fill
-            className={`object-cover ${heroImageClass}`}
+            className={`object-cover ${heroClass}`}
             priority
           />
           <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center text-center px-4">
-            <h1 className="text-3xl sm:text-5xl font-bold text-[var(--foreground)] capitalize">
+            <h1 className="text-3xl sm:text-5xl font-bold text-white capitalize">
               {prettyCategory}
             </h1>
             {heroSubtitle && (
@@ -110,20 +117,18 @@ export default function CategoryPage() {
         </section>
       )}
 
-      {/* 💍 Product Grid Section */}
+      {/* Product Grid */}
       <section className="py-20 px-4 sm:px-6 max-w-7xl mx-auto">
         <h2 className="text-2xl sm:text-3xl font-semibold text-center mb-12">
           {prettyCategory} Pieces
         </h2>
-
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
-          {filteredProducts.slice(0, visibleCount).map((product) => (
-            <div key={product.id} className="group">
+          {products.slice(0, visibleCount).map((product) => (
+            <div key={product._id} className="group">
               <div className="bg-[var(--bg-nav)] rounded-2xl overflow-hidden shadow-lg hover:ring-2 hover:ring-[var(--foreground)] hover:scale-105 transition-transform duration-300 flex flex-col h-full">
-                {/* 🔗 Product Link & Image */}
                 <Link
                   href={`/category/${product.category}/${product.slug}`}
-                  className="flex-1 focus:outline-none"
+                  className="flex-1"
                 >
                   <div className="w-full h-48 relative">
                     <Image
@@ -142,22 +147,20 @@ export default function CategoryPage() {
                     </p>
                   </div>
                 </Link>
-
-                {/* 🛒 Add to Cart Button Section */}
                 <div className="p-6 pt-0">
                   <button
                     type="button"
                     onClick={(e) => {
                       e.preventDefault();
                       addToCart({
-                        id: product.id.toString(), // 🔢 Converting numeric ID to string for CartContext compatibility 🚀
+                        id: product._id,
                         name: product.name,
                         price: product.price,
                         image: product.image,
                         quantity: 1,
                       });
                     }}
-                    className="w-full px-6 py-3 bg-[var(--foreground)] text-[var(--bg-nav)] rounded-xl font-semibold transition-all duration-300 hover:scale-105 hover:bg-gray-200 cursor-pointer"
+                    className="w-full px-6 py-3 bg-[var(--foreground)] text-[var(--bg-nav)] rounded-xl font-semibold hover:scale-105 hover:bg-gray-200 transition duration-300"
                   >
                     Add to Cart
                   </button>
@@ -166,15 +169,10 @@ export default function CategoryPage() {
             </div>
           ))}
         </div>
-
-        {/* 🔽 Scroll Anchor for Load More */}
         <div ref={productsEndRef} />
-
-        {/* ➕ Load More Section */}
-        {visibleCount < filteredProducts.length ? (
+        {visibleCount < products.length ? (
           <div className="flex justify-center mt-12">
             <button
-              type="button"
               onClick={handleLoadMore}
               className="px-8 py-4 bg-[var(--foreground)] text-[var(--bg-nav)] rounded-full font-semibold text-lg hover:bg-white hover:scale-105 transition-transform"
             >
@@ -183,7 +181,7 @@ export default function CategoryPage() {
           </div>
         ) : (
           <div className="text-center mt-12 text-lg text-gray-400">
-            🎉 You’ve explored all our {prettyCategory?.toLowerCase()} pieces!
+            🎉 You’ve explored all our {prettyCategory.toLowerCase()} pieces!
           </div>
         )}
       </section>
