@@ -102,7 +102,7 @@ const Home = () => {
                   <button
                     onClick={() =>
                       addToCart({
-                        id: item.id,
+                        id: item.id.toString(), // 🔢 convert to string for CartContext
                         name: item.name,
                         price: item.price,
                         image: item.image,
@@ -156,7 +156,7 @@ const Home = () => {
                   <button
                     onClick={() =>
                       addToCart({
-                        id: item.id,
+                        id: item.id.toString(), // 🔢 convert to string for CartContext
                         name: item.name,
                         price: item.price,
                         image: item.image,
