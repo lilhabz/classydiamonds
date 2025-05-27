@@ -305,25 +305,25 @@ export default function ContactPage() {
                       name="name"
                       placeholder="Full Name"
                       required
-                      className="$1 border border-[var(--foreground)]"
+                      className="border border-[var(--foreground)] rounded-xl px-4 py-2"
                     />
                     <input
                       name="email"
                       type="email"
                       placeholder="Email Address"
                       required
-                      className="$1 border border-[var(--foreground)]"
+                      className="border border-[var(--foreground)] rounded-xl px-4 py-2"
                     />
                     <input
                       name="phone"
                       placeholder="Phone Number"
                       required
-                      className="$1 border border-[var(--foreground)]"
+                      className="border border-[var(--foreground)] rounded-xl px-4 py-2"
                     />
                     <select
                       name="preference"
                       required
-                      className="$1 border border-[var(--foreground)]"
+                      className="border border-[var(--foreground)] rounded-xl px-4 py-2"
                     >
                       <option value="" disabled hidden selected>
                         Preferred Contact Method
@@ -335,7 +335,7 @@ export default function ContactPage() {
                     <select
                       name="type"
                       required
-                      className="$1 border border-[var(--foreground)]"
+                      className="border border-[var(--foreground)] rounded-xl px-4 py-2"
                     >
                       <option value="" disabled hidden selected>
                         Select Jewelry Type
@@ -352,7 +352,7 @@ export default function ContactPage() {
                       placeholder="Describe your vision or ideas..."
                       rows={5}
                       required
-                      className="$1 border border-[var(--foreground)]"
+                      className="border border-[var(--foreground)] rounded-xl px-4 py-2"
                     />
                     <div className="flex flex-col items-start space-y-2">
                       <label
@@ -437,25 +437,25 @@ export default function ContactPage() {
                       name="name"
                       placeholder="Full Name"
                       required
-                      className="$1 border border-[var(--foreground)]"
+                      className="border border-[var(--foreground)] rounded-xl px-4 py-2"
                     />
                     <input
                       name="email"
                       type="email"
                       placeholder="Email Address"
                       required
-                      className="$1 border border-[var(--foreground)]"
+                      className="border border-[var(--foreground)] rounded-xl px-4 py-2"
                     />
                     <input
                       name="phone"
                       placeholder="Phone Number"
                       required
-                      className="$1 border border-[var(--foreground)]"
+                      className="border border-[var(--foreground)] rounded-xl px-4 py-2"
                     />
                     <select
                       name="preference"
                       required
-                      className="$1 border border-[var(--foreground)]"
+                      className="border border-[var(--foreground)] rounded-xl px-4 py-2"
                     >
                       <option value="" disabled hidden selected>
                         Preferred Contact Method
@@ -467,14 +467,14 @@ export default function ContactPage() {
                     <input
                       name="sku"
                       placeholder="SKU # (optional)"
-                      className="$1 border border-[var(--foreground)]"
+                      className="border border-[var(--foreground)] rounded-xl px-4 py-2"
                     />
                     <textarea
                       name="message"
                       placeholder="Your Message"
                       rows={5}
                       required
-                      className="$1 border border-[var(--foreground)]"
+                      className="border border-[var(--foreground)] rounded-xl px-4 py-2"
                     />
                     <div className="flex flex-col items-start space-y-2">
                       <label
@@ -522,6 +522,7 @@ export default function ContactPage() {
             </div>
           </div>
         </section>
+
         {/* Spacer between forms and footer */}
         <div className="h-16"></div>
       </div>
