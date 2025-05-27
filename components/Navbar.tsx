@@ -80,7 +80,8 @@ const Navbar = () => {
 
   const totalQuantity = cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
-  const handleRemove = (id: number) => {
+  // 🔨 Updated to use string ID
+  const handleRemove = (id: string) => {
     if (confirm("Are you sure you want to remove this item from your cart?")) {
       removeFromCart(id);
     }
