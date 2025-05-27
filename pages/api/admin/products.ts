@@ -1,4 +1,4 @@
-// 📄 pages/api/admin/products.ts – Fix formidable import & robust handler 🛠️
+// 📄 pages/api/admin/products.ts – Fixed duplicate config export & robust handler 🛠️
 
 import type { NextApiRequest, NextApiResponse } from "next";
 import { v2 as cloudinary } from "cloudinary";
@@ -18,10 +18,9 @@ if (
     secret: process.env.CLOUDINARY_API_SECRET,
     name: process.env.CLOUDINARY_CLOUD_NAME,
   });
-  // Throw to surface a clear error
   throw new Error("Cloudinary environment variables must be set");
 }
-export const config = { api: { bodyParser: false } };
+
 export const config = { api: { bodyParser: false } };
 
 type Data = { success?: boolean; product?: any; message?: string };
@@ -31,13 +30,11 @@ export default async function handler(
   res: NextApiResponse<Data>
 ) {
   try {
-    // Handle CORS preflight
     if (req.method === "OPTIONS") {
       res.setHeader("Allow", ["POST", "OPTIONS"]);
       return res.status(200).json({});
     }
 
-    // Only POST allowed
     if (req.method !== "POST") {
       res.setHeader("Allow", ["POST", "OPTIONS"]);
       return res
@@ -45,13 +42,11 @@ export default async function handler(
         .json({ message: `Method ${req.method} Not Allowed` });
     }
 
-    // Enforce multipart/form-data
     const ct = req.headers["content-type"] || "";
     if (!ct.includes("multipart/form-data")) {
       return res.status(400).json({ message: "Expected multipart/form-data" });
     }
 
-    // Parse form-data
     const form = new formidable.IncomingForm();
     const { fields, files } = await new Promise<{
       fields: formidable.Fields;
@@ -63,7 +58,6 @@ export default async function handler(
       });
     });
 
-    // Extract text fields
     const name = Array.isArray(fields.name)
       ? fields.name[0]
       : typeof fields.name === "string"
@@ -86,14 +80,12 @@ export default async function handler(
       ? fields.category
       : "";
 
-    // Retrieve file
     const rawFile = files.image;
     let imageFile: formidable.File;
     if (Array.isArray(rawFile)) imageFile = rawFile[0];
     else if (rawFile) imageFile = rawFile;
     else return res.status(400).json({ message: "Image file missing" });
 
-    // Upload to Cloudinary
     const uploadResult = await cloudinary.uploader.upload(imageFile.filepath, {
       folder: "classy-diamonds/original",
       transformation: [{ quality: "auto" }, { fetch_format: "auto" }],
@@ -109,7 +101,6 @@ export default async function handler(
     const imageUrl =
       uploadResult.eager?.[0]?.secure_url || uploadResult.secure_url;
 
-    // Generate slug and insert into DB
     const slug = slugify(name, { lower: true });
     const client = await clientPromise;
     const db = client.db();
