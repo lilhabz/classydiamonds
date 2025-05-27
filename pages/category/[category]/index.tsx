@@ -1,4 +1,4 @@
-// 📄 pages/category/[category]/index.tsx – Category Product Grid (Final Version) ✅
+// 📄 pages/category/[category]/index.tsx – Category Product Grid (Final Version) with Add-to-Cart Fix 🚀
 
 "use client";
 
@@ -12,13 +12,18 @@ import { jewelryData } from "@/data/jewelryData";
 import { useState, useRef } from "react";
 
 export default function CategoryPage() {
+  // 🎯 Cart Context Hook – for adding items
   const { addToCart } = useCart();
+
+  // 🌐 Router & Query – get selected category
   const { query } = useRouter();
   const category = query.category as string;
 
+  // 👁️ Visible Count State – controls "Load More"
   const [visibleCount, setVisibleCount] = useState(8);
   const productsEndRef = useRef<HTMLDivElement>(null);
 
+  // 🖼️ Hero Images & Metadata Maps
   const categoryHeroImages: { [key: string]: string } = {
     rings: "/category-hero/ring-hero.jpg",
     bracelets: "/category-hero/bracelet-hero.jpg",
@@ -46,15 +51,18 @@ export default function CategoryPage() {
     necklaces: "Luxury that completes any look",
   };
 
+  // 🔍 Determine Hero Image & Styles
   const heroImage = categoryHeroImages[category?.toLowerCase()] || null;
   const heroImageClass =
     categoryImagePosition[category?.toLowerCase()] || "object-center";
   const heroSubtitle = categoryHeroSubtitles[category?.toLowerCase()] || "";
 
+  // 🔎 Filter products by category
   const filteredProducts = jewelryData.filter(
     (product) => product.category.toLowerCase() === category?.toLowerCase()
   );
 
+  // 📥 Load More Handler – increases visible count & scrolls
   const handleLoadMore = () => {
     setVisibleCount((prev) => prev + 4);
     setTimeout(() => {
@@ -62,6 +70,7 @@ export default function CategoryPage() {
     }, 300);
   };
 
+  // 📝 Pretty Category for Titles
   const prettyCategory = category
     ?.split("-")
     .map((word) => word[0].toUpperCase() + word.slice(1))
@@ -69,6 +78,7 @@ export default function CategoryPage() {
 
   return (
     <div className="min-h-screen flex flex-col bg-[var(--bg-page)] text-[var(--foreground)]">
+      {/* 🔖 Head Meta */}
       <Head>
         <title>{prettyCategory} | Classy Diamonds</title>
         <meta
@@ -100,7 +110,7 @@ export default function CategoryPage() {
         </section>
       )}
 
-      {/* 💍 Product Grid */}
+      {/* 💍 Product Grid Section */}
       <section className="py-20 px-4 sm:px-6 max-w-7xl mx-auto">
         <h2 className="text-2xl sm:text-3xl font-semibold text-center mb-12">
           {prettyCategory} Pieces
@@ -110,6 +120,7 @@ export default function CategoryPage() {
           {filteredProducts.slice(0, visibleCount).map((product) => (
             <div key={product.id} className="group">
               <div className="bg-[var(--bg-nav)] rounded-2xl overflow-hidden shadow-lg hover:ring-2 hover:ring-[var(--foreground)] hover:scale-105 transition-transform duration-300 flex flex-col h-full">
+                {/* 🔗 Product Link & Image */}
                 <Link
                   href={`/category/${product.category}/${product.slug}`}
                   className="flex-1 focus:outline-none"
@@ -132,13 +143,14 @@ export default function CategoryPage() {
                   </div>
                 </Link>
 
+                {/* 🛒 Add to Cart Button Section */}
                 <div className="p-6 pt-0">
                   <button
                     type="button"
                     onClick={(e) => {
                       e.preventDefault();
                       addToCart({
-                        id: product.id,
+                        id: product.id.toString(), // 🔢 Converting numeric ID to string for CartContext compatibility 🚀
                         name: product.name,
                         price: product.price,
                         image: product.image,
@@ -155,10 +167,10 @@ export default function CategoryPage() {
           ))}
         </div>
 
-        {/* 🔽 Scroll anchor */}
+        {/* 🔽 Scroll Anchor for Load More */}
         <div ref={productsEndRef} />
 
-        {/* ➕ Load More */}
+        {/* ➕ Load More Section */}
         {visibleCount < filteredProducts.length ? (
           <div className="flex justify-center mt-12">
             <button
