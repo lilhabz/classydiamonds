@@ -4,7 +4,7 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { v2 as cloudinary } from "cloudinary";
 import slugify from "slugify";
 import clientPromise from "@/lib/mongodb";
-import formidable from "formidable";
+import * as formidable from "formidable";
 
 // Disable Next.js built-in body-parser to handle multipart
 export const config = { api: { bodyParser: false } };
