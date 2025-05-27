@@ -7,6 +7,21 @@ import clientPromise from "@/lib/mongodb";
 import * as formidable from "formidable";
 
 // Disable Next.js built-in body-parser to handle multipart
+// 🛑 Ensure Cloudinary env vars are present
+if (
+  !process.env.CLOUDINARY_API_KEY ||
+  !process.env.CLOUDINARY_API_SECRET ||
+  !process.env.CLOUDINARY_CLOUD_NAME
+) {
+  console.error("Missing Cloudinary environment variables:", {
+    key: process.env.CLOUDINARY_API_KEY,
+    secret: process.env.CLOUDINARY_API_SECRET,
+    name: process.env.CLOUDINARY_CLOUD_NAME,
+  });
+  // Throw to surface a clear error
+  throw new Error("Cloudinary environment variables must be set");
+}
+export const config = { api: { bodyParser: false } };
 export const config = { api: { bodyParser: false } };
 
 type Data = { success?: boolean; product?: any; message?: string };
