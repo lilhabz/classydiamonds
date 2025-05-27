@@ -1,12 +1,12 @@
-// 📄 pages/api/admin/products.ts – Robust handler with strict TS types 🛠️
+// 📄 pages/api/admin/products.ts – Fix formidable import & robust handler 🛠️
 
 import type { NextApiRequest, NextApiResponse } from "next";
 import { v2 as cloudinary } from "cloudinary";
 import slugify from "slugify";
 import clientPromise from "@/lib/mongodb";
-import formidable, { Fields, Files, File as FormidableFile } from "formidable";
+import formidable from "formidable";
 
-// Disable Next.js built-in body parser for multipart
+// Disable Next.js built-in body-parser to handle multipart
 export const config = { api: { bodyParser: false } };
 
 type Data = { success?: boolean; product?: any; message?: string };
@@ -16,13 +16,13 @@ export default async function handler(
   res: NextApiResponse<Data>
 ) {
   try {
-    // ✔️ Handle preflight
+    // Handle CORS preflight
     if (req.method === "OPTIONS") {
       res.setHeader("Allow", ["POST", "OPTIONS"]);
       return res.status(200).json({});
     }
 
-    // 💥 Only accept POST
+    // Only POST allowed
     if (req.method !== "POST") {
       res.setHeader("Allow", ["POST", "OPTIONS"]);
       return res
@@ -30,24 +30,25 @@ export default async function handler(
         .json({ message: `Method ${req.method} Not Allowed` });
     }
 
-    // 🔍 Enforce multipart/form-data
+    // Enforce multipart/form-data
     const ct = req.headers["content-type"] || "";
     if (!ct.includes("multipart/form-data")) {
       return res.status(400).json({ message: "Expected multipart/form-data" });
     }
 
-    // 📦 Parse
+    // Parse form-data
     const form = new formidable.IncomingForm();
     const { fields, files } = await new Promise<{
-      fields: Fields;
-      files: Files;
+      fields: formidable.Fields;
+      files: formidable.Files;
     }>((resolve, reject) => {
-      form.parse(req, (err, flds, fls) =>
-        err ? reject(err) : resolve({ fields: flds, files: fls })
-      );
+      form.parse(req, (err, flds, fls) => {
+        if (err) reject(err);
+        else resolve({ fields: flds, files: fls });
+      });
     });
 
-    // 📝 Safely extract string fields
+    // Extract text fields
     const name = Array.isArray(fields.name)
       ? fields.name[0]
       : typeof fields.name === "string"
@@ -70,15 +71,14 @@ export default async function handler(
       ? fields.category
       : "";
 
-    // 🖼️ File
+    // Retrieve file
     const rawFile = files.image;
-    let imageFile: FormidableFile;
-    if (Array.isArray(rawFile)) imageFile = rawFile[0] as FormidableFile;
-    else if (rawFile && !Array.isArray(rawFile))
-      imageFile = rawFile as FormidableFile;
+    let imageFile: formidable.File;
+    if (Array.isArray(rawFile)) imageFile = rawFile[0];
+    else if (rawFile) imageFile = rawFile;
     else return res.status(400).json({ message: "Image file missing" });
 
-    // ☁️ Cloudinary upload
+    // Upload to Cloudinary
     const uploadResult = await cloudinary.uploader.upload(imageFile.filepath, {
       folder: "classy-diamonds/original",
       transformation: [{ quality: "auto" }, { fetch_format: "auto" }],
@@ -94,10 +94,8 @@ export default async function handler(
     const imageUrl =
       uploadResult.eager?.[0]?.secure_url || uploadResult.secure_url;
 
-    // 🔗 Slug
+    // Generate slug and insert into DB
     const slug = slugify(name, { lower: true });
-
-    // 🗄️ Insert
     const client = await clientPromise;
     const db = client.db();
     const product = {
