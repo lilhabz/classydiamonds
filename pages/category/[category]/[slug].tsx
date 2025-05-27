@@ -1,17 +1,18 @@
-// 📄 pages/category/[category]/[slug].tsx – Final Product Page with Breadcrumb Fix ✅
+// 📄 pages/category/[category]/[slug].tsx – Final Product Page with Live MongoDB Data + Breadcrumb Fix ✅
 
 "use client";
 
-import { useRouter } from "next/router";
-import { productsData } from "@/data/productsData";
-import { jewelryData } from "@/data/jewelryData";
+import { GetServerSideProps } from "next"; // added for data fetching
 import { useCart } from "@/context/CartContext";
+import clientPromise from "@/lib/mongodb"; // added to connect to MongoDB
+import Breadcrumbs from "@/components/Breadcrumbs";
 import Head from "next/head";
 import Image from "next/image";
-import Breadcrumbs from "@/components/Breadcrumbs";
+import { useRouter } from "next/router"; // keep client-side router if needed
 
+// 🔢 Product type from database
 type ProductType = {
-  id: number;
+  id: string; // _id from MongoDB as string
   name: string;
   price: number;
   image: string;
@@ -20,37 +21,11 @@ type ProductType = {
   description?: string;
 };
 
-export default function ProductPage() {
-  const router = useRouter();
-  const { slug, category } = router.query;
+export default function ProductPage({ product }: { product: ProductType }) {
   const { addToCart } = useCart();
+  // const router = useRouter(); // not needed for server props lookup
 
-  if (
-    !slug ||
-    typeof slug !== "string" ||
-    !category ||
-    typeof category !== "string"
-  ) {
-    return null;
-  }
-
-  const allProducts: ProductType[] = [...productsData, ...jewelryData];
-  const product = allProducts.find((item) => item.slug === slug);
-
-  if (!product) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-[var(--bg-page)] text-[var(--foreground)]">
-        <h1 className="text-3xl font-bold mb-2 text-[var(--foreground)]">
-          Product Not Found
-        </h1>
-        <p className="text-lg text-[#cfd2d6]">
-          Sorry, we couldn't find that item.
-        </p>
-      </div>
-    );
-  }
-
-  const capitalizedCategory = category
+  const capitalizedCategory = product.category
     .replace(/-/g, " ")
     .replace(/\b\w/g, (c) => c.toUpperCase());
 
@@ -78,7 +53,7 @@ export default function ProductPage() {
         />
         <meta
           property="og:url"
-          content={`https://classydiamonds.vercel.app/category/${category}/${slug}`}
+          content={`https://classydiamonds.vercel.app/category/${product.category}/${product.slug}`}
         />
       </Head>
 
@@ -88,12 +63,12 @@ export default function ProductPage() {
         <div className="pl-4 pr-4 sm:pl-8 sm:pr-8 mt-6 mb-6">
           <Breadcrumbs
             customLabels={{
-              [category]: capitalizedCategory,
-              [slug]: product.name,
+              [product.category]: capitalizedCategory,
+              [product.slug]: product.name,
             }}
             customPaths={{
-              [category]: `/category/${category}`,
-              [slug]: `/category/${category}/${slug}`,
+              [product.category]: `/category/${product.category}`,
+              [product.slug]: `/category/${product.category}/${product.slug}`,
             }}
           />
         </div>
@@ -145,3 +120,23 @@ export default function ProductPage() {
     </>
   );
 }
+
+// 📤 Server-side data fetching for single product
+export const getServerSideProps: GetServerSideProps = async ({ params }) => {
+  const slug = params?.slug as string;
+  const client = await clientPromise;
+  const p = await client.db().collection("products").findOne({ slug });
+  if (!p) {
+    return { notFound: true };
+  }
+  const product: ProductType = {
+    id: p._id.toString(),
+    name: p.name,
+    price: p.price,
+    image: p.imageUrl,
+    slug: p.slug,
+    category: p.category,
+    description: p.description || "",
+  };
+  return { props: { product } };
+};

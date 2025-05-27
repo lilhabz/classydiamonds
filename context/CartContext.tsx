@@ -1,4 +1,4 @@
-// 📦 context/CartContext.tsx – Cart State + LocalStorage Sync
+// 📦 context/CartContext.tsx – Cart State + LocalStorage Sync (Updated for string ID)
 
 "use client";
 
@@ -10,8 +10,9 @@ import {
   ReactNode,
 } from "react";
 
+// 🛠️ Use string IDs to align with MongoDB _id
 interface CartItem {
-  id: number;
+  id: string;
   name: string;
   price: number;
   image: string;
@@ -21,9 +22,9 @@ interface CartItem {
 interface CartContextType {
   cartItems: CartItem[];
   addToCart: (item: CartItem) => void;
-  removeFromCart: (id: number) => void;
-  increaseQty: (id: number) => void;
-  decreaseQty: (id: number) => void;
+  removeFromCart: (id: string) => void;
+  increaseQty: (id: string) => void;
+  decreaseQty: (id: string) => void;
   clearCart: () => void;
   addedItemName: string | null;
 }
@@ -72,12 +73,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
   };
 
   // ❌ Remove item
-  const removeFromCart = (id: number) => {
+  const removeFromCart = (id: string) => {
     setCartItems((prev) => prev.filter((item) => item.id !== id));
   };
 
   // ➕ Increase quantity
-  const increaseQty = (id: number) => {
+  const increaseQty = (id: string) => {
     setCartItems((prev) =>
       prev.map((item) =>
         item.id === id ? { ...item, quantity: item.quantity + 1 } : item
@@ -86,7 +87,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   };
 
   // ➖ Decrease quantity
-  const decreaseQty = (id: number) => {
+  const decreaseQty = (id: string) => {
     setCartItems((prev) =>
       prev.map((item) =>
         item.id === id

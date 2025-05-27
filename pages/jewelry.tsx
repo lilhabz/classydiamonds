@@ -1,4 +1,4 @@
-// 📄 pages/jewelry.tsx – Unified Scroll Logic 💎
+// 📄 pages/jewelry.tsx – Shop Page with Live MongoDB Data + Cart ID Fix 🛒
 
 "use client";
 
@@ -6,11 +6,23 @@ import Image from "next/image";
 import Link from "next/link";
 import Head from "next/head";
 import { useCart } from "@/context/CartContext";
-import { jewelryData } from "@/data/jewelryData";
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/router";
+import clientPromise from "@/lib/mongodb";
+import { GetServerSideProps } from "next";
 
-export default function JewelryPage() {
+// 🔢 Product type from database, including string ID for cart
+type ProductType = {
+  id: string;
+  slug: string;
+  name: string;
+  price: number;
+  image: string; // URL from Cloudinary or public/uploads
+  category: string;
+  description?: string;
+};
+
+export default function JewelryPage({ products }: { products: ProductType[] }) {
   // 🛒 Cart context
   const { addToCart } = useCart();
 
@@ -41,13 +53,11 @@ export default function JewelryPage() {
   // 🏃‍♂️ Handle auto-scroll whenever flagged
   useEffect(() => {
     if (!scrollTriggered.current) return;
-
-    const id = setTimeout(() => {
+    const idTimeout = setTimeout(() => {
       if (!headerRef.current) return;
       const headerY =
         headerRef.current.getBoundingClientRect().top + window.pageYOffset;
       const navHeight = document.querySelector("header")?.clientHeight ?? 0;
-
       window.scrollTo({ top: headerY - navHeight - 60, behavior: "smooth" });
       scrollTriggered.current = false;
       const newQuery = filteredCategory ? { category: filteredCategory } : {};
@@ -55,35 +65,27 @@ export default function JewelryPage() {
         shallow: true,
       });
     }, 100);
-
-    return () => clearTimeout(id);
+    return () => clearTimeout(idTimeout);
   }, [filteredCategory]);
 
   // 🔄 Filter the data
   const filteredProducts = filteredCategory
-    ? jewelryData.filter((p) => p.category.toLowerCase() === filteredCategory)
-    : jewelryData;
+    ? products.filter((p) => p.category.toLowerCase() === filteredCategory)
+    : products;
 
   // ➕ Load more handler
   const handleLoadMore = () => setVisibleCount((prev) => prev + 4);
 
   // 🔘 Filter handler: always include scroll flag
   const handleFilter = (slug: string | null) => {
-    if (slug === null) {
-      // 🔄 Reset to "All" with scroll
-      router.push(
-        { pathname: "/jewelry", query: { scroll: "true" } },
-        undefined,
-        { shallow: true }
-      );
-    } else {
-      // 🔘 Filter specific category with scroll
-      router.push(
-        { pathname: "/jewelry", query: { category: slug, scroll: "true" } },
-        undefined,
-        { shallow: true }
-      );
-    }
+    router.push(
+      {
+        pathname: "/jewelry",
+        query: slug ? { category: slug, scroll: "true" } : { scroll: "true" },
+      },
+      undefined,
+      { shallow: true }
+    );
   };
 
   // 📝 SEO metadata
@@ -132,7 +134,6 @@ export default function JewelryPage() {
 
       {/* 💎 Grid & Filters */}
       <section className="pt-32 pb-16 px-4 sm:px-6 max-w-7xl mx-auto">
-        {/* 📍 The header we scroll to */}
         <div ref={headerRef}>
           <h2 className="text-2xl sm:text-3xl font-semibold text-center mb-6 text-[var(--foreground)]">
             {filteredCategory
@@ -179,7 +180,7 @@ export default function JewelryPage() {
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
           {filteredProducts.slice(0, visibleCount).map((product) => (
             <div
-              key={product.id}
+              key={product.slug}
               className="group bg-[var(--bg-nav)] rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl hover:scale-105 transition-all duration-300 flex flex-col h-full"
             >
               <Link href={`/category/${product.category}/${product.slug}`}>
@@ -204,7 +205,13 @@ export default function JewelryPage() {
               <button
                 onClick={(e) => {
                   e.preventDefault();
-                  addToCart({ ...product, quantity: 1 });
+                  addToCart({
+                    id: product.id,
+                    name: product.name,
+                    price: product.price,
+                    image: product.image,
+                    quantity: 1,
+                  });
                 }}
                 className="m-4 px-4 py-2 bg-[var(--foreground)] text-[var(--bg-nav)] rounded-xl font-semibold hover:bg-gray-100 hover:scale-105 hover:shadow-2xl transition-all duration-300 cursor-pointer"
               >
@@ -229,3 +236,19 @@ export default function JewelryPage() {
     </div>
   );
 }
+
+// 📤 Server-side data fetching
+export const getServerSideProps: GetServerSideProps = async () => {
+  const client = await clientPromise;
+  const productsRaw = await client.db().collection("products").find().toArray();
+  const products: ProductType[] = productsRaw.map((p: any) => ({
+    id: p._id.toString(),
+    slug: p.slug,
+    name: p.name,
+    price: p.price,
+    image: p.imageUrl,
+    category: p.category,
+    description: p.description || "",
+  }));
+  return { props: { products } };
+};
