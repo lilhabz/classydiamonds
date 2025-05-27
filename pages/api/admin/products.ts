@@ -55,16 +55,16 @@ export default async function handler(
       return res.status(400).json({ message: "Expected multipart/form-data" });
     }
 
-    // Parse form-data
-    const form = new formidable.IncomingForm();
-    const { fields, files } = await new Promise<{
-      fields: formidable.Fields;
-      files: formidable.Files;
-    }>((resolve, reject) => {
-      form.parse(req, (err, flds, fls) =>
-        err ? reject(err) : resolve({ fields: flds, files: fls })
-      );
-    });
+    // Parse form-data using dynamic import to avoid bundler issues
+    const { IncomingForm } = await import("formidable");
+    const form = new IncomingForm();
+    const { fields, files } = await new Promise<{ fields: any; files: any }>(
+      (resolve, reject) => {
+        form.parse(req, (err, flds, fls) =>
+          err ? reject(err) : resolve({ fields: flds, files: fls })
+        );
+      }
+    );
 
     // Extract fields safely
     const getString = (
