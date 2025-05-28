@@ -1,4 +1,4 @@
-// 📄 pages/admin/products.tsx – Admin Product Management with Featured, Category Edit, and Delete 🛠️
+// 📄 pages/admin/products.tsx – Admin Product Management with SKU, Featured, Category Edit, and Delete 🛠️
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
@@ -15,7 +15,7 @@ type Category =
   | "earrings";
 
 interface AdminProduct {
-  _id: string;
+  _id: string; // ← SKU
   name: string;
   description: string;
   price: number;
@@ -185,7 +185,7 @@ export default function AdminProductsPage() {
             ))}
           </select>
         </label>
-        <label>
+        <label className="flex items-center space-x-2">
           ✨ Featured
           <input
             type="checkbox"
@@ -223,6 +223,7 @@ export default function AdminProductsPage() {
         <table className="w-full table-auto border-collapse">
           <thead>
             <tr className="bg-gray-200">
+              <th className="p-2">SKU</th>
               <th className="p-2">Image</th>
               <th className="p-2">Name</th>
               <th className="p-2">Category</th>
@@ -233,6 +234,7 @@ export default function AdminProductsPage() {
           <tbody>
             {products.map((p) => (
               <tr key={p._id} className="border-t">
+                <td className="p-2">{p._id}</td> {/* SKU column */}
                 <td className="p-2 w-24 h-24 relative">
                   <Image
                     src={p.imageUrl}
