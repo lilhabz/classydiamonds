@@ -1,3 +1,4 @@
+// 📄 tsconfig.json – Confirm path resolution for scripts 🌐
 {
   "compilerOptions": {
     "target": "ES2017",
@@ -16,8 +17,8 @@
     "paths": {
       "@/*": ["./*"]
     },
-    "typeRoots": ["./types", "./node_modules/@types"] // ✅ moved here
+    "typeRoots": ["./types", "./node_modules/@types"]
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx"],
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", "scripts/**/*.ts"], // 📝 include scripts folder
   "exclude": ["node_modules"]
 }

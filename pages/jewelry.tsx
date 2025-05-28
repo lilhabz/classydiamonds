@@ -1,4 +1,4 @@
-// 📄 pages/jewelry.tsx – Shop Page with Live MongoDB Data + Cart ID Fix 🛒
+// 📄 pages/jewelry.tsx – Shop Page (pulls all products from MongoDB) 📦
 
 "use client";
 
@@ -12,7 +12,7 @@ import clientPromise from "@/lib/mongodb";
 import { GetServerSideProps } from "next";
 
 // 🔢 Product type from database, including string ID for cart
-type ProductType = {
+export type ProductType = {
   id: string;
   slug: string;
   name: string;
@@ -42,30 +42,30 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
   // 🛠 Sync category & scroll flag on query changes
   useEffect(() => {
     const { category, scroll } = router.query;
-    if (typeof category === "string") {
-      setFilteredCategory(category);
-    } else {
-      setFilteredCategory(null);
-    }
+    if (typeof category === "string") setFilteredCategory(category);
+    else setFilteredCategory(null);
     scrollTriggered.current = scroll === "true";
   }, [router.query]);
 
   // 🏃‍♂️ Handle auto-scroll whenever flagged
   useEffect(() => {
     if (!scrollTriggered.current) return;
-    const idTimeout = setTimeout(() => {
+    setTimeout(() => {
       if (!headerRef.current) return;
       const headerY =
         headerRef.current.getBoundingClientRect().top + window.pageYOffset;
       const navHeight = document.querySelector("header")?.clientHeight ?? 0;
       window.scrollTo({ top: headerY - navHeight - 60, behavior: "smooth" });
       scrollTriggered.current = false;
-      const newQuery = filteredCategory ? { category: filteredCategory } : {};
-      router.replace({ pathname: "/jewelry", query: newQuery }, undefined, {
-        shallow: true,
-      });
+      router.replace(
+        {
+          pathname: "/jewelry",
+          query: filteredCategory ? { category: filteredCategory } : {},
+        },
+        undefined,
+        { shallow: true }
+      );
     }, 100);
-    return () => clearTimeout(idTimeout);
   }, [filteredCategory]);
 
   // 🔄 Filter the data
@@ -163,7 +163,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
                 <button
                   key={cat}
                   onClick={() => handleFilter(slug)}
-                  className={`px-5 py-2 rounded-full text-sm font-semibold cursor-pointer transition ${
+                  className={`px-5 py-2 rounded-full text-sm font-semibold transition cursor-pointer ${
                     filteredCategory === slug
                       ? "bg-white text-[var(--bg-nav)]"
                       : "bg-[var(--bg-nav)] text-[var(--foreground)] hover:bg-[#2f3b5e]"
@@ -237,7 +237,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
   );
 }
 
-// 📤 Server-side data fetching
+// 📤 Server-side data fetching – loads all products from MongoDB
 export const getServerSideProps: GetServerSideProps = async () => {
   const client = await clientPromise;
   const productsRaw = await client.db().collection("products").find().toArray();
@@ -246,7 +246,7 @@ export const getServerSideProps: GetServerSideProps = async () => {
     slug: p.slug,
     name: p.name,
     price: p.price,
-    image: p.imageUrl,
+    image: p.imageUrl || p.image, // support static & uploaded images
     category: p.category,
     description: p.description || "",
   }));
