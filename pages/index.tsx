@@ -1,4 +1,4 @@
-// 📄 pages/index.tsx – Tiffany Swipe Rebuild with Server Data Fetch 💎 (Full Code)
+// 📄 pages/index.tsx – Home Page with Featured Section Limited to 4 & Unified Image Field 💎
 
 "use client";
 
@@ -6,16 +6,14 @@ import Link from "next/link";
 import Head from "next/head";
 import Image from "next/image";
 import { GetServerSideProps } from "next";
-
 import { useCart } from "@/context/CartContext";
-// retained import for reference, not used
-import { productsData } from "@/data/productsData";
 
+// 🔢 Updated Product interface to use unified `image` field
 interface Product {
   _id: string;
   name: string;
   price: number;
-  image: string;
+  image: string; // now holds either static or Cloudinary URL
   category: string;
   slug: string;
 }
@@ -24,19 +22,26 @@ interface HomeProps {
   products: Product[];
 }
 
-// Fetch products from the API at request time
+// 📤 Server-side data fetching – map `imageUrl` to `image` for consistency
 export const getServerSideProps: GetServerSideProps<HomeProps> = async () => {
   const res = await fetch(`${process.env.NEXTAUTH_URL}/api/products`);
-  const products: Product[] = await res.json();
+  const data = await res.json();
+  const products: Product[] = data.map((item: any) => ({
+    _id: item._id,
+    name: item.name,
+    price: item.price,
+    image: item.imageUrl || item.image, // unify dynamic/static images
+    category: item.category,
+    slug: item.slug,
+  }));
   return { props: { products } };
 };
 
-const Home = ({ products }: HomeProps) => {
+export default function Home({ products }: HomeProps) {
   const { addToCart } = useCart();
 
-  // Featured: first 6 for desktop, first 4 for mobile
-  const featuredDesktop = products.slice(0, 6);
-  const featuredMobile = products.slice(0, 4);
+  // ✨ Only show the first 4 items, never more
+  const featured = products.slice(0, 4);
 
   return (
     <>
@@ -50,24 +55,19 @@ const Home = ({ products }: HomeProps) => {
       </Head>
 
       <main className="flex flex-col min-h-screen bg-[var(--bg-page)] text-[var(--foreground)] overflow-x-hidden">
-        <div className="h-0" />
-
-        {/* 🌟 Hero Section */}
+        {/* ⭐ Hero Section */}
         <section className="-mt-20 relative w-full h-[80vh] flex items-center justify-center text-center overflow-hidden">
           <div className="absolute inset-0" aria-hidden="true">
-            <div className="relative w-full h-full">
-              <Image
-                src="/hero-home.jpg"
-                alt="Showcase of elegant jewelry collection"
-                fill
-                sizes="100vw"
-                priority
-                className="w-full h-full object-cover"
-              />
-            </div>
+            <Image
+              src="/hero-home.jpg"
+              alt="Showcase of elegant jewelry collection"
+              fill
+              sizes="100vw"
+              priority
+              className="object-cover w-full h-full"
+            />
             <div className="absolute inset-0 bg-black opacity-50 pointer-events-none" />
           </div>
-
           <div className="relative z-10 px-4">
             <h1 className="text-3xl sm:text-4xl md:text-6xl font-bold mb-6 text-[#e0e0e0]">
               Timeless Elegance
@@ -76,11 +76,7 @@ const Home = ({ products }: HomeProps) => {
               Discover handcrafted engagement rings, wedding bands, and fine
               jewelry built to last a lifetime.
             </p>
-            <Link
-              href="/jewelry"
-              className="inline-block"
-              aria-label="Go to Jewelry Collection"
-            >
+            <Link href="/jewelry" aria-label="Go to Jewelry Collection">
               <button className="px-8 py-4 bg-[#e0e0e0] text-[#1f2a44] rounded-full text-lg font-semibold hover:bg-white hover:scale-105 transition-transform duration-300 cursor-pointer">
                 Shop Now
               </button>
@@ -88,22 +84,21 @@ const Home = ({ products }: HomeProps) => {
           </div>
         </section>
 
-        {/* 💎 Featured Products Section */}
+        {/* ✨ Featured Products Section */}
         <section className="py-16 sm:py-20 px-4 sm:px-6 max-w-7xl mx-auto">
           <h2 className="text-2xl sm:text-3xl font-semibold text-center mb-12 sm:mb-16">
             Featured Pieces
           </h2>
 
-          {/* 📱 Mobile Grid View */}
+          {/* 📱 Mobile Grid (2 columns) */}
           <div className="grid grid-cols-2 gap-4 sm:hidden px-2">
-            {featuredMobile.map((item, index) => (
+            {featured.map((item) => (
               <div
                 key={item._id}
                 className="bg-[#25304f] rounded-2xl shadow-lg flex flex-col"
               >
                 <Link
                   href={`/category/${item.category}/${item.slug}`}
-                  className="flex-1 flex flex-col"
                   aria-label={`View ${item.name}`}
                 >
                   <div className="relative w-full h-48">
@@ -111,7 +106,6 @@ const Home = ({ products }: HomeProps) => {
                       src={item.image}
                       alt={`Product image of ${item.name}`}
                       fill
-                      priority={index === 0}
                       className="object-cover rounded-t-2xl"
                     />
                   </div>
@@ -136,7 +130,6 @@ const Home = ({ products }: HomeProps) => {
                       })
                     }
                     className="w-full px-3 py-2 bg-[#e0e0e0] text-[#1f2a44] text-sm rounded-xl font-semibold hover:bg-white transition"
-                    aria-label={`Add ${item.name} to cart`}
                   >
                     Add to Cart
                   </button>
@@ -145,16 +138,15 @@ const Home = ({ products }: HomeProps) => {
             ))}
           </div>
 
-          {/* 🖥️ Desktop Grid View */}
+          {/* 🖥️ Desktop Grid (4 columns) */}
           <div className="hidden sm:grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-10">
-            {featuredDesktop.map((item, index) => (
+            {featured.map((item) => (
               <div
                 key={item._id}
                 className="group bg-[#25304f] rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl hover:ring-2 hover:ring-[#e0e0e0] hover:scale-105 transition-all duration-300 flex flex-col cursor-pointer"
               >
                 <Link
                   href={`/category/${item.category}/${item.slug}`}
-                  className="flex-1 flex flex-col"
                   aria-label={`View ${item.name}`}
                 >
                   <div className="relative w-full h-72 sm:h-80 overflow-hidden">
@@ -162,20 +154,17 @@ const Home = ({ products }: HomeProps) => {
                       src={item.image}
                       alt={`Product image of ${item.name}`}
                       fill
-                      priority={index === 0}
-                      sizes="(min-width: 1024px) 25vw, 33vw"
+                      sizes="(min-width:1024px)25vw,33vw"
                       className="object-cover group-hover:scale-110 transition-transform duration-300"
                     />
                   </div>
                   <div className="p-6 text-center flex-1 flex flex-col justify-between">
-                    <div>
-                      <h3 className="text-xl sm:text-2xl font-semibold text-[#cfd2d6] group-hover:text-white transition-colors duration-300">
-                        {item.name}
-                      </h3>
-                      <p className="mt-2 text-gray-400 group-hover:text-white transition-colors duration-300">
-                        ${item.price.toLocaleString()}
-                      </p>
-                    </div>
+                    <h3 className="text-xl sm:text-2xl font-semibold text-[#cfd2d6] group-hover:text-white transition-colors duration-300">
+                      {item.name}
+                    </h3>
+                    <p className="mt-2 text-gray-400 group-hover:text-white transition-colors duration-300">
+                      ${item.price.toLocaleString()}
+                    </p>
                   </div>
                 </Link>
                 <div className="p-6 pt-0">
@@ -190,7 +179,6 @@ const Home = ({ products }: HomeProps) => {
                       })
                     }
                     className="w-full px-6 py-3 bg-[#e0e0e0] text-[#1f2a44] rounded-xl font-semibold hover:bg-white transition hover:scale-105 cursor-pointer"
-                    aria-label={`Add ${item.name} to cart`}
                   >
                     Add to Cart
                   </button>
@@ -342,7 +330,6 @@ const Home = ({ products }: HomeProps) => {
       </main>
     </>
   );
-};
+}
 
-export default Home; // 🏠 Home Page
 // ✅
