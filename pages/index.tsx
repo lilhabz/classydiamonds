@@ -1,4 +1,4 @@
-// 📄 pages/index.tsx – Home Page with Featured Section Limited to 4 & Unified Image Field 💎
+// 📄 pages/index.tsx – Home Page with Dynamic Featured Section 🎉
 
 "use client";
 
@@ -7,6 +7,7 @@ import Head from "next/head";
 import Image from "next/image";
 import { GetServerSideProps } from "next";
 import { useCart } from "@/context/CartContext";
+import clientPromise from "@/lib/mongodb"; // 🔗 MongoDB client for DB queries
 
 // 🔢 Updated Product interface to use unified `image` field
 interface Product {
@@ -22,26 +23,37 @@ interface HomeProps {
   products: Product[];
 }
 
-// 📤 Server-side data fetching – map `imageUrl` to `image` for consistency
+// 📤 Server-side data fetching – fetch only featured products (limit 4)
 export const getServerSideProps: GetServerSideProps<HomeProps> = async () => {
-  const res = await fetch(`${process.env.NEXTAUTH_URL}/api/products`);
-  const data = await res.json();
-  const products: Product[] = data.map((item: any) => ({
-    _id: item._id,
-    name: item.name,
-    price: item.price,
-    image: item.imageUrl || item.image, // unify dynamic/static images
-    category: item.category,
-    slug: item.slug,
+  const client = await clientPromise;
+  const db = client.db();
+  // 🎯 Query featured products
+  const featuredDocs = await db
+    .collection("products")
+    .find({ featured: true })
+    .limit(4)
+    .toArray();
+
+  // 🔄 Map to Product interface
+  const products: Product[] = featuredDocs.map((doc: any) => ({
+    _id: doc._id.toString(),
+    name: doc.name,
+    price: doc.price,
+    image: doc.imageUrl || doc.image,
+    category: doc.category,
+    slug: doc.slug,
   }));
-  return { props: { products } };
+
+  return {
+    props: { products },
+  };
 };
 
 export default function Home({ products }: HomeProps) {
   const { addToCart } = useCart();
 
-  // ✨ Only show the first 4 items, never more
-  const featured = products.slice(0, 4);
+  // ✨ Only featured items (up to 4) fetched from DB
+  const featured = products;
 
   return (
     <>
