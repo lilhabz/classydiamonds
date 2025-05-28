@@ -1,4 +1,4 @@
-// 📄 pages/category/[category]/index.tsx – Category Product Grid with Server Data Fetch 🚀
+// 📄 pages/category/[category]/index.tsx – Category Product Grid with Static + Server Data Merge 🚀
 
 import { GetServerSideProps } from "next";
 import Head from "next/head";
@@ -6,6 +6,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState, useRef } from "react";
 import { useCart } from "@/context/CartContext";
+import { jewelryData } from "@/data/jewelryData"; // static data
 
 interface Product {
   _id: string;
@@ -17,11 +18,11 @@ interface Product {
 }
 
 interface CategoryPageProps {
-  products: Product[];
-  category: string;
+  products: Product[]; // from your DB
+  category: string; // slug
 }
 
-// Fetch products by category at request time
+// Fetch server items
 export const getServerSideProps: GetServerSideProps<
   CategoryPageProps
 > = async ({ query }) => {
@@ -40,6 +41,21 @@ export default function CategoryPage({
   const { addToCart } = useCart();
   const [visibleCount, setVisibleCount] = useState(8);
   const productsEndRef = useRef<HTMLDivElement>(null);
+
+  // Normalize static data to Product[]
+  const staticProducts: Product[] = jewelryData
+    .filter((p) => p.category.toLowerCase() === category.toLowerCase())
+    .map((p) => ({
+      _id: p.id.toString(), // convert number to string id
+      name: p.name,
+      price: p.price,
+      image: p.image,
+      category: p.category,
+      slug: p.slug,
+    }));
+
+  // Merge both sets
+  const allProducts: Product[] = [...staticProducts, ...products];
 
   const handleLoadMore = () => {
     setVisibleCount((prev) => prev + 4);
@@ -85,7 +101,7 @@ export default function CategoryPage({
 
   return (
     <div className="min-h-screen flex flex-col bg-[var(--bg-page)] text-[var(--foreground)]">
-      {/* Head Meta */}
+      {/* 🔖 Head Meta */}
       <Head>
         <title>{prettyCategory} | Classy Diamonds</title>
         <meta
@@ -94,7 +110,7 @@ export default function CategoryPage({
         />
       </Head>
 
-      {/* Hero Section */}
+      {/* 🌟 Hero Section */}
       {heroImage && (
         <section className="relative w-full h-[40vh] sm:h-[50vh] overflow-hidden">
           <Image
@@ -117,15 +133,16 @@ export default function CategoryPage({
         </section>
       )}
 
-      {/* Product Grid */}
+      {/* 💍 Product Grid Section */}
       <section className="py-20 px-4 sm:px-6 max-w-7xl mx-auto">
         <h2 className="text-2xl sm:text-3xl font-semibold text-center mb-12">
           {prettyCategory} Pieces
         </h2>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
-          {products.slice(0, visibleCount).map((product) => (
+          {allProducts.slice(0, visibleCount).map((product) => (
             <div key={product._id} className="group">
               <div className="bg-[var(--bg-nav)] rounded-2xl overflow-hidden shadow-lg hover:ring-2 hover:ring-[var(--foreground)] hover:scale-105 transition-transform duration-300 flex flex-col h-full">
+                {/* 🔗 Product Link & Image */}
                 <Link
                   href={`/category/${product.category}/${product.slug}`}
                   className="flex-1"
@@ -147,6 +164,7 @@ export default function CategoryPage({
                     </p>
                   </div>
                 </Link>
+                {/* 🛒 Add to Cart */}
                 <div className="p-6 pt-0">
                   <button
                     type="button"
@@ -169,8 +187,9 @@ export default function CategoryPage({
             </div>
           ))}
         </div>
+        {/* 🔽 Load More */}
         <div ref={productsEndRef} />
-        {visibleCount < products.length ? (
+        {visibleCount < allProducts.length ? (
           <div className="flex justify-center mt-12">
             <button
               onClick={handleLoadMore}
