@@ -1,11 +1,12 @@
-// 📄 pages/admin/products.tsx – Admin Product Management with Sequential SKU, Featured, Category Edit, and Delete 🛠️
+// 📄 pages/admin/products.tsx – Admin Product Management with Batch Save Feature 🛠️💾
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import { getSession } from "next-auth/react";
 import Image from "next/image";
+import clientPromise from "@/lib/mongodb"; // 🔗 MongoDB client if needed
 
-// Define allowed categories
+// 🚀 Define allowed categories
 type Category =
   | "engagement"
   | "wedding-bands"
@@ -14,9 +15,10 @@ type Category =
   | "necklaces"
   | "earrings";
 
+// 🛠️ AdminProduct type mirrors collection
 interface AdminProduct {
-  _id: string; // MongoDB ID (for actions)
-  skuNumber?: number; // ← sequential SKU (optional so we can safely fallback)
+  _id: string; // MongoDB ID
+  skuNumber?: number; // sequential SKU
   name: string;
   description: string;
   price: number;
@@ -25,7 +27,7 @@ interface AdminProduct {
   featured: boolean;
 }
 
-// 🛡️ Server-side guard: only admins can access
+// 🛡️ Server-side guard: only admins
 export async function getServerSideProps(context: any) {
   const session = await getSession(context);
   if (!session || !session.user?.isAdmin) {
@@ -36,8 +38,17 @@ export async function getServerSideProps(context: any) {
 
 export default function AdminProductsPage() {
   const router = useRouter();
+
+  // 🔥 State: list of products from DB
   const [products, setProducts] = useState<AdminProduct[]>([]);
   const [loadingList, setLoadingList] = useState(false);
+
+  // 💾 Local row edits tracked here before save
+  const [rowEdits, setRowEdits] = useState<
+    Record<string, { category: Category; featured: boolean }>
+  >({});
+
+  // 📋 Form state for adding a new product
   const [formState, setFormState] = useState({
     name: "",
     description: "",
@@ -46,13 +57,15 @@ export default function AdminProductsPage() {
     featured: false,
     imageFile: null as File | null,
   });
+
+  // 🎯 Status for operations
   const [status, setStatus] = useState({
     loading: false,
     error: "",
     success: "",
   });
 
-  // Fetch existing products
+  // ==================== LOAD PRODUCTS ====================
   useEffect(() => {
     async function load() {
       setLoadingList(true);
@@ -60,16 +73,22 @@ export default function AdminProductsPage() {
       const data = await res.json();
       setProducts(data.products);
       setLoadingList(false);
+      // Initialize row edits from fetched data
+      const edits: Record<string, { category: Category; featured: boolean }> =
+        {};
+      data.products.forEach((p: AdminProduct) => {
+        edits[p._id] = { category: p.category, featured: p.featured };
+      });
+      setRowEdits(edits);
     }
     load();
   }, []);
 
-  // Handle form input changes
+  // ==================== HANDLE NEW PRODUCT ====================
   const handleInput = (field: string, value: any) => {
     setFormState((s) => ({ ...s, [field]: value }));
   };
 
-  // Add new product
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setStatus({ loading: true, error: "", success: "" });
@@ -89,8 +108,15 @@ export default function AdminProductsPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.message);
 
-      setStatus({ loading: false, error: "", success: "Product added 🎉" });
-      // Reset form
+      // Success: prepend new product
+      setProducts((p) => [data.product, ...p]);
+      setRowEdits((e) => ({
+        ...e,
+        [data.product._id]: {
+          category: data.product.category,
+          featured: data.product.featured,
+        },
+      }));
       setFormState({
         name: "",
         description: "",
@@ -99,31 +125,40 @@ export default function AdminProductsPage() {
         featured: false,
         imageFile: null,
       });
-      // Refresh list (new product includes skuNumber)
-      setProducts((p) => [data.product, ...p]);
+      setStatus({ loading: false, error: "", success: "Product added 🎉" });
     } catch (err: any) {
       setStatus({ loading: false, error: err.message, success: "" });
     }
   };
 
-  // Update a product field
-  const updateProduct = async (id: string, updates: Partial<AdminProduct>) => {
-    const res = await fetch(`/api/admin/products/${id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(updates),
-    });
-    if (res.ok) {
+  // ==================== SAVE CHANGES PER ROW ====================
+  const handleSave = async (id: string) => {
+    const edits = rowEdits[id];
+    setStatus({ loading: true, error: "", success: "" });
+    try {
+      const res = await fetch(`/api/admin/products/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(edits),
+      });
       const json = await res.json();
+      if (!res.ok) throw new Error(json.message);
+      // Update UI list with saved item
       setProducts((p) => p.map((x) => (x._id === id ? json.product : x)));
+      setStatus({ loading: false, error: "", success: "Changes saved 💾" });
+    } catch (err: any) {
+      setStatus({ loading: false, error: err.message, success: "" });
     }
   };
 
-  // Delete a product
-  const deleteProduct = async (id: string) => {
+  // ==================== DELETE PRODUCT ====================
+  const handleDelete = async (id: string) => {
     if (!confirm("Delete this product?")) return;
     const res = await fetch(`/api/admin/products/${id}`, { method: "DELETE" });
-    if (res.ok) setProducts((p) => p.filter((x) => x._id !== id));
+    if (res.ok) {
+      setProducts((p) => p.filter((x) => x._id !== id));
+      setStatus({ loading: false, error: "", success: "Product deleted 🗑️" });
+    }
   };
 
   return (
@@ -132,7 +167,7 @@ export default function AdminProductsPage() {
       {status.error && <p className="text-red-500">❌ {status.error}</p>}
       {status.success && <p className="text-green-600">✅ {status.success}</p>}
 
-      {/* Add New Product Form */}
+      {/* 🆕 Add New Product Form */}
       <form
         onSubmit={handleSubmit}
         className="grid grid-cols-1 md:grid-cols-2 gap-4"
@@ -217,8 +252,8 @@ export default function AdminProductsPage() {
         </button>
       </form>
 
-      {/* Existing Products Table */}
-      <h2 className="text-xl font-semibold mt-8">🗂️ Current Products</h2>
+      {/* 🗂️ Existing Products Table */}
+      <h2 className="#text-xl font-semibold mt-8">🗂️ Current Products</h2>
       {loadingList ? (
         <p>Loading...</p>
       ) : (
@@ -234,64 +269,79 @@ export default function AdminProductsPage() {
             </tr>
           </thead>
           <tbody>
-            {products.map((p) => (
-              <tr key={p._id} className="border-t">
-                <td className="p-2">
-                  {/* Safe fallback if skuNumber is ever undefined */}
-                  {(p.skuNumber ?? 0).toString().padStart(5, "0")}
-                </td>
-                <td className="p-2 w-24 h-24 relative">
-                  <Image
-                    src={p.imageUrl}
-                    alt={p.name}
-                    fill
-                    className="object-cover rounded"
-                  />
-                </td>
-                <td className="p-2">{p.name}</td>
-                <td className="p-2">
-                  <select
-                    value={p.category}
-                    onChange={(e) =>
-                      updateProduct(p._id, {
-                        category: e.target.value as Category,
-                      })
-                    }
-                    className="border rounded p-1"
-                  >
-                    {[
-                      "engagement",
-                      "wedding-bands",
-                      "rings",
-                      "bracelets",
-                      "necklaces",
-                      "earrings",
-                    ].map((c) => (
-                      <option key={c} value={c}>
-                        {c}
-                      </option>
-                    ))}
-                  </select>
-                </td>
-                <td className="p-2 text-center">
-                  <input
-                    type="checkbox"
-                    checked={p.featured}
-                    onChange={(e) =>
-                      updateProduct(p._id, { featured: e.target.checked })
-                    }
-                  />
-                </td>
-                <td className="p-2">
-                  <button
-                    onClick={() => deleteProduct(p._id)}
-                    className="text-red-600 hover:underline"
-                  >
-                    Delete
-                  </button>
-                </td>
-              </tr>
-            ))}
+            {products.map((p) => {
+              const edit = rowEdits[p._id];
+              return (
+                <tr key={p._id} className="border-t">
+                  <td className="p-2">
+                    {(p.skuNumber ?? 0).toString().padStart(5, "0")}
+                  </td>
+                  <td className="p-2 w-24 h-24 relative">
+                    <Image
+                      src={p.imageUrl}
+                      alt={p.name}
+                      fill
+                      className="object-cover rounded"
+                    />
+                  </td>
+                  <td className="p-2">{p.name}</td>
+                  <td className="p-2">
+                    <select
+                      value={edit.category}
+                      onChange={(e) =>
+                        setRowEdits((r) => ({
+                          ...r,
+                          [p._id]: {
+                            ...r[p._id],
+                            category: e.target.value as Category,
+                          },
+                        }))
+                      }
+                      className="border rounded p-1"
+                    >
+                      {[
+                        "engagement",
+                        "wedding-bands",
+                        "rings",
+                        "bracelets",
+                        "necklaces",
+                        "earrings",
+                      ].map((c) => (
+                        <option key={c} value={c}>
+                          {c}
+                        </option>
+                      ))}
+                    </select>
+                  </td>
+                  <td className="p-2 text-center">
+                    <input
+                      type="checkbox"
+                      checked={edit.featured}
+                      onChange={(e) =>
+                        setRowEdits((r) => ({
+                          ...r,
+                          [p._id]: { ...r[p._id], featured: e.target.checked },
+                        }))
+                      }
+                    />
+                  </td>
+                  <td className="p-2 space-x-2">
+                    <button
+                      onClick={() => handleSave(p._id)}
+                      className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700"
+                    >
+                      💾 Save
+                    </button>
+                    <button
+                      onClick={() => handleDelete(p._id)}
+                      className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700"
+                    >
+                      🗑️ Delete
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       )}
