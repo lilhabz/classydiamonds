@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import { getSession } from "next-auth/react";
 import Image from "next/image";
-import clientPromise from "@/lib/mongodb"; // 🔗 MongoDB client if needed
 
 // 🚀 Define allowed categories
 type Category =
@@ -43,7 +42,7 @@ export default function AdminProductsPage() {
   const [products, setProducts] = useState<AdminProduct[]>([]);
   const [loadingList, setLoadingList] = useState(false);
 
-  // 💾 Local row edits tracked here before save
+  // 💾 Local edits tracked here before batch save
   const [rowEdits, setRowEdits] = useState<
     Record<string, { category: Category; featured: boolean }>
   >({});
@@ -73,7 +72,7 @@ export default function AdminProductsPage() {
       const data = await res.json();
       setProducts(data.products);
       setLoadingList(false);
-      // Initialize row edits from fetched data
+      // Initialize rowEdits from fetched data
       const edits: Record<string, { category: Category; featured: boolean }> =
         {};
       data.products.forEach((p: AdminProduct) => {
@@ -131,21 +130,38 @@ export default function AdminProductsPage() {
     }
   };
 
-  // ==================== SAVE CHANGES PER ROW ====================
-  const handleSave = async (id: string) => {
-    const edits = rowEdits[id];
+  // ==================== BATCH SAVE ALL CHANGES ====================
+  const handleSaveAll = async () => {
     setStatus({ loading: true, error: "", success: "" });
     try {
-      const res = await fetch(`/api/admin/products/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(edits),
+      // For each edited row, send PUT only if changed
+      const updates = Object.entries(rowEdits).map(async ([id, edits]) => {
+        // Find original to compare
+        const orig = products.find((p) => p._id === id);
+        if (!orig) return null;
+        if (
+          orig.category === edits.category &&
+          orig.featured === edits.featured
+        )
+          return null;
+        const res = await fetch(`/api/admin/products/${id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(edits),
+        });
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.message);
+        return json.product as AdminProduct;
       });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.message);
-      // Update UI list with saved item
-      setProducts((p) => p.map((x) => (x._id === id ? json.product : x)));
-      setStatus({ loading: false, error: "", success: "Changes saved 💾" });
+      const results = await Promise.all(updates);
+      // Merge updated back into products
+      setProducts((p) =>
+        p.map((x) => {
+          const updated = results.find((u) => u && u._id === x._id);
+          return updated || x;
+        })
+      );
+      setStatus({ loading: false, error: "", success: "All changes saved 💾" });
     } catch (err: any) {
       setStatus({ loading: false, error: err.message, success: "" });
     }
@@ -154,7 +170,9 @@ export default function AdminProductsPage() {
   // ==================== DELETE PRODUCT ====================
   const handleDelete = async (id: string) => {
     if (!confirm("Delete this product?")) return;
-    const res = await fetch(`/api/admin/products/${id}`, { method: "DELETE" });
+    const res = await fetch(`/api/admin/products/${id}`, {
+      method: "DELETE",
+    });
     if (res.ok) {
       setProducts((p) => p.filter((x) => x._id !== id));
       setStatus({ loading: false, error: "", success: "Product deleted 🗑️" });
@@ -253,7 +271,7 @@ export default function AdminProductsPage() {
       </form>
 
       {/* 🗂️ Existing Products Table */}
-      <h2 className="#text-xl font-semibold mt-8">🗂️ Current Products</h2>
+      <h2 className="text-xl font-semibold mt-8">🗂️ Current Products</h2>
       {loadingList ? (
         <p>Loading...</p>
       ) : (
@@ -327,12 +345,6 @@ export default function AdminProductsPage() {
                   </td>
                   <td className="p-2 space-x-2">
                     <button
-                      onClick={() => handleSave(p._id)}
-                      className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700"
-                    >
-                      💾 Save
-                    </button>
-                    <button
                       onClick={() => handleDelete(p._id)}
                       className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700"
                     >
@@ -345,6 +357,17 @@ export default function AdminProductsPage() {
           </tbody>
         </table>
       )}
+
+      {/* 💾 Global Save All Changes Button */}
+      <div className="flex justify-end mt-4">
+        <button
+          onClick={handleSaveAll}
+          disabled={status.loading}
+          className="px-6 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+        >
+          {status.loading ? "Saving..." : "Save All Changes 💾"}
+        </button>
+      </div>
     </div>
   );
 }
