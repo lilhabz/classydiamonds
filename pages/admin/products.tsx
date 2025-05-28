@@ -16,7 +16,7 @@ type Category =
 
 interface AdminProduct {
   _id: string; // MongoDB ID (for actions)
-  skuNumber: number; // ← sequential SKU
+  skuNumber?: number; // ← sequential SKU (optional so we can safely fallback)
   name: string;
   description: string;
   price: number;
@@ -237,7 +237,8 @@ export default function AdminProductsPage() {
             {products.map((p) => (
               <tr key={p._id} className="border-t">
                 <td className="p-2">
-                  {p.skuNumber.toString().padStart(5, "0")}
+                  {/* Safe fallback if skuNumber is ever undefined */}
+                  {(p.skuNumber ?? 0).toString().padStart(5, "0")}
                 </td>
                 <td className="p-2 w-24 h-24 relative">
                   <Image
