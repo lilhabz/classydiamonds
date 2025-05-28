@@ -151,11 +151,9 @@ export default async function handler(
     return res.status(201).json({ success: true, product });
   } catch (error: any) {
     console.error("API Error:", error);
-    return res
-      .status(500)
-      .json({
-        success: false,
-        message: error.message || "Internal Server Error",
-      });
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Internal Server Error",
+    });
   }
 }
