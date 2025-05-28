@@ -1,4 +1,4 @@
-// 📄 pages/admin/products.tsx – Admin Product Management with SKU, Featured, Category Edit, and Delete 🛠️
+// 📄 pages/admin/products.tsx – Admin Product Management with Sequential SKU, Featured, Category Edit, and Delete 🛠️
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
@@ -15,7 +15,8 @@ type Category =
   | "earrings";
 
 interface AdminProduct {
-  _id: string; // ← SKU
+  _id: string; // MongoDB ID (for actions)
+  skuNumber: number; // ← sequential SKU
   name: string;
   description: string;
   price: number;
@@ -87,6 +88,7 @@ export default function AdminProductsPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message);
+
       setStatus({ loading: false, error: "", success: "Product added 🎉" });
       // Reset form
       setFormState({
@@ -97,7 +99,7 @@ export default function AdminProductsPage() {
         featured: false,
         imageFile: null,
       });
-      // Refresh list
+      // Refresh list (new product includes skuNumber)
       setProducts((p) => [data.product, ...p]);
     } catch (err: any) {
       setStatus({ loading: false, error: err.message, success: "" });
@@ -112,8 +114,8 @@ export default function AdminProductsPage() {
       body: JSON.stringify(updates),
     });
     if (res.ok) {
-      const updated = await res.json();
-      setProducts((p) => p.map((x) => (x._id === id ? updated.product : x)));
+      const json = await res.json();
+      setProducts((p) => p.map((x) => (x._id === id ? json.product : x)));
     }
   };
 
@@ -234,7 +236,9 @@ export default function AdminProductsPage() {
           <tbody>
             {products.map((p) => (
               <tr key={p._id} className="border-t">
-                <td className="p-2">{p._id}</td> {/* SKU column */}
+                <td className="p-2">
+                  {p.skuNumber.toString().padStart(5, "0")}
+                </td>
                 <td className="p-2 w-24 h-24 relative">
                   <Image
                     src={p.imageUrl}

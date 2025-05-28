@@ -1,4 +1,4 @@
-// 📄 pages/api/admin/products.ts – Admin product list & creation handler with featured support 🛠️
+// 📄 pages/api/admin/products.ts – Admin product list & creation handler with featured + skuNumber support 🛠️
 
 import type { NextApiRequest, NextApiResponse } from "next";
 import { v2 as cloudinary } from "cloudinary";
@@ -11,6 +11,7 @@ export const config = { api: { bodyParser: false } };
 
 type Product = {
   _id: any;
+  skuNumber: number;
   name: string;
   description: string;
   price: number;
@@ -30,7 +31,7 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<Data>
 ) {
-  // Initialize Cloudinary
+  // 📦 Cloudinary config
   if (
     !process.env.CLOUDINARY_CLOUD_NAME ||
     !process.env.CLOUDINARY_API_KEY ||
@@ -47,19 +48,22 @@ export default async function handler(
     api_secret: process.env.CLOUDINARY_API_SECRET,
   });
 
-  // CORS preflight
+  // 🔄 CORS preflight
   if (req.method === "OPTIONS") {
     res.setHeader("Allow", ["GET", "POST", "OPTIONS"]);
     return res.status(200).end();
   }
 
-  // Handle GET: list all products
+  const client = await clientPromise;
+  const db = client.db();
+  const collection = db.collection<Product>("products");
+
+  // 📝 GET: list all products, sorted by skuNumber
   if (req.method === "GET") {
-    const client = await clientPromise;
-    const raw = await client.db().collection("products").find().toArray();
-    // 🔄 Map raw documents to our Product type
+    const raw = await collection.find().sort({ skuNumber: 1 }).toArray();
     const products: Product[] = raw.map((doc: any) => ({
       _id: doc._id,
+      skuNumber: doc.skuNumber ?? 0,
       name: doc.name,
       description: doc.description,
       price: doc.price,
@@ -72,7 +76,7 @@ export default async function handler(
     return res.status(200).json({ success: true, products });
   }
 
-  // Only allow POST beyond this point
+  // ✋ Only allow POST beyond this point
   if (req.method !== "POST") {
     res.setHeader("Allow", ["GET", "POST", "OPTIONS"]);
     return res
@@ -81,7 +85,7 @@ export default async function handler(
   }
 
   try {
-    // Parse multipart/form-data
+    // 🛠️ Parse multipart/form-data
     const form = new formidable.IncomingForm();
     const { fields, files } = await new Promise<any>((resolve, reject) => {
       form.parse(req, (err, flds, fls) =>
@@ -89,21 +93,22 @@ export default async function handler(
       );
     });
 
-    // Helper to extract a string
-    const getString = (val: any, fallback = ""): string => {
-      if (Array.isArray(val)) return val[0] ?? fallback;
-      if (typeof val === "string") return val;
-      return fallback;
-    };
+    // 🔍 Helper to extract a string
+    const getString = (val: any, fallback = ""): string =>
+      Array.isArray(val)
+        ? val[0] ?? fallback
+        : typeof val === "string"
+        ? val
+        : fallback;
 
-    // Extract fields
+    // 📋 Extract fields
     const name = getString(fields.name);
     const description = getString(fields.description);
     const price = parseFloat(getString(fields.price, "0"));
     const category = getString(fields.category);
     const featured = getString(fields.featured, "false") === "true";
 
-    // Handle image file
+    // 📁 Handle image file
     const rawFile = files.image;
     const imageFile = Array.isArray(rawFile) ? rawFile[0] : rawFile;
     if (!imageFile || typeof imageFile === "string") {
@@ -112,7 +117,7 @@ export default async function handler(
         .json({ success: false, message: "Image file missing" });
     }
 
-    // Upload to Cloudinary
+    // ☁️ Upload to Cloudinary
     const uploadResult = await cloudinary.uploader.upload(imageFile.filepath, {
       folder: "classy-diamonds/original",
       transformation: [{ quality: "auto" }, { fetch_format: "auto" }],
@@ -127,9 +132,19 @@ export default async function handler(
     const imageUrl =
       uploadResult.eager?.[0]?.secure_url || uploadResult.secure_url;
 
-    // Build product object
+    // 🔢 Determine next skuNumber
+    const top = await collection
+      .find()
+      .sort({ skuNumber: -1 })
+      .limit(1)
+      .toArray();
+    const maxSku = top[0]?.skuNumber ?? 0;
+    const skuNumber = maxSku + 1;
+
+    // 📦 Build new product object
     const slug = slugify(name, { lower: true });
     const newProduct: Omit<Product, "_id"> = {
+      skuNumber,
       name,
       description,
       price,
@@ -140,20 +155,17 @@ export default async function handler(
       createdAt: new Date(),
     };
 
-    // Insert into MongoDB
-    const client = await clientPromise;
-    const result = await client
-      .db()
-      .collection("products")
-      .insertOne(newProduct);
-    const product = { _id: result.insertedId, ...newProduct };
-
+    // 💾 Insert into MongoDB (cast to any to avoid missing _id error)
+    const result = await collection.insertOne(newProduct as any);
+    const product: Product = { _id: result.insertedId, ...newProduct };
     return res.status(201).json({ success: true, product });
   } catch (error: any) {
     console.error("API Error:", error);
-    return res.status(500).json({
-      success: false,
-      message: error.message || "Internal Server Error",
-    });
+    return res
+      .status(500)
+      .json({
+        success: false,
+        message: error.message || "Internal Server Error",
+      });
   }
 }

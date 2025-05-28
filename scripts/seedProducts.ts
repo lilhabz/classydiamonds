@@ -1,28 +1,37 @@
-// 📄 scripts/seedProducts.ts – Seed static jewelry items into MongoDB 🛠️
+// 📄 scripts/seedProducts.ts – Seed static jewelry items with skuNumber 🛠️
 
-// 🔄 Use relative import for MongoDB client
 import clientPromise from "../lib/mongodb";
 import { jewelryData } from "../data/jewelryData";
 
 async function seed() {
-  console.log("🌱 Seeding products...");
+  console.log("🌱 Seeding products with sequential SKUs...");
   const client = await clientPromise;
   const db = client.db();
   const collection = db.collection("products");
 
-  for (const item of jewelryData) {
-    const { slug } = item;
-    const existing = await collection.findOne({ slug });
+  for (let idx = 0; idx < jewelryData.length; idx++) {
+    const item = jewelryData[idx];
+    const skuNumber = idx + 1;
+    const existing = await collection.findOne({ slug: item.slug });
+
     if (existing) {
-      console.log(`🔁 Updating existing product: ${item.name}`);
+      const existingSku = existing.skuNumber ?? skuNumber;
+      console.log(`🔁 Updating: ${item.name} (SKU ${existingSku})`);
       await collection.updateOne(
-        { slug },
-        { $set: { ...item, updatedAt: new Date() } }
+        { slug: item.slug },
+        {
+          $set: {
+            ...item,
+            skuNumber: existingSku,
+            updatedAt: new Date(),
+          },
+        }
       );
     } else {
-      console.log(`➕ Inserting new product: ${item.name}`);
+      console.log(`➕ Inserting: ${item.name} (SKU ${skuNumber})`);
       await collection.insertOne({
         ...item,
+        skuNumber,
         createdAt: new Date(),
         updatedAt: new Date(),
       });
