@@ -149,7 +149,8 @@ export default function AuthPage() {
         {/* Banners */}
         {showCheckEmailBanner && (
           <div className="mb-4 p-3 bg-yellow-100 text-yellow-800 rounded">
-            Check your email to confirm your address.
+            Check your email to confirm your address (opens a new tab to log
+            in).
           </div>
         )}
         {showConfirmedBanner && (

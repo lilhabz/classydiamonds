@@ -70,7 +70,13 @@ export default async function handler(
       subject: "Confirm your Classy Diamonds account",
       html: `
         <p>Hi ${firstName},</p>
-        <p>Thanks for signing up! Please confirm your email by clicking <a href="${confirmUrl}">here</a>.</p>
+        <p>
+          Thanks for signing up! Please confirm your email by clicking
+          <a href="${confirmUrl}" target="_blank" rel="noopener noreferrer">
+            here
+          </a>
+          (opens a new tab to log in).
+        </p>
         <p>If you didn’t sign up, simply ignore this message.</p>
       `,
     });
