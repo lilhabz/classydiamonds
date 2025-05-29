@@ -1,8 +1,8 @@
-// 📄 pages/auth.tsx - Login + Signup with Email Confirmation Flow 💎
+// 📄 pages/auth.tsx - Login + Signup with Email Confirmation Flow + Auto-Polling 💎
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/router";
 import { FcGoogle } from "react-icons/fc";
@@ -13,11 +13,10 @@ export default function AuthPage() {
   const router = useRouter();
   const { confirmed, needsConfirmation, email: queryEmail } = router.query;
 
-  // 🔄 Toggle between login/signup
+  // 🔄 Toggle login/signup
   const [isLogin, setIsLogin] = useState(true);
-  // 📫 Confirmation banners
-  const [showConfirmedBanner, setShowConfirmedBanner] = useState(false);
   const [showCheckEmailBanner, setShowCheckEmailBanner] = useState(false);
+  const [showConfirmedBanner, setShowConfirmedBanner] = useState(false);
 
   // 📝 Form data
   const [formData, setFormData] = useState({
@@ -32,7 +31,7 @@ export default function AuthPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [passwordFocused, setPasswordFocused] = useState(false);
 
-  // 🎯 Password validation criteria
+  // 🎯 Password criteria
   const hasLength = formData.password.length >= 8;
   const hasUpper = /[A-Z]/.test(formData.password);
   const hasLower = /[a-z]/.test(formData.password);
@@ -43,36 +42,62 @@ export default function AuthPage() {
   const passwordValid =
     hasLength && hasUpper && hasLower && hasNumber && hasSymbol;
 
-  // 📊 Compute strength score
+  // 📊 Strength meter
   const [strengthScore, setStrengthScore] = useState(0);
-  useEffect(() => {
-    setStrengthScore(zxcvbn(formData.password).score);
-  }, [formData.password]);
+  useEffect(
+    () => setStrengthScore(zxcvbn(formData.password).score),
+    [formData.password]
+  );
 
-  // 📥 Parse query params on mount
+  // Polling ref
+  const pollRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Handle query flags and polling
   useEffect(() => {
     if (needsConfirmation === "true" && typeof queryEmail === "string") {
       setShowCheckEmailBanner(true);
-      setIsLogin(true);
+      setIsLogin(false);
       setFormData((prev) => ({ ...prev, email: queryEmail }));
+
+      // Start polling confirmation status
+      pollRef.current = setInterval(async () => {
+        try {
+          const res = await fetch(
+            `/api/confirm-status?email=${encodeURIComponent(queryEmail)}`
+          );
+          const data = await res.json();
+          if (data.confirmed) {
+            clearInterval(pollRef.current!);
+            setShowCheckEmailBanner(false);
+            setShowConfirmedBanner(true);
+            setIsLogin(true);
+          }
+        } catch {
+          // ignore errors during polling
+        }
+      }, 5000);
     }
+
     if (confirmed === "true" && typeof queryEmail === "string") {
       setShowConfirmedBanner(true);
       setIsLogin(true);
       setFormData((prev) => ({ ...prev, email: queryEmail }));
     }
+
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current);
+    };
   }, [needsConfirmation, confirmed, queryEmail]);
 
-  // 🔄 Handle input changes
+  // Handle input changes
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  // 🚀 Handle form submit
+  // Handle form submit
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     if (!isLogin) {
       if (formData.password !== formData.confirmPassword) {
         alert("Passwords do not match");
@@ -100,12 +125,9 @@ export default function AuthPage() {
           body: JSON.stringify(formData),
         });
         if (response.ok) {
-          // 🔔 Prompt to check email
-          router.push(
-            `/auth?needsConfirmation=true&email=${encodeURIComponent(
-              formData.email
-            )}`
-          );
+          // Show banner and keep on signup page for polling
+          setShowCheckEmailBanner(true);
+          setIsLogin(false);
           return;
         }
         const result = await response.json();
@@ -119,12 +141,12 @@ export default function AuthPage() {
   return (
     <div className="bg-[var(--bg-page)] text-[var(--foreground)] min-h-screen flex items-center justify-center px-4">
       <div className="bg-[var(--bg-nav)] p-8 sm:p-10 rounded-2xl shadow-xl w-full max-w-md">
-        {/* 🏷️ Title */}
+        {/* Title */}
         <h2 className="text-2xl font-bold mb-4 text-center">
           {isLogin ? "Login to Classy Diamonds 💎" : "Create Your Account 💍"}
         </h2>
 
-        {/* 📣 Banners */}
+        {/* Banners */}
         {showCheckEmailBanner && (
           <div className="mb-4 p-3 bg-yellow-100 text-yellow-800 rounded">
             Check your email to confirm your address.
@@ -136,9 +158,8 @@ export default function AuthPage() {
           </div>
         )}
 
-        {/* 🔐 Auth Form */}
+        {/* Auth Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* 🙍 Full Name (Signup only) */}
           {!isLogin && (
             <input
               name="name"
@@ -150,8 +171,6 @@ export default function AuthPage() {
               required
             />
           )}
-
-          {/* 📧 Email */}
           <input
             name="email"
             type="email"
@@ -161,8 +180,6 @@ export default function AuthPage() {
             className="w-full p-3 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
             required
           />
-
-          {/* 🔑 Password Field */}
           <div className="relative">
             <input
               name="password"
@@ -183,8 +200,6 @@ export default function AuthPage() {
               {showPassword ? <FiEyeOff /> : <FiEye />}
             </button>
           </div>
-
-          {/* 🔀 Confirm Password (Signup only) */}
           {!isLogin && (
             <>
               <div className="relative">
@@ -220,8 +235,6 @@ export default function AuthPage() {
               )}
             </>
           )}
-
-          {/* ✔️ Live Password Requirements (Signup only) */}
           {!isLogin && (passwordFocused || formData.password) && (
             <ul className="text-xs space-y-1 mt-1">
               <li className={hasLength ? "text-green-400" : "text-red-400"}>
@@ -241,8 +254,6 @@ export default function AuthPage() {
               </li>
             </ul>
           )}
-
-          {/* 📊 Strength Meter (Signup only) */}
           {!isLogin && formData.password && (
             <div className="mt-2">
               <progress
@@ -255,8 +266,6 @@ export default function AuthPage() {
               </p>
             </div>
           )}
-
-          {/* ✨ Submit Button */}
           <button
             type="submit"
             className="w-full bg-[var(--foreground)] hover:bg-gray-100 text-[var(--bg-nav)] py-3 rounded-xl font-semibold transition hover:scale-105"
@@ -264,16 +273,12 @@ export default function AuthPage() {
             {isLogin ? "Login" : "Create Account"}
           </button>
         </form>
-
-        {/* 🧩 Google Auth Button */}
         <button
           onClick={() => signIn("google", { callbackUrl: "/" })}
           className="w-full flex items-center justify-center mt-4 bg-[var(--foreground)] hover:bg-gray-100 text-[var(--bg-nav)] font-semibold py-3 rounded-xl transition hover:scale-105"
         >
           <FcGoogle className="mr-2 text-xl" /> Continue with Google
         </button>
-
-        {/* 🔁 Toggle Login/Signup Link */}
         <p className="mt-6 text-center text-sm">
           {isLogin ? (
             <>
