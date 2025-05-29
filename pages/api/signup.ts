@@ -1,8 +1,10 @@
-// 📄 pages/api/signup.ts – Signup Endpoint with Name Parsing 💾
+// 📄 pages/api/signup.ts – Signup Endpoint with Confirmation Email 💾
 
 import type { NextApiRequest, NextApiResponse } from "next";
 import bcrypt from "bcryptjs";
 import clientPromise from "@/lib/mongodb";
+import crypto from "crypto";
+import nodemailer from "nodemailer";
 
 export default async function handler(
   req: NextApiRequest,
@@ -13,8 +15,6 @@ export default async function handler(
 
   // 📥 Extract fullName, email, password
   const { name: fullName, email, password } = req.body;
-
-  // ⚠️ Validate required fields
   if (!fullName || !email || !password)
     return res.status(400).json({ error: "Missing required fields" });
 
@@ -34,22 +34,45 @@ export default async function handler(
       return res.status(400).json({ error: "Email is already registered" });
     }
 
-    // 🔒 Hash the password
+    // 🔒 Hash the password & generate token
     const hashedPassword = await bcrypt.hash(password, 12);
+    const confirmationToken = crypto.randomBytes(32).toString("hex");
 
-    // 🆕 Insert user with parsed names
-    const result = await users.insertOne({
-      firstName, // 😊 Parsed first name
-      lastName, // 😊 Parsed last name
+    // 🆕 Insert user with parsed names and token
+    await users.insertOne({
+      firstName,
+      lastName,
       email,
       password: hashedPassword,
+      emailConfirmed: false,
+      confirmationToken,
       createdAt: new Date(),
     });
 
-    // ✅ Success response
+    // ✉️ Send confirmation email
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: process.env.GMAIL_USER!,
+        pass: process.env.GMAIL_PASS!,
+      },
+    });
+
+    const confirmUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/api/confirm?token=${confirmationToken}`;
+    await transporter.sendMail({
+      from: process.env.GMAIL_USER,
+      to: email,
+      subject: "Confirm your Classy Diamonds account",
+      html: `
+        <p>Hi ${firstName},</p>
+        <p>Thanks for signing up! Please confirm your email by clicking <a href="${confirmUrl}">here</a>.</p>
+        <p>If you didn’t sign up, simply ignore this message.</p>
+      `,
+    });
+
     return res
       .status(201)
-      .json({ message: "User created", userId: result.insertedId });
+      .json({ message: "User created. Check your email to confirm." });
   } catch (err) {
     console.error("❌ Signup error:", err);
     return res.status(500).json({ error: "Something went wrong" });
