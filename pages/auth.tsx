@@ -1,4 +1,4 @@
-// 📄 pages/auth.tsx - Login + Signup Combined Page with Live Password Validation 💎
+// 📄 pages/auth.tsx - Login + Signup with Email Confirmation Flow 💎
 
 "use client";
 
@@ -10,8 +10,14 @@ import { FiEye, FiEyeOff } from "react-icons/fi";
 import zxcvbn from "zxcvbn"; // 📊 Strength meter library
 
 export default function AuthPage() {
+  const router = useRouter();
+  const { confirmed, needsConfirmation, email: queryEmail } = router.query;
+
   // 🔄 Toggle between login/signup
   const [isLogin, setIsLogin] = useState(true);
+  // 📫 Confirmation banners
+  const [showConfirmedBanner, setShowConfirmedBanner] = useState(false);
+  const [showCheckEmailBanner, setShowCheckEmailBanner] = useState(false);
 
   // 📝 Form data
   const [formData, setFormData] = useState({
@@ -24,8 +30,6 @@ export default function AuthPage() {
   // 👀 Show/hide passwords
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-
-  // 🔍 Password field focus state
   const [passwordFocused, setPasswordFocused] = useState(false);
 
   // 🎯 Password validation criteria
@@ -39,14 +43,26 @@ export default function AuthPage() {
   const passwordValid =
     hasLength && hasUpper && hasLower && hasNumber && hasSymbol;
 
-  // 📊 Compute strength score
+  // 📊 Strength meter score
   const [strengthScore, setStrengthScore] = useState(0);
   useEffect(() => {
     const result = zxcvbn(formData.password);
     setStrengthScore(result.score);
   }, [formData.password]);
 
-  const router = useRouter();
+  // 📥 Parse query params on mount
+  useEffect(() => {
+    if (needsConfirmation === "true" && typeof queryEmail === "string") {
+      setShowCheckEmailBanner(true);
+      setIsLogin(true);
+      setFormData((prev) => ({ ...prev, email: queryEmail }));
+    }
+    if (confirmed === "true" && typeof queryEmail === "string") {
+      setShowConfirmedBanner(true);
+      setIsLogin(true);
+      setFormData((prev) => ({ ...prev, email: queryEmail }));
+    }
+  }, [needsConfirmation, confirmed, queryEmail]);
 
   // 🔄 Handle input changes
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -64,7 +80,7 @@ export default function AuthPage() {
         return;
       }
       if (!passwordValid) {
-        alert("Password does not meet all requirements.");
+        alert("Password does not meet requirements.");
         return;
       }
     }
@@ -84,11 +100,17 @@ export default function AuthPage() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(formData),
         });
-        const result = await response.json();
         if (response.ok) {
-          alert("Account created successfully. You can now log in.");
-          setIsLogin(true);
-        } else alert(result.error || "Signup failed");
+          // 🔔 Prompt to check email
+          router.push(
+            `/auth?needsConfirmation=true&email=${encodeURIComponent(
+              formData.email
+            )}`
+          );
+          return;
+        }
+        const result = await response.json();
+        alert(result.error || "Signup failed");
       } catch {
         alert("An error occurred during signup");
       }
@@ -99,13 +121,25 @@ export default function AuthPage() {
     <div className="bg-[var(--bg-page)] text-[var(--foreground)] min-h-screen flex items-center justify-center px-4">
       <div className="bg-[var(--bg-nav)] p-8 sm:p-10 rounded-2xl shadow-xl w-full max-w-md">
         {/* 🏷️ Title */}
-        <h2 className="text-2xl font-bold mb-6 text-center">
+        <h2 className="text-2xl font-bold mb-4 text-center">
           {isLogin ? "Login to Classy Diamonds 💎" : "Create Your Account 💍"}
         </h2>
 
+        {/* 📣 Banners */}
+        {showCheckEmailBanner && (
+          <div className="mb-4 p-3 bg-yellow-100 text-yellow-800 rounded">
+            Check your email to confirm your address.
+          </div>
+        )}
+        {showConfirmedBanner && (
+          <div className="mb-4 p-3 bg-green-100 text-green-800 rounded">
+            Your email has been confirmed! You can now log in.
+          </div>
+        )}
+
         {/* 🔐 Auth Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* 🙍 First Name (Signup only) */}
+          {/* 🙍 Full Name (Signup only) */}
           {!isLogin && (
             <input
               name="name"
@@ -113,7 +147,7 @@ export default function AuthPage() {
               placeholder="Full Name"
               value={formData.name}
               onChange={handleChange}
-              className="w-full p-3 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400" // 🎨 Match other inputs
+              className="w-full p-3 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
               required
             />
           )}
@@ -172,8 +206,7 @@ export default function AuthPage() {
                   {showConfirmPassword ? <FiEyeOff /> : <FiEye />}
                 </button>
               </div>
-              {/* 🔍 Confirm Match Indicator */}
-              {formData.confirmPassword.length > 0 && (
+              {formData.confirmPassword && (
                 <p
                   className={`text-xs font-medium mt-1 ${
                     formData.password === formData.confirmPassword
@@ -190,34 +223,28 @@ export default function AuthPage() {
           )}
 
           {/* ✔️ Live Password Requirements (Signup only) */}
-          {!isLogin && (passwordFocused || formData.password.length > 0) && (
+          {!isLogin && (passwordFocused || formData.password) && (
             <ul className="text-xs space-y-1 mt-1">
-              <li
-                className={`${hasLength ? "text-green-400" : "text-red-400"}`}
-              >
+              <li className={hasLength ? "text-green-400" : "text-red-400"}>
                 {hasLength ? "✅" : "❌"} At least 8 characters
               </li>
-              <li className={`${hasUpper ? "text-green-400" : "text-red-400"}`}>
+              <li className={hasUpper ? "text-green-400" : "text-red-400"}>
                 {hasUpper ? "✅" : "❌"} One uppercase letter
               </li>
-              <li className={`${hasLower ? "text-green-400" : "text-red-400"}`}>
+              <li className={hasLower ? "text-green-400" : "text-red-400"}>
                 {hasLower ? "✅" : "❌"} One lowercase letter
               </li>
-              <li
-                className={`${hasNumber ? "text-green-400" : "text-red-400"}`}
-              >
+              <li className={hasNumber ? "text-green-400" : "text-red-400"}>
                 {hasNumber ? "✅" : "❌"} One number
               </li>
-              <li
-                className={`${hasSymbol ? "text-green-400" : "text-red-400"}`}
-              >
+              <li className={hasSymbol ? "text-green-400" : "text-red-400"}>
                 {hasSymbol ? "✅" : "❌"} One special character
               </li>
             </ul>
           )}
 
           {/* 📊 Strength Meter (Signup only) */}
-          {!isLogin && formData.password.length > 0 && (
+          {!isLogin && formData.password && (
             <div className="mt-2">
               <progress
                 className="w-full h-2 rounded-xl overflow-hidden"
@@ -253,7 +280,6 @@ export default function AuthPage() {
             <>
               Don’t have an account?{" "}
               <button
-                type="button"
                 onClick={() => setIsLogin(false)}
                 className="underline text-[#f7c59f]"
               >
@@ -264,7 +290,6 @@ export default function AuthPage() {
             <>
               Already have an account?{" "}
               <button
-                type="button"
                 onClick={() => setIsLogin(true)}
                 className="underline text-[#f7c59f]"
               >
