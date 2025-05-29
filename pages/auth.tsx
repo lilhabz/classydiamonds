@@ -43,11 +43,10 @@ export default function AuthPage() {
   const passwordValid =
     hasLength && hasUpper && hasLower && hasNumber && hasSymbol;
 
-  // 📊 Strength meter score
+  // 📊 Compute strength score
   const [strengthScore, setStrengthScore] = useState(0);
   useEffect(() => {
-    const result = zxcvbn(formData.password);
-    setStrengthScore(result.score);
+    setStrengthScore(zxcvbn(formData.password).score);
   }, [formData.password]);
 
   // 📥 Parse query params on mount
