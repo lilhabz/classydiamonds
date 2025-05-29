@@ -35,13 +35,21 @@ export const authOptions = {
         const isValid = await compare(credentials!.password, user.password);
         if (!isValid) return null;
 
+        // 🆕 Combine firstName/lastName into full name
+        const fullName = `${user.firstName || ""} ${
+          user.lastName || ""
+        }`.trim();
+
         return {
           id: user._id.toString(),
-          name: user.name,
+          name: fullName,
           email: user.email,
           isAdmin: user.isAdmin || false,
 
-          // 🆕 Extended fields from MongoDB
+          // 🆕 Raw name parts for session
+          firstName: user.firstName || "",
+          lastName: user.lastName || "",
+
           phone: user.phone || "",
           address: user.address || "",
           city: user.city || "",
@@ -58,14 +66,24 @@ export const authOptions = {
   },
   callbacks: {
     // ✅ Add all user info to JWT
-    async jwt({ token, user }: { token: JWT; user?: User }) {
+    async jwt({
+      token,
+      user,
+    }: {
+      token: JWT;
+      user?: User & { firstName?: string; lastName?: string };
+    }) {
       if (user) {
         token.id = user.id;
         token.name = user.name ?? undefined;
         token.email = user.email ?? undefined;
         token.isAdmin = (user as any).isAdmin ?? false;
 
-        // 🆕 Include extended fields
+        // 🆕 Include split name parts
+        token.firstName = (user as any).firstName ?? "";
+        token.lastName = (user as any).lastName ?? "";
+
+        // Extended fields
         token.phone = (user as any).phone ?? "";
         token.address = (user as any).address ?? "";
         token.city = (user as any).city ?? "";
@@ -77,14 +95,24 @@ export const authOptions = {
     },
 
     // ✅ Add all fields to session.user
-    async session({ session, token }: { session: Session; token: JWT }) {
+    async session({
+      session,
+      token,
+    }: {
+      session: Session;
+      token: JWT & { firstName?: string; lastName?: string };
+    }) {
       if (session.user) {
         session.user.id = token.id as string;
         session.user.name = token.name as string;
         session.user.email = token.email as string;
         (session.user as any).isAdmin = token.isAdmin ?? false;
 
-        // 🆕 Populate session with extended fields
+        // 🆕 Make name parts available
+        (session.user as any).firstName = token.firstName ?? "";
+        (session.user as any).lastName = token.lastName ?? "";
+
+        // Extended fields
         (session.user as any).phone = token.phone ?? "";
         (session.user as any).address = token.address ?? "";
         (session.user as any).city = token.city ?? "";
