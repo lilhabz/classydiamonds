@@ -53,14 +53,19 @@ export default async function handler(
     const transporter = nodemailer.createTransport({
       service: "gmail",
       auth: {
-        user: process.env.GMAIL_USER!,
-        pass: process.env.GMAIL_PASS!,
+        user: process.env.EMAIL_USER!,
+        pass: process.env.EMAIL_PASS!,
       },
     });
 
-    const confirmUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/api/confirm?token=${confirmationToken}`;
+    // 🌐 Build base URL from NEXTAUTH_URL or request headers
+    const baseUrl =
+      process.env.NEXTAUTH_URL ||
+      (req.headers.origin ?? `https://${req.headers.host}`);
+    const confirmUrl = `${baseUrl}/api/confirm?token=${confirmationToken}`;
+
     await transporter.sendMail({
-      from: process.env.GMAIL_USER,
+      from: process.env.EMAIL_USER,
       to: email,
       subject: "Confirm your Classy Diamonds account",
       html: `
