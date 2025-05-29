@@ -153,24 +153,40 @@ export default function AuthPage() {
 
           {/* 🔀 Confirm Password (Signup only) */}
           {!isLogin && (
-            <div className="relative">
-              <input
-                name="confirmPassword"
-                type={showConfirmPassword ? "text" : "password"}
-                placeholder="Confirm Password"
-                value={formData.confirmPassword}
-                onChange={handleChange}
-                className="w-full p-3 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
-                required
-              />
-              <button
-                type="button"
-                onClick={() => setShowConfirmPassword((prev) => !prev)}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-              >
-                {showConfirmPassword ? <FiEyeOff /> : <FiEye />}
-              </button>
-            </div>
+            <>
+              <div className="relative">
+                <input
+                  name="confirmPassword"
+                  type={showConfirmPassword ? "text" : "password"}
+                  placeholder="Confirm Password"
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
+                  className="w-full p-3 rounded-xl bg-[#1f2a36] text-white placeholder-gray-400"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword((prev) => !prev)}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                >
+                  {showConfirmPassword ? <FiEyeOff /> : <FiEye />}
+                </button>
+              </div>
+              {/* 🔍 Confirm Match Indicator */}
+              {formData.confirmPassword.length > 0 && (
+                <p
+                  className={`text-xs font-medium mt-1 ${
+                    formData.password === formData.confirmPassword
+                      ? "text-green-400"
+                      : "text-red-400"
+                  }`}
+                >
+                  {formData.password === formData.confirmPassword
+                    ? "✅ Passwords match"
+                    : "❌ Passwords do not match"}
+                </p>
+              )}
+            </>
           )}
 
           {/* ✔️ Live Password Requirements (Signup only) */}
