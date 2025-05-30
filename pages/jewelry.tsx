@@ -1,4 +1,4 @@
-// 📄 pages/jewelry.tsx – Shop Page with Mobile Icon Filters & Full Grid 📦
+// 📄 pages/jewelry.tsx – Shop Page with Auto-Scrolling Mobile Icon Filters 📦
 
 "use client";
 
@@ -26,11 +26,13 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
   const [visibleCount, setVisibleCount] = useState(8);
   const [filteredCategory, setFilteredCategory] = useState<string | null>(null);
   const titleRef = useRef<HTMLHeadingElement>(null);
+  const iconsContainerRef = useRef<HTMLDivElement>(null);
+  const iconRefs = useRef<Record<string, HTMLButtonElement | null>>({});
   const router = useRouter();
   const scrollTriggered = useRef(false);
 
   const mobileCategories = [
-    { name: "All", slug: null, icon: "/icons/jewellery.svg" },
+    { name: "All", slug: "all", icon: "/icons/jewellery.svg" },
     { name: "Engagement", slug: "engagement", icon: "/icons/wedding-ring.svg" },
     {
       name: "Wedding Bands",
@@ -43,7 +45,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
     { name: "Earrings", slug: "earrings", icon: "/icons/earrings.svg" },
   ];
 
-  // Sync URL query to state & reset visibleCount
+  // Sync URL query to state & reset load-more
   useEffect(() => {
     const { category, scroll } = router.query;
     if (typeof category === "string") setFilteredCategory(category);
@@ -52,7 +54,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
     setVisibleCount(8);
   }, [router.query]);
 
-  // Auto-scroll to title when triggered
+  // Auto-scroll page to title when triggered
   useEffect(() => {
     if (!scrollTriggered.current) return;
     setTimeout(() => {
@@ -74,9 +76,25 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
     }, 100);
   }, [filteredCategory]);
 
-  const filteredProducts = filteredCategory
-    ? products.filter((p) => p.category.toLowerCase() === filteredCategory)
-    : products;
+  // Auto-scroll container to center the active icon
+  useEffect(() => {
+    if (!iconsContainerRef.current || filteredCategory === null) return;
+    const btn = iconRefs.current[filteredCategory];
+    const container = iconsContainerRef.current;
+    if (btn) {
+      const btnRect = btn.getBoundingClientRect();
+      const contRect = container.getBoundingClientRect();
+      // Calculate offset so the btn is centered
+      const offset =
+        btnRect.left - contRect.left - contRect.width / 2 + btnRect.width / 2;
+      container.scrollBy({ left: offset, behavior: "smooth" });
+    }
+  }, [filteredCategory]);
+
+  const filteredProducts =
+    filteredCategory && filteredCategory !== "all"
+      ? products.filter((p) => p.category.toLowerCase() === filteredCategory)
+      : products;
 
   const handleLoadMore = () => setVisibleCount((prev) => prev + 4);
   const handleFilter = (slug: string | null) => {
@@ -90,17 +108,19 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
     );
   };
 
-  const pageTitle = filteredCategory
-    ? `${filteredCategory
-        .replace(/-/g, " ")
-        .replace(/\b\w/g, (l) => l.toUpperCase())} | Classy Diamonds`
-    : "Jewelry Collection | Classy Diamonds";
-  const pageDesc = filteredCategory
-    ? `Explore fine ${filteredCategory.replace(
-        /-/g,
-        " "
-      )} from Classy Diamonds.`
-    : "Explore timeless engagement rings, wedding bands, necklaces, earrings, and more.";
+  const pageTitle =
+    filteredCategory && filteredCategory !== "all"
+      ? `${filteredCategory
+          .replace(/-/g, " ")
+          .replace(/\b\w/g, (l) => l.toUpperCase())} | Classy Diamonds`
+      : "Jewelry Collection | Classy Diamonds";
+  const pageDesc =
+    filteredCategory && filteredCategory !== "all"
+      ? `Explore fine ${filteredCategory.replace(
+          /-/g,
+          " "
+        )} from Classy Diamonds.`
+      : "Explore timeless engagement rings, wedding bands, necklaces, earrings, and more.";
 
   return (
     <div className="min-h-screen flex flex-col bg-[var(--bg-page)] text-[var(--foreground)]">
@@ -135,14 +155,12 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
           ref={titleRef}
           className="text-2xl sm:text-3xl font-semibold text-center mb-4"
         >
-          {filteredCategory
+          {filteredCategory && filteredCategory !== "all"
             ? filteredCategory
                 .replace(/-/g, " ")
                 .replace(/\b\w/g, (l) => l.toUpperCase())
             : "Our Jewelry"}
         </h2>
-
-        {/* Desktop Buttons */}
         <div className="hidden sm:flex flex-wrap gap-3 justify-center mb-8">
           {[
             "All",
@@ -153,11 +171,8 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
             "Necklaces",
             "Earrings",
           ].map((catName) => {
-            const slug =
-              catName === "All"
-                ? null
-                : catName.toLowerCase().replace(/\s+/g, "-");
-            const active = filteredCategory === slug;
+            const slug = catName.toLowerCase().replace(/\s+/g, "-");
+            const active = (filteredCategory || "all") === slug;
             return (
               <button
                 key={catName}
@@ -177,23 +192,26 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
 
       {/* 🛍️ Mobile-Only Icon Filters */}
       <section className="sm:hidden px-4 mt-4 mb-8">
-        <div className="overflow-x-auto">
+        <div ref={iconsContainerRef} className="overflow-x-auto">
           <div className="flex space-x-6 w-max py-2 px-2">
             {mobileCategories.map((cat) => {
-              const active = filteredCategory === cat.slug;
+              const active = (filteredCategory || "all") === cat.slug;
               return (
                 <button
                   key={cat.name}
+                  ref={(el) => {
+                    iconRefs.current[cat.slug!] = el;
+                  }}
                   onClick={() => handleFilter(cat.slug)}
                   className={`flex-shrink-0 text-center p-2 rounded-lg ${
-                    active ? "bg-black/40" : ""
+                    active ? "bg-black/60" : ""
                   }`}
                   aria-label={cat.name}
                 >
                   <img src={cat.icon} alt="" className="w-16 h-16 mx-auto" />
                   <p
-                    className={`mt-2 text-sm ${
-                      active ? "text-white font-semibold" : "text-white"
+                    className={`mt-2 text-sm text-white ${
+                      active ? "font-semibold" : ""
                     }`}
                   >
                     {cat.name}
