@@ -84,9 +84,9 @@ export default function Home({ products }: HomeProps) {
 
         {/* 🛍️ Mobile-Only Category Icons */}
         <section className="sm:hidden px-4 mt-6">
-          <h2 className="text-lg font-semibold text-center mb-2 text-white">
+          <h1 className="text-lg font-semibold text-center mb-2 text-white">
             Shop by Category
-          </h2>
+          </h1>
           <div className="overflow-x-auto">
             <div className="flex space-x-6 w-max py-2">
               {[

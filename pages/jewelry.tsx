@@ -29,7 +29,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
   const router = useRouter();
   const scrollTriggered = useRef(false);
 
-  // Sync URL query to state & reset 'Load More'
+  // Sync URL query to state & reset visibleCount
   useEffect(() => {
     const { category, scroll } = router.query;
     if (typeof category === "string") setFilteredCategory(category);
@@ -38,7 +38,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
     setVisibleCount(8);
   }, [router.query]);
 
-  // Auto-scroll when flag set
+  // Auto-scroll to header when triggered
   useEffect(() => {
     if (!scrollTriggered.current) return;
     setTimeout(() => {
@@ -86,7 +86,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
     { name: "Earrings", icon: "/icons/earrings.svg" },
   ];
 
-  // SEO title/description
+  // SEO
   const pageTitle = filteredCategory
     ? `${filteredCategory
         .replace(/-/g, " ")
@@ -114,8 +114,6 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
             src="/hero-jewelry.jpg"
             alt="Jewelry Hero Background"
             fill
-            priority
-            sizes="100vw"
             className="object-cover w-full h-full"
           />
           <div className="absolute inset-0 bg-black opacity-50 pointer-events-none" />
