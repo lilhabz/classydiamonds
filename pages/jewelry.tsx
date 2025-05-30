@@ -1,4 +1,4 @@
-// 📄 pages/jewelry.tsx – Shop Page (pulls all products from MongoDB) 📦
+// 📄 pages/jewelry.tsx – Shop Page with Mobile Scrollable Filters & Full Grid 📦
 
 "use client";
 
@@ -11,51 +11,42 @@ import { useRouter } from "next/router";
 import clientPromise from "@/lib/mongodb";
 import { GetServerSideProps } from "next";
 
-// 🔢 Product type from database, including string ID for cart
 export type ProductType = {
   id: string;
   slug: string;
   name: string;
   price: number;
-  image: string; // URL from Cloudinary or public/uploads
+  image: string;
   category: string;
   description?: string;
 };
 
 export default function JewelryPage({ products }: { products: ProductType[] }) {
-  // 🛒 Cart context
   const { addToCart } = useCart();
-
-  // 🔢 Load-more count
   const [visibleCount, setVisibleCount] = useState(8);
-
-  // 🔍 Active category slug
   const [filteredCategory, setFilteredCategory] = useState<string | null>(null);
-
-  // 📌 Ref to the category header
   const headerRef = useRef<HTMLDivElement>(null);
-
   const router = useRouter();
-  // 🚩 Track whether we should auto-scroll
   const scrollTriggered = useRef(false);
 
-  // 🛠 Sync category & scroll flag on query changes
+  // Sync query to state and reset load more
   useEffect(() => {
     const { category, scroll } = router.query;
     if (typeof category === "string") setFilteredCategory(category);
     else setFilteredCategory(null);
     scrollTriggered.current = scroll === "true";
+    setVisibleCount(8);
   }, [router.query]);
 
-  // 🏃‍♂️ Handle auto-scroll whenever flagged
+  // Auto-scroll on filter change
   useEffect(() => {
     if (!scrollTriggered.current) return;
     setTimeout(() => {
       if (!headerRef.current) return;
-      const headerY =
+      const y =
         headerRef.current.getBoundingClientRect().top + window.pageYOffset;
-      const navHeight = document.querySelector("header")?.clientHeight ?? 0;
-      window.scrollTo({ top: headerY - navHeight - 60, behavior: "smooth" });
+      const navH = document.querySelector("header")?.clientHeight ?? 0;
+      window.scrollTo({ top: y - navH - 60, behavior: "smooth" });
       scrollTriggered.current = false;
       router.replace(
         {
@@ -68,15 +59,12 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
     }, 100);
   }, [filteredCategory]);
 
-  // 🔄 Filter the data
   const filteredProducts = filteredCategory
     ? products.filter((p) => p.category.toLowerCase() === filteredCategory)
     : products;
 
-  // ➕ Load more handler
   const handleLoadMore = () => setVisibleCount((prev) => prev + 4);
 
-  // 🔘 Filter handler: always include scroll flag
   const handleFilter = (slug: string | null) => {
     router.push(
       {
@@ -88,7 +76,17 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
     );
   };
 
-  // 📝 SEO metadata
+  const categories = [
+    "All",
+    "Engagement",
+    "Wedding Bands",
+    "Rings",
+    "Bracelets",
+    "Necklaces",
+    "Earrings",
+  ];
+
+  // SEO metadata
   const pageTitle = filteredCategory
     ? `${filteredCategory
         .replace(/-/g, " ")
@@ -132,39 +130,51 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
         </div>
       </section>
 
-      {/* 💎 Grid & Filters */}
+      {/* 💎 Filters & Header */}
       <section className="pt-32 pb-16 px-4 sm:px-6 max-w-7xl mx-auto">
         <div ref={headerRef}>
-          <h2 className="text-2xl sm:text-3xl font-semibold text-center mb-6 text-[var(--foreground)]">
+          <h2 className="text-2xl sm:text-3xl font-semibold text-center mb-6">
             {filteredCategory
               ? filteredCategory
                   .replace(/-/g, " ")
                   .replace(/\b\w/g, (l) => l.toUpperCase())
               : "Our Jewelry"}
           </h2>
-          <p className="text-center text-[#cfd2d6] mb-12">
-            Browse our exclusive collection.
-          </p>
-
-          {/* 🧭 Category Buttons */}
-          <div className="flex flex-wrap gap-3 justify-center mb-16">
-            {[
-              "All",
-              "Engagement",
-              "Wedding Bands",
-              "Rings",
-              "Bracelets",
-              "Necklaces",
-              "Earrings",
-            ].map((cat) => {
+          {/* Mobile: Scrollable Filters */}
+          <div className="sm:hidden overflow-x-auto px-4 mb-8">
+            <div className="flex space-x-4 w-max py-2">
+              {categories.map((cat) => {
+                const slug =
+                  cat === "All" ? null : cat.toLowerCase().replace(/\s+/g, "-");
+                const active = filteredCategory === slug;
+                return (
+                  <button
+                    key={cat}
+                    onClick={() => handleFilter(slug)}
+                    className={`flex-shrink-0 px-5 py-2 rounded-full text-sm font-semibold transition ${
+                      active
+                        ? "bg-white text-[var(--bg-nav)]"
+                        : "bg-[var(--bg-nav)] text-[var(--foreground)] hover:bg-[#2f3b5e]"
+                    }`}
+                  >
+                    {cat}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          {/* Desktop: Wrapped Filters */}
+          <div className="hidden sm:flex flex-wrap gap-3 justify-center mb-16">
+            {categories.map((cat) => {
               const slug =
                 cat === "All" ? null : cat.toLowerCase().replace(/\s+/g, "-");
+              const active = filteredCategory === slug;
               return (
                 <button
                   key={cat}
                   onClick={() => handleFilter(slug)}
                   className={`px-5 py-2 rounded-full text-sm font-semibold transition cursor-pointer ${
-                    filteredCategory === slug
+                    active
                       ? "bg-white text-[var(--bg-nav)]"
                       : "bg-[var(--bg-nav)] text-[var(--foreground)] hover:bg-[#2f3b5e]"
                   }`}
@@ -180,8 +190,8 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
           {filteredProducts.slice(0, visibleCount).map((product) => (
             <div
-              key={product.slug}
-              className="group bg-[var(--bg-nav)] rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl hover:scale-105 transition-all duration-300 flex flex-col h-full"
+              key={product.id}
+              className="group bg-[var(--bg-nav)] rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl hover:scale-105 transition flex flex-col h-full"
             >
               <Link href={`/category/${product.category}/${product.slug}`}>
                 <div className="w-full h-44 sm:h-48 relative">
@@ -201,7 +211,6 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
                   </p>
                 </div>
               </Link>
-              {/* ✨ Pop-out Add to Cart Button */}
               <button
                 onClick={(e) => {
                   e.preventDefault();
@@ -213,7 +222,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
                     quantity: 1,
                   });
                 }}
-                className="m-4 px-4 py-2 bg-[var(--foreground)] text-[var(--bg-nav)] rounded-xl font-semibold hover:bg-gray-100 hover:scale-105 hover:shadow-2xl transition-all duration-300 cursor-pointer"
+                className="m-4 px-4 py-2 bg-[var(--foreground)] text-[var(--bg-nav)] rounded-xl font-semibold hover:bg-gray-100 hover:scale-105 hover:shadow-2xl transition cursor-pointer"
               >
                 Add to Cart
               </button>
@@ -246,7 +255,7 @@ export const getServerSideProps: GetServerSideProps = async () => {
     slug: p.slug,
     name: p.name,
     price: p.price,
-    image: p.imageUrl || p.image, // support static & uploaded images
+    image: p.imageUrl || p.image,
     category: p.category,
     description: p.description || "",
   }));
