@@ -177,9 +177,6 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
 
       {/* 🛍️ Mobile-Only Icon Filters */}
       <section className="sm:hidden px-4 mt-4 mb-8">
-        <h3 className="text-lg font-semibold text-center mb-2 text-white">
-          Shop by Category
-        </h3>
         <div className="overflow-x-auto">
           <div className="flex space-x-6 w-max py-2">
             {mobileCategories.map((cat) => (
