@@ -29,6 +29,21 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
   const router = useRouter();
   const scrollTriggered = useRef(false);
 
+  // Define mobile icon filters (in scrollable row)
+  const mobileCategories = [
+    { name: "All", slug: null, icon: "/icons/jewellery.svg" },
+    { name: "Engagement", slug: "engagement", icon: "/icons/wedding-ring.svg" },
+    {
+      name: "Wedding Bands",
+      slug: "wedding-bands",
+      icon: "/icons/wedding-bands.svg",
+    },
+    { name: "Rings", slug: "rings", icon: "/icons/rings.svg" },
+    { name: "Bracelets", slug: "bracelets", icon: "/icons/bracelets.svg" },
+    { name: "Necklaces", slug: "necklaces", icon: "/icons/necklaces.svg" },
+    { name: "Earrings", slug: "earrings", icon: "/icons/earrings.svg" },
+  ];
+
   // Sync URL query to state & reset visibleCount
   useEffect(() => {
     const { category, scroll } = router.query;
@@ -59,6 +74,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
     }, 100);
   }, [filteredCategory]);
 
+  // Filter products by category
   const filteredProducts = filteredCategory
     ? products.filter((p) => p.category.toLowerCase() === filteredCategory)
     : products;
@@ -76,7 +92,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
     );
   };
 
-  // SEO
+  // SEO titles
   const pageTitle = filteredCategory
     ? `${filteredCategory
         .replace(/-/g, " ")
@@ -88,21 +104,6 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
         " "
       )} from Classy Diamonds.`
     : "Explore timeless engagement rings, wedding bands, necklaces, earrings, and more.";
-
-  // Category list for mobile icons
-  const mobileCategories = [
-    { name: "All", icon: "/icons/jewellery.svg", slug: null },
-    { name: "Engagement", icon: "/icons/wedding-ring.svg", slug: "engagement" },
-    {
-      name: "Wedding Bands",
-      icon: "/icons/wedding-bands.svg",
-      slug: "wedding-bands",
-    },
-    { name: "Rings", icon: "/icons/rings.svg", slug: "rings" },
-    { name: "Bracelets", icon: "/icons/bracelets.svg", slug: "bracelets" },
-    { name: "Necklaces", icon: "/icons/necklaces.svg", slug: "necklaces" },
-    { name: "Earrings", icon: "/icons/earrings.svg", slug: "earrings" },
-  ];
 
   return (
     <div className="min-h-screen flex flex-col bg-[var(--bg-page)] text-[var(--foreground)]">
@@ -119,8 +120,6 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
             src="/hero-jewelry.jpg"
             alt="Jewelry Hero Background"
             fill
-            priority
-            sizes="100vw"
             className="object-cover w-full h-full"
           />
           <div className="absolute inset-0 bg-black opacity-50 pointer-events-none" />
@@ -135,7 +134,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
         </div>
       </section>
 
-      {/* 💎 Filters & Header */}
+      {/* 💎 Header & Desktop Filters */}
       <section
         className="pt-32 pb-16 px-4 sm:px-6 max-w-7xl mx-auto"
         ref={headerRef}
@@ -147,37 +146,6 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
                 .replace(/\b\w/g, (l) => l.toUpperCase())
             : "Our Jewelry"}
         </h2>
-
-        {/* 🛍️ Mobile-Only Icon Filters */}
-        <section className="sm:hidden px-4 mt-6">
-          <h1 className="text-lg font-semibold text-center mb-2 text-white">
-            Shop by Category
-          </h1>
-          <div className="overflow-x-auto">
-            <div className="flex space-x-6 w-max py-2">
-              {mobileCategories.map((cat) => (
-                <Link
-                  key={cat.name}
-                  href={{
-                    pathname: "/jewelry",
-                    query: {
-                      category: cat.slug,
-                      scroll: "true",
-                    },
-                  }}
-                  className="flex-shrink-0 text-center"
-                >
-                  <img
-                    src={cat.icon}
-                    alt={cat.name}
-                    className="w-16 h-16 mx-auto"
-                  />
-                  <p className="mt-2 text-sm text-white">{cat.name}</p>
-                </Link>
-              ))}
-            </div>
-          </div>
-        </section>
 
         {/* Desktop: Button Filters */}
         <div className="hidden sm:flex flex-wrap gap-3 justify-center mb-16">
@@ -210,8 +178,41 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
             );
           })}
         </div>
+      </section>
 
-        {/* 🖼️ Product Grid */}
+      {/* 🛍️ Mobile-Only Icon Filters */}
+      <section className="sm:hidden px-4 mt-6 mb-8">
+        <h1 className="text-lg font-semibold text-center mb-2 text-white">
+          Shop by Category
+        </h1>
+        <div className="overflow-x-auto">
+          <div className="flex space-x-6 w-max py-2">
+            {mobileCategories.map((cat) => (
+              <Link
+                key={cat.name}
+                href={{
+                  pathname: "/jewelry",
+                  query: {
+                    category: cat.slug,
+                    scroll: "true",
+                  },
+                }}
+                className="flex-shrink-0 text-center"
+              >
+                <img
+                  src={cat.icon}
+                  alt={cat.name}
+                  className="w-16 h-16 mx-auto"
+                />
+                <p className="mt-2 text-sm text-white">{cat.name}</p>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* 🖼️ Product Grid & Load More */}
+      <section className="px-4 sm:px-6 max-w-7xl mx-auto mb-16">
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
           {filteredProducts.slice(0, visibleCount).map((product) => (
             <div
@@ -255,9 +256,8 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
           ))}
         </div>
 
-        {/* ➕ Load More */}
         {visibleCount < filteredProducts.length && (
-          <div className="flex justify-center mt-12">
+          <div className="flex justify-center">
             <button
               onClick={handleLoadMore}
               className="px-8 py-4 bg-[var(--foreground)] text-[var(--bg-nav)] rounded-full"
@@ -271,7 +271,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
   );
 }
 
-// Server-side fetch
+// Server-side data fetching – loads all products
 export const getServerSideProps: GetServerSideProps = async () => {
   const client = await clientPromise;
   const productsRaw = await client.db().collection("products").find().toArray();
