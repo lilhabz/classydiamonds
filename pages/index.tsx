@@ -1,4 +1,4 @@
-// 📄 pages/index.tsx – Home Page with Dynamic Featured Section 🎉
+// 📄 pages/index.tsx – Home Page with Mobile-Only Icon & Full Layout 💎
 
 "use client";
 
@@ -9,12 +9,12 @@ import { GetServerSideProps } from "next";
 import { useCart } from "@/context/CartContext";
 import clientPromise from "@/lib/mongodb"; // 🔗 MongoDB client for DB queries
 
-// 🔢 Updated Product interface to use unified `image` field
+// 🔢 Product interface unified for static/Cloudinary images
 interface Product {
   _id: string;
   name: string;
   price: number;
-  image: string; // now holds either static or Cloudinary URL
+  image: string;
   category: string;
   slug: string;
 }
@@ -23,18 +23,16 @@ interface HomeProps {
   products: Product[];
 }
 
-// 📤 Server-side data fetching – fetch only featured products (limit 4)
+// 📤 Fetch featured products server-side (limit 4)
 export const getServerSideProps: GetServerSideProps<HomeProps> = async () => {
   const client = await clientPromise;
   const db = client.db();
-  // 🎯 Query featured products
   const featuredDocs = await db
     .collection("products")
     .find({ featured: true })
     .limit(4)
     .toArray();
 
-  // 🔄 Map to Product interface
   const products: Product[] = featuredDocs.map((doc: any) => ({
     _id: doc._id.toString(),
     name: doc.name,
@@ -44,15 +42,11 @@ export const getServerSideProps: GetServerSideProps<HomeProps> = async () => {
     slug: doc.slug,
   }));
 
-  return {
-    props: { products },
-  };
+  return { props: { products } };
 };
 
 export default function Home({ products }: HomeProps) {
   const { addToCart } = useCart();
-
-  // ✨ Only featured items (up to 4) fetched from DB
   const featured = products;
 
   return (
@@ -93,6 +87,39 @@ export default function Home({ products }: HomeProps) {
                 Shop Now
               </button>
             </Link>
+          </div>
+        </section>
+
+        {/* 🛍️ Mobile-Only Shop by Category Icons */}
+        <section className="sm:hidden px-4 mt-8 overflow-x-auto">
+          <div className="flex space-x-6 w-max py-2">
+            {[
+              { name: "Engagement", icon: "/icons/engagement-ring.svg" },
+              { name: "Wedding Bands", icon: "/icons/wedding-bands.svg" },
+              { name: "Rings", icon: "/icons/rings.svg" },
+              { name: "Bracelets", icon: "/icons/bracelets.svg" },
+              { name: "Necklaces", icon: "/icons/necklaces.svg" },
+              { name: "Earrings", icon: "/icons/earrings.svg" },
+            ].map((category) => (
+              <Link
+                key={category.name}
+                href={{
+                  pathname: "/jewelry",
+                  query: {
+                    category: category.name.toLowerCase().replace(/\s+/g, "-"),
+                    scroll: "true",
+                  },
+                }}
+                className="flex-shrink-0 text-center"
+              >
+                <img
+                  src={category.icon}
+                  alt={category.name}
+                  className="w-16 h-16 mx-auto"
+                />
+                <p className="mt-2 text-sm text-white">{category.name}</p>
+              </Link>
+            ))}
           </div>
         </section>
 
@@ -200,12 +227,11 @@ export default function Home({ products }: HomeProps) {
           </div>
         </section>
 
-        {/* 🛍️ Shop by Category Section */}
-        <section className="py-16 sm:py-20 w-full px-4 sm:px-10">
+        {/* 🛍️ Shop by Category Section (Desktop Only) */}
+        <section className="hidden sm:block py-16 sm:py-20 w-full px-4 sm:px-10">
           <h2 className="text-2xl sm:text-3xl font-semibold text-center mb-12 sm:mb-16">
             Shop by Category
           </h2>
-
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
             {[
               { name: "Engagement", image: "/category/engagement-cat.jpg" },
@@ -224,7 +250,7 @@ export default function Home({ products }: HomeProps) {
                   pathname: "/jewelry",
                   query: {
                     category: category.name.toLowerCase().replace(/\s+/g, "-"),
-                    scroll: "true", // ✅ tells /jewelry to scroll on load
+                    scroll: "true",
                   },
                 }}
                 className="group relative rounded-xl overflow-hidden shadow-md hover:shadow-xl hover:scale-105 transition-transform duration-300"
@@ -247,13 +273,11 @@ export default function Home({ products }: HomeProps) {
           </div>
         </section>
 
-        {/* 🎁 Gifts for Him & Her Section (Centered Cards Under Title) */}
+        {/* 🎁 Gifts for Him & Her Section */}
         <section className="py-16 sm:py-20 px-4 sm:px-10 w-full">
           <h2 className="text-2xl sm:text-3xl font-semibold text-center mb-12 sm:mb-16">
             Gifts for Him & Her
           </h2>
-
-          {/* 🔧 Centering the two cards */}
           <div className="grid grid-cols-2 gap-4 justify-center max-w-2xl mx-auto">
             {[
               { name: "For Him", image: "/category/his-gift-cat.jpg" },
@@ -337,11 +361,10 @@ export default function Home({ products }: HomeProps) {
             </Link>
           </div>
         </section>
+
         {/* 🧩 Tailwind Purge Safeguard for Swipe Snap */}
         <div className="hidden hidden-scroll-snap-include" />
       </main>
     </>
   );
 }
-
-// ✅
