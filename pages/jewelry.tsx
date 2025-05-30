@@ -25,7 +25,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
   const { addToCart } = useCart();
   const [visibleCount, setVisibleCount] = useState(8);
   const [filteredCategory, setFilteredCategory] = useState<string | null>(null);
-  const iconsRef = useRef<HTMLDivElement>(null);
+  const titleRef = useRef<HTMLHeadingElement>(null);
   const router = useRouter();
   const scrollTriggered = useRef(false);
 
@@ -52,13 +52,13 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
     setVisibleCount(8);
   }, [router.query]);
 
-  // Auto-scroll to icons when triggered
+  // Auto-scroll to title when triggered
   useEffect(() => {
     if (!scrollTriggered.current) return;
     setTimeout(() => {
-      if (iconsRef.current) {
+      if (titleRef.current) {
         const y =
-          iconsRef.current.getBoundingClientRect().top + window.pageYOffset;
+          titleRef.current.getBoundingClientRect().top + window.pageYOffset;
         const navH = document.querySelector("header")?.clientHeight ?? 0;
         window.scrollTo({ top: y - navH - 20, behavior: "smooth" });
       }
@@ -129,16 +129,21 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
         </div>
       </section>
 
-      {/* 💎 Desktop Title & Filters */}
-      <section className="hidden sm:block pt-16 pb-8 px-4 sm:px-6 max-w-7xl mx-auto">
-        <h2 className="text-2xl sm:text-3xl font-semibold text-center mb-4">
+      {/* 💎 Title & Desktop Filters */}
+      <section className="pt-16 pb-8 px-4 sm:px-6 max-w-7xl mx-auto">
+        <h2
+          ref={titleRef}
+          className="text-2xl sm:text-3xl font-semibold text-center mb-4"
+        >
           {filteredCategory
             ? filteredCategory
                 .replace(/-/g, " ")
                 .replace(/\b\w/g, (l) => l.toUpperCase())
             : "Our Jewelry"}
         </h2>
-        <div className="flex flex-wrap gap-3 justify-center mb-8">
+
+        {/* Desktop Buttons */}
+        <div className="hidden sm:flex flex-wrap gap-3 justify-center mb-8">
           {[
             "All",
             "Engagement",
@@ -171,12 +176,9 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
       </section>
 
       {/* 🛍️ Mobile-Only Icon Filters */}
-      <section
-        ref={iconsRef}
-        className="sm:hidden px-4 mt-4 mb-8 bg-black/60 rounded-lg"
-      >
-        <div className="overflow-x-auto">
-          <div className="flex space-x-6 w-max py-2 px-2">
+      <section className="sm:hidden px-4 mt-4 mb-8">
+        <div className="bg-black/60 rounded-lg overflow-x-auto px-2 py-2">
+          <div className="flex space-x-6 w-max">
             {mobileCategories.map((cat) => (
               <button
                 key={cat.name}
