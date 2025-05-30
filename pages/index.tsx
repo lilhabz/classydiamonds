@@ -1,4 +1,4 @@
-// 📄 pages/index.tsx – Home Page with Mobile-Only Icons & Fixed Featured Title 💎✅
+// 📄 pages/index.tsx – Home Page with Mobile-Only Icons & Scrollable Featured Matching Category 💎✅
 
 "use client";
 
@@ -21,6 +21,7 @@ interface HomeProps {
   products: Product[];
 }
 
+// Fetch featured products server-side (limit 4)
 export const getServerSideProps: GetServerSideProps<HomeProps> = async () => {
   const client = await clientPromise;
   const db = client.db();
@@ -43,6 +44,7 @@ export const getServerSideProps: GetServerSideProps<HomeProps> = async () => {
 export default function Home({ products }: HomeProps) {
   const { addToCart } = useCart();
   const featured = products;
+
   return (
     <>
       <Head>
@@ -118,16 +120,13 @@ export default function Home({ products }: HomeProps) {
           </div>
         </section>
 
-        {/* ✨ Featured Products Section */}
+        {/* ✨ Featured Products Section (Mobile Scroll Matches Category) */}
         <section className="py-16 px-4 sm:px-6 max-w-7xl mx-auto">
-          {/* Title stays centered */}
-          <h2 className="text-2xl sm:text-3xl font-semibold text-center mb-6">
+          <h2 className="text-2xl sm:text-3xl font-semibold text-center mb-2">
             Featured Pieces
           </h2>
-
-          {/* Mobile scrollable featured row */}
           <div className="overflow-x-auto">
-            <div className="flex space-x-6 w-max py-2 px-4 sm:px-0">
+            <div className="flex space-x-6 w-max py-2">
               {featured.map((item) => (
                 <div
                   key={item._id}
@@ -143,7 +142,7 @@ export default function Home({ products }: HomeProps) {
                     />
                   </Link>
                   <div className="p-4 text-center">
-                    <h3 className="text-sm font-semibold text-[#cfd2d6] trunc">
+                    <h3 className="text-sm font-semibold text-[#cfd2d6] truncate">
                       {item.name}
                     </h3>
                     <p className="text-gray-400 text-xs mb-2">
