@@ -25,11 +25,10 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
   const { addToCart } = useCart();
   const [visibleCount, setVisibleCount] = useState(8);
   const [filteredCategory, setFilteredCategory] = useState<string | null>(null);
-  const headerRef = useRef<HTMLDivElement>(null);
+  const titleRef = useRef<HTMLHeadingElement>(null);
   const router = useRouter();
   const scrollTriggered = useRef(false);
 
-  // Define mobile icon filters (in scrollable row)
   const mobileCategories = [
     { name: "All", slug: null, icon: "/icons/jewellery.svg" },
     { name: "Engagement", slug: "engagement", icon: "/icons/wedding-ring.svg" },
@@ -44,7 +43,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
     { name: "Earrings", slug: "earrings", icon: "/icons/earrings.svg" },
   ];
 
-  // Sync URL query to state & reset visibleCount
+  // Sync query & reset load-more
   useEffect(() => {
     const { category, scroll } = router.query;
     if (typeof category === "string") setFilteredCategory(category);
@@ -53,15 +52,16 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
     setVisibleCount(8);
   }, [router.query]);
 
-  // Auto-scroll to header when triggered
+  // Auto-scroll to title when triggered
   useEffect(() => {
     if (!scrollTriggered.current) return;
     setTimeout(() => {
-      if (!headerRef.current) return;
-      const y =
-        headerRef.current.getBoundingClientRect().top + window.pageYOffset;
-      const navH = document.querySelector("header")?.clientHeight ?? 0;
-      window.scrollTo({ top: y - navH - 60, behavior: "smooth" });
+      if (titleRef.current) {
+        const y =
+          titleRef.current.getBoundingClientRect().top + window.pageYOffset;
+        const navH = document.querySelector("header")?.clientHeight ?? 0;
+        window.scrollTo({ top: y - navH - 20, behavior: "smooth" });
+      }
       scrollTriggered.current = false;
       router.replace(
         {
@@ -74,13 +74,11 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
     }, 100);
   }, [filteredCategory]);
 
-  // Filter products by category
   const filteredProducts = filteredCategory
     ? products.filter((p) => p.category.toLowerCase() === filteredCategory)
     : products;
 
   const handleLoadMore = () => setVisibleCount((prev) => prev + 4);
-
   const handleFilter = (slug: string | null) => {
     router.push(
       {
@@ -92,13 +90,12 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
     );
   };
 
-  // SEO titles
   const pageTitle = filteredCategory
     ? `${filteredCategory
         .replace(/-/g, " ")
         .replace(/\b\w/g, (l) => l.toUpperCase())} | Classy Diamonds`
     : "Jewelry Collection | Classy Diamonds";
-  const pageDescription = filteredCategory
+  const pageDesc = filteredCategory
     ? `Explore fine ${filteredCategory.replace(
         /-/g,
         " "
@@ -109,23 +106,21 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
     <div className="min-h-screen flex flex-col bg-[var(--bg-page)] text-[var(--foreground)]">
       <Head>
         <title>{pageTitle}</title>
-        <meta name="description" content={pageDescription} />
+        <meta name="description" content={pageDesc} />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
 
-      {/* 🌟 Hero Section */}
-      <section className="-mt-20 relative w-full h-[80vh] flex items-center justify-center text-center overflow-hidden">
-        <div className="absolute inset-0">
-          <Image
-            src="/hero-jewelry.jpg"
-            alt="Jewelry Hero Background"
-            fill
-            className="object-cover w-full h-full"
-          />
-          <div className="absolute inset-0 bg-black opacity-50 pointer-events-none" />
-        </div>
-        <div className="relative z-10 px-4">
-          <h1 className="text-3xl md:text-6xl font-bold mb-6 text-[var(--foreground)]">
+      {/* 🌟 Hero */}
+      <section className="-mt-20 relative w-full h-[80vh] flex items-center justify-center overflow-hidden">
+        <Image
+          src="/hero-jewelry.jpg"
+          alt="Jewelry Hero"
+          fill
+          className="object-cover"
+        />
+        <div className="absolute inset-0 bg-black/50 pointer-events-none" />
+        <div className="relative z-10 text-center px-4">
+          <h1 className="text-3xl md:text-6xl font-bold mb-4 text-[var(--foreground)]">
             Jewelry Collection
           </h1>
           <p className="text-base md:text-xl max-w-2xl mx-auto text-[var(--foreground)]">
@@ -134,12 +129,12 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
         </div>
       </section>
 
-      {/* 💎 Header & Desktop Filters */}
-      <section
-        className="pt-32 pb-16 px-4 sm:px-6 max-w-7xl mx-auto"
-        ref={headerRef}
-      >
-        <h2 className="text-2xl sm:text-3xl font-semibold text-center mb-6">
+      {/* 💎 Title & Desktop Filters */}
+      <section className="pt-16 pb-8 px-4 sm:px-6 max-w-7xl mx-auto">
+        <h2
+          ref={titleRef}
+          className="text-2xl sm:text-3xl font-semibold text-center mb-4"
+        >
           {filteredCategory
             ? filteredCategory
                 .replace(/-/g, " ")
@@ -147,8 +142,8 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
             : "Our Jewelry"}
         </h2>
 
-        {/* Desktop: Button Filters */}
-        <div className="hidden sm:flex flex-wrap gap-3 justify-center mb-16">
+        {/* Desktop Buttons */}
+        <div className="hidden sm:flex flex-wrap gap-3 justify-center mb-8">
           {[
             "All",
             "Engagement",
@@ -167,7 +162,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
               <button
                 key={catName}
                 onClick={() => handleFilter(slug)}
-                className={`px-5 py-2 rounded-full text-sm font-semibold transition cursor-pointer ${
+                className={`px-5 py-2 rounded-full text-sm font-semibold transition ${
                   active
                     ? "bg-white text-[var(--bg-nav)]"
                     : "bg-[var(--bg-nav)] text-[var(--foreground)] hover:bg-[#2f3b5e]"
@@ -181,22 +176,16 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
       </section>
 
       {/* 🛍️ Mobile-Only Icon Filters */}
-      <section className="sm:hidden px-4 mt-6 mb-8">
-        <h1 className="text-lg font-semibold text-center mb-2 text-white">
+      <section className="sm:hidden px-4 mt-4 mb-8">
+        <h3 className="text-lg font-semibold text-center mb-2 text-white">
           Shop by Category
-        </h1>
+        </h3>
         <div className="overflow-x-auto">
           <div className="flex space-x-6 w-max py-2">
             {mobileCategories.map((cat) => (
-              <Link
+              <button
                 key={cat.name}
-                href={{
-                  pathname: "/jewelry",
-                  query: {
-                    category: cat.slug,
-                    scroll: "true",
-                  },
-                }}
+                onClick={() => handleFilter(cat.slug)}
                 className="flex-shrink-0 text-center"
               >
                 <img
@@ -205,13 +194,13 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
                   className="w-16 h-16 mx-auto"
                 />
                 <p className="mt-2 text-sm text-white">{cat.name}</p>
-              </Link>
+              </button>
             ))}
           </div>
         </div>
       </section>
 
-      {/* 🖼️ Product Grid & Load More */}
+      {/* 📦 Products & Load More */}
       <section className="px-4 sm:px-6 max-w-7xl mx-auto mb-16">
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
           {filteredProducts.slice(0, visibleCount).map((product) => (
@@ -248,7 +237,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
                     quantity: 1,
                   });
                 }}
-                className="m-4 px-4 py-2 bg-[var(--foreground)] text-[var(--bg-nav)] rounded-xl font-semibold hover:bg-gray-100 hover:scale-105 hover:shadow-2xl transition cursor-pointer"
+                className="m-4 px-4 py-2 bg-[var(--foreground)] text-[var(--bg-nav)] rounded-xl font-semibold hover:bg-gray-100 hover:scale-105 hover:shadow-2xl transition"
               >
                 Add to Cart
               </button>
@@ -271,7 +260,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
   );
 }
 
-// Server-side data fetching – loads all products
+// Server-side data fetching
 export const getServerSideProps: GetServerSideProps = async () => {
   const client = await clientPromise;
   const productsRaw = await client.db().collection("products").find().toArray();
