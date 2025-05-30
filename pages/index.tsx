@@ -7,9 +7,8 @@ import Head from "next/head";
 import Image from "next/image";
 import { GetServerSideProps } from "next";
 import { useCart } from "@/context/CartContext";
-import clientPromise from "@/lib/mongodb";
+import clientPromise from "@/lib/mongodb"; // 🔗 MongoDB client for DB queries
 
-// 🔢 Product interface unified for static/Cloudinary images
 interface Product {
   _id: string;
   name: string;
@@ -62,151 +61,87 @@ export default function Home({ products }: HomeProps) {
 
       <main className="flex flex-col min-h-screen bg-[var(--bg-page)] text-[var(--foreground)] overflow-x-hidden">
         {/* ⭐ Hero Section */}
-        <section className="-mt-20 relative w-full h-[80vh] flex items-center justify-center text-center overflow-hidden">
-          <div className="absolute inset-0" aria-hidden="true">
-            <Image
-              src="/hero-home.jpg"
-              alt="Showcase of elegant jewelry collection"
-              fill
-              sizes="100vw"
-              priority
-              className="object-cover w-full h-full"
-            />
-            <div className="absolute inset-0 bg-black opacity-50 pointer-events-none" />
-          </div>
-          <div className="relative z-10 px-4">
-            <h1 className="text-3xl sm:text-4xl md:text-6xl font-bold mb-6 text-[#e0e0e0]">
+        <section className="-mt-20 relative w-full h-[80vh] flex items-center justify-center overflow-hidden">
+          <Image
+            src="/hero-home.jpg"
+            alt="Hero"
+            fill
+            className="object-cover"
+          />
+          <div className="absolute inset-0 bg-black/50" />
+          <div className="relative z-10 text-center px-4">
+            <h1 className="text-3xl sm:text-4xl md:text-6xl font-bold text-[#e0e0e0] mb-6">
               Timeless Elegance
             </h1>
-            <p className="text-base sm:text-lg md:text-xl max-w-2xl mx-auto text-[#e0e0e0] mb-8">
+            <p className="text-base sm:text-lg md:text-xl text-[#e0e0e0] mb-8 max-w-2xl mx-auto">
               Discover handcrafted engagement rings, wedding bands, and fine
-              jewelry built to last a lifetime.
+              jewelry.
             </p>
-            <Link href="/jewelry" aria-label="Go to Jewelry Collection">
-              <button className="px-8 py-4 bg-[#e0e0e0] text-[#1f2a44] rounded-full text-lg font-semibold hover:bg-white hover:scale-105 transition-transform duration-300 cursor-pointer">
+            <Link href="/jewelry">
+              <button className="px-8 py-4 bg-[#e0e0e0] text-[#1f2a44] rounded-full hover:scale-105 transition">
                 Shop Now
               </button>
             </Link>
           </div>
         </section>
 
-        {/* 🛍️ Mobile-Only Shop by Category Icons */}
-        <section className="sm:hidden px-4 mt-8 overflow-x-auto">
+        {/* 🛍️ Mobile-Only Category Icons (Scrollable) */}
+        <section className="sm:hidden px-4 mt-6 overflow-x-auto">
           <div className="flex space-x-6 w-max py-2">
             {[
-              { name: "Engagement", icon: "/icons/wedding-ring.svg" },
+              { name: "Engagement", icon: "/icons/engagement-ring.svg" },
               { name: "Wedding Bands", icon: "/icons/wedding-bands.svg" },
               { name: "Rings", icon: "/icons/rings.svg" },
               { name: "Bracelets", icon: "/icons/bracelets.svg" },
               { name: "Necklaces", icon: "/icons/necklaces.svg" },
               { name: "Earrings", icon: "/icons/earrings.svg" },
-            ].map((category) => (
+            ].map((cat) => (
               <Link
-                key={category.name}
+                key={cat.name}
                 href={{
                   pathname: "/jewelry",
                   query: {
-                    category: category.name.toLowerCase().replace(/\s+/g, "-"),
+                    category: cat.name.toLowerCase().replace(/\s+/g, "-"),
                     scroll: "true",
                   },
                 }}
                 className="flex-shrink-0 text-center"
               >
                 <img
-                  src={category.icon}
-                  alt={category.name}
+                  src={cat.icon}
+                  alt={cat.name}
                   className="w-16 h-16 mx-auto"
                 />
-                <p className="mt-2 text-sm text-white">{category.name}</p>
+                <p className="mt-2 text-sm text-white">{cat.name}</p>
               </Link>
             ))}
           </div>
         </section>
 
-        {/* ✨ Featured Products Section */}
-        <section className="py-16 sm:py-20 px-4 sm:px-6 max-w-7xl mx-auto">
-          <h2 className="text-2xl sm:text-3xl font-semibold text-center mb-12 sm:mb-16">
-            Featured Pieces
-          </h2>
-
-          {/* 📱 Mobile Horizontal Scroll (Single Row) */}
-          <div className="sm:hidden overflow-x-auto px-4">
-            <div className="flex space-x-4 w-max py-2">
-              {featured.map((item) => (
-                <div
-                  key={item._id}
-                  className="flex-shrink-0 w-48 bg-[#25304f] rounded-2xl shadow-lg flex flex-col"
-                >
-                  <Link
-                    href={`/category/${item.category}/${item.slug}`}
-                    aria-label={`View ${item.name}`}
-                  >
-                    <div className="relative w-full h-48">
-                      <Image
-                        src={item.image}
-                        alt={`Product image of ${item.name}`}
-                        fill
-                        className="object-cover rounded-t-2xl"
-                      />
-                    </div>
-                  </Link>
-                  <div className="p-4 flex-1 flex flex-col justify-between">
-                    <h3 className="text-sm font-semibold text-[#cfd2d6] text-center">
-                      {item.name}
-                    </h3>
-                    <p className="text-gray-400 text-xs text-center mb-2">
-                      ${item.price.toLocaleString()}
-                    </p>
-                    <button
-                      onClick={() =>
-                        addToCart({
-                          id: item._id,
-                          name: item.name,
-                          price: item.price,
-                          image: item.image,
-                          quantity: 1,
-                        })
-                      }
-                      className="w-full px-3 py-2 bg-[#e0e0e0] text-[#1f2a44] text-sm rounded-xl font-semibold hover:bg-white transition"
-                    >
-                      Add to Cart
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* 🖥️ Desktop Grid (4 columns) */}
-          <div className="hidden sm:grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-10">
+        {/* ✨ Mobile-Only Featured Scrollable Row (Matches Category Scroll) */}
+        <section className="sm:hidden px-4 mt-6 overflow-x-auto">
+          <div className="flex space-x-6 w-max py-2">
             {featured.map((item) => (
               <div
                 key={item._id}
-                className="group bg-[#25304f] rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl hover:ring-2 hover:ring-[#e0e0e0] hover:scale-105 transition-all duration-300 flex flex-col cursor-pointer"
+                className="flex-shrink-0 w-48 bg-[#25304f] rounded-2xl shadow-lg"
               >
-                <Link
-                  href={`/category/${item.category}/${item.slug}`}
-                  aria-label={`View ${item.name}`}
-                >
-                  <div className="relative w-full h-72 sm:h-80 overflow-hidden">
-                    <Image
-                      src={item.image}
-                      alt={`Product image of ${item.name}`}
-                      fill
-                      sizes="(min-width:1024px)25vw,33vw"
-                      className="object-cover group-hover:scale-110 transition-transform duration-300"
-                    />
-                  </div>
+                <Link href={`/category/${item.category}/${item.slug}`}>
+                  <Image
+                    src={item.image}
+                    alt={item.name}
+                    width={192}
+                    height={192}
+                    className="rounded-t-2xl object-cover"
+                  />
                 </Link>
-                <div className="p-6 text-center flex-1 flex flex-col justify-between">
-                  <h3 className="text-xl sm:text-2xl font-semibold text-[#cfd2d6] group-hover:text-white transition-colors duration-300">
+                <div className="p-4 text-center">
+                  <h3 className="text-sm font-semibold text-[#cfd2d6]">
                     {item.name}
                   </h3>
-                  <p className="mt-2 text-gray-400 group-hover:text-white transition-colors duration-300">
+                  <p className="text-gray-400 text-xs mb-2">
                     ${item.price.toLocaleString()}
                   </p>
-                </div>
-                <div className="p-6 pt-0">
                   <button
                     onClick={() =>
                       addToCart({
@@ -217,7 +152,7 @@ export default function Home({ products }: HomeProps) {
                         quantity: 1,
                       })
                     }
-                    className="w-full px-6 py-3 bg-[#e0e0e0] text-[#1f2a44] rounded-xl font-semibold hover:bg-white transition hover:scale-105 cursor-pointer"
+                    className="px-3 py-2 bg-[#e0e0e0] text-[#1f2a44] rounded-xl text-sm hover:scale-105 transition"
                   >
                     Add to Cart
                   </button>
@@ -225,6 +160,49 @@ export default function Home({ products }: HomeProps) {
               </div>
             ))}
           </div>
+        </section>
+
+        {/* 🖥️ Desktop Featured Grid */}
+        <section className="hidden sm:grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-10 py-16 px-4 sm:px-6 max-w-7xl mx-auto">
+          {featured.map((item) => (
+            <div
+              key={item._id}
+              className="group bg-[#25304f] rounded-2xl overflow-hidden shadow-lg hover:scale-105 transition"
+            >
+              <Link href={`/category/${item.category}/${item.slug}`}>
+                <div className="relative w-full h-72">
+                  <Image
+                    src={item.image}
+                    alt={item.name}
+                    fill
+                    className="object-cover group-hover:scale-110 transition"
+                  />
+                </div>
+              </Link>
+              <div className="p-6 text-center">
+                <h3 className="text-xl text-[#cfd2d6] mb-2 group-hover:text-white transition">
+                  {item.name}
+                </h3>
+                <p className="text-gray-400 mb-4 group-hover:text-white transition">
+                  ${item.price.toLocaleString()}
+                </p>
+                <button
+                  onClick={() =>
+                    addToCart({
+                      id: item._id,
+                      name: item.name,
+                      price: item.price,
+                      image: item.image,
+                      quantity: 1,
+                    })
+                  }
+                  className="px-6 py-3 bg-[#e0e0e0] text-[#1f2a44] rounded-xl hover:scale-105 transition"
+                >
+                  Add to Cart
+                </button>
+              </div>
+            </div>
+          ))}
         </section>
 
         {/* 🎁 Gifts for Him & Her Section */}
