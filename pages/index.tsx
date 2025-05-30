@@ -1,4 +1,4 @@
-// 📄 pages/index.tsx – Home Page with Consistent Mobile Scrolling & Sticky Featured Title 💎✅
+// 📄 pages/index.tsx – Home Page with Mobile-Only Icons & Fixed Featured Title 💎✅
 
 "use client";
 
@@ -17,12 +17,10 @@ interface Product {
   category: string;
   slug: string;
 }
-
 interface HomeProps {
   products: Product[];
 }
 
-// 📤 Fetch featured products server-side (limit 4)
 export const getServerSideProps: GetServerSideProps<HomeProps> = async () => {
   const client = await clientPromise;
   const db = client.db();
@@ -31,7 +29,6 @@ export const getServerSideProps: GetServerSideProps<HomeProps> = async () => {
     .find({ featured: true })
     .limit(4)
     .toArray();
-
   const products: Product[] = featuredDocs.map((doc: any) => ({
     _id: doc._id.toString(),
     name: doc.name,
@@ -40,21 +37,19 @@ export const getServerSideProps: GetServerSideProps<HomeProps> = async () => {
     category: doc.category,
     slug: doc.slug,
   }));
-
   return { props: { products } };
 };
 
 export default function Home({ products }: HomeProps) {
   const { addToCart } = useCart();
   const featured = products;
-
   return (
     <>
       <Head>
         <title>Classy Diamonds - Fine Jewelry</title>
         <meta
           name="description"
-          content="Explore elegant engagement rings, wedding bands, and fine jewelry crafted by Classy Diamonds."
+          content="Explore elegant engagement rings, wedding bands, and fine jewelry."
         />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
@@ -85,49 +80,54 @@ export default function Home({ products }: HomeProps) {
           </div>
         </section>
 
-        {/* 🛍️ Mobile-Only Category Icons (Scrollable) */}
-        <section className="sm:hidden px-4 mt-6 overflow-x-auto">
-          <div className="flex space-x-6 w-max py-2">
-            {[
-              { name: "Engagement", icon: "/icons/engagement-ring.svg" },
-              { name: "Wedding Bands", icon: "/icons/wedding-bands.svg" },
-              { name: "Rings", icon: "/icons/rings.svg" },
-              { name: "Bracelets", icon: "/icons/bracelets.svg" },
-              { name: "Necklaces", icon: "/icons/necklaces.svg" },
-              { name: "Earrings", icon: "/icons/earrings.svg" },
-            ].map((cat) => (
-              <Link
-                key={cat.name}
-                href={{
-                  pathname: "/jewelry",
-                  query: {
-                    category: cat.name.toLowerCase().replace(/\s+/g, "-"),
-                    scroll: "true",
-                  },
-                }}
-                className="flex-shrink-0 text-center"
-              >
-                <img
-                  src={cat.icon}
-                  alt={cat.name}
-                  className="w-16 h-16 mx-auto"
-                />
-                <p className="mt-2 text-sm text-white">{cat.name}</p>
-              </Link>
-            ))}
+        {/* 🛍️ Mobile-Only Category Icons */}
+        <section className="sm:hidden px-4 mt-6">
+          <h2 className="text-lg font-semibold text-center mb-2 text-white">
+            Shop by Category
+          </h2>
+          <div className="overflow-x-auto">
+            <div className="flex space-x-6 w-max py-2">
+              {[
+                { name: "Engagement", icon: "/icons/engagement-ring.svg" },
+                { name: "Wedding Bands", icon: "/icons/wedding-bands.svg" },
+                { name: "Rings", icon: "/icons/rings.svg" },
+                { name: "Bracelets", icon: "/icons/bracelets.svg" },
+                { name: "Necklaces", icon: "/icons/necklaces.svg" },
+                { name: "Earrings", icon: "/icons/earrings.svg" },
+              ].map((cat) => (
+                <Link
+                  key={cat.name}
+                  href={{
+                    pathname: "/jewelry",
+                    query: {
+                      category: cat.name.toLowerCase().replace(/\s+/g, "-"),
+                      scroll: "true",
+                    },
+                  }}
+                  className="flex-shrink-0 text-center"
+                >
+                  <img
+                    src={cat.icon}
+                    alt={cat.name}
+                    className="w-16 h-16 mx-auto"
+                  />
+                  <p className="mt-2 text-sm text-white">{cat.name}</p>
+                </Link>
+              ))}
+            </div>
           </div>
         </section>
 
         {/* ✨ Featured Products Section */}
         <section className="py-16 px-4 sm:px-6 max-w-7xl mx-auto">
-          {/* Sticky Title on Mobile & Desktop */}
+          {/* Title stays centered */}
           <h2 className="text-2xl sm:text-3xl font-semibold text-center mb-6">
             Featured Pieces
           </h2>
 
-          {/* 📱 Mobile Scrollable Row */}
-          <div className="sm:hidden overflow-x-auto px-4">
-            <div className="flex space-x-6 w-max py-2">
+          {/* Mobile scrollable featured row */}
+          <div className="overflow-x-auto">
+            <div className="flex space-x-6 w-max py-2 px-4 sm:px-0">
               {featured.map((item) => (
                 <div
                   key={item._id}
@@ -143,7 +143,7 @@ export default function Home({ products }: HomeProps) {
                     />
                   </Link>
                   <div className="p-4 text-center">
-                    <h3 className="text-sm font-semibold text-[#cfd2d6]">
+                    <h3 className="text-sm font-semibold text-[#cfd2d6] trunc">
                       {item.name}
                     </h3>
                     <p className="text-gray-400 text-xs mb-2">
