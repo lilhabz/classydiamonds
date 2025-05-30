@@ -94,7 +94,7 @@ export default function Home({ products }: HomeProps) {
         <section className="sm:hidden px-4 mt-8 overflow-x-auto">
           <div className="flex space-x-6 w-max py-2">
             {[
-              { name: "Engagement", icon: "/icons/engagement-ring.svg" },
+              { name: "Engagement", icon: "/icons/wedding-ring.svg" },
               { name: "Wedding Bands", icon: "/icons/wedding-bands.svg" },
               { name: "Rings", icon: "/icons/rings.svg" },
               { name: "Bracelets", icon: "/icons/bracelets.svg" },
