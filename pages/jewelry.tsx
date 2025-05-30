@@ -43,7 +43,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
     { name: "Earrings", slug: "earrings", icon: "/icons/earrings.svg" },
   ];
 
-  // Sync query & reset load-more
+  // Sync URL query to state & reset visibleCount
   useEffect(() => {
     const { category, scroll } = router.query;
     if (typeof category === "string") setFilteredCategory(category);
@@ -177,19 +177,30 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
 
       {/* 🛍️ Mobile-Only Icon Filters */}
       <section className="sm:hidden px-4 mt-4 mb-8">
-        <div className="bg-black/60 rounded-lg overflow-x-auto px-2 py-2">
-          <div className="flex space-x-6 w-max">
-            {mobileCategories.map((cat) => (
-              <button
-                key={cat.name}
-                onClick={() => handleFilter(cat.slug)}
-                className="flex-shrink-0 text-center"
-                aria-label={cat.name}
-              >
-                <img src={cat.icon} alt="" className="w-16 h-16 mx-auto" />
-                <p className="mt-2 text-sm text-white">{cat.name}</p>
-              </button>
-            ))}
+        <div className="overflow-x-auto">
+          <div className="flex space-x-6 w-max py-2 px-2">
+            {mobileCategories.map((cat) => {
+              const active = filteredCategory === cat.slug;
+              return (
+                <button
+                  key={cat.name}
+                  onClick={() => handleFilter(cat.slug)}
+                  className={`flex-shrink-0 text-center p-2 rounded-lg ${
+                    active ? "bg-black/60" : ""
+                  }`}
+                  aria-label={cat.name}
+                >
+                  <img src={cat.icon} alt="" className="w-16 h-16 mx-auto" />
+                  <p
+                    className={`mt-2 text-sm ${
+                      active ? "text-white font-semibold" : "text-white"
+                    }`}
+                  >
+                    {cat.name}
+                  </p>
+                </button>
+              );
+            })}
           </div>
         </div>
       </section>
