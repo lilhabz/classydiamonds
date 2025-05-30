@@ -1,4 +1,4 @@
-// 📄 pages/jewelry.tsx – Shop Page with Mobile Scrollable Filters & Full Grid 📦
+// 📄 pages/jewelry.tsx – Shop Page with Mobile Icon Filters & Full Grid 📦
 
 "use client";
 
@@ -29,7 +29,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
   const router = useRouter();
   const scrollTriggered = useRef(false);
 
-  // Sync query to state and reset load more
+  // Sync URL query to state & reset 'Load More'
   useEffect(() => {
     const { category, scroll } = router.query;
     if (typeof category === "string") setFilteredCategory(category);
@@ -38,7 +38,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
     setVisibleCount(8);
   }, [router.query]);
 
-  // Auto-scroll on filter change
+  // Auto-scroll when flag set
   useEffect(() => {
     if (!scrollTriggered.current) return;
     setTimeout(() => {
@@ -77,16 +77,16 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
   };
 
   const categories = [
-    "All",
-    "Engagement",
-    "Wedding Bands",
-    "Rings",
-    "Bracelets",
-    "Necklaces",
-    "Earrings",
+    { name: "All", icon: "/icons/jewelry.svg" },
+    { name: "Engagement", icon: "/icons/wedding-ring.svg" },
+    { name: "Wedding Bands", icon: "/icons/wedding-bands.svg" },
+    { name: "Rings", icon: "/icons/rings.svg" },
+    { name: "Bracelets", icon: "/icons/bracelets.svg" },
+    { name: "Necklaces", icon: "/icons/necklaces.svg" },
+    { name: "Earrings", icon: "/icons/earrings.svg" },
   ];
 
-  // SEO metadata
+  // SEO title/description
   const pageTitle = filteredCategory
     ? `${filteredCategory
         .replace(/-/g, " ")
@@ -131,59 +131,78 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
       </section>
 
       {/* 💎 Filters & Header */}
-      <section className="pt-32 pb-16 px-4 sm:px-6 max-w-7xl mx-auto">
-        <div ref={headerRef}>
-          <h2 className="text-2xl sm:text-3xl font-semibold text-center mb-6">
-            {filteredCategory
-              ? filteredCategory
-                  .replace(/-/g, " ")
-                  .replace(/\b\w/g, (l) => l.toUpperCase())
-              : "Our Jewelry"}
-          </h2>
-          {/* Mobile: Scrollable Filters */}
-          <div className="sm:hidden overflow-x-auto px-4 mb-8">
-            <div className="flex space-x-4 w-max py-2">
+      <section
+        className="pt-32 pb-16 px-4 sm:px-6 max-w-7xl mx-auto"
+        ref={headerRef}
+      >
+        <h2 className="text-2xl sm:text-3xl font-semibold text-center mb-6">
+          {filteredCategory
+            ? filteredCategory
+                .replace(/-/g, " ")
+                .replace(/\b\w/g, (l) => l.toUpperCase())
+            : "Our Jewelry"}
+        </h2>
+
+        {/* Mobile: Icon Filters Scroll */}
+        <div className="sm:hidden px-4 mb-8">
+          <h3 className="text-lg font-semibold text-white text-center mb-2">
+            Shop by Category
+          </h3>
+          <div className="overflow-x-auto">
+            <div className="flex space-x-6 w-max py-2">
               {categories.map((cat) => {
                 const slug =
-                  cat === "All" ? null : cat.toLowerCase().replace(/\s+/g, "-");
+                  cat.name === "All"
+                    ? null
+                    : cat.name.toLowerCase().replace(/\s+/g, "-");
                 const active = filteredCategory === slug;
                 return (
                   <button
-                    key={cat}
+                    key={cat.name}
                     onClick={() => handleFilter(slug)}
-                    className={`flex-shrink-0 px-5 py-2 rounded-full text-sm font-semibold transition ${
-                      active
-                        ? "bg-white text-[var(--bg-nav)]"
-                        : "bg-[var(--bg-nav)] text-[var(--foreground)] hover:bg-[#2f3b5e]"
-                    }`}
+                    className="flex-shrink-0 text-center"
                   >
-                    {cat}
+                    <img
+                      src={cat.icon}
+                      alt={cat.name}
+                      className="w-12 h-12 mx-auto mb-1"
+                    />
+                    <span
+                      className={`text-sm ${
+                        active ? "text-white font-semibold" : "text-[#cfd2d6]"
+                      }`}
+                    >
+                      {cat.name}
+                    </span>
                   </button>
                 );
               })}
             </div>
           </div>
-          {/* Desktop: Wrapped Filters */}
-          <div className="hidden sm:flex flex-wrap gap-3 justify-center mb-16">
-            {categories.map((cat) => {
-              const slug =
-                cat === "All" ? null : cat.toLowerCase().replace(/\s+/g, "-");
-              const active = filteredCategory === slug;
-              return (
-                <button
-                  key={cat}
-                  onClick={() => handleFilter(slug)}
-                  className={`px-5 py-2 rounded-full text-sm font-semibold transition cursor-pointer ${
-                    active
-                      ? "bg-white text-[var(--bg-nav)]"
-                      : "bg-[var(--bg-nav)] text-[var(--foreground)] hover:bg-[#2f3b5e]"
-                  }`}
-                >
-                  {cat}
-                </button>
-              );
-            })}
-          </div>
+        </div>
+
+        {/* Desktop: Button Filters */}
+        <div className="hidden sm:flex flex-wrap gap-3 justify-center mb-16">
+          {categories.map((cat) => {
+            const slug =
+              cat.name === "All"
+                ? null
+                : cat.name.toLowerCase().replace(/\s+/g, "-");
+            const active = filteredCategory === slug;
+            return (
+              <button
+                key={cat.name}
+                onClick={() => handleFilter(slug)}
+                className={`px-5 py-2 rounded-full text-sm font-semibold transition cursor-pointer ${
+                  active
+                    ? "bg-white text-[var(--bg-nav)]"
+                    : "bg-[var(--bg-nav)] text-[var(--foreground)] hover:bg-[#2f3b5e]"
+                }`}
+              >
+                {cat.name}
+              </button>
+            );
+          })}
         </div>
 
         {/* 🖼️ Product Grid */}
@@ -191,7 +210,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
           {filteredProducts.slice(0, visibleCount).map((product) => (
             <div
               key={product.id}
-              className="group bg-[var(--bg-nav)] rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl hover:scale-105 transition flex flex-col h-full"
+              className="group bg-[var(--bg-nav)] rounded-2xl overflow-hidden shadow-lg hover:scale-105 transition flex flex-col h-full"
             >
               <Link href={`/category/${product.category}/${product.slug}`}>
                 <div className="w-full h-44 sm:h-48 relative">
@@ -235,7 +254,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
           <div className="flex justify-center mt-12">
             <button
               onClick={handleLoadMore}
-              className="px-8 py-4 bg-[var(--foreground)] text-[var(--bg-nav)] rounded-full cursor-pointer"
+              className="px-8 py-4 bg-[var(--foreground)] text-[var(--bg-nav)] rounded-full"
             >
               Load More
             </button>
@@ -246,7 +265,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
   );
 }
 
-// 📤 Server-side data fetching – loads all products from MongoDB
+// Server-side fetch
 export const getServerSideProps: GetServerSideProps = async () => {
   const client = await clientPromise;
   const productsRaw = await client.db().collection("products").find().toArray();
