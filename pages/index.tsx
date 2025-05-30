@@ -1,4 +1,4 @@
-// 📄 pages/index.tsx – Home Page with Mobile-Only Icon & Full Layout 💎
+// 📄 pages/index.tsx – Home Page with Mobile-Only Icon & Scrollable Featured 💎✅
 
 "use client";
 
@@ -7,7 +7,7 @@ import Head from "next/head";
 import Image from "next/image";
 import { GetServerSideProps } from "next";
 import { useCart } from "@/context/CartContext";
-import clientPromise from "@/lib/mongodb"; // 🔗 MongoDB client for DB queries
+import clientPromise from "@/lib/mongodb";
 
 // 🔢 Product interface unified for static/Cloudinary images
 interface Product {
@@ -129,52 +129,52 @@ export default function Home({ products }: HomeProps) {
             Featured Pieces
           </h2>
 
-          {/* 📱 Mobile Grid (2 columns) */}
-          <div className="grid grid-cols-2 gap-4 sm:hidden px-2">
-            {featured.map((item) => (
-              <div
-                key={item._id}
-                className="bg-[#25304f] rounded-2xl shadow-lg flex flex-col"
-              >
-                <Link
-                  href={`/category/${item.category}/${item.slug}`}
-                  aria-label={`View ${item.name}`}
+          {/* 📱 Mobile Horizontal Scroll (Single Row) */}
+          <div className="sm:hidden overflow-x-auto px-4">
+            <div className="flex space-x-4 w-max py-2">
+              {featured.map((item) => (
+                <div
+                  key={item._id}
+                  className="flex-shrink-0 w-48 bg-[#25304f] rounded-2xl shadow-lg flex flex-col"
                 >
-                  <div className="relative w-full h-48">
-                    <Image
-                      src={item.image}
-                      alt={`Product image of ${item.name}`}
-                      fill
-                      className="object-cover rounded-t-2xl"
-                    />
-                  </div>
-                  <div className="p-4 text-center flex-1 flex flex-col justify-between">
-                    <h3 className="text-sm font-semibold text-[#cfd2d6]">
+                  <Link
+                    href={`/category/${item.category}/${item.slug}`}
+                    aria-label={`View ${item.name}`}
+                  >
+                    <div className="relative w-full h-48">
+                      <Image
+                        src={item.image}
+                        alt={`Product image of ${item.name}`}
+                        fill
+                        className="object-cover rounded-t-2xl"
+                      />
+                    </div>
+                  </Link>
+                  <div className="p-4 flex-1 flex flex-col justify-between">
+                    <h3 className="text-sm font-semibold text-[#cfd2d6] text-center">
                       {item.name}
                     </h3>
-                    <p className="text-gray-400 text-xs">
+                    <p className="text-gray-400 text-xs text-center mb-2">
                       ${item.price.toLocaleString()}
                     </p>
+                    <button
+                      onClick={() =>
+                        addToCart({
+                          id: item._id,
+                          name: item.name,
+                          price: item.price,
+                          image: item.image,
+                          quantity: 1,
+                        })
+                      }
+                      className="w-full px-3 py-2 bg-[#e0e0e0] text-[#1f2a44] text-sm rounded-xl font-semibold hover:bg-white transition"
+                    >
+                      Add to Cart
+                    </button>
                   </div>
-                </Link>
-                <div className="p-4 pt-0">
-                  <button
-                    onClick={() =>
-                      addToCart({
-                        id: item._id,
-                        name: item.name,
-                        price: item.price,
-                        image: item.image,
-                        quantity: 1,
-                      })
-                    }
-                    className="w-full px-3 py-2 bg-[#e0e0e0] text-[#1f2a44] text-sm rounded-xl font-semibold hover:bg-white transition"
-                  >
-                    Add to Cart
-                  </button>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
 
           {/* 🖥️ Desktop Grid (4 columns) */}
@@ -197,15 +197,15 @@ export default function Home({ products }: HomeProps) {
                       className="object-cover group-hover:scale-110 transition-transform duration-300"
                     />
                   </div>
-                  <div className="p-6 text-center flex-1 flex flex-col justify-between">
-                    <h3 className="text-xl sm:text-2xl font-semibold text-[#cfd2d6] group-hover:text-white transition-colors duration-300">
-                      {item.name}
-                    </h3>
-                    <p className="mt-2 text-gray-400 group-hover:text-white transition-colors duration-300">
-                      ${item.price.toLocaleString()}
-                    </p>
-                  </div>
                 </Link>
+                <div className="p-6 text-center flex-1 flex flex-col justify-between">
+                  <h3 className="text-xl sm:text-2xl font-semibold text-[#cfd2d6] group-hover:text-white transition-colors duration-300">
+                    {item.name}
+                  </h3>
+                  <p className="mt-2 text-gray-400 group-hover:text-white transition-colors duration-300">
+                    ${item.price.toLocaleString()}
+                  </p>
+                </div>
                 <div className="p-6 pt-0">
                   <button
                     onClick={() =>
@@ -223,52 +223,6 @@ export default function Home({ products }: HomeProps) {
                   </button>
                 </div>
               </div>
-            ))}
-          </div>
-        </section>
-
-        {/* 🛍️ Shop by Category Section (Desktop Only) */}
-        <section className="hidden sm:block py-16 sm:py-20 w-full px-4 sm:px-10">
-          <h2 className="text-2xl sm:text-3xl font-semibold text-center mb-12 sm:mb-16">
-            Shop by Category
-          </h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-            {[
-              { name: "Engagement", image: "/category/engagement-cat.jpg" },
-              {
-                name: "Wedding Bands",
-                image: "/category/wedding-band-cat.jpg",
-              },
-              { name: "Rings", image: "/category/ring-cat.jpg" },
-              { name: "Bracelets", image: "/category/bracelet-cat.jpg" },
-              { name: "Necklaces", image: "/category/necklace-cat.jpg" },
-              { name: "Earrings", image: "/category/earring-cat.jpg" },
-            ].map((category, index) => (
-              <Link
-                key={category.name}
-                href={{
-                  pathname: "/jewelry",
-                  query: {
-                    category: category.name.toLowerCase().replace(/\s+/g, "-"),
-                    scroll: "true",
-                  },
-                }}
-                className="group relative rounded-xl overflow-hidden shadow-md hover:shadow-xl hover:scale-105 transition-transform duration-300"
-              >
-                <div className="relative aspect-[4/3] w-full">
-                  <Image
-                    src={category.image}
-                    alt={category.name}
-                    fill
-                    priority={index < 3}
-                    className="rounded-xl object-cover z-0"
-                  />
-                  <div className="absolute inset-0 bg-black/30 z-10" />
-                  <span className="absolute inset-0 flex items-center justify-center text-sm sm:text-base font-semibold text-white z-20">
-                    {category.name}
-                  </span>
-                </div>
-              </Link>
             ))}
           </div>
         </section>
