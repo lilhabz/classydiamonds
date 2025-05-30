@@ -83,10 +83,7 @@ export default function Home({ products }: HomeProps) {
         </section>
 
         {/* 🛍️ Mobile-Only Category Icons */}
-        <section className="sm:hidden px-4 mt-6">
-          <h1 className="text-lg font-semibold text-center mb-2 text-white">
-            Shop by Category
-          </h1>
+        <section className="sm:hidden px-4 mt-6 mb-8">
           <div className="overflow-x-auto">
             <div className="flex space-x-6 w-max py-2">
               {[
@@ -107,12 +104,9 @@ export default function Home({ products }: HomeProps) {
                     },
                   }}
                   className="flex-shrink-0 text-center"
+                  aria-label={cat.name}
                 >
-                  <img
-                    src={cat.icon}
-                    alt={cat.name}
-                    className="w-16 h-16 mx-auto"
-                  />
+                  <img src={cat.icon} alt="" className="w-16 h-16 mx-auto" />
                   <p className="mt-2 text-sm text-white">{cat.name}</p>
                 </Link>
               ))}
@@ -120,9 +114,55 @@ export default function Home({ products }: HomeProps) {
           </div>
         </section>
 
+        {/* 🛍️ Desktop-Only Category Grid */}
+        <section className="hidden sm:block py-16 sm:py-20 w-full px-4 sm:px-10">
+          <h2 className="text-2xl sm:text-3xl font-semibold text-center mb-12 sm:mb-16">
+            Shop by Category
+          </h2>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+            {[
+              { name: "Engagement", image: "/category/engagement-cat.jpg" },
+              {
+                name: "Wedding Bands",
+                image: "/category/wedding-band-cat.jpg",
+              },
+              { name: "Rings", image: "/category/ring-cat.jpg" },
+              { name: "Bracelets", image: "/category/bracelet-cat.jpg" },
+              { name: "Necklaces", image: "/category/necklace-cat.jpg" },
+              { name: "Earrings", image: "/category/earring-cat.jpg" },
+            ].map((category, index) => (
+              <Link
+                key={category.name}
+                href={{
+                  pathname: "/jewelry",
+                  query: {
+                    category: category.name.toLowerCase().replace(/\s+/g, "-"),
+                    scroll: "true",
+                  },
+                }}
+                className="group relative rounded-xl overflow-hidden shadow-md hover:shadow-xl hover:scale-105 transition-transform duration-300"
+              >
+                <div className="relative aspect-[4/3] w-full">
+                  <Image
+                    src={category.image}
+                    alt={category.name}
+                    fill
+                    priority={index < 3}
+                    className="rounded-xl object-cover z-0"
+                  />
+                  <div className="absolute inset-0 bg-black/30 z-10" />
+                  <span className="absolute inset-0 flex items-center justify-center text-sm sm:text-base font-semibold text-white z-20">
+                    {category.name}
+                  </span>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
+
         {/* ✨ Featured Products Section */}
         {/* Mobile: Scrollable Row Like Category Icons */}
-        <section className="sm:hidden px-4 mt-6">
+        <section className="sm:hidden px-4 mt-6 mb-8">
           <h2 className="text-2xl font-semibold text-center mb-2 text-white">
             Featured Pieces
           </h2>
@@ -170,7 +210,7 @@ export default function Home({ products }: HomeProps) {
           </div>
         </section>
 
-        {/* Desktop: Grid Layout Unchanged */}
+        {/* 🖥️ Desktop Grid Layout Unchanged */}
         <section className="hidden sm:grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-10 py-16 px-4 sm:px-6 max-w-7xl mx-auto">
           {featured.map((item) => (
             <div
@@ -236,7 +276,7 @@ export default function Home({ products }: HomeProps) {
                     alt={gift.name}
                     fill
                     priority={index < 1}
-                    className="object-cover z-0 rounded-xl group-hover:scale-110 transition-transform duration-300"
+                    className="object-cover rounded-xl group-hover:scale-110 transition-transform duration-300"
                   />
                   <div className="absolute inset-0 bg-black/40 z-10" />
                   <span className="absolute inset-0 flex items-center justify-center text-sm sm:text-base font-semibold text-white z-20">
