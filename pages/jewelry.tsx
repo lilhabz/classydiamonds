@@ -186,7 +186,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
                   key={cat.name}
                   onClick={() => handleFilter(cat.slug)}
                   className={`flex-shrink-0 text-center p-2 rounded-lg ${
-                    active ? "bg-black/60" : ""
+                    active ? "bg-black/40" : ""
                   }`}
                   aria-label={cat.name}
                 >
