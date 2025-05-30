@@ -76,16 +76,6 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
     );
   };
 
-  const categories = [
-    { name: "All", icon: "/icons/jewelry.svg" },
-    { name: "Engagement", icon: "/icons/wedding-ring.svg" },
-    { name: "Wedding Bands", icon: "/icons/wedding-bands.svg" },
-    { name: "Rings", icon: "/icons/rings.svg" },
-    { name: "Bracelets", icon: "/icons/bracelets.svg" },
-    { name: "Necklaces", icon: "/icons/necklaces.svg" },
-    { name: "Earrings", icon: "/icons/earrings.svg" },
-  ];
-
   // SEO
   const pageTitle = filteredCategory
     ? `${filteredCategory
@@ -98,6 +88,21 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
         " "
       )} from Classy Diamonds.`
     : "Explore timeless engagement rings, wedding bands, necklaces, earrings, and more.";
+
+  // Category list for mobile icons
+  const mobileCategories = [
+    { name: "All", icon: "/icons/jewellery.svg", slug: null },
+    { name: "Engagement", icon: "/icons/wedding-ring.svg", slug: "engagement" },
+    {
+      name: "Wedding Bands",
+      icon: "/icons/wedding-bands.svg",
+      slug: "wedding-bands",
+    },
+    { name: "Rings", icon: "/icons/rings.svg", slug: "rings" },
+    { name: "Bracelets", icon: "/icons/bracelets.svg", slug: "bracelets" },
+    { name: "Necklaces", icon: "/icons/necklaces.svg", slug: "necklaces" },
+    { name: "Earrings", icon: "/icons/earrings.svg", slug: "earrings" },
+  ];
 
   return (
     <div className="min-h-screen flex flex-col bg-[var(--bg-page)] text-[var(--foreground)]">
@@ -114,6 +119,8 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
             src="/hero-jewelry.jpg"
             alt="Jewelry Hero Background"
             fill
+            priority
+            sizes="100vw"
             className="object-cover w-full h-full"
           />
           <div className="absolute inset-0 bg-black opacity-50 pointer-events-none" />
@@ -141,55 +148,56 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
             : "Our Jewelry"}
         </h2>
 
-        {/* Mobile: Icon Filters Scroll */}
-        <div className="sm:hidden px-4 mb-8">
-          <h3 className="text-lg font-semibold text-white text-center mb-2">
+        {/* 🛍️ Mobile-Only Icon Filters */}
+        <section className="sm:hidden px-4 mt-6">
+          <h1 className="text-lg font-semibold text-center mb-2 text-white">
             Shop by Category
-          </h3>
+          </h1>
           <div className="overflow-x-auto">
             <div className="flex space-x-6 w-max py-2">
-              {categories.map((cat) => {
-                const slug =
-                  cat.name === "All"
-                    ? null
-                    : cat.name.toLowerCase().replace(/\s+/g, "-");
-                const active = filteredCategory === slug;
-                return (
-                  <button
-                    key={cat.name}
-                    onClick={() => handleFilter(slug)}
-                    className="flex-shrink-0 text-center"
-                  >
-                    <img
-                      src={cat.icon}
-                      alt={cat.name}
-                      className="w-12 h-12 mx-auto mb-1"
-                    />
-                    <span
-                      className={`text-sm ${
-                        active ? "text-white font-semibold" : "text-[#cfd2d6]"
-                      }`}
-                    >
-                      {cat.name}
-                    </span>
-                  </button>
-                );
-              })}
+              {mobileCategories.map((cat) => (
+                <Link
+                  key={cat.name}
+                  href={{
+                    pathname: "/jewelry",
+                    query: {
+                      category: cat.slug,
+                      scroll: "true",
+                    },
+                  }}
+                  className="flex-shrink-0 text-center"
+                >
+                  <img
+                    src={cat.icon}
+                    alt={cat.name}
+                    className="w-16 h-16 mx-auto"
+                  />
+                  <p className="mt-2 text-sm text-white">{cat.name}</p>
+                </Link>
+              ))}
             </div>
           </div>
-        </div>
+        </section>
 
         {/* Desktop: Button Filters */}
         <div className="hidden sm:flex flex-wrap gap-3 justify-center mb-16">
-          {categories.map((cat) => {
+          {[
+            "All",
+            "Engagement",
+            "Wedding Bands",
+            "Rings",
+            "Bracelets",
+            "Necklaces",
+            "Earrings",
+          ].map((catName) => {
             const slug =
-              cat.name === "All"
+              catName === "All"
                 ? null
-                : cat.name.toLowerCase().replace(/\s+/g, "-");
+                : catName.toLowerCase().replace(/\s+/g, "-");
             const active = filteredCategory === slug;
             return (
               <button
-                key={cat.name}
+                key={catName}
                 onClick={() => handleFilter(slug)}
                 className={`px-5 py-2 rounded-full text-sm font-semibold transition cursor-pointer ${
                   active
@@ -197,7 +205,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
                     : "bg-[var(--bg-nav)] text-[var(--foreground)] hover:bg-[#2f3b5e]"
                 }`}
               >
-                {cat.name}
+                {catName}
               </button>
             );
           })}
