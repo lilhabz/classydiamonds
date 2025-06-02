@@ -1,22 +1,24 @@
-// 🚀 pages/success.tsx – Post-Checkout Thank You Page + “Leave a Review” Button 📝💎
-// (Full file – do not remove any existing lines; we’re simply inserting new logic.)
+// 🚀 pages/success.tsx – Post-Checkout Thank You Page + “Leave a Review” Button (uses session_id) 🌟
+
+// (Full file – replace everything in your current pages/success.tsx with the content below.)
 
 import Head from "next/head";
 import Link from "next/link";
 import { useEffect } from "react";
-import { useRouter } from "next/router"; // 🆕 Import useRouter to read query params
+import { useRouter } from "next/router"; // <-- make sure we import useRouter
 import { useCart } from "@/context/CartContext";
 
 export default function SuccessPage() {
   const { clearCart } = useCart();
-  const router = useRouter(); // 🆕 Initialize router
-  const { orderId } = router.query as { orderId?: string }; // 🆕 Read “orderId” from URL (if present)
+  const router = useRouter();
+  // 🆕 Read Stripe’s session_id from the URL (if present)
+  const { session_id } = router.query as { session_id?: string };
 
   useEffect(() => {
     // ✅ Delay cart clear so React renders this page fully before flushing context
     const timer = setTimeout(() => {
-      clearCart(); // 🧼 Cart is cleared AFTER initial render tick
-    }, 100); // ⏱️ slight delay prevents freeze bugs on client nav
+      clearCart(); // 🧼 Empty the cart right after showing the confirmation
+    }, 100); // ⏱️ slight delay to prevent render glitches
 
     return () => clearTimeout(timer); // ♻️ Cleanup on unmount
   }, [clearCart]);
@@ -53,9 +55,9 @@ export default function SuccessPage() {
             </div>
           </Link>
 
-          {/* 🆕 Leave a Review – only show if orderId is present */}
-          {orderId && (
-            <Link href={`/review/${orderId}`} passHref>
+          {/* 🆕 Leave a Review – only show if session_id is present */}
+          {session_id && (
+            <Link href={`/review/${session_id}`} passHref>
               <button
                 type="button"
                 className="mt-4 w-full inline-flex items-center justify-center px-6 py-3 bg-[var(--foreground)] text-[var(--bg-nav)] font-semibold rounded-full shadow hover:bg-gray-100 transition hover:scale-105 cursor-pointer"
@@ -64,17 +66,17 @@ export default function SuccessPage() {
               </button>
             </Link>
           )}
-          {/* 
+          {/*
             📝 Tailwind Explanation:
-              - mt-4: adds spacing between “Continue Shopping” and this review button
+              - mt-4: adds top margin to separate from “Continue Shopping”
               - w-full inline-flex items-center justify-center: full-width, centered content
-              - px-6 py-3: consistent padding
-              - bg-[var(--foreground)], text-[var(--bg-nav)]: match your site’s foreground/nav colors
-              - font-semibold: slightly thicker text weight
-              - rounded-full: pill-shaped button
+              - px-6 py-3: comfortable padding
+              - bg-[var(--foreground)], text-[var(--bg-nav)]: matches your existing color scheme
+              - font-semibold: slightly bolder text
+              - rounded-full: pill‐shaped button
               - shadow: subtle drop shadow
-              - hover:bg-gray-100 transition hover:scale-105: hover state with slight enlarge 
-              - cursor-pointer: ensures pointer on hover
+              - hover:bg-gray-100 transition hover:scale-105: hover state styling
+              - cursor-pointer: pointer cursor on hover
           */}
         </div>
       </main>
