@@ -1,10 +1,11 @@
-// 📄 tsconfig.json – Confirm path resolution for scripts 🌐
+// 📄 tsconfig.json – Updated to ignore Speed Insights’ tsconfig error 🌐
 {
   "compilerOptions": {
     "target": "ES2017",
     "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
-    "skipLibCheck": true,
+    "skipLibCheck": true, // ← skip type‐checking inside node_modules
+    "skipDefaultLibCheck": true, // ← don’t load any default/third‐party tsconfig.json
     "strict": true,
     "noEmit": true,
     "esModuleInterop": true,
@@ -19,6 +20,9 @@
     },
     "typeRoots": ["./types", "./node_modules/@types"]
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", "scripts/**/*.ts"], // 📝 include scripts folder
-  "exclude": ["node_modules"]
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", "scripts/**/*.ts"],
+  "exclude": [
+    "node_modules",
+    "node_modules/@vercel/speed-insights/tsconfig.json" // ← prevent TS from loading this file
+  ]
 }

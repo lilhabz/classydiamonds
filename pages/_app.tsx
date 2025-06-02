@@ -1,4 +1,4 @@
-// 📄 pages/_app.tsx – App with Scroll Restoration & Speed Insights Integration 🚀
+// 📄 pages/_app.tsx – Global Layout with Fixed Top Padding & Footer at Bottom
 
 import "@/styles/globals.css";
 import { useEffect } from "react";
@@ -9,19 +9,19 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { CartProvider } from "@/context/CartContext";
 
-// ⚡ Import the SpeedInsights component (no HOC wrapper needed)
+// ⚡ Speed Insights – optional, leave here if you still need it
 import { SpeedInsights } from "@vercel/speed-insights/next";
 
 function App({ Component, pageProps: { session, ...pageProps } }: AppProps) {
   const router = useRouter();
 
   useEffect(() => {
-    // 🎯 Prevent browser from auto-restoring scroll
+    // Prevent browser from auto-restoring scroll
     if ("scrollRestoration" in window.history) {
       window.history.scrollRestoration = "manual";
     }
 
-    // 🔄 Only scroll to top on full route changes (skip same-page query changes)
+    // Only scroll to top on full route changes (ignore same-page query changes)
     const handleRouteChangeStart = (url: string) => {
       const toPath = url.split("?")[0];
       const fromPath = router.asPath.split("?")[0];
@@ -30,9 +30,7 @@ function App({ Component, pageProps: { session, ...pageProps } }: AppProps) {
       }
     };
 
-    // 📡 Listen for route changes
     router.events.on("routeChangeStart", handleRouteChangeStart);
-
     return () => {
       router.events.off("routeChangeStart", handleRouteChangeStart);
       if ("scrollRestoration" in window.history) {
@@ -44,18 +42,21 @@ function App({ Component, pageProps: { session, ...pageProps } }: AppProps) {
   return (
     <SessionProvider session={session}>
       <CartProvider>
-        {/* 🌐 Navbar */}
+        {/* 🌐 Navbar always at top */}
         <Navbar />
 
-        {/* 📦 Main Content */}
-        <div className="pt-20 flex flex-col min-h-screen bg-[#1f2a44] text-[#e0e0e0]">
+        {/* 
+          📦 Main area fills available space between Navbar and Footer.
+          pt-[5rem] gives a fixed gap under the Navbar (adjust as needed).
+        */}
+        <main className="flex flex-col flex-grow pt-[5rem] px-4 bg-[var(--bg-page)] text-[var(--foreground)]">
           <Component {...pageProps} />
-        </div>
+        </main>
 
-        {/* 🦶 Footer */}
+        {/* 🦶 Footer stays its original height (py-8 inside Footer) */}
         <Footer />
 
-        {/* ⚡ Insert SpeedInsights here */}
+        {/* ⚡ Speed Insights widget at very bottom, if desired */}
         <SpeedInsights />
       </CartProvider>
     </SessionProvider>
