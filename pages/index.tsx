@@ -1,4 +1,4 @@
-// 📄 pages/index.tsx – Home Page with “Featured” Moved Above Categories 💎✅
+// 📄 pages/index.tsx – Home Page with Responsive Featured Placement 💎✅
 
 "use client";
 
@@ -106,13 +106,39 @@ export default function Home({ products }: HomeProps) {
           </div>
         </section>
 
-        {/* ✨ Featured Products Section */}
-        {/* 
-          🚨 If you see nothing here, it means “products” is an empty array.
-          1️⃣ OPTION 1 (DB-DRIVEN): Make sure your MongoDB “products” collection has documents with { featured: true } 
-          2️⃣ OPTION 2 (STATIC): Uncomment the import at top and the “staticFeatured” block in getServerSideProps.
-        */}
-        {/* Mobile: Scrollable Row Like Category Icons */}
+        {/* 🛍️ Mobile-Only Category Icons */}
+        <section className="sm:hidden px-4 mt-6 mb-8">
+          <div className="overflow-x-auto">
+            <div className="flex space-x-6 w-max py-2">
+              {[
+                { name: "Engagement", icon: "/icons/wedding-ring.svg" },
+                { name: "Wedding Bands", icon: "/icons/wedding-bands.svg" },
+                { name: "Rings", icon: "/icons/rings.svg" },
+                { name: "Bracelets", icon: "/icons/bracelets.svg" },
+                { name: "Necklaces", icon: "/icons/necklaces.svg" },
+                { name: "Earrings", icon: "/icons/earrings.svg" },
+              ].map((cat) => (
+                <Link
+                  key={cat.name}
+                  href={{
+                    pathname: "/jewelry",
+                    query: {
+                      category: cat.name.toLowerCase().replace(/\s+/g, "-"),
+                      scroll: "true",
+                    },
+                  }}
+                  className="flex-shrink-0 text-center"
+                  aria-label={cat.name}
+                >
+                  <img src={cat.icon} alt="" className="w-16 h-16 mx-auto" />
+                  <p className="mt-2 text-sm text-white">{cat.name}</p>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* 🛍️ Mobile-Only “Featured” Below Categories */}
         <section className="sm:hidden px-4 mt-6 mb-8">
           <h2 className="text-2xl font-semibold text-center mb-2 text-white">
             Featured Pieces
@@ -167,84 +193,57 @@ export default function Home({ products }: HomeProps) {
           </div>
         </section>
 
-        {/* 🖥️ Desktop Grid Layout for Featured */}
-        <section className="hidden sm:grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-10 py-16 px-4 sm:px-6 max-w-7xl mx-auto">
-          {featured.length === 0 ? (
-            <p className="text-white text-center col-span-4">
-              No featured items to display.
-            </p>
-          ) : (
-            featured.map((item) => (
-              <div
-                key={item._id}
-                className="group bg-[#25304f] rounded-2xl overflow-hidden shadow-lg hover:scale-105 transition"
-              >
-                <Link href={`/category/${item.category}/${item.slug}`}>
-                  <div className="relative w-full h-72">
-                    <Image
-                      src={item.image}
-                      alt={item.name}
-                      fill
-                      className="object-cover group-hover:scale-110 transition"
-                    />
-                  </div>
-                </Link>
-                <div className="p-6 text-center">
-                  <h3 className="text-xl text-[#cfd2d6] mb-2 group-hover:text-white transition">
-                    {item.name}
-                  </h3>
-                  <p className="text-gray-400 mb-4 group-hover:text-white transition">
-                    ${item.price.toLocaleString()}
-                  </p>
-                  <button
-                    onClick={() =>
-                      addToCart({
-                        id: item._id,
-                        name: item.name,
-                        price: item.price,
-                        image: item.image,
-                        quantity: 1,
-                      })
-                    }
-                    className="px-6 py-3 bg-[#e0e0e0] text-[#1f2a44] rounded-xl hover:scale-105 transition"
-                  >
-                    Add to Cart
-                  </button>
-                </div>
-              </div>
-            ))
-          )}
-        </section>
-
-        {/* 🛍️ Mobile-Only Category Icons */}
-        <section className="sm:hidden px-4 mt-6 mb-8">
-          <div className="overflow-x-auto">
-            <div className="flex space-x-6 w-max py-2">
-              {[
-                { name: "Engagement", icon: "/icons/wedding-ring.svg" },
-                { name: "Wedding Bands", icon: "/icons/wedding-bands.svg" },
-                { name: "Rings", icon: "/icons/rings.svg" },
-                { name: "Bracelets", icon: "/icons/bracelets.svg" },
-                { name: "Necklaces", icon: "/icons/necklaces.svg" },
-                { name: "Earrings", icon: "/icons/earrings.svg" },
-              ].map((cat) => (
-                <Link
-                  key={cat.name}
-                  href={{
-                    pathname: "/jewelry",
-                    query: {
-                      category: cat.name.toLowerCase().replace(/\s+/g, "-"),
-                      scroll: "true",
-                    },
-                  }}
-                  className="flex-shrink-0 text-center"
-                  aria-label={cat.name}
+        {/* 🖥️ Desktop-Only “Featured” Above Categories */}
+        <section className="hidden sm:block py-16 sm:py-20 px-4 sm:px-6 max-w-7xl mx-auto">
+          <h2 className="text-3xl sm:text-4xl font-semibold text-center mb-8">
+            Featured Pieces
+          </h2>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-10">
+            {featured.length === 0 ? (
+              <p className="text-white text-center col-span-4">
+                No featured items to display.
+              </p>
+            ) : (
+              featured.map((item) => (
+                <div
+                  key={item._id}
+                  className="group bg-[#25304f] rounded-2xl overflow-hidden shadow-lg hover:scale-105 transition"
                 >
-                  <img src={cat.icon} alt="" className="w-16 h-16 mx-auto" />
-                  <p className="mt-2 text-sm text-white">{cat.name}</p>
-                </Link>
-              ))}
-            </div>
+                  <Link href={`/category/${item.category}/${item.slug}`}>
+                    <div className="relative w-full h-72">
+                      <Image
+                        src={item.image}
+                        alt={item.name}
+                        fill
+                        className="object-cover group-hover:scale-110 transition"
+                      />
+                    </div>
+                  </Link>
+                  <div className="p-6 text-center">
+                    <h3 className="text-xl text-[#cfd2d6] mb-2 group-hover:text-white transition">
+                      {item.name}
+                    </h3>
+                    <p className="text-gray-400 mb-4 group-hover:text-white transition">
+                      ${item.price.toLocaleString()}
+                    </p>
+                    <button
+                      onClick={() =>
+                        addToCart({
+                          id: item._id,
+                          name: item.name,
+                          price: item.price,
+                          image: item.image,
+                          quantity: 1,
+                        })
+                      }
+                      className="px-6 py-3 bg-[#e0e0e0] text-[#1f2a44] rounded-xl hover:scale-105 transition"
+                    >
+                      Add to Cart
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </section>
 
