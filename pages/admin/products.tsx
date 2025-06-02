@@ -1,4 +1,4 @@
-// 📄 pages/admin/products.tsx – Admin Product Management with Batch Save Feature 🛠️💾
+// 📄 pages/admin/products.tsx – Admin Product Management with Batch Save & Featured Limit 🛠️💾
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
@@ -64,21 +64,32 @@ export default function AdminProductsPage() {
     success: "",
   });
 
+  // 🧮 Count of featured items currently selected
+  //    Derive from rowEdits: count how many existing products are marked featured
+  const featuredCount = Object.values(rowEdits).filter(
+    (edit) => edit.featured
+  ).length;
+
   // ==================== LOAD PRODUCTS ====================
   useEffect(() => {
     async function load() {
       setLoadingList(true);
-      const res = await fetch("/api/admin/products");
-      const data = await res.json();
-      setProducts(data.products);
-      setLoadingList(false);
-      // Initialize rowEdits from fetched data
-      const edits: Record<string, { category: Category; featured: boolean }> =
-        {};
-      data.products.forEach((p: AdminProduct) => {
-        edits[p._id] = { category: p.category, featured: p.featured };
-      });
-      setRowEdits(edits);
+      try {
+        const res = await fetch("/api/admin/products");
+        const data = await res.json();
+        setProducts(data.products);
+        // Initialize rowEdits from fetched data
+        const edits: Record<string, { category: Category; featured: boolean }> =
+          {};
+        data.products.forEach((p: AdminProduct) => {
+          edits[p._id] = { category: p.category, featured: p.featured };
+        });
+        setRowEdits(edits);
+      } catch (err: any) {
+        console.error("Failed to load products:", err);
+      } finally {
+        setLoadingList(false);
+      }
     }
     load();
   }, []);
@@ -90,6 +101,16 @@ export default function AdminProductsPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    // 🚨 Prevent adding more than 4 featured items
+    if (formState.featured && featuredCount >= 4) {
+      setStatus({
+        loading: false,
+        error: "⚠️ You can only have up to 4 featured items.",
+        success: "",
+      });
+      return;
+    }
+
     setStatus({ loading: true, error: "", success: "" });
     try {
       const formData = new FormData();
@@ -132,6 +153,16 @@ export default function AdminProductsPage() {
 
   // ==================== BATCH SAVE ALL CHANGES ====================
   const handleSaveAll = async () => {
+    // 🚨 Prevent saving if too many featured items selected
+    if (featuredCount > 4) {
+      setStatus({
+        loading: false,
+        error: "⚠️ You can only have up to 4 featured items. Uncheck extras.",
+        success: "",
+      });
+      return;
+    }
+
     setStatus({ loading: true, error: "", success: "" });
     try {
       // For each edited row, send PUT only if changed
@@ -144,6 +175,10 @@ export default function AdminProductsPage() {
           orig.featured === edits.featured
         )
           return null;
+        // If trying to set featured=true on a product, but count >=4, skip
+        if (edits.featured && featuredCount > 4) {
+          throw new Error("Too many featured items selected.");
+        }
         const res = await fetch(`/api/admin/products/${id}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
@@ -175,6 +210,12 @@ export default function AdminProductsPage() {
     });
     if (res.ok) {
       setProducts((p) => p.filter((x) => x._id !== id));
+      // Also remove from rowEdits
+      setRowEdits((r) => {
+        const newEdits = { ...r };
+        delete newEdits[id];
+        return newEdits;
+      });
       setStatus({ loading: false, error: "", success: "Product deleted 🗑️" });
     }
   };
@@ -182,6 +223,8 @@ export default function AdminProductsPage() {
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-6">
       <h1 className="text-2xl font-bold">🛠️ Manage Products</h1>
+
+      {/* ❗ Status Messages */}
       {status.error && <p className="text-red-500">❌ {status.error}</p>}
       {status.success && <p className="text-green-600">✅ {status.success}</p>}
 
@@ -245,9 +288,15 @@ export default function AdminProductsPage() {
           <input
             type="checkbox"
             checked={formState.featured}
+            disabled={featuredCount >= 4} // 🚫 Disable if already 4 featured
             onChange={(e) => handleInput("featured", e.target.checked)}
             className="mt-2"
           />
+          {featuredCount >= 4 && (
+            <span className="text-yellow-400 text-sm">
+              ⚠️ Max 4 featured reached
+            </span>
+          )}
         </label>
         <label>
           🖼️ Image
@@ -275,87 +324,101 @@ export default function AdminProductsPage() {
       {loadingList ? (
         <p>Loading...</p>
       ) : (
-        <table className="w-full table-auto border-collapse">
-          <thead>
-            <tr className="bg-gray-200">
-              <th className="p-2">SKU</th>
-              <th className="p-2">Image</th>
-              <th className="p-2">Name</th>
-              <th className="p-2">Category</th>
-              <th className="p-2">Featured</th>
-              <th className="p-2">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {products.map((p) => {
-              const edit = rowEdits[p._id];
-              return (
-                <tr key={p._id} className="border-t">
-                  <td className="p-2">
-                    {(p.skuNumber ?? 0).toString().padStart(5, "0")}
-                  </td>
-                  <td className="p-2 w-24 h-24 relative">
-                    <Image
-                      src={p.imageUrl}
-                      alt={p.name}
-                      fill
-                      className="object-cover rounded"
-                    />
-                  </td>
-                  <td className="p-2">{p.name}</td>
-                  <td className="p-2">
-                    <select
-                      value={edit.category}
-                      onChange={(e) =>
-                        setRowEdits((r) => ({
-                          ...r,
-                          [p._id]: {
-                            ...r[p._id],
-                            category: e.target.value as Category,
-                          },
-                        }))
-                      }
-                      className="border rounded p-1"
-                    >
-                      {[
-                        "engagement",
-                        "wedding-bands",
-                        "rings",
-                        "bracelets",
-                        "necklaces",
-                        "earrings",
-                      ].map((c) => (
-                        <option key={c} value={c}>
-                          {c}
-                        </option>
-                      ))}
-                    </select>
-                  </td>
-                  <td className="p-2 text-center">
-                    <input
-                      type="checkbox"
-                      checked={edit.featured}
-                      onChange={(e) =>
-                        setRowEdits((r) => ({
-                          ...r,
-                          [p._id]: { ...r[p._id], featured: e.target.checked },
-                        }))
-                      }
-                    />
-                  </td>
-                  <td className="p-2 space-x-2">
-                    <button
-                      onClick={() => handleDelete(p._id)}
-                      className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700"
-                    >
-                      🗑️ Delete
-                    </button>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+        <>
+          {/* ⚠️ Warning if too many featured selected */}
+          {featuredCount > 4 && (
+            <p className="text-yellow-500 mb-2">
+              ⚠️ You have selected more than 4 featured items. Please uncheck
+              extras.
+            </p>
+          )}
+          <table className="w-full table-auto border-collapse">
+            <thead>
+              <tr className="bg-gray-200">
+                <th className="p-2">SKU</th>
+                <th className="p-2">Image</th>
+                <th className="p-2">Name</th>
+                <th className="p-2">Category</th>
+                <th className="p-2">Featured</th>
+                <th className="p-2">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {products.map((p) => {
+                const edit = rowEdits[p._id];
+                return (
+                  <tr key={p._id} className="border-t">
+                    <td className="p-2">
+                      {(p.skuNumber ?? 0).toString().padStart(5, "0")}
+                    </td>
+                    <td className="p-2 w-24 h-24 relative">
+                      <Image
+                        src={p.imageUrl}
+                        alt={p.name}
+                        fill
+                        className="object-cover rounded"
+                      />
+                    </td>
+                    <td className="p-2">{p.name}</td>
+                    <td className="p-2">
+                      <select
+                        value={edit.category}
+                        onChange={(e) =>
+                          setRowEdits((r) => ({
+                            ...r,
+                            [p._id]: {
+                              ...r[p._id],
+                              category: e.target.value as Category,
+                            },
+                          }))
+                        }
+                        className="border rounded p-1"
+                      >
+                        {[
+                          "engagement",
+                          "wedding-bands",
+                          "rings",
+                          "bracelets",
+                          "necklaces",
+                          "earrings",
+                        ].map((c) => (
+                          <option key={c} value={c}>
+                            {c}
+                          </option>
+                        ))}
+                      </select>
+                    </td>
+                    <td className="p-2 text-center">
+                      <input
+                        type="checkbox"
+                        checked={edit.featured}
+                        // 🚫 Disable checking if not already featured and count is at 4
+                        disabled={!edit.featured && featuredCount >= 4}
+                        onChange={(e) =>
+                          setRowEdits((r) => ({
+                            ...r,
+                            [p._id]: {
+                              ...r[p._id],
+                              featured: e.target.checked,
+                            },
+                          }))
+                        }
+                      />
+                    </td>
+                    <td className="p-2 space-x-2">
+                      <button
+                        onClick={() => handleDelete(p._id)}
+                        className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700"
+                      >
+                        🗑️ Delete
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </>
       )}
 
       {/* 💾 Global Save All Changes Button */}
@@ -368,6 +431,8 @@ export default function AdminProductsPage() {
           {status.loading ? "Saving..." : "Save All Changes 💾"}
         </button>
       </div>
+
+      {/* 🚧 Placeholder for future: pagination, search, CSV export, etc. */}
     </div>
   );
 }
