@@ -1,4 +1,4 @@
-// 📄 pages/auth.tsx – Auth Page with Balanced Top & Bottom Spacing 💎
+// 📄 pages/auth.tsx – Auth Page with Balanced Top & Bottom Spacing (Footer Unchanged) 💎
 
 "use client";
 
@@ -143,11 +143,11 @@ export default function AuthPage() {
       className="
         bg-[var(--bg-page)] text-[var(--foreground)]
         /* Removed vertical centering; now content flows from top under the navbar */
-        px-4 pt-[5rem] pb-[5rem] flex justify-center
-        /* └─ pt-[5rem] pushes form down; pb-[5rem] ensures same spacing above footer */
+        px-4 pt-[5rem] flex justify-center
+        /* └─ pt-[5rem] pushes form down; no bottom padding here so footer size remains unchanged */
       "
     >
-      <div className="bg-[var(--bg-nav)] p-8 sm:p-10 rounded-2xl shadow-xl w-full max-w-md">
+      <div className="mb-[5rem] bg-[var(--bg-nav)] p-8 sm:p-10 rounded-2xl shadow-xl w-full max-w-md">
         {/* Title */}
         <h2 className="text-2xl font-bold mb-4 text-center">
           {isLogin ? "Login to Classy Diamonds 💎" : "Create Your Account 💍"}
