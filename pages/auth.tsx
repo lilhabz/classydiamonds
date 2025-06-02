@@ -141,7 +141,7 @@ export default function AuthPage() {
   return (
     <div
       className="
-        bg-[var(--bg-page)] text-[var(--foreground)] min-h-screen flex justify-center pt-40 px-4
+        bg-[var(--bg-page)] text-[var(--foreground)] min-h-screen flex justify-center pt-10 px-4
         /* ✅ Updated: removed items-center to stop centering vertically, added pt-20 to move form closer to navbar */
       "
     >
