@@ -1,12 +1,16 @@
-// 📄 pages/success.tsx – Post-Checkout Thank You Page 💎
+// 🚀 pages/success.tsx – Post-Checkout Thank You Page + “Leave a Review” Button 📝💎
+// (Full file – do not remove any existing lines; we’re simply inserting new logic.)
 
 import Head from "next/head";
 import Link from "next/link";
 import { useEffect } from "react";
+import { useRouter } from "next/router"; // 🆕 Import useRouter to read query params
 import { useCart } from "@/context/CartContext";
 
 export default function SuccessPage() {
   const { clearCart } = useCart();
+  const router = useRouter(); // 🆕 Initialize router
+  const { orderId } = router.query as { orderId?: string }; // 🆕 Read “orderId” from URL (if present)
 
   useEffect(() => {
     // ✅ Delay cart clear so React renders this page fully before flushing context
@@ -48,6 +52,30 @@ export default function SuccessPage() {
               Continue Shopping
             </div>
           </Link>
+
+          {/* 🆕 Leave a Review – only show if orderId is present */}
+          {orderId && (
+            <Link href={`/review/${orderId}`} passHref>
+              <button
+                type="button"
+                className="mt-4 w-full inline-flex items-center justify-center px-6 py-3 bg-[var(--foreground)] text-[var(--bg-nav)] font-semibold rounded-full shadow hover:bg-gray-100 transition hover:scale-105 cursor-pointer"
+              >
+                📝 Leave a Review
+              </button>
+            </Link>
+          )}
+          {/* 
+            📝 Tailwind Explanation:
+              - mt-4: adds spacing between “Continue Shopping” and this review button
+              - w-full inline-flex items-center justify-center: full-width, centered content
+              - px-6 py-3: consistent padding
+              - bg-[var(--foreground)], text-[var(--bg-nav)]: match your site’s foreground/nav colors
+              - font-semibold: slightly thicker text weight
+              - rounded-full: pill-shaped button
+              - shadow: subtle drop shadow
+              - hover:bg-gray-100 transition hover:scale-105: hover state with slight enlarge 
+              - cursor-pointer: ensures pointer on hover
+          */}
         </div>
       </main>
     </div>
