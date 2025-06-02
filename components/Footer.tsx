@@ -1,11 +1,11 @@
-// 📄 components/Footer.tsx - Global Footer for All Pages 💎
+// 📄 components/Footer.tsx – Global Footer for All Pages 💎
 
 import Link from "next/link";
 
 // 🦶 Footer Component - Appears at the bottom of all pages
 const Footer = () => {
   return (
-    <footer className="bg-[#1f2a44] text-[#e0e0e0] text-center py-8 pt-20">
+    <footer className="bg-[#1f2a44] text-[#e0e0e0] text-center py-8">
       {/* 📅 Year & Site Info */}
       <div className="text-sm">
         © {new Date().getFullYear()} Classy Diamonds. All rights reserved.
