@@ -1,4 +1,4 @@
-// 📄 pages/auth.tsx – Auth Page with Top Padding (Footer Remains Unchanged) 💎
+// 📄 pages/auth.tsx – Auth Page (complete, no truncation) 💎
 
 "use client";
 
@@ -138,7 +138,7 @@ export default function AuthPage() {
   };
 
   return (
-    <div className="flex justify-center">
+    <div className="flex justify-center w-full">
       <div className="bg-[var(--bg-nav)] p-8 sm:p-10 rounded-2xl shadow-xl w-full max-w-md">
         {/* Title */}
         <h2 className="text-2xl font-bold mb-4 text-center">

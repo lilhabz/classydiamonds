@@ -1,4 +1,4 @@
-// 📄 pages/_app.tsx – Global Layout with Fixed Top Padding & Footer at Bottom
+// 📄 pages/_app.tsx – Global Layout (Navbar, vertically‐centered content, Footer)
 
 import "@/styles/globals.css";
 import { useEffect } from "react";
@@ -9,19 +9,19 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { CartProvider } from "@/context/CartContext";
 
-// ⚡ Speed Insights – optional, leave here if you still need it
+// ⚡ Speed Insights (optional—leave it in if you still want it)
 import { SpeedInsights } from "@vercel/speed-insights/next";
 
 function App({ Component, pageProps: { session, ...pageProps } }: AppProps) {
   const router = useRouter();
 
   useEffect(() => {
-    // Prevent browser from auto-restoring scroll
+    // Prevent browser from auto‐restoring scroll
     if ("scrollRestoration" in window.history) {
       window.history.scrollRestoration = "manual";
     }
 
-    // Only scroll to top on full route changes (ignore same-page query changes)
+    // Only scroll to top on full route changes (skip same‐page query changes)
     const handleRouteChangeStart = (url: string) => {
       const toPath = url.split("?")[0];
       const fromPath = router.asPath.split("?")[0];
@@ -42,21 +42,39 @@ function App({ Component, pageProps: { session, ...pageProps } }: AppProps) {
   return (
     <SessionProvider session={session}>
       <CartProvider>
-        {/* 🌐 Navbar always at top */}
+        {/*
+          ┌────────────────────────────────────────┐
+          │ 1) Navbar always sits at top          │
+          └────────────────────────────────────────┘
+        */}
         <Navbar />
 
-        {/* 
-          📦 Main area fills available space between Navbar and Footer.
-          pt-[5rem] gives a fixed gap under the Navbar (adjust as needed).
+        {/*
+          ┌───────────────────────────────────────────────────────────────────┐
+          │ 2) “Middle” area that grows to fill remaining space             │
+          │    – flex‐grow ensures Footer stays at the bottom.              │
+          │    – items‐center + justify‐center vertically/horizontally cent│
+          │      ers your page content (e.g. the Auth form) exactly halfway│
+          │      between Navbar and Footer.                                 │
+          └───────────────────────────────────────────────────────────────────┘
         */}
-        <main className="flex flex-col flex-grow pt-[5rem] px-4 bg-[var(--bg-page)] text-[var(--foreground)]">
-          <Component {...pageProps} />
-        </main>
+        <div className="flex flex-col flex-grow bg-[var(--bg-page)] text-[var(--foreground)] px-4">
+          <div className="flex flex-grow items-center justify-center">
+            <Component {...pageProps} />
+          </div>
+        </div>
 
-        {/* 🦶 Footer stays its original height (py-8 inside Footer) */}
+        {/*
+          ┌────────────────────────────────────────┐
+          │ 3) Footer always at bottom (no extra │
+          │    top padding inside Footer itself). │
+          └────────────────────────────────────────┘
+        */}
         <Footer />
 
-        {/* ⚡ Speed Insights widget at very bottom, if desired */}
+        {/*
+          ⚡ Speed Insights at bottom, if still needed.
+        */}
         <SpeedInsights />
       </CartProvider>
     </SessionProvider>
