@@ -1,4 +1,4 @@
-// 📄 pages/auth.tsx - Login + Signup with Email Confirmation Flow + Auto-Polling 💎
+// 📄 pages/auth.tsx – Auth Page with Balanced Top & Bottom Spacing 💎
 
 "use client";
 
@@ -141,10 +141,10 @@ export default function AuthPage() {
   return (
     <div
       className="
-        bg-[var(--bg-page)] text-[var(--foreground)] min-h-screen
+        bg-[var(--bg-page)] text-[var(--foreground)]
         /* Removed vertical centering; now content flows from top under the navbar */
-        px-4 pt-[5rem] flex justify-center
-        /* └─ Adjusted pt-[5rem] so form sits just below navbar; increase/decrease as needed */
+        px-4 pt-[5rem] pb-[5rem] flex justify-center
+        /* └─ pt-[5rem] pushes form down; pb-[5rem] ensures same spacing above footer */
       "
     >
       <div className="bg-[var(--bg-nav)] p-8 sm:p-10 rounded-2xl shadow-xl w-full max-w-md">
