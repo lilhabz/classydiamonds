@@ -1,4 +1,4 @@
-// 📄 pages/_app.tsx – Global Layout (Navbar, vertically‐centered content, Footer)
+// 📄 pages/_app.tsx – App with Scroll Restoration & Speed Insights Integration 🚀
 
 import "@/styles/globals.css";
 import { useEffect } from "react";
@@ -9,19 +9,19 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { CartProvider } from "@/context/CartContext";
 
-// ⚡ Speed Insights (optional—leave it in if you still want it)
+// ⚡ Import the SpeedInsights component (no HOC wrapper needed)
 import { SpeedInsights } from "@vercel/speed-insights/next";
 
 function App({ Component, pageProps: { session, ...pageProps } }: AppProps) {
   const router = useRouter();
 
   useEffect(() => {
-    // Prevent browser from auto‐restoring scroll
+    // 🎯 Prevent browser from auto-restoring scroll
     if ("scrollRestoration" in window.history) {
       window.history.scrollRestoration = "manual";
     }
 
-    // Only scroll to top on full route changes (skip same‐page query changes)
+    // 🔄 Only scroll to top on full route changes (skip same-page query changes)
     const handleRouteChangeStart = (url: string) => {
       const toPath = url.split("?")[0];
       const fromPath = router.asPath.split("?")[0];
@@ -30,7 +30,9 @@ function App({ Component, pageProps: { session, ...pageProps } }: AppProps) {
       }
     };
 
+    // 📡 Listen for route changes
     router.events.on("routeChangeStart", handleRouteChangeStart);
+
     return () => {
       router.events.off("routeChangeStart", handleRouteChangeStart);
       if ("scrollRestoration" in window.history) {
@@ -42,39 +44,18 @@ function App({ Component, pageProps: { session, ...pageProps } }: AppProps) {
   return (
     <SessionProvider session={session}>
       <CartProvider>
-        {/*
-          ┌────────────────────────────────────────┐
-          │ 1) Navbar always sits at top          │
-          └────────────────────────────────────────┘
-        */}
+        {/* 🌐 Navbar */}
         <Navbar />
 
-        {/*
-          ┌───────────────────────────────────────────────────────────────────┐
-          │ 2) “Middle” area that grows to fill remaining space             │
-          │    – flex‐grow ensures Footer stays at the bottom.              │
-          │    – items‐center + justify‐center vertically/horizontally cent│
-          │      ers your page content (e.g. the Auth form) exactly halfway│
-          │      between Navbar and Footer.                                 │
-          └───────────────────────────────────────────────────────────────────┘
-        */}
-        <div className="flex flex-col flex-grow bg-[var(--bg-page)] text-[var(--foreground)] px-4">
-          <div className="flex flex-grow items-center justify-center">
-            <Component {...pageProps} />
-          </div>
+        {/* 📦 Main Content */}
+        <div className="pt-20 flex flex-col min-h-screen bg-[#1f2a44] text-[#e0e0e0]">
+          <Component {...pageProps} />
         </div>
 
-        {/*
-          ┌────────────────────────────────────────┐
-          │ 3) Footer always at bottom (no extra │
-          │    top padding inside Footer itself). │
-          └────────────────────────────────────────┘
-        */}
+        {/* 🦶 Footer */}
         <Footer />
 
-        {/*
-          ⚡ Speed Insights at bottom, if still needed.
-        */}
+        {/* ⚡ Insert SpeedInsights here */}
         <SpeedInsights />
       </CartProvider>
     </SessionProvider>

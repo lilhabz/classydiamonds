@@ -1,4 +1,4 @@
-// 📄 pages/auth.tsx – Auth Page (complete, no truncation) 💎
+// 📄 pages/auth.tsx - Login + Signup with Email Confirmation Flow + Auto-Polling 💎
 
 "use client";
 
@@ -125,6 +125,7 @@ export default function AuthPage() {
           body: JSON.stringify(formData),
         });
         if (response.ok) {
+          // Show banner and keep on signup page for polling
           setShowCheckEmailBanner(true);
           setIsLogin(false);
           return;
@@ -138,7 +139,14 @@ export default function AuthPage() {
   };
 
   return (
-    <div className="flex justify-center w-full">
+    <div
+      className="
+        bg-[var(--bg-page)] text-[var(--foreground)] min-h-screen
+        /* Removed vertical centering; now content flows from top under the navbar */
+        px-4 pt-[5rem] flex justify-center
+        /* └─ Adjusted pt-[5rem] so form sits just below navbar; increase/decrease as needed */
+      "
+    >
       <div className="bg-[var(--bg-nav)] p-8 sm:p-10 rounded-2xl shadow-xl w-full max-w-md">
         {/* Title */}
         <h2 className="text-2xl font-bold mb-4 text-center">
@@ -273,14 +281,12 @@ export default function AuthPage() {
             {isLogin ? "Login" : "Create Account"}
           </button>
         </form>
-
         <button
           onClick={() => signIn("google", { callbackUrl: "/" })}
           className="w-full flex items-center justify-center mt-4 bg-[var(--foreground)] hover:bg-gray-100 text-[var(--bg-nav)] font-semibold py-3 rounded-xl transition hover:scale-105"
         >
           <FcGoogle className="mr-2 text-xl" /> Continue with Google
         </button>
-
         <p className="mt-6 text-center text-sm">
           {isLogin ? (
             <>
