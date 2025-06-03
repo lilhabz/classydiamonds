@@ -1,4 +1,4 @@
-// 📄 pages/account/orders.tsx – Breadcrumb Added + Fresh Data Upgrade + Short Order Number & Full Address Display 💎
+// 📂 pages/account/orders.tsx – Breadcrumb Added + Fresh Data Upgrade + Short Order Number & Full Address Display 💎
 
 import { GetServerSideProps } from "next";
 import { getSession } from "next-auth/react";
@@ -36,7 +36,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
   const orders = await db
     .collection("orders")
     .find(filter)
-    .sort({ createdAt: -1 })
+    .sort({ createdAt: -1, _id: -1 }) // ← newest first, fallback to _id
     .skip(skip)
     .limit(ORDERS_PER_PAGE)
     .toArray();

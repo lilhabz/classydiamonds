@@ -17,11 +17,11 @@ export default async function handler(
     const client = await clientPromise;
     const db = client.db();
 
-    // 📦 Fetch ALL orders, sorted newest first
+    // 📦 Fetch ALL orders, sorted newest first (by createdAt, then fallback to _id)
     const orders = await db
       .collection("orders")
       .find({})
-      .sort({ createdAt: -1 })
+      .sort({ createdAt: -1, _id: -1 })
       .toArray();
 
     // ✅ Return the full array of orders; each document already has:
