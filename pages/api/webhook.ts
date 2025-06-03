@@ -1,6 +1,6 @@
 // ✅ pages/api/webhook.ts – Stripe Order Handler with Sequential orderNumber (starting at 100) plus shipped/archived (with TS fixes) 👇
 
-// (Full file – do NOT remove any existing lines. We’ve updated only the parts related to accessing shipping details.)
+// (Full file – do NOT remove any existing lines. We’ve updated only the parts related to accessing address from metadata instead of shipping_details.)
 
 import { buffer } from "micro";
 import type { NextApiRequest, NextApiResponse } from "next";
@@ -53,45 +53,32 @@ export default async function handler(
       const customerEmail =
         session.customer_details?.email || process.env.EMAIL_USER;
 
-      // 🏠 Access shipping_details via 'session.shipping_details'
-      //    We cast to 'any' because TS may not expose Stripe.ShippingDetails directly
-      const shippingDetails = (session as any).shipping_details as any | null;
-
-      // 🌟 Build a single‐line address string if shipping details exist
-      const customerAddress = shippingDetails?.address
-        ? `${shippingDetails.address.line1 || ""}${
-            shippingDetails.address.line2
-              ? `, ${shippingDetails.address.line2}`
-              : ""
-          }, ${shippingDetails.address.city || ""}, ${
-            shippingDetails.address.state || ""
-          } ${shippingDetails.address.postal_code || ""}, ${
-            shippingDetails.address.country || ""
-          }`
-        : "N/A";
-
-      // 🌐 Store structured address fields as well
-      const addressObject = shippingDetails?.address
-        ? {
-            street: shippingDetails.address.line1 || "",
-            line2: shippingDetails.address.line2 || "",
-            city: shippingDetails.address.city || "",
-            state: shippingDetails.address.state || "",
-            zip: shippingDetails.address.postal_code || "",
-            country: shippingDetails.address.country || "",
-          }
-        : {
-            street: "",
-            line2: "",
-            city: "",
-            state: "",
-            zip: "",
-            country: "",
-          };
-
-      // 🛒 Retrieve items from metadata (existing flow)
+      // 📦 Retrieve items from metadata (existing flow)
       const metadata = session.metadata || {};
       const items = JSON.parse((metadata.items as string) || "[]"); // 📦 Array of { name, quantity, price, image }
+
+      // 🏠 Read address parts from metadata instead of shipping_details
+      const street1 = (metadata.address_street1 as string) || "";
+      const street2 = (metadata.address_street2 as string) || "";
+      const city = (metadata.address_city as string) || "";
+      const state = (metadata.address_state as string) || "";
+      const zip = (metadata.address_zip as string) || "";
+      const country = (metadata.address_country as string) || "";
+
+      // 🌟 Build a single‐line address string
+      const customerAddress = `${street1}${
+        street2 ? `, ${street2}` : ""
+      }, ${city}, ${state} ${zip}, ${country}`;
+
+      // 🌐 Store structured address fields as well
+      const addressObject = {
+        street: street1,
+        line2: street2,
+        city,
+        state,
+        zip,
+        country,
+      };
 
       // 💲 Calculate total amount in dollars
       const amountTotal = (session.amount_total || 0) / 100;
