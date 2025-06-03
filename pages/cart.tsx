@@ -1,4 +1,4 @@
-// 📤 pages/cart.tsx – Cart + Order Summary + Stripe Checkout (collecting full address) 💎
+// 📤 pages/cart.tsx – Cart + Order Summary + Multi-Payment Checkout 💎
 
 "use client";
 
@@ -20,10 +20,11 @@ export default function CartPage() {
     street1: "",
     street2: "",
     city: "",
-    state: "",
+    state: "PA", // default to Pennsylvania
     zip: "",
-    country: "",
+    country: "United States", // default to United States
     notes: "", // 📝 Order notes (e.g., engraving, ring size, delivery instructions)
+    paymentMethod: "stripe", // 🏷️ Default to Stripe; placeholder for others
   });
 
   const [isLoading, setIsLoading] = useState(false);
@@ -34,7 +35,9 @@ export default function CartPage() {
   );
 
   const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -61,39 +64,84 @@ export default function CartPage() {
 
     setIsLoading(true);
     try {
-      const response = await fetch("/api/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          items: cartItems,
-          name: formData.name,
-          email: formData.email,
-          phone: formData.phone,
-          // 👇 Send each address part separately
-          address: {
-            street1: formData.street1,
-            street2: formData.street2,
-            city: formData.city,
-            state: formData.state,
-            zip: formData.zip,
-            country: formData.country,
-          },
-          notes: formData.notes,
-        }),
-      });
+      // ─── Decide which payment flow based on paymentMethod ────────────────
+      if (formData.paymentMethod === "stripe") {
+        // ─── Stripe checkout ───────────────────────────────────────────────
+        const response = await fetch("/api/checkout", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            items: cartItems,
+            name: formData.name,
+            email: formData.email,
+            phone: formData.phone,
+            address: {
+              street1: formData.street1,
+              street2: formData.street2,
+              city: formData.city,
+              state: formData.state,
+              zip: formData.zip,
+              country: formData.country,
+            },
+            notes: formData.notes,
+            paymentMethod: "stripe", // 🏷️ Let backend know
+          }),
+        });
 
-      const text = await response.text();
-      try {
-        const data = JSON.parse(text);
-        if (data?.url) {
-          window.location.href = data.url;
-        } else {
-          alert("❌ Checkout failed. No URL returned.");
-          console.error("❌ Raw response:", text);
+        const text = await response.text();
+        try {
+          const data = JSON.parse(text);
+          if (data?.url) {
+            window.location.href = data.url;
+          } else {
+            alert("❌ Checkout failed. No URL returned.");
+            console.error("❌ Raw response:", text);
+          }
+        } catch (err) {
+          alert("❌ Checkout failed. Server response was not valid JSON.");
+          console.error("❌ Could not parse response:", text);
         }
-      } catch (err) {
-        alert("❌ Checkout failed. Server response was not valid JSON.");
-        console.error("❌ Could not parse response:", text);
+      } else if (formData.paymentMethod === "paypal") {
+        // ─── Placeholder: PayPal Checkout ─────────────────────────────────
+        // 👇 You’ll need to create /api/checkout/paypal to handle PayPal sessions
+        const response = await fetch("/api/checkout/paypal", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            items: cartItems,
+            name: formData.name,
+            email: formData.email,
+            phone: formData.phone,
+            address: {
+              street1: formData.street1,
+              street2: formData.street2,
+              city: formData.city,
+              state: formData.state,
+              zip: formData.zip,
+              country: formData.country,
+            },
+            notes: formData.notes,
+            paymentMethod: "paypal",
+          }),
+        });
+
+        const text = await response.text();
+        try {
+          const data = JSON.parse(text);
+          if (data?.redirectUrl) {
+            window.location.href = data.redirectUrl;
+          } else {
+            alert("❌ PayPal checkout failed. No redirect URL.");
+            console.error("❌ Raw response:", text);
+          }
+        } catch (err) {
+          alert("❌ PayPal checkout failed. Invalid JSON response.");
+          console.error("❌ Could not parse response:", text);
+        }
+      } else {
+        // ─── Placeholder: Other payment methods ─────────────────────────────
+        // 🔧 For future upgrades: Apple Pay, Google Pay, etc.
+        alert("🚧 Payment method not implemented yet.");
       }
     } catch (error) {
       console.error("❌ Checkout fetch error:", error);
@@ -102,6 +150,74 @@ export default function CartPage() {
       setIsLoading(false);
     }
   };
+
+  // ─── Array of U.S. States for dropdown ───────────────────────────────────
+  const usStates = [
+    { value: "AL", label: "Alabama" },
+    { value: "AK", label: "Alaska" },
+    { value: "AZ", label: "Arizona" },
+    { value: "AR", label: "Arkansas" },
+    { value: "CA", label: "California" },
+    { value: "CO", label: "Colorado" },
+    { value: "CT", label: "Connecticut" },
+    { value: "DE", label: "Delaware" },
+    { value: "FL", label: "Florida" },
+    { value: "GA", label: "Georgia" },
+    { value: "HI", label: "Hawaii" },
+    { value: "ID", label: "Idaho" },
+    { value: "IL", label: "Illinois" },
+    { value: "IN", label: "Indiana" },
+    { value: "IA", label: "Iowa" },
+    { value: "KS", label: "Kansas" },
+    { value: "KY", label: "Kentucky" },
+    { value: "LA", label: "Louisiana" },
+    { value: "ME", label: "Maine" },
+    { value: "MD", label: "Maryland" },
+    { value: "MA", label: "Massachusetts" },
+    { value: "MI", label: "Michigan" },
+    { value: "MN", label: "Minnesota" },
+    { value: "MS", label: "Mississippi" },
+    { value: "MO", label: "Missouri" },
+    { value: "MT", label: "Montana" },
+    { value: "NE", label: "Nebraska" },
+    { value: "NV", label: "Nevada" },
+    { value: "NH", label: "New Hampshire" },
+    { value: "NJ", label: "New Jersey" },
+    { value: "NM", label: "New Mexico" },
+    { value: "NY", label: "New York" },
+    { value: "NC", label: "North Carolina" },
+    { value: "ND", label: "North Dakota" },
+    { value: "OH", label: "Ohio" },
+    { value: "OK", label: "Oklahoma" },
+    { value: "OR", label: "Oregon" },
+    { value: "PA", label: "Pennsylvania" },
+    { value: "RI", label: "Rhode Island" },
+    { value: "SC", label: "South Carolina" },
+    { value: "SD", label: "South Dakota" },
+    { value: "TN", label: "Tennessee" },
+    { value: "TX", label: "Texas" },
+    { value: "UT", label: "Utah" },
+    { value: "VT", label: "Vermont" },
+    { value: "VA", label: "Virginia" },
+    { value: "WA", label: "Washington" },
+    { value: "WV", label: "West Virginia" },
+    { value: "WI", label: "Wisconsin" },
+    { value: "WY", label: "Wyoming" },
+  ];
+
+  // ─── Array of Countries for dropdown (few examples) ─────────────────────
+  const countries = [
+    "United States",
+    "Canada",
+    "United Kingdom",
+    "Australia",
+    "Germany",
+    "France",
+    "Mexico",
+    "Japan",
+    "China",
+    "India",
+  ];
 
   return (
     <div className="min-h-screen flex flex-col bg-[var(--bg-page)] text-[var(--foreground)]">
@@ -179,7 +295,7 @@ export default function CartPage() {
           )}
         </section>
 
-        {/* 📋 Order Summary + Stripe Checkout */}
+        {/* 📋 Order Summary + Multi-Payment Checkout */}
         <aside className="lg:w-[35%] bg-[#25304f] rounded-xl p-6 shadow flex flex-col gap-6 sticky top-24 h-fit">
           <h2 className="text-xl font-bold border-b border-[var(--bg-page)] pb-2">
             Order Summary
@@ -255,15 +371,25 @@ export default function CartPage() {
               onChange={handleInputChange}
               className="px-4 py-2 rounded bg-white text-[#1f2a44]"
             />
-            <input
-              type="text"
+
+            {/* ─── State Dropdown ────────────────────────────────────────────── */}
+            <select
               name="state"
-              placeholder="State/Province *"
               required
               value={formData.state}
               onChange={handleInputChange}
               className="px-4 py-2 rounded bg-white text-[#1f2a44]"
-            />
+            >
+              <option value="" disabled>
+                Select State *
+              </option>
+              {usStates.map((st) => (
+                <option key={st.value} value={st.value}>
+                  {st.label}
+                </option>
+              ))}
+            </select>
+
             <input
               type="text"
               name="zip"
@@ -273,15 +399,37 @@ export default function CartPage() {
               onChange={handleInputChange}
               className="px-4 py-2 rounded bg-white text-[#1f2a44]"
             />
-            <input
-              type="text"
+
+            {/* ─── Country Dropdown ──────────────────────────────────────────── */}
+            <select
               name="country"
-              placeholder="Country *"
               required
               value={formData.country}
               onChange={handleInputChange}
               className="px-4 py-2 rounded bg-white text-[#1f2a44]"
-            />
+            >
+              <option value="" disabled>
+                Select Country *
+              </option>
+              {countries.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
+
+            {/* ─── Payment Method Selector ─────────────────────────────────────── */}
+            <select
+              name="paymentMethod"
+              required
+              value={formData.paymentMethod}
+              onChange={handleInputChange}
+              className="px-4 py-2 rounded bg-white text-[#1f2a44]"
+            >
+              <option value="stripe">Pay with Stripe</option>
+              <option value="paypal">Pay with PayPal</option>
+              {/* 🔧 Placeholder: Add more payment providers here */}
+            </select>
 
             {/* ─── Order Notes ─────────────────────────────────────────────────── */}
             <textarea
