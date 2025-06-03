@@ -1,7 +1,6 @@
-// ✅ pages/api/webhook.ts – Stripe Order Handler with Sequential orderNumber (starting at 100) plus shipped/archived 👇
+// ✅ pages/api/webhook.ts – Stripe Order Handler with Sequential orderNumber (starting at 100) plus shipped/archived (with TS fixes) 👇
 
-// (Full file – do NOT remove any existing lines. We’ve only inserted a few type annotations
-// to let TypeScript know that counters._id is a string.)
+// (Full file – do NOT remove any existing lines. We’ve updated only the parts related to accessing shipping details.)
 
 import { buffer } from "micro";
 import type { NextApiRequest, NextApiResponse } from "next";
@@ -49,23 +48,66 @@ export default async function handler(
     if (event.type === "checkout.session.completed") {
       const session = event.data.object as Stripe.Checkout.Session;
 
-      // 🔍 Pull metadata and compute basic order fields
-      const metadata = session.metadata || {};
+      // 🔍 Pull customer details from session
+      const customerName = session.customer_details?.name || "Customer";
       const customerEmail =
-        (metadata.customer_email as string) || process.env.EMAIL_USER;
-      const customerName = (metadata.customer_name as string) || "Customer";
-      const customerAddress = (metadata.customer_address as string) || "N/A";
-      const items = JSON.parse((metadata.items as string) || "[]");
+        session.customer_details?.email || process.env.EMAIL_USER;
+
+      // 🏠 Access shipping_details via 'session.shipping_details'
+      //    We cast to 'any' because TS may not expose Stripe.ShippingDetails directly
+      const shippingDetails = (session as any).shipping_details as any | null;
+
+      // 🌟 Build a single‐line address string if shipping details exist
+      const customerAddress = shippingDetails?.address
+        ? `${shippingDetails.address.line1 || ""}${
+            shippingDetails.address.line2
+              ? `, ${shippingDetails.address.line2}`
+              : ""
+          }, ${shippingDetails.address.city || ""}, ${
+            shippingDetails.address.state || ""
+          } ${shippingDetails.address.postal_code || ""}, ${
+            shippingDetails.address.country || ""
+          }`
+        : "N/A";
+
+      // 🌐 Store structured address fields as well
+      const addressObject = shippingDetails?.address
+        ? {
+            street: shippingDetails.address.line1 || "",
+            line2: shippingDetails.address.line2 || "",
+            city: shippingDetails.address.city || "",
+            state: shippingDetails.address.state || "",
+            zip: shippingDetails.address.postal_code || "",
+            country: shippingDetails.address.country || "",
+          }
+        : {
+            street: "",
+            line2: "",
+            city: "",
+            state: "",
+            zip: "",
+            country: "",
+          };
+
+      // 🛒 Retrieve items from metadata (existing flow)
+      const metadata = session.metadata || {};
+      const items = JSON.parse((metadata.items as string) || "[]"); // 📦 Array of { name, quantity, price, image }
+
+      // 💲 Calculate total amount in dollars
       const amountTotal = (session.amount_total || 0) / 100;
+
+      // 🕒 Human-friendly order date
       const orderDate = new Date().toLocaleString();
-      const stripeSessionId = session.id; // e.g. "cs_test_ABC123"
+
+      // 🔗 Stripe session ID
+      const stripeSessionId = session.id;
 
       // 🔗 Connect to MongoDB
       const dbClient = await clientPromise;
       const db = dbClient.db();
       const ordersCollection = db.collection("orders");
 
-      // 👇 Here is the important part: tell TypeScript that counters docs are { _id: string, sequence_value: number }
+      // 👇 Tell TypeScript that counters docs are { _id: string, sequence_value: number }
       type CounterDoc = { _id: string; sequence_value: number };
       const countersCollection = db.collection<CounterDoc>("counters");
 
@@ -73,20 +115,17 @@ export default async function handler(
 
       try {
         // 🔢 Generate a sequential orderNumber (starting at 100)
-        //    Because we typed countersCollection as <CounterDoc>, _id can be a string.
         const counterResult = await countersCollection.findOneAndUpdate(
-          { _id: "orderNumber" }, // <- no TS error now, "_id" is string
+          { _id: "orderNumber" },
           { $inc: { sequence_value: 1 } },
           {
-            returnDocument: "after", // after increment
-            upsert: true, // create if missing
+            returnDocument: "after",
+            upsert: true,
             projection: { sequence_value: 1 },
           }
         );
 
-        // If this was the first run, sequence_value may be undefined until we insert below
         if (!counterResult.value?.sequence_value) {
-          // Initialize to 100 if missing
           await countersCollection.insertOne({
             _id: "orderNumber",
             sequence_value: 100,
@@ -99,35 +138,28 @@ export default async function handler(
         console.log(`🔢 Generated orderNumber: ${orderNumber}`);
       } catch (counterErr) {
         console.error("❌ Counter generation error:", counterErr);
-        // Fallback: use timestamp-based number (not recommended long-term)
         orderNumber = Date.now();
       }
 
-      // 👤 Check if this Stripe session has already been recorded (idempotency)
+      // 👤 Check for idempotency
       try {
         const existing = await ordersCollection.findOne({
           stripeSessionId,
         });
 
         if (!existing) {
-          // 🗄️ Insert new order document with our sequential orderNumber
+          // 🗄️ Insert new order document with all fields
           await ordersCollection.insertOne({
-            orderNumber, // 🆕 Our own human-friendly order number
+            orderNumber,
             customerName,
             customerEmail,
-            customerAddress,
-            address: {
-              street: metadata.address_street || "",
-              city: metadata.address_city || "",
-              state: metadata.address_state || "",
-              zip: metadata.address_zip || "",
-              country: metadata.address_country || "",
-            },
+            customerAddress, // single‐line address
+            address: addressObject, // structured address
             items,
             amount: amountTotal,
             currency: session.currency || "usd",
             paymentStatus: session.payment_status || "unpaid",
-            stripeSessionId, // original Stripe ID
+            stripeSessionId,
             createdAt: new Date(),
             shipped: false,
             archived: false,
@@ -137,15 +169,14 @@ export default async function handler(
             `✅ Order saved to MongoDB with orderNumber: ${orderNumber}`
           );
         } else {
-          console.log("⚠️ Order already exists in MongoDB – skipping insert.");
+          console.log("⚠️ Order already exists – skipping insert.");
         }
       } catch (mongoErr) {
         console.error("❌ MongoDB insert error:", mongoErr);
       }
 
-      // ✉️ Send receipt email (this runs regardless of upsert result to ensure email goes out once)
+      // ✉️ Send receipt email via Nodemailer
       try {
-        // Build HTML for receipt
         const itemRows = items
           .map(
             (item: any) => `
@@ -207,7 +238,6 @@ export default async function handler(
           </div>
         `;
 
-        // Configure Nodemailer transporter
         const transporter = nodemailer.createTransport({
           service: "gmail",
           auth: {
@@ -216,7 +246,6 @@ export default async function handler(
           },
         });
 
-        // Mail options
         const mailOptions = {
           from: `"Classy Diamonds" <${process.env.EMAIL_USER}>`,
           to: customerEmail,
