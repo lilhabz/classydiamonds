@@ -1,4 +1,4 @@
-// 📄 pages/account/orders.tsx – Breadcrumb Added + Fresh Data Upgrade 💎
+// 📄 pages/account/orders.tsx – Breadcrumb Added + Fresh Data Upgrade + Short Order Number & Full Address Display 💎
 
 import { GetServerSideProps } from "next";
 import { getSession } from "next-auth/react";
@@ -141,11 +141,12 @@ export default function OrdersPage({
                 key={order._id}
                 className="border border-[var(--bg-nav)] rounded-lg p-4 bg-[var(--bg-nav)]"
               >
+                {/* ─── Order Header: Short Order #, Total, Status ─────────────────── */}
                 <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-2">
                   <div>
-                    <p className="text-sm text-[#cfd2d6]">Order ID:</p>
+                    <p className="text-sm text-[#cfd2d6]">Order #:</p>
                     <p className="text-sm font-semibold break-all">
-                      {order.stripeSessionId}
+                      #{order.orderNumber} {/* 🆕 Show short orderNumber */}
                     </p>
                   </div>
                   <div>
@@ -169,19 +170,25 @@ export default function OrdersPage({
                   </div>
                 </div>
 
+                {/* ─── Shipping Address ─────────────────────────────────────────────── */}
                 {order.address && (
                   <div className="mt-4 text-sm text-[#cfd2d6]">
                     <p className="font-medium text-[var(--foreground)]">
                       Shipping Address:
                     </p>
                     <p>
-                      {order.address.street}, {order.address.city},{" "}
+                      {order.address.street}
+                      {order.address.line2
+                        ? `, ${order.address.line2}`
+                        : ""}{" "}
+                      {/* 🏠 Line 2 if present */}, {order.address.city},{" "}
                       {order.address.state} {order.address.zip},{" "}
                       {order.address.country}
                     </p>
                   </div>
                 )}
 
+                {/* ─── Itemized List ──────────────────────────────────────────────── */}
                 <div className="mt-4 text-sm text-[#cfd2d6]">
                   <p className="font-medium text-[var(--foreground)] mb-2">
                     Items:
@@ -201,7 +208,8 @@ export default function OrdersPage({
                             {item.name}
                           </p>
                           <p className="text-sm text-[#cfd2d6]">
-                            x{item.quantity} – ${item.price * item.quantity}
+                            x{item.quantity} – $
+                            {(item.price * item.quantity).toFixed(2)}
                           </p>
                         </div>
                       </li>
@@ -209,7 +217,7 @@ export default function OrdersPage({
                   </ul>
                 </div>
 
-                {/* 📄 Receipt Placeholder */}
+                {/* ─── Receipt Download (Placeholder) ───────────────────────────────── */}
                 <div className="text-right mt-4">
                   <button className="text-[var(--foreground)] hover:underline text-sm">
                     Download Receipt (PDF)
@@ -218,7 +226,7 @@ export default function OrdersPage({
               </div>
             ))}
 
-            {/* 🔄 Pagination Controls */}
+            {/* ─── Pagination Controls ──────────────────────────────────────────── */}
             <div className="flex justify-center items-center gap-6 pt-6">
               {currentPage > 1 && (
                 <Link
@@ -247,6 +255,7 @@ export default function OrdersPage({
           </div>
         )}
 
+        {/* ─── Back to Account Dashboard ─────────────────────────────────────── */}
         <div className="text-center mt-10">
           <Link
             href="/account"
