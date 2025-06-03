@@ -1,4 +1,4 @@
-// 📤 pages/cart.tsx – Cart + Order Summary + Stripe Checkout 💎
+// 📤 pages/cart.tsx – Cart + Order Summary + Stripe Checkout (collecting full address) 💎
 
 "use client";
 
@@ -11,12 +11,19 @@ export default function CartPage() {
   const { cartItems, removeFromCart, increaseQty, decreaseQty, clearCart } =
     useCart();
 
+  // ─── Replace single "address" string with a structured address object ───
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     phone: "", // 📞 Phone number
-    address: "",
-    notes: "", // 📝 Order notes (e.g., engraving, ring size, etc.)
+    // 👇 Structured shipping address fields:
+    street1: "",
+    street2: "",
+    city: "",
+    state: "",
+    zip: "",
+    country: "",
+    notes: "", // 📝 Order notes (e.g., engraving, ring size, delivery instructions)
   });
 
   const [isLoading, setIsLoading] = useState(false);
@@ -37,6 +44,21 @@ export default function CartPage() {
     e.preventDefault();
     if (cartItems.length === 0) return;
 
+    // ─── Basic front-end validation ─────────────────────────────────────────
+    if (
+      !formData.name ||
+      !formData.email ||
+      !formData.phone ||
+      !formData.street1 ||
+      !formData.city ||
+      !formData.state ||
+      !formData.zip ||
+      !formData.country
+    ) {
+      alert("❌ Please fill in all required fields (marked with *).");
+      return;
+    }
+
     setIsLoading(true);
     try {
       const response = await fetch("/api/checkout", {
@@ -47,7 +69,15 @@ export default function CartPage() {
           name: formData.name,
           email: formData.email,
           phone: formData.phone,
-          address: formData.address,
+          // 👇 Send each address part separately
+          address: {
+            street1: formData.street1,
+            street2: formData.street2,
+            city: formData.city,
+            state: formData.state,
+            zip: formData.zip,
+            country: formData.country,
+          },
           notes: formData.notes,
         }),
       });
@@ -67,7 +97,7 @@ export default function CartPage() {
       }
     } catch (error) {
       console.error("❌ Checkout fetch error:", error);
-      alert("Checkout failed. See console.");
+      alert("Checkout failed. See console for details.");
     } finally {
       setIsLoading(false);
     }
@@ -169,10 +199,11 @@ export default function CartPage() {
 
           {/* 📟 Checkout Info */}
           <form onSubmit={handleCheckout} className="flex flex-col gap-4 mt-4">
+            {/* ─── Name, Email, Phone ─────────────────────────────────────────── */}
             <input
               type="text"
               name="name"
-              placeholder="Full Name"
+              placeholder="Full Name *"
               required
               value={formData.name}
               onChange={handleInputChange}
@@ -181,7 +212,7 @@ export default function CartPage() {
             <input
               type="email"
               name="email"
-              placeholder="Email Address"
+              placeholder="Email Address *"
               required
               value={formData.email}
               onChange={handleInputChange}
@@ -190,21 +221,69 @@ export default function CartPage() {
             <input
               type="text"
               name="phone"
-              placeholder="Phone Number"
+              placeholder="Phone Number *"
               required
               value={formData.phone}
               onChange={handleInputChange}
               className="px-4 py-2 rounded bg-white text-[#1f2a44]"
             />
+
+            {/* ─── Full Shipping Address Fields ───────────────────────────────── */}
             <input
               type="text"
-              name="address"
-              placeholder="Shipping Address"
+              name="street1"
+              placeholder="Street Address Line 1 *"
               required
-              value={formData.address}
+              value={formData.street1}
               onChange={handleInputChange}
               className="px-4 py-2 rounded bg-white text-[#1f2a44]"
             />
+            <input
+              type="text"
+              name="street2"
+              placeholder="Street Address Line 2 (Apt, Suite, etc.)"
+              value={formData.street2}
+              onChange={handleInputChange}
+              className="px-4 py-2 rounded bg-white text-[#1f2a44]"
+            />
+            <input
+              type="text"
+              name="city"
+              placeholder="City *"
+              required
+              value={formData.city}
+              onChange={handleInputChange}
+              className="px-4 py-2 rounded bg-white text-[#1f2a44]"
+            />
+            <input
+              type="text"
+              name="state"
+              placeholder="State/Province *"
+              required
+              value={formData.state}
+              onChange={handleInputChange}
+              className="px-4 py-2 rounded bg-white text-[#1f2a44]"
+            />
+            <input
+              type="text"
+              name="zip"
+              placeholder="ZIP/Postal Code *"
+              required
+              value={formData.zip}
+              onChange={handleInputChange}
+              className="px-4 py-2 rounded bg-white text-[#1f2a44]"
+            />
+            <input
+              type="text"
+              name="country"
+              placeholder="Country *"
+              required
+              value={formData.country}
+              onChange={handleInputChange}
+              className="px-4 py-2 rounded bg-white text-[#1f2a44]"
+            />
+
+            {/* ─── Order Notes ─────────────────────────────────────────────────── */}
             <textarea
               name="notes"
               placeholder="Order Notes (e.g. engraving, ring size, delivery instructions)"
@@ -213,6 +292,8 @@ export default function CartPage() {
               className="px-4 py-2 rounded bg-white text-[#1f2a44]"
               rows={3}
             />
+
+            {/* ─── Submit Button ──────────────────────────────────────────────── */}
             <button
               type="submit"
               disabled={isLoading}
