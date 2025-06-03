@@ -1,27 +1,66 @@
-// 🚀 pages/success.tsx – Post-Checkout Thank You Page + “Leave a Review” Button (uses session_id) 🌟
-
-// (Full file – replace everything in your current pages/success.tsx with the content below.)
+// 🚀 pages/success.tsx – Post-Checkout Thank You Page (showing short orderNumber) 🌟
 
 import Head from "next/head";
 import Link from "next/link";
-import { useEffect } from "react";
-import { useRouter } from "next/router"; // <-- make sure we import useRouter
+import { useEffect, useState } from "react";
+import { useRouter } from "next/router";
 import { useCart } from "@/context/CartContext";
+
+// ─── Define the shape of the response from /api/admin/order ─────────────────
+interface SingleOrder {
+  orderNumber: number | null;
+  items: { name: string; quantity: number; price: number }[];
+  amount: number;
+  customerAddress: string;
+  createdAt: string;
+}
 
 export default function SuccessPage() {
   const { clearCart } = useCart();
   const router = useRouter();
+
   // 🆕 Read Stripe’s session_id from the URL (if present)
   const { session_id } = router.query as { session_id?: string };
 
-  useEffect(() => {
-    // ✅ Delay cart clear so React renders this page fully before flushing context
-    const timer = setTimeout(() => {
-      clearCart(); // 🧼 Empty the cart right after showing the confirmation
-    }, 100); // ⏱️ slight delay to prevent render glitches
+  // ─── Local state to store fetched order details ───────────────────────────
+  const [orderData, setOrderData] = useState<SingleOrder | null>(null);
+  const [loadingOrder, setLoadingOrder] = useState(true);
+  const [orderError, setOrderError] = useState("");
 
-    return () => clearTimeout(timer); // ♻️ Cleanup on unmount
+  // ─── Clear cart shortly after rendering this page ────────────────────────
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      clearCart();
+    }, 100); // slight delay
+    return () => clearTimeout(timer);
   }, [clearCart]);
+
+  // ─── Fetch the short orderNumber and other details from our API ───────────
+  useEffect(() => {
+    if (!session_id || typeof session_id !== "string") {
+      setLoadingOrder(false);
+      return;
+    }
+
+    // Fetch single order by Stripe session ID
+    fetch(`/api/admin/order?orderId=${session_id}`)
+      .then((res) => {
+        if (!res.ok) {
+          throw new Error("Order not found");
+        }
+        return res.json();
+      })
+      .then((data: SingleOrder) => {
+        setOrderData(data);
+      })
+      .catch((err) => {
+        console.error("❌ Error fetching order:", err);
+        setOrderError("Could not load order details.");
+      })
+      .finally(() => {
+        setLoadingOrder(false);
+      });
+  }, [session_id]);
 
   return (
     <div className="min-h-screen flex flex-col bg-[var(--bg-page)] text-[var(--foreground)]">
@@ -45,6 +84,22 @@ export default function SuccessPage() {
             shortly.
           </p>
 
+          {/* 🆕 Show Short Order Number */}
+          {loadingOrder ? (
+            <p className="text-sm text-gray-400 mb-4">Loading order details…</p>
+          ) : orderError ? (
+            <p className="text-sm text-red-400 mb-4">{orderError}</p>
+          ) : orderData && orderData.orderNumber !== null ? (
+            <p className="text-lg font-semibold text-white mb-6">
+              Your Order # is:{" "}
+              <span className="text-[#d4af37]">#{orderData.orderNumber}</span>
+            </p>
+          ) : (
+            <p className="text-sm text-gray-400 mb-4">
+              Unable to display order number.
+            </p>
+          )}
+
           {/* 🏱 Luxury visual – replace with a real image later! */}
           <div className="w-full h-48 sm:h-56 bg-[url('/luxury-placeholder.jpg')] bg-cover bg-center rounded-xl mb-6" />
 
@@ -55,7 +110,7 @@ export default function SuccessPage() {
             </div>
           </Link>
 
-          {/* 🆕 Leave a Review – only show if session_id is present */}
+          {/* 📝 Leave a Review – only show if session_id is present */}
           {session_id && (
             <Link href={`/review/${session_id}`} passHref>
               <button

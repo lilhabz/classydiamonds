@@ -1,4 +1,4 @@
-// 📂 pages/api/admin/order.ts – Return single order details by orderId
+// 📂 pages/api/admin/order.ts – Return single order details by orderId (now including orderNumber) 🔄
 
 import type { NextApiRequest, NextApiResponse } from "next";
 import clientPromise from "@/lib/mongodb";
@@ -28,8 +28,9 @@ export default async function handler(
       return res.status(404).json({ error: "Order not found" });
     }
 
-    // ✅ Clean structured return object (no duplicate keys)
+    // ✅ Return all necessary fields, including the short orderNumber
     return res.status(200).json({
+      orderNumber: order.orderNumber || null, // 🆕 Human-friendly order number
       items: order.items || [],
       amount: order.amount,
       customerAddress: order.customerAddress || "",
