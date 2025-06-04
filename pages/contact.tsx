@@ -5,7 +5,6 @@ import Image from "next/image";
 import { FaPhoneAlt, FaEnvelope } from "react-icons/fa";
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/router";
-import Breadcrumbs from "@/components/Breadcrumbs";
 
 export default function ContactPage() {
   const router = useRouter();
@@ -191,9 +190,7 @@ export default function ContactPage() {
           </div>
         </section>
 
-        <div className="pl-4 pr-4 sm:pl-8 sm:pr-8 mt-6 mb-6">
-          <Breadcrumbs />
-        </div>
+
 
         {/* 🧑‍🏭 About Section */}
         <section className="px-4 sm:px-6 py-16 sm:py-20 max-w-7xl mx-auto">
