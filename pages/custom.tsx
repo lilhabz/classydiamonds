@@ -3,6 +3,8 @@
 import Head from "next/head";
 import Image from "next/image";
 
+import Breadcrumbs from "@/components/Breadcrumbs";
+
 import heroImage from "../public/hero-custom.jpg";
 
 export default function CustomPage() {
@@ -43,6 +45,10 @@ export default function CustomPage() {
           </p>
         </div>
       </section>
+
+      <div className="pl-4 pr-4 sm:pl-8 sm:pr-8 mt-6 mb-6">
+        <Breadcrumbs />
+      </div>
 
       {/* 🧭 How It Works Section */}
       <section className="px-4 sm:px-6 py-16 sm:py-20 max-w-7xl mx-auto">

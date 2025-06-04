@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Head from "next/head";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
+import Breadcrumbs from "@/components/Breadcrumbs";
 
 interface Order {
   _id: string;
@@ -148,6 +149,10 @@ export default function AdminOrdersPage() {
       <Head>
         <title>Admin Orders | Classy Diamonds</title>
       </Head>
+
+      <div className="pl-2 pr-2 sm:pl-4 sm:pr-4 mb-6 -mt-2">
+        <Breadcrumbs />
+      </div>
 
       <h1 className="text-3xl font-bold mb-6">🛠️ Admin Dashboard</h1>
 

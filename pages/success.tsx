@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { useCart } from "@/context/CartContext";
+import Breadcrumbs from "@/components/Breadcrumbs";
 
 // ─── Define the shape of the response from /api/admin/order ─────────────────
 interface SingleOrder {
@@ -71,6 +72,10 @@ export default function SuccessPage() {
           content="Order confirmation and thank you page."
         />
       </Head>
+
+      <div className="pl-4 pr-4 sm:pl-8 sm:pr-8 mt-6 mb-6">
+        <Breadcrumbs />
+      </div>
 
       {/* ✅ Confirmation Section */}
       <main className="flex flex-col items-center justify-center flex-grow px-4 pt-28 pb-20 text-center">

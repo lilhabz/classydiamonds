@@ -5,6 +5,7 @@ import { getSession } from "next-auth/react";
 import clientPromise from "@/lib/mongodb";
 import { useState } from "react";
 import Link from "next/link";
+import Breadcrumbs from "@/components/Breadcrumbs";
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
   const session = await getSession(context);
@@ -43,6 +44,9 @@ export default function AllMessagesPage({ messages }: any) {
 
   return (
     <div className="bg-[var(--bg-page)] text-[var(--foreground)] min-h-screen px-4 py-10">
+      <div className="pl-4 pr-4 sm:pl-8 sm:pr-8 mb-6 -mt-2">
+        <Breadcrumbs />
+      </div>
       <div className="max-w-5xl mx-auto space-y-10">
         {/* 🧭 Page Title */}
         <div className="flex justify-between items-center">

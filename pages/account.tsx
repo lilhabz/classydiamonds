@@ -7,6 +7,7 @@ import clientPromise from "@/lib/mongodb";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
+import Breadcrumbs from "@/components/Breadcrumbs";
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
   const session = await getSession(context);
@@ -80,6 +81,9 @@ export default function AccountPage({ user, orders }: any) {
 
   return (
     <div className="bg-[var(--bg-page)] text-[var(--foreground)] min-h-screen px-4 py-10">
+      <div className="pl-4 pr-4 sm:pl-8 sm:pr-8 mb-6 -mt-2">
+        <Breadcrumbs />
+      </div>
       <div className="max-w-5xl mx-auto space-y-10">
         {/* 👤 Profile Info */}
         <div className="bg-white/10 backdrop-blur p-6 rounded-2xl shadow-lg">
