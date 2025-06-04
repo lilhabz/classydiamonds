@@ -9,6 +9,24 @@ import { useSession, signOut } from "next-auth/react";
 import { FiUser, FiShoppingCart, FiSearch, FiMenu, FiX } from "react-icons/fi";
 import { useCart } from "@/context/CartContext";
 
+// 📝 Search results can be either site pages or products.
+// Update field mappings here if your schemas change.
+type SearchResult =
+  | {
+      type: "page";
+      title: string;
+      path: string;
+    }
+  | {
+      type: "product";
+      id: string;
+      name: string;
+      price: number;
+      image: string;
+      slug: string;
+      category: string;
+    };
+
 const Navbar = () => {
   const router = useRouter();
   const pathname = router.pathname;
@@ -20,6 +38,10 @@ const Navbar = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
 
   const cartRef = useRef<HTMLDivElement>(null);
   const userRef = useRef<HTMLDivElement>(null);
@@ -27,6 +49,8 @@ const Navbar = () => {
   const userButtonRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const menuButtonRef = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLDivElement>(null);
+  const searchButtonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 50);
@@ -46,11 +70,21 @@ const Navbar = () => {
         menuRef.current &&
         !menuRef.current.contains(target) &&
         !menuButtonRef.current?.contains(target);
+      const clickedOutsideSearch =
+        searchRef.current &&
+        !searchRef.current.contains(target) &&
+        !searchButtonRef.current?.contains(target);
 
-      if (clickedOutsideCart && clickedOutsideUser && clickedOutsideMenu) {
+      if (
+        clickedOutsideCart &&
+        clickedOutsideUser &&
+        clickedOutsideMenu &&
+        clickedOutsideSearch
+      ) {
         setCartOpen(false);
         setUserMenuOpen(false);
         setMenuOpen(false);
+        setSearchOpen(false);
       }
     };
 
@@ -70,6 +104,7 @@ const Navbar = () => {
       setMenuOpen(false);
       setCartOpen(false);
       setUserMenuOpen(false);
+      setSearchOpen(false);
     };
 
     router.events.on("routeChangeStart", handleRouteChange);
@@ -101,6 +136,51 @@ const Navbar = () => {
     setCartOpen((prev) => !prev);
     setUserMenuOpen(false);
     setMenuOpen(false);
+  };
+
+  const handleSearchToggle = () => {
+    setSearchOpen((prev) => !prev);
+    setMenuOpen(false);
+    setCartOpen(false);
+    setUserMenuOpen(false);
+  };
+
+  const fetchResults = async (q: string) => {
+    if (!q) {
+      setSearchResults([]);
+      return;
+    }
+    setSearchLoading(true);
+    try {
+      const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`);
+      const data = await res.json();
+      const results: SearchResult[] = [
+        ...data.pages.map((p: any) => ({
+          type: "page" as const,
+          title: p.title,
+          path: p.path,
+        })),
+        ...data.products.map((p: any) => ({
+          type: "product" as const,
+          id: p.id,
+          name: p.name,
+          price: p.price,
+          image: p.image,
+          slug: p.slug,
+          category: p.category,
+        })),
+      ];
+      setSearchResults(results);
+    } catch (err) {
+      console.error("Failed to search", err);
+    } finally {
+      setSearchLoading(false);
+    }
+  };
+
+  const handleSearchSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    fetchResults(searchQuery);
   };
 
   return (
@@ -289,14 +369,15 @@ const Navbar = () => {
               )}
             </button>
 
-            {/* 🔍 Search Icon – moved to far right */}
-            <Link
-              href="/search"
+            {/* 🔍 Search Icon – toggles dropdown */}
+            <button
+              ref={searchButtonRef}
+              onClick={handleSearchToggle}
               aria-label="Search"
               className="cursor-pointer hover:text-white hover:scale-105 transition-transform duration-300"
             >
               <FiSearch />
-            </Link>
+            </button>
           </div>
         </div>
       </header>
@@ -432,26 +513,94 @@ const Navbar = () => {
         </div>
       )}
 
+      {/* 🔍 Search Dropdown */}
+      {searchOpen && (
+        <div
+          ref={searchRef}
+          className="fixed right-0 w-80 bg-[#1f2a44]/95 backdrop-blur-sm shadow-lg text-sm text-white z-40 animate-slide-fade-in transition-all duration-300"
+          style={{
+            top: scrolled ? "64px" : "80px",
+            borderRadius: "0 0 0.75rem 0.75rem",
+            padding: "1rem 1.5rem",
+          }}
+        >
+          <form onSubmit={handleSearchSubmit} className="flex mb-3">
+            <input
+              type="text"
+              placeholder="Search site..."
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                fetchResults(e.target.value);
+              }}
+              className="flex-1 px-3 py-1 rounded-l bg-[#2a374f] text-white"
+            />
+            <button
+              type="submit"
+              className="px-3 py-1 bg-blue-600 rounded-r hover:bg-blue-700"
+            >
+              Go
+            </button>
+          </form>
+          {searchLoading ? (
+            <p className="text-center text-gray-400">Searching...</p>
+          ) : searchResults.length === 0 && searchQuery ? (
+            <p className="text-center text-gray-400">No results.</p>
+          ) : (
+            <ul className="max-h-48 overflow-y-auto space-y-2">
+              {searchResults.map((res) => (
+                <li key={res.type === "page" ? res.path : res.id}>
+                  {res.type === "page" ? (
+                    <Link
+                      href={res.path}
+                      className="block hover:underline"
+                      onClick={() => setSearchOpen(false)}
+                    >
+                      {res.title}
+                    </Link>
+                  ) : (
+                    <Link
+                      href={`/category/${res.category}/${res.slug}`}
+                      className="flex items-center gap-2 hover:underline"
+                      onClick={() => setSearchOpen(false)}
+                    >
+                      <img
+                        src={res.image}
+                        alt={res.name}
+                        className="w-10 h-10 object-cover rounded"
+                      />
+                      <span>{res.name}</span>
+                    </Link>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+
       {/* 🔲 Tap-Off Overlay – Mobile Only */}
-      {(menuOpen || cartOpen || userMenuOpen) && (
+      {(menuOpen || cartOpen || userMenuOpen || searchOpen) && (
         <div
           className="fixed inset-0 z-30 md:hidden"
           onClick={() => {
             setMenuOpen(false);
             setCartOpen(false);
             setUserMenuOpen(false);
+            setSearchOpen(false);
           }}
         />
       )}
 
       {/* 🔲 Tap-Off Overlay – Desktop Only */}
-      {(menuOpen || cartOpen || userMenuOpen) && (
+      {(menuOpen || cartOpen || userMenuOpen || searchOpen) && (
         <div
           className="hidden md:block fixed inset-0 z-30"
           onClick={() => {
             setMenuOpen(false);
             setCartOpen(false);
             setUserMenuOpen(false);
+            setSearchOpen(false);
           }}
         />
       )}
@@ -460,4 +609,3 @@ const Navbar = () => {
 };
 
 export default Navbar;
-//psuh
