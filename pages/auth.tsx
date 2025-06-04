@@ -8,6 +8,7 @@ import { useRouter } from "next/router";
 import { FcGoogle } from "react-icons/fc";
 import { FiEye, FiEyeOff } from "react-icons/fi";
 import zxcvbn from "zxcvbn"; // 📊 Strength meter library
+import Breadcrumbs from "@/components/Breadcrumbs";
 
 export default function AuthPage() {
   const router = useRouter();
@@ -145,6 +146,9 @@ export default function AuthPage() {
         px-4 pt-8 flex flex-col items-center  /* 💡 Removed min-h-screen and reduced top padding */
       "
     >
+      <div className="self-start pl-4 pr-4 sm:pl-8 sm:pr-8 mb-6 -mt-2">
+        <Breadcrumbs />
+      </div>
       <div className="bg-[var(--bg-nav)] p-8 sm:p-10 rounded-2xl shadow-xl w-full max-w-md">
         {/* Title */}
         <h2 className="text-2xl font-bold mb-4 text-center">

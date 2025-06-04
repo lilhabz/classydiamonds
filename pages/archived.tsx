@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Head from "next/head";
 import Link from "next/link";
+import Breadcrumbs from "@/components/Breadcrumbs";
 
 interface Order {
   _id: string;
@@ -94,6 +95,10 @@ export default function ArchivedOrdersPage() {
       <Head>
         <title>Archived Orders | Classy Diamonds</title>
       </Head>
+
+      <div className="pl-2 pr-2 sm:pl-4 sm:pr-4 mb-6 -mt-2">
+        <Breadcrumbs />
+      </div>
 
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">🗂 Archived Orders</h1>

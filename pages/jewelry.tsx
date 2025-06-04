@@ -10,6 +10,7 @@ import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/router";
 import clientPromise from "@/lib/mongodb";
 import { GetServerSideProps } from "next";
+import Breadcrumbs from "@/components/Breadcrumbs";
 
 export type ProductType = {
   id: string;
@@ -148,6 +149,10 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
           </p>
         </div>
       </section>
+
+      <div className="pl-4 pr-4 sm:pl-8 sm:pr-8 mt-6 mb-6">
+        <Breadcrumbs />
+      </div>
 
       {/* 💎 Title & Desktop Filters */}
       <section className="pt-16 pb-8 px-4 sm:px-6 max-w-7xl mx-auto">

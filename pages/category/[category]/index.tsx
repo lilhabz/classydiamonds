@@ -7,6 +7,7 @@ import Link from "next/link";
 import { useState, useRef } from "react";
 import { useCart } from "@/context/CartContext";
 import { jewelryData } from "@/data/jewelryData"; // static data
+import Breadcrumbs from "@/components/Breadcrumbs";
 
 interface Product {
   _id: string;
@@ -132,6 +133,10 @@ export default function CategoryPage({
           </div>
         </section>
       )}
+
+      <div className="pl-4 pr-4 sm:pl-8 sm:pr-8 mt-6 mb-6">
+        <Breadcrumbs />
+      </div>
 
       {/* 💍 Product Grid Section */}
       <section className="py-20 px-4 sm:px-6 max-w-7xl mx-auto">
