@@ -5,6 +5,7 @@ import Image from "next/image";
 import { FaPhoneAlt, FaEnvelope } from "react-icons/fa";
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/router";
+import Breadcrumbs from "@/components/Breadcrumbs";
 
 export default function ContactPage() {
   const router = useRouter();
@@ -189,7 +190,6 @@ export default function ContactPage() {
             </p>
           </div>
         </section>
-
 
 
         {/* 🧑‍🏭 About Section */}

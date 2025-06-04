@@ -3,6 +3,8 @@
 import Head from "next/head";
 import Image from "next/image";
 
+import Breadcrumbs from "@/components/Breadcrumbs";
+
 import heroImage from "../public/hero-custom.jpg";
 
 export default function CustomPage() {

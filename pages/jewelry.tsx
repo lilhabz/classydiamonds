@@ -10,6 +10,7 @@ import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/router";
 import clientPromise from "@/lib/mongodb";
 import { GetServerSideProps } from "next";
+import Breadcrumbs from "@/components/Breadcrumbs";
 
 export type ProductType = {
   id: string;
