@@ -8,6 +8,7 @@ import { useState, FormEvent, useEffect } from "react";
 import { useRouter } from "next/router";
 import Head from "next/head";
 import Link from "next/link";
+import Breadcrumbs from "@/components/Breadcrumbs";
 import { getSession } from "next-auth/react"; // Optional: if you want to restrict to logged-in users
 
 export default function ReviewPage() {
@@ -84,6 +85,9 @@ export default function ReviewPage() {
       </Head>
 
       <main className="min-h-screen bg-white flex flex-col items-center py-12 px-4 sm:px-6 lg:px-8">
+        <div className="w-full mb-6">
+          <Breadcrumbs />
+        </div>
         <div className="max-w-md w-full space-y-6">
           {/* Page Heading */}
           <h1 className="text-3xl font-extrabold text-gray-900 text-center">

@@ -149,6 +149,8 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
         </div>
       </section>
 
+
+
       {/* 💎 Title & Desktop Filters */}
       <section className="pt-16 pb-8 px-4 sm:px-6 max-w-7xl mx-auto">
         <h2

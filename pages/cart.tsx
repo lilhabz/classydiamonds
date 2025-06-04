@@ -6,6 +6,7 @@ import Head from "next/head";
 import Link from "next/link";
 import { useCart } from "@/context/CartContext";
 import { useState } from "react";
+import Breadcrumbs from "@/components/Breadcrumbs";
 
 export default function CartPage() {
   const { cartItems, removeFromCart, increaseQty, decreaseQty, clearCart } =
@@ -225,6 +226,10 @@ export default function CartPage() {
         <title>Your Cart | Classy Diamonds</title>
         <meta name="description" content="Cart, summary, and checkout." />
       </Head>
+
+      <div className="pl-4 pr-4 sm:pl-8 sm:pr-8 mt-6 mb-6">
+        <Breadcrumbs />
+      </div>
 
       {/* 📦 Main Layout */}
       <main className="flex flex-col lg:flex-row px-4 sm:px-6 pt-24 pb-32 max-w-7xl mx-auto w-full gap-10">

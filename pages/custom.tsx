@@ -44,6 +44,8 @@ export default function CustomPage() {
         </div>
       </section>
 
+
+
       {/* 🧭 How It Works Section */}
       <section className="px-4 sm:px-6 py-16 sm:py-20 max-w-7xl mx-auto">
         <h2 className="text-2xl sm:text-3xl font-semibold text-center mb-12 sm:mb-16 text-[var(--foreground)]">

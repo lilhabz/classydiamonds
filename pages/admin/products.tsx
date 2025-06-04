@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import { getSession } from "next-auth/react";
 import Image from "next/image";
+import Breadcrumbs from "@/components/Breadcrumbs";
 
 // 🚀 Define allowed categories
 type Category =
@@ -222,6 +223,9 @@ export default function AdminProductsPage() {
 
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-6">
+      <div className="mb-4">
+        <Breadcrumbs />
+      </div>
       <h1 className="text-2xl font-bold">🛠️ Manage Products</h1>
 
       {/* ❗ Status Messages */}
