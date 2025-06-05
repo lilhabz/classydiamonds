@@ -134,7 +134,7 @@ export default function CompletedOrdersPage() {
   };
 
   const filteredOrders = orders.filter((order) => {
-    if (order.archived) return false;
+    if (order.archived || order.delivered) return false;
 
     const query = searchQuery.toLowerCase();
     const matchQuery =
