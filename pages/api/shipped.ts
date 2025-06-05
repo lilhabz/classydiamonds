@@ -3,6 +3,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import nodemailer from "nodemailer";
 import clientPromise from "@/lib/mongodb";
+import { buildOrderDetailsHtml } from "@/lib/emailUtils";
 
 export default async function handler(
   req: NextApiRequest,
@@ -54,13 +55,14 @@ export default async function handler(
       },
     });
 
+    const orderDetails = buildOrderDetailsHtml(order);
+
     const html = `
       <div style="font-family: Arial, sans-serif; color: #333; max-width: 600px; margin: auto;">
         <h2 style="color: #1f2a44;">Your Order Has Shipped! 📦</h2>
         <p>Hi ${order.customerName},</p>
         <p>Your order has been carefully packaged and handed off for delivery.</p>
-        <p><strong>Shipping to:</strong><br>${order.customerAddress}</p>
-        <p><strong>Total:</strong> $${order.amount.toFixed(2)}</p>
+        ${orderDetails}
 
         <p style="margin-top: 30px; font-size: 14px;">
           If you have any questions, reply to this email or contact
