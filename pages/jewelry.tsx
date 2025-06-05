@@ -27,6 +27,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
   const [visibleCount, setVisibleCount] = useState(8);
   const [activeCategory, setActiveCategory] = useState<string>("All");
   const titleRef = useRef<HTMLHeadingElement>(null);
+  const initialMount = useRef(true);
 
   const resetCount = () => setVisibleCount(8);
   // Reset count on initial mount
@@ -37,6 +38,10 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
   const categories = Array.from(new Set(products.map((p) => p.category)));
 
   useEffect(() => {
+    if (initialMount.current) {
+      initialMount.current = false;
+      return;
+    }
     resetCount();
     titleRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [activeCategory]);
