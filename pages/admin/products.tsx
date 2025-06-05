@@ -1,6 +1,6 @@
 // 📄 pages/admin/products.tsx – Admin Product Management with Batch Save & Featured Limit 🛠️💾
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/router";
 import { getSession } from "next-auth/react";
 import Image from "next/image";
@@ -51,6 +51,28 @@ export default function AdminProductsPage() {
   const [rowEdits, setRowEdits] = useState<
     Record<string, { category: Category; featured: boolean }>
   >({});
+
+  // ✏️ Product currently being edited
+  const [editingProduct, setEditingProduct] = useState<AdminProduct | null>(null);
+
+  // 🔗 Ref to edit form for smooth scrolling
+  const editFormRef = useRef<HTMLFormElement | null>(null);
+
+  // 🌐 Scroll to edit form when a product is selected
+  useEffect(() => {
+    if (editingProduct && editFormRef.current) {
+      editFormRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [editingProduct]);
+
+  // 📋 Separate form state for editing
+  const [editForm, setEditForm] = useState({
+    name: "",
+    description: "",
+    price: "",
+    category: "engagement" as Category,
+    featured: false,
+  });
 
   // 📋 Form state for adding a new product
   const [formState, setFormState] = useState({
@@ -150,6 +172,75 @@ export default function AdminProductsPage() {
         imageFile: null,
       });
       setStatus({ loading: false, error: "", success: "Product added 🎉" });
+    } catch (err: any) {
+      setStatus({ loading: false, error: err.message, success: "" });
+    }
+  }; 
+
+  // ==================== HANDLE EDIT PRODUCT ====================
+  const handleEditClick = (product: AdminProduct) => {
+    setEditingProduct(product);
+    setEditForm({
+      name: product.name,
+      description: product.description,
+      price: product.price.toString(),
+      category: product.category,
+      featured: product.featured,
+    });
+  };
+
+  const cancelEdit = () => {
+    setEditingProduct(null);
+    setEditForm({
+      name: "",
+      description: "",
+      price: "",
+      category: "engagement",
+      featured: false,
+    });
+  };
+
+  const handleUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingProduct) return;
+    // recompute featured count with this edit applied
+    const updatedEdits = {
+      ...rowEdits,
+      [editingProduct._id]: {
+        category: editForm.category as Category,
+        featured: editForm.featured,
+      },
+    };
+    const newFeaturedCount = Object.values(updatedEdits).filter((ed) => ed.featured).length;
+    if (newFeaturedCount > 4) {
+      setStatus({
+        loading: false,
+        error: "⚠️ You can only have up to 4 featured items.",
+        success: "",
+      });
+      return;
+    }
+
+    setStatus({ loading: true, error: "", success: "" });
+    try {
+      const res = await fetch(`/api/admin/products/${editingProduct._id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: editForm.name,
+          description: editForm.description,
+          price: parseFloat(editForm.price),
+          category: editForm.category,
+          featured: editForm.featured,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message);
+
+      setProducts((p) => p.map((prod) => (prod._id === editingProduct._id ? data.product : prod)));
+      setRowEdits(updatedEdits);
+      cancelEdit();
+      setStatus({ loading: false, error: "", success: "Product updated ✅" });
     } catch (err: any) {
       setStatus({ loading: false, error: err.message, success: "" });
     }
@@ -257,6 +348,110 @@ export default function AdminProductsPage() {
       {/* ❗ Status Messages */}
       {status.error && <p className="text-red-500">❌ {status.error}</p>}
       {status.success && <p className="text-green-600">✅ {status.success}</p>}
+
+      {/* ✏️ Edit Product Form */}
+      {editingProduct && (
+        <form
+          ref={editFormRef}
+          onSubmit={handleUpdate}
+          className="grid grid-cols-1 md:grid-cols-2 gap-4 border p-4 rounded"
+        >
+          <h3 className="col-span-full text-lg font-semibold">
+            Editing {editingProduct.name}
+          </h3>
+          <label>
+            📦 Name
+            <input
+              type="text"
+              required
+              value={editForm.name}
+              onChange={(e) =>
+                setEditForm((f) => ({ ...f, name: e.target.value }))
+              }
+              className="mt-1 w-full border rounded p-2"
+            />
+          </label>
+          <label>
+            📝 Description
+            <textarea
+              required
+              value={editForm.description}
+              onChange={(e) =>
+                setEditForm((f) => ({ ...f, description: e.target.value }))
+              }
+              className="mt-1 w-full border rounded p-2"
+            />
+          </label>
+          <label>
+            💲 Price (USD)
+            <input
+              type="number"
+              required
+              value={editForm.price}
+              onChange={(e) =>
+                setEditForm((f) => ({ ...f, price: e.target.value }))
+              }
+              className="mt-1 w-full border rounded p-2"
+            />
+          </label>
+          <label>
+            📂 Category
+            <select
+              value={editForm.category}
+              onChange={(e) =>
+                setEditForm((f) => ({ ...f, category: e.target.value as Category }))
+              }
+              className="mt-1 w-full border rounded p-2 bg-[var(--bg-nav)] text-[var(--foreground)]"
+            >
+              {[
+                "engagement",
+                "wedding-bands",
+                "rings",
+                "bracelets",
+                "necklaces",
+                "earrings",
+              ].map((cat) => (
+                <option key={cat} value={cat}>
+                  {cat}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="flex items-center space-x-2">
+            ✨ Featured
+            <input
+              type="checkbox"
+              checked={editForm.featured}
+              disabled={featuredCount >= 4 && !editForm.featured}
+              onChange={(e) =>
+                setEditForm((f) => ({ ...f, featured: e.target.checked }))
+              }
+              className="mt-2"
+            />
+            {featuredCount >= 4 && !editForm.featured && (
+              <span className="text-yellow-400 text-sm">
+                ⚠️ Max 4 featured reached
+              </span>
+            )}
+          </label>
+          <div className="col-span-full flex space-x-2">
+            <button
+              type="submit"
+              disabled={status.loading}
+              className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+            >
+              {status.loading ? "Saving..." : "Save Changes"}
+            </button>
+            <button
+              type="button"
+              onClick={cancelEdit}
+              className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      )}
 
       {/* 🆕 Add New Product Form */}
       <form
@@ -436,6 +631,12 @@ export default function AdminProductsPage() {
                       />
                     </td>
                     <td className="p-2 space-x-2">
+                      <button
+                        onClick={() => handleEditClick(p)}
+                        className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
+                      >
+                        ✏️ Edit
+                      </button>
                       <button
                         onClick={() => handleDelete(p._id)}
                         className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700"
