@@ -113,6 +113,18 @@ export default function AdminOrdersPage() {
     document.body.removeChild(link);
   };
 
+  const printPDF = () => {
+    const content = document.getElementById("print-area")?.innerHTML;
+    const win = window.open("", "", "width=800,height=600");
+    if (win && content) {
+      win.document.write(`<html><body>${content}</body></html>`);
+      win.document.close();
+      win.focus();
+      win.print();
+      win.close();
+    }
+  };
+
   const filteredOrders = orders.filter((order) => {
     if (order.archived || order.shipped) return false;
 
@@ -163,6 +175,9 @@ export default function AdminOrdersPage() {
         <Link href="/admin/completed" className="hover:text-yellow-300">
           ✅ Shipped
         </Link>
+        <Link href="/admin/delivered" className="hover:text-yellow-300">
+          📬 Delivered
+        </Link>
         <Link href="/admin/archived" className="hover:text-yellow-300">
           🗂 Archived
         </Link>
@@ -206,9 +221,15 @@ export default function AdminOrdersPage() {
             >
               Export CSV 📄
             </button>
+            <button
+              onClick={printPDF}
+              className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded text-sm"
+            >
+              Print PDF 🖨️
+            </button>
           </div>
 
-          <div className="space-y-8">
+          <div id="print-area" className="space-y-8">
             {paginatedOrders.map((order) => (
               <div
                 key={order._id}

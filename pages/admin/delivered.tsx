@@ -1,4 +1,4 @@
-// ✅ Enhanced pages/admin/completed.tsx with fixed total, archive logic, and unified dashboard nav 🔐🛠️
+// ✅ pages/admin/delivered.tsx – view delivered orders 🔐📬
 
 import { useEffect, useState } from "react";
 import Head from "next/head";
@@ -21,7 +21,7 @@ interface Order {
   archived?: boolean;
 }
 
-export default function CompletedOrdersPage() {
+export default function DeliveredOrdersPage() {
   const { data: session, status } = useSession();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
@@ -32,38 +32,18 @@ export default function CompletedOrdersPage() {
   const itemsPerPage = 5;
 
   useEffect(() => {
-    if (session?.user?.isAdmin) fetchCompletedOrders();
+    if (session?.user?.isAdmin) fetchDeliveredOrders();
   }, [session]);
 
-  const fetchCompletedOrders = async () => {
+  const fetchDeliveredOrders = async () => {
     try {
-      const res = await fetch("/api/admin/completed");
+      const res = await fetch("/api/admin/delivered");
       const data = await res.json();
       setOrders(data.orders || []);
     } catch (err) {
-      console.error("❌ Failed to fetch completed orders:", err);
+      console.error("❌ Failed to fetch delivered orders:", err);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const markDelivered = async (orderId: string) => {
-    const confirmed = window.confirm(
-      `📬 Mark this order as delivered?\nOrder ID: ${orderId}`
-    );
-    if (!confirmed) return;
-
-    try {
-      const res = await fetch("/api/delivered", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ orderId }),
-      });
-      const result = await res.json();
-      if (res.ok) fetchCompletedOrders();
-      else alert("❌ " + result.error);
-    } catch (err) {
-      console.error("❌ Error marking delivered:", err);
     }
   };
 
@@ -80,7 +60,7 @@ export default function CompletedOrdersPage() {
         body: JSON.stringify({ orderId }),
       });
       const result = await res.json();
-      if (res.ok) fetchCompletedOrders();
+      if (res.ok) fetchDeliveredOrders();
       else alert("❌ " + result.error);
     } catch (err) {
       console.error("❌ Error archiving order:", err);
@@ -93,7 +73,7 @@ export default function CompletedOrdersPage() {
       "Email",
       "Order ID",
       "Total",
-      "Shipped At",
+      "Delivered At",
       "Items",
     ];
     const rows = orders.map((order) => [
@@ -101,7 +81,7 @@ export default function CompletedOrdersPage() {
       order.customerEmail,
       order.stripeSessionId,
       `$${order.amount.toFixed(2)}`,
-      new Date(order.shippedAt || "").toLocaleString(),
+      new Date(order.deliveredAt || "").toLocaleString(),
       (order.items || [])
         .map(
           (i) =>
@@ -115,7 +95,7 @@ export default function CompletedOrdersPage() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = "completed_orders.csv";
+    link.download = "delivered_orders.csv";
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -142,7 +122,7 @@ export default function CompletedOrdersPage() {
       order.customerEmail?.toLowerCase().includes(query) ||
       order.stripeSessionId?.toLowerCase().includes(query);
 
-    const orderDate = new Date(order.shippedAt || "");
+    const orderDate = new Date(order.deliveredAt || "");
     const afterStart = startDate ? orderDate >= new Date(startDate) : true;
     const beforeEnd = endDate ? orderDate <= new Date(endDate) : true;
 
@@ -167,7 +147,7 @@ export default function CompletedOrdersPage() {
   return (
     <div className="min-h-screen bg-[var(--bg-page)] text-[var(--foreground)] p-6">
       <Head>
-        <title>Completed Orders | Classy Diamonds</title>
+        <title>Delivered Orders | Classy Diamonds</title>
       </Head>
 
       <div className="pl-2 pr-2 sm:pl-4 sm:pr-4 mb-6 -mt-2">
@@ -182,10 +162,10 @@ export default function CompletedOrdersPage() {
         <Link href="/admin" className="hover:text-yellow-300">
           📦 Orders
         </Link>
-        <Link href="/admin/completed" className="text-yellow-400">
+        <Link href="/admin/completed" className="hover:text-yellow-300">
           ✅ Shipped
         </Link>
-        <Link href="/admin/delivered" className="hover:text-yellow-300">
+        <Link href="/admin/delivered" className="text-yellow-400">
           📬 Delivered
         </Link>
         <Link href="/admin/archived" className="hover:text-yellow-300">
@@ -200,7 +180,7 @@ export default function CompletedOrdersPage() {
       </nav>
 
       {loading ? (
-        <p>Loading shipped orders...</p>
+        <p>Loading delivered orders...</p>
       ) : paginatedOrders.length === 0 ? (
         <p>No matching orders found.</p>
       ) : (
@@ -260,8 +240,8 @@ export default function CompletedOrdersPage() {
                   <strong>Total:</strong> ${order.amount.toFixed(2)}
                 </p>
                 <p>
-                  <strong>Shipped At:</strong>{" "}
-                  {new Date(order.shippedAt || "").toLocaleString()}
+                  <strong>Delivered At:</strong>{" "}
+                  {new Date(order.deliveredAt || "").toLocaleString()}
                 </p>
                 <div className="mt-4">
                   <strong>Items:</strong>
@@ -283,20 +263,12 @@ export default function CompletedOrdersPage() {
                   )}
                 </div>
 
-                <div className="mt-4 flex gap-2">
-                  <button
-                    onClick={() => markDelivered(order.stripeSessionId)}
-                    className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded text-sm"
-                  >
-                    Delivered 📬
-                  </button>
-                  <button
-                    onClick={() => archiveOrder(order.stripeSessionId)}
-                    className="bg-yellow-600 hover:bg-yellow-700 px-4 py-2 rounded text-sm"
-                  >
-                    Archive 🗂
-                  </button>
-                </div>
+                <button
+                  onClick={() => archiveOrder(order.stripeSessionId)}
+                  className="mt-4 bg-yellow-600 hover:bg-yellow-700 px-4 py-2 rounded text-sm"
+                >
+                  Archive 🗂
+                </button>
               </div>
             ))}
           </div>

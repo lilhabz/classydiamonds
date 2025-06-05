@@ -9,7 +9,7 @@ import Breadcrumbs from "@/components/Breadcrumbs";
 interface AdminLog {
   _id: string;
   orderId: string;
-  action: "archive" | "restore" | "shipped";
+  action: "archive" | "restore" | "shipped" | "delivered";
   timestamp: string;
   performedBy: string;
 }
@@ -120,6 +120,9 @@ export default function AdminLogsPage() {
         <Link href="/admin/completed" className="hover:text-yellow-300">
           ✅ Shipped
         </Link>
+        <Link href="/admin/delivered" className="hover:text-yellow-300">
+          📬 Delivered
+        </Link>
         <Link href="/admin/archived" className="hover:text-yellow-300">
           🗂 Archived
         </Link>
@@ -177,6 +180,8 @@ export default function AdminLogsPage() {
                       className={`py-2 px-4 capitalize ${
                         log.action === "shipped"
                           ? "text-green-400"
+                          : log.action === "delivered"
+                          ? "text-purple-400"
                           : log.action === "restore"
                           ? "text-blue-400"
                           : "text-yellow-300"
