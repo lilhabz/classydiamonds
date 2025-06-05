@@ -16,7 +16,7 @@ export default async function handler(
     const db = client.db();
     const orders = await db
       .collection("orders")
-      .find({ shipped: true })
+      .find({ shipped: true, delivered: { $ne: true } })
       .sort({ shippedAt: -1 })
       .toArray();
 
