@@ -88,15 +88,18 @@ export default function AdminProductsPage() {
   // 📍 Ref to the edit form for scrolling
   const editFormRef = useRef<HTMLFormElement | null>(null);
 
-  // 🚚 When a product is selected for editing, smoothly scroll the form into view
-  useEffect(() => {
-    if (editingProduct && editFormRef.current) {
-      const headerOffset = 120; // offset for sticky admin header
-      const formTop =
-        editFormRef.current.getBoundingClientRect().top +
-        window.pageYOffset -
-        headerOffset;
-      window.scrollTo({ top: formTop, behavior: "smooth" });
+// 🚚 When a product is selected for editing, smoothly scroll the form into view
+useEffect(() => {
+  if (editingProduct && editFormRef.current) {
+    const headerOffset = 120; // offset for sticky admin header
+    const formTop =
+      editFormRef.current.getBoundingClientRect().top +
+      window.pageYOffset -
+      headerOffset;
+    window.scrollTo({ top: formTop, behavior: "smooth" });
+  }
+}, [editingProduct]);
+
     }
   }, [editingProduct]);
 
