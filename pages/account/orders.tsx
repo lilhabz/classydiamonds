@@ -166,12 +166,18 @@ export default function OrdersPage({
                     <p className="text-sm text-[#cfd2d6]">Status:</p>
                     <span
                       className={`text-xs font-bold px-3 py-1 rounded-full inline-block ${
-                        order.shipped
+                        order.delivered
+                          ? "bg-blue-500 text-[var(--bg-page)]"
+                          : order.shipped
                           ? "bg-green-500 text-[var(--bg-page)]"
                           : "bg-yellow-500 text-black"
                       }`}
                     >
-                      {order.shipped ? "Shipped" : "Processing"}
+                      {order.delivered
+                        ? "Delivered"
+                        : order.shipped
+                        ? "Shipped"
+                        : "Processing"}
                     </span>
                   </div>
                 </div>
