@@ -17,6 +17,8 @@ interface Order {
   stripeSessionId: string;
   orderNumber?: number;
   shippedAt?: string;
+  trackingNumber?: string;
+  carrier?: string;
   delivered?: boolean;
   deliveredAt?: string;
   archived?: boolean;
@@ -30,6 +32,9 @@ export default function CompletedOrdersPage() {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [trackingInputs, setTrackingInputs] = useState<
+    Record<string, { trackingNumber: string; carrier: string }>
+  >({});
   const itemsPerPage = 5;
 
   useEffect(() => {
@@ -65,6 +70,34 @@ export default function CompletedOrdersPage() {
       else alert("❌ " + result.error);
     } catch (err) {
       console.error("❌ Error marking delivered:", err);
+    }
+  };
+
+  const updateTracking = async (orderId: string) => {
+    const input = trackingInputs[orderId];
+    if (!input?.trackingNumber) {
+      alert("❌ Please enter a tracking number.");
+      return;
+    }
+
+    try {
+      const res = await fetch("/api/tracking", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          orderId,
+          trackingNumber: input.trackingNumber,
+          carrier: input.carrier,
+        }),
+      });
+      const result = await res.json();
+      if (res.ok) {
+        fetchCompletedOrders();
+      } else {
+        alert("❌ " + result.error);
+      }
+    } catch (err) {
+      console.error("❌ Error updating tracking:", err);
     }
   };
 
@@ -267,6 +300,57 @@ export default function CompletedOrdersPage() {
                   <strong>Shipped At:</strong>{" "}
                   {new Date(order.shippedAt || "").toLocaleString()}
                 </p>
+                {order.trackingNumber ? (
+                  <p>
+                    <strong>Tracking:</strong> {order.trackingNumber}
+                    {order.carrier ? ` (${order.carrier})` : ""}
+                  </p>
+                ) : (
+                  <div className="mt-2 flex flex-col sm:flex-row sm:items-center gap-2">
+                    <select
+                      value={
+                        trackingInputs[order.stripeSessionId]?.carrier || "USPS"
+                      }
+                      onChange={(e) =>
+                        setTrackingInputs((prev) => ({
+                          ...prev,
+                          [order.stripeSessionId]: {
+                            ...(prev[order.stripeSessionId] || { trackingNumber: "", carrier: "USPS" }),
+                            carrier: e.target.value,
+                          },
+                        }))
+                      }
+                      className="px-2 py-1 rounded bg-[#2e3a58] text-white"
+                    >
+                      <option value="USPS">USPS</option>
+                      <option value="UPS">UPS</option>
+                      <option value="FedEx">FedEx</option>
+                    </select>
+                    <input
+                      type="text"
+                      placeholder="Tracking #"
+                      value={
+                        trackingInputs[order.stripeSessionId]?.trackingNumber || ""
+                      }
+                      onChange={(e) =>
+                        setTrackingInputs((prev) => ({
+                          ...prev,
+                          [order.stripeSessionId]: {
+                            ...(prev[order.stripeSessionId] || { trackingNumber: "", carrier: "USPS" }),
+                            trackingNumber: e.target.value,
+                          },
+                        }))
+                      }
+                      className="px-2 py-1 rounded bg-[#2e3a58] text-white flex-1"
+                    />
+                    <button
+                      onClick={() => updateTracking(order.stripeSessionId)}
+                      className="bg-green-600 hover:bg-green-700 px-3 py-1 rounded text-sm"
+                    >
+                      Save Tracking
+                    </button>
+                  </div>
+                )}
                 <div className="mt-4">
                   <strong>Items:</strong>
                   {Array.isArray(order.items) && order.items.length > 0 ? (

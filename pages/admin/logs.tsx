@@ -9,7 +9,7 @@ import Breadcrumbs from "@/components/Breadcrumbs";
 interface AdminLog {
   _id: string;
   orderId: string;
-  action: "archive" | "restore" | "shipped" | "delivered";
+  action: "archive" | "restore" | "shipped" | "delivered" | "tracking";
   timestamp: string;
   performedBy: string;
 }
@@ -185,6 +185,8 @@ export default function AdminLogsPage() {
                           ? "text-purple-400"
                           : log.action === "restore"
                           ? "text-blue-400"
+                          : log.action === "tracking"
+                          ? "text-teal-300"
                           : "text-yellow-300"
                       }`}
                     >

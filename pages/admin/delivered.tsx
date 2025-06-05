@@ -17,6 +17,8 @@ interface Order {
   stripeSessionId: string;
   orderNumber?: number;
   shippedAt?: string;
+  trackingNumber?: string;
+  carrier?: string;
   delivered?: boolean;
   deliveredAt?: string;
   archived?: boolean;
@@ -247,6 +249,12 @@ export default function DeliveredOrdersPage() {
                   <strong>Delivered At:</strong>{" "}
                   {new Date(order.deliveredAt || "").toLocaleString()}
                 </p>
+                {order.trackingNumber && (
+                  <p>
+                    <strong>Tracking:</strong> {order.trackingNumber}
+                    {order.carrier ? ` (${order.carrier})` : ""}
+                  </p>
+                )}
                 <div className="mt-4">
                   <strong>Items:</strong>
                   {Array.isArray(order.items) && order.items.length > 0 ? (

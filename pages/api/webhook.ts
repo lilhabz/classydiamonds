@@ -148,6 +148,8 @@ export default async function handler(
             paymentStatus: session.payment_status || "unpaid",
             stripeSessionId,
             createdAt: new Date(),
+            trackingNumber: "",
+            carrier: "",
             shipped: false,
             delivered: false,
             archived: false,
