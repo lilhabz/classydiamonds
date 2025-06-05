@@ -156,7 +156,7 @@ export default function AdminOrdersPage() {
 
       <h1 className="text-3xl font-bold mb-6">🛠️ Admin Dashboard</h1>
 
-      <nav className="$1text-[var(--foreground)]$2">
+      <nav className="flex space-x-6 mb-8 border-b border-[var(--bg-nav)] pb-4 text-[var(--foreground)] text-sm font-semibold">
         <Link href="/admin" className="text-yellow-400">
           📦 Orders
         </Link>
@@ -180,26 +180,26 @@ export default function AdminOrdersPage() {
         <p>No orders found.</p>
       ) : (
         <>
-          <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 mb-6">
-            <input
-              type="text"
-              placeholder="Search by name, email, or ID..."
-              className="$1text-[var(--foreground)]$2"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-            <input
-              type="date"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              className="$1text-[var(--foreground)]$2"
-            />
-            <input
-              type="date"
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-              className="$1text-[var(--foreground)]$2"
-            />
+      <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 mb-6">
+        <input
+          type="text"
+          placeholder="Search by name, email, or ID..."
+          className="w-full sm:w-1/3 mb-2 sm:mb-0 px-4 py-2 rounded bg-[var(--bg-nav)] text-white"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+        />
+        <input
+          type="date"
+          value={startDate}
+          onChange={(e) => setStartDate(e.target.value)}
+          className="px-2 py-1 rounded bg-[#2e3a58] text-white"
+        />
+        <input
+          type="date"
+          value={endDate}
+          onChange={(e) => setEndDate(e.target.value)}
+          className="px-2 py-1 rounded bg-[#2e3a58] text-white"
+        />
             <button
               onClick={downloadCSV}
               className="bg-green-600 hover:bg-green-700 px-4 py-2 rounded text-sm"

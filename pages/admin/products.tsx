@@ -4,6 +4,8 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import { getSession } from "next-auth/react";
 import Image from "next/image";
+import Head from "next/head";
+import Link from "next/link";
 import Breadcrumbs from "@/components/Breadcrumbs";
 
 // 🚀 Define allowed categories
@@ -220,11 +222,37 @@ export default function AdminProductsPage() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-6">
-      <div className="mb-4">
+    <div className="min-h-screen bg-[var(--bg-page)] text-[var(--foreground)] p-6">
+      <Head>
+        <title>Admin Products | Classy Diamonds</title>
+      </Head>
+
+      <div className="pl-2 pr-2 sm:pl-4 sm:pr-4 mb-6 -mt-2">
         <Breadcrumbs />
       </div>
-      <h1 className="text-2xl font-bold">🛠️ Manage Products</h1>
+
+      <h1 className="text-3xl font-bold mb-6">🛠️ Admin Dashboard</h1>
+
+      <nav className="flex space-x-6 mb-8 border-b border-[var(--bg-nav)] pb-4 text-[var(--foreground)] text-sm font-semibold">
+        <Link href="/admin" className="hover:text-yellow-300">
+          📦 Orders
+        </Link>
+        <Link href="/admin/completed" className="hover:text-yellow-300">
+          ✅ Shipped
+        </Link>
+        <Link href="/admin/archived" className="hover:text-yellow-300">
+          🗂 Archived
+        </Link>
+        <Link href="/admin/products" className="text-yellow-400">
+          🛠 Products
+        </Link>
+        <Link href="/admin/logs" className="hover:text-yellow-300">
+          📝 Logs
+        </Link>
+      </nav>
+
+      <div className="max-w-4xl mx-auto space-y-6">
+        <h2 className="text-2xl font-bold">🛠️ Manage Products</h2>
 
       {/* ❗ Status Messages */}
       {status.error && <p className="text-red-500">❌ {status.error}</p>}
@@ -435,6 +463,7 @@ export default function AdminProductsPage() {
       </div>
 
       {/* 🚧 Placeholder for future: pagination, search, CSV export, etc. */}
+      </div>
     </div>
   );
 }
