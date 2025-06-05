@@ -184,6 +184,12 @@ export default function AccountPage({ user, orders }: any) {
                     >
                       <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-2">
                         <div>
+                          <p className="text-sm text-gray-400">Order #:</p>
+                          <p className="text-sm font-semibold break-all">
+                            #{order.orderNumber ?? "N/A"}
+                          </p>
+                        </div>
+                        <div>
                           <p className="text-sm text-gray-400">Order ID:</p>
                           <p className="text-sm font-semibold break-all">
                             {order.stripeSessionId}
