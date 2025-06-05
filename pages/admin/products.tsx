@@ -15,7 +15,6 @@ type Category =
   | "necklaces"
   | "earrings";
 
-const TAG_OPTIONS = ["diamond", "pearl", "gold", "platinum"] as const;
 
 // 🛠️ AdminProduct type mirrors collection
 interface AdminProduct {
@@ -48,7 +47,7 @@ export default function AdminProductsPage() {
 
   // 💾 Local edits tracked here before batch save
   const [rowEdits, setRowEdits] = useState<
-    Record<string, { category: Category; featured: boolean; tags: string[] }>
+    Record<string, { category: Category; featured: boolean }>
   >({});
 
   // 📋 Form state for adding a new product
@@ -58,7 +57,6 @@ export default function AdminProductsPage() {
     price: "",
     category: "engagement" as Category,
     featured: false,
-    tags: [] as string[],
     imageFile: null as File | null,
   });
 
@@ -84,12 +82,9 @@ export default function AdminProductsPage() {
         const data = await res.json();
         setProducts(data.products);
         // Initialize rowEdits from fetched data
-        const edits: Record<
-          string,
-          { category: Category; featured: boolean; tags: string[] }
-        > = {};
+        const edits: Record<string, { category: Category; featured: boolean }> = {};
         data.products.forEach((p: AdminProduct) => {
-          edits[p._id] = { category: p.category, featured: p.featured, tags: p.tags || [] };
+          edits[p._id] = { category: p.category, featured: p.featured };
         });
         setRowEdits(edits);
       } catch (err: any) {
@@ -126,7 +121,6 @@ export default function AdminProductsPage() {
       formData.append("price", formState.price);
       formData.append("category", formState.category);
       formData.append("featured", formState.featured ? "true" : "false");
-      formState.tags.forEach((t) => formData.append("tags", t));
       if (formState.imageFile) formData.append("image", formState.imageFile);
 
       const res = await fetch("/api/admin/products", {
@@ -143,7 +137,6 @@ export default function AdminProductsPage() {
         [data.product._id]: {
           category: data.product.category,
           featured: data.product.featured,
-          tags: data.product.tags || [],
         },
       }));
       setFormState({
@@ -152,7 +145,6 @@ export default function AdminProductsPage() {
         price: "",
         category: "engagement",
         featured: false,
-        tags: [],
         imageFile: null,
       });
       setStatus({ loading: false, error: "", success: "Product added 🎉" });
@@ -180,11 +172,7 @@ export default function AdminProductsPage() {
         // Find original to compare
         const orig = products.find((p) => p._id === id);
         if (!orig) return null;
-        if (
-          orig.category === edits.category &&
-          orig.featured === edits.featured &&
-          JSON.stringify(orig.tags || []) === JSON.stringify(edits.tags || [])
-        )
+        if (orig.category === edits.category && orig.featured === edits.featured)
           return null;
         // If trying to set featured=true on a product, but count >=4, skip
         if (edits.featured && featuredCount > 4) {
@@ -281,7 +269,7 @@ export default function AdminProductsPage() {
           <select
             value={formState.category}
             onChange={(e) => handleInput("category", e.target.value)}
-            className="mt-1 w-full border rounded p-2"
+            className="mt-1 w-full border rounded p-2 bg-[var(--bg-nav)] text-[var(--foreground)]"
           >
             {[
               "engagement",
@@ -312,29 +300,6 @@ export default function AdminProductsPage() {
             </span>
           )}
         </label>
-        <fieldset>
-          <legend className="font-medium">🏷️ Tags</legend>
-          <div className="flex flex-wrap gap-2 mt-1">
-            {TAG_OPTIONS.map((tag) => (
-              <label key={tag} className="flex items-center space-x-1">
-                <input
-                  type="checkbox"
-                  checked={formState.tags.includes(tag)}
-                  onChange={(e) => {
-                    const checked = e.target.checked;
-                    setFormState((s) => ({
-                      ...s,
-                      tags: checked
-                        ? [...s.tags, tag]
-                        : s.tags.filter((t) => t !== tag),
-                    }));
-                  }}
-                />
-                <span>{tag}</span>
-              </label>
-            ))}
-          </div>
-        </fieldset>
         <label>
           🖼️ Image
           <input
@@ -371,12 +336,11 @@ export default function AdminProductsPage() {
           )}
           <table className="w-full table-auto border-collapse">
             <thead>
-              <tr className="bg-gray-200">
+              <tr className="bg-[var(--bg-nav)]">
                 <th className="p-2">SKU</th>
                 <th className="p-2">Image</th>
                 <th className="p-2">Name</th>
                 <th className="p-2">Category</th>
-                <th className="p-2">Tags</th>
                 <th className="p-2">Featured</th>
                 <th className="p-2">Actions</th>
               </tr>
@@ -410,7 +374,7 @@ export default function AdminProductsPage() {
                             },
                           }))
                         }
-                        className="border rounded p-1"
+                        className="border rounded p-1 bg-[var(--bg-nav)] text-[var(--foreground)]"
                       >
                         {[
                           "engagement",
@@ -425,30 +389,6 @@ export default function AdminProductsPage() {
                           </option>
                         ))}
                       </select>
-                    </td>
-                    <td className="p-2">
-                      <div className="flex flex-wrap gap-1">
-                        {TAG_OPTIONS.map((tag) => (
-                          <label key={tag} className="flex items-center space-x-1 text-xs">
-                            <input
-                              type="checkbox"
-                              checked={edit.tags.includes(tag)}
-                              onChange={(e) =>
-                                setRowEdits((r) => ({
-                                  ...r,
-                                  [p._id]: {
-                                    ...r[p._id],
-                                    tags: e.target.checked
-                                      ? [...r[p._id].tags, tag]
-                                      : r[p._id].tags.filter((t) => t !== tag),
-                                  },
-                                }))
-                              }
-                            />
-                            <span>{tag}</span>
-                          </label>
-                        ))}
-                      </div>
                     </td>
                     <td className="p-2 text-center">
                       <input
