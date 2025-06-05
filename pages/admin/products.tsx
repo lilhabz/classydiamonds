@@ -82,6 +82,16 @@ export default function AdminProductsPage() {
     success: "",
   });
 
+  // 📍 Ref to the edit form for scrolling
+  const editFormRef = useRef<HTMLFormElement | null>(null);
+
+  // 🚚 When a product is selected for editing, scroll to the form
+  useEffect(() => {
+    if (editingProduct) {
+      editFormRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [editingProduct]);
+
   // 🧮 Count of featured items currently selected
   //    Derive from rowEdits: count how many existing products are marked featured
   const featuredCount = Object.values(rowEdits).filter(
@@ -343,7 +353,7 @@ export default function AdminProductsPage() {
       {/* ✏️ Edit Product Form */}
       {editingProduct && (
         <form
-
+          ref={editFormRef}
           onSubmit={handleUpdate}
           className="grid grid-cols-1 md:grid-cols-2 gap-4 border p-4 rounded"
         >
