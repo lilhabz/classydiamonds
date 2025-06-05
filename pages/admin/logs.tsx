@@ -123,6 +123,9 @@ export default function AdminLogsPage() {
         <Link href="/admin/archived" className="hover:text-yellow-300">
           🗂 Archived
         </Link>
+        <Link href="/admin/products" className="hover:text-yellow-300">
+          🛠 Products
+        </Link>
         <Link href="/admin/logs" className="text-yellow-400">
           📝 Logs
         </Link>
