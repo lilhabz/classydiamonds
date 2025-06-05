@@ -19,6 +19,7 @@ type Product = {
   slug: string;
   imageUrl: string;
   featured: boolean;
+  tags: string[];
   createdAt: Date;
 };
 
@@ -71,6 +72,7 @@ export default async function handler(
       slug: doc.slug,
       imageUrl: doc.imageUrl,
       featured: !!doc.featured,
+      tags: doc.tags || [],
       createdAt: doc.createdAt,
     }));
     return res.status(200).json({ success: true, products });
@@ -107,6 +109,12 @@ export default async function handler(
     const price = parseFloat(getString(fields.price, "0"));
     const category = getString(fields.category);
     const featured = getString(fields.featured, "false") === "true";
+    const tagsRaw = fields.tags;
+    const tags = Array.isArray(tagsRaw)
+      ? tagsRaw.filter(Boolean)
+      : tagsRaw
+      ? [getString(tagsRaw)]
+      : [];
 
     // 📁 Handle image file
     const rawFile = files.image;
@@ -152,6 +160,7 @@ export default async function handler(
       slug,
       imageUrl,
       featured,
+      tags,
       createdAt: new Date(),
     };
 

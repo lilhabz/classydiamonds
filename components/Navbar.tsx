@@ -42,6 +42,7 @@ const Navbar = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   const cartRef = useRef<HTMLDivElement>(null);
   const userRef = useRef<HTMLDivElement>(null);
@@ -113,6 +114,12 @@ const Navbar = () => {
     };
   }, [router]);
 
+  useEffect(() => {
+    if (searchOpen) {
+      searchInputRef.current?.focus();
+    }
+  }, [searchOpen]);
+
   const totalQuantity = cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
   // 🔨 Updated to use string ID
@@ -139,7 +146,15 @@ const Navbar = () => {
   };
 
   const handleSearchToggle = () => {
-    setSearchOpen((prev) => !prev);
+    setSearchOpen((prev) => {
+      const next = !prev;
+      if (next) {
+        setTimeout(() => {
+          searchInputRef.current?.focus();
+        }, 0);
+      }
+      return next;
+    });
     setMenuOpen(false);
     setCartOpen(false);
     setUserMenuOpen(false);
@@ -526,6 +541,7 @@ const Navbar = () => {
         >
           <form onSubmit={handleSearchSubmit} className="flex mb-3">
             <input
+              ref={searchInputRef}
               type="text"
               placeholder="Search site..."
               value={searchQuery}

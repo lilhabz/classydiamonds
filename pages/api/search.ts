@@ -30,6 +30,7 @@ export default async function handler(
           { name: { $regex: regex } },
           { description: { $regex: regex } },
           { category: { $regex: regex } },
+          { tags: { $elemMatch: { $regex: regex } } },
         ],
       })
       .limit(20)
