@@ -16,6 +16,7 @@ export type ProductType = {
   slug: string;
   name: string;
   price: number;
+  salePrice?: number;
   image: string;
   category: string;
   description?: string;
@@ -131,7 +132,18 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
                     {product.name}
                   </h3>
                   <p className="text-[#cfd2d6]">
-                    ${product.price.toLocaleString()}
+                    {product.salePrice ? (
+                      <>
+                        <span className="line-through mr-1">
+                          ${product.price.toLocaleString()}
+                        </span>
+                        <span className="text-red-500">
+                          ${product.salePrice.toLocaleString()}
+                        </span>
+                      </>
+                    ) : (
+                      <>${product.price.toLocaleString()}</>
+                    )}
                   </p>
                 </div>
               </Link>
@@ -178,6 +190,7 @@ export const getServerSideProps: GetServerSideProps = async () => {
     slug: p.slug,
     name: p.name,
     price: p.price,
+    salePrice: p.salePrice ?? null,
     image: p.imageUrl || p.image,
     category: p.category,
     description: p.description || "",

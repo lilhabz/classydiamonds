@@ -13,6 +13,7 @@ interface Product {
   _id: string;
   name: string;
   price: number;
+  salePrice?: number;
   image: string;
   category: string;
   slug: string;
@@ -165,7 +166,18 @@ export default function CategoryPage({
                       {product.name}
                     </h3>
                     <p className="mt-1 text-gray-400 group-hover:text-white">
-                      ${product.price.toLocaleString()}
+                      {product.salePrice ? (
+                        <>
+                          <span className="line-through mr-1">
+                            ${product.price.toLocaleString()}
+                          </span>
+                          <span className="text-red-500">
+                            ${product.salePrice.toLocaleString()}
+                          </span>
+                        </>
+                      ) : (
+                        <>${product.price.toLocaleString()}</>
+                      )}
                     </p>
                   </div>
                 </Link>
