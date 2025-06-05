@@ -99,10 +99,6 @@ useEffect(() => {
     window.scrollTo({ top: formTop, behavior: "smooth" });
   }
 }, [editingProduct]);
-
-    }
-  }, [editingProduct]);
-
   // 🧮 Count of featured items currently selected
   //    Derive from rowEdits: count how many existing products are marked featured
   const featuredCount = Object.values(rowEdits).filter(
