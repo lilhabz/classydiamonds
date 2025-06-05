@@ -55,15 +55,6 @@ export default function AdminProductsPage() {
   // ✏️ Product currently being edited
   const [editingProduct, setEditingProduct] = useState<AdminProduct | null>(null);
 
-  // 🔗 Ref to edit form for smooth scrolling
-  const editFormRef = useRef<HTMLFormElement | null>(null);
-
-  // 🌐 Scroll to edit form when a product is selected
-  useEffect(() => {
-    if (editingProduct && editFormRef.current) {
-      editFormRef.current.scrollIntoView({ behavior: "smooth" });
-    }
-  }, [editingProduct]);
 
   // 📋 Separate form state for editing
   const [editForm, setEditForm] = useState({
@@ -352,7 +343,7 @@ export default function AdminProductsPage() {
       {/* ✏️ Edit Product Form */}
       {editingProduct && (
         <form
-          ref={editFormRef}
+
           onSubmit={handleUpdate}
           className="grid grid-cols-1 md:grid-cols-2 gap-4 border p-4 rounded"
         >
