@@ -15,6 +15,7 @@ type ProductType = {
   id: string; // _id from MongoDB as string
   name: string;
   price: number;
+  salePrice?: number;
   image: string;
   slug: string;
   category: string;
@@ -97,7 +98,18 @@ export default function ProductPage({ product }: { product: ProductType }) {
               {product.description || "Beautiful handcrafted piece."}
             </p>
             <p className="text-2xl font-semibold text-[var(--foreground)]">
-              ${product.price.toLocaleString()}
+              {product.salePrice ? (
+                <>
+                  <span className="line-through mr-2 text-xl">
+                    ${product.price.toLocaleString()}
+                  </span>
+                  <span className="text-red-500">
+                    ${product.salePrice.toLocaleString()}
+                  </span>
+                </>
+              ) : (
+                <>${product.price.toLocaleString()}</>
+              )}
             </p>
 
 
@@ -134,6 +146,7 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
     id: p._id.toString(),
     name: p.name,
     price: p.price,
+    salePrice: p.salePrice ?? null,
     image: p.imageUrl,
     slug: p.slug,
     category: p.category,
