@@ -14,6 +14,7 @@ type Product = {
   slug: string;
   imageUrl: string;
   featured: boolean;
+  tags: string[];
   createdAt: Date;
 };
 
