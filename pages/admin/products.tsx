@@ -88,17 +88,18 @@ export default function AdminProductsPage() {
   // 📍 Ref to the edit form for scrolling
   const editFormRef = useRef<HTMLFormElement | null>(null);
 
- khl8eb-codex/fix-scroll-behavior-on-edit-click
-  // 🚚 When a product is selected for editing, scroll the form into view
-  useEffect(() => {
-    if (editingProduct && editFormRef.current) {
-      editFormRef.current.scrollIntoView({ behavior: "smooth" });
+// 🚚 When a product is selected for editing, smoothly scroll the form into view
+useEffect(() => {
+  if (editingProduct && editFormRef.current) {
+    const headerOffset = 120; // offset for sticky admin header
+    const formTop =
+      editFormRef.current.getBoundingClientRect().top +
+      window.pageYOffset -
+      headerOffset;
+    window.scrollTo({ top: formTop, behavior: "smooth" });
+  }
+}, [editingProduct]);
 
-  // 🚚 When a product is selected for editing, scroll to the form
-  useEffect(() => {
-    if (editingProduct) {
-      editFormRef.current?.scrollIntoView({ behavior: "smooth" });
- main
     }
   }, [editingProduct]);
 
