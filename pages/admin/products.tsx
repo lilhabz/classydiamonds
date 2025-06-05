@@ -23,6 +23,7 @@ interface AdminProduct {
   _id: string; // MongoDB ID
   skuNumber?: number; // sequential SKU
   name: string;
+  slug: string; // URL slug for product page
   description: string;
   price: number;
   salePrice?: number;
@@ -619,7 +620,14 @@ useEffect(() => {
                         className="object-cover rounded"
                       />
                     </td>
-                    <td className="p-2">{p.name}</td>
+                    <td className="p-2">
+                      <Link
+                        href={`/category/${p.category}/${p.slug}`}
+                        className="hover:text-yellow-300 underline"
+                      >
+                        {p.name}
+                      </Link>
+                    </td>
                     <td className="p-2">
                       <select
                         value={edit.category}
