@@ -16,6 +16,7 @@ interface Product {
   _id: string;
   name: string;
   price: number;
+  salePrice?: number;
   image: string;
   category: string;
   slug: string;
@@ -44,6 +45,7 @@ export const getServerSideProps: GetServerSideProps<HomeProps> = async () => {
     _id: doc._id.toString(),
     name: doc.name,
     price: doc.price,
+    salePrice: doc.salePrice ?? null,
     image: doc.imageUrl || doc.image,
     category: doc.category,
     slug: doc.slug,
@@ -169,7 +171,18 @@ export default function Home({ products }: HomeProps) {
                         {item.name}
                       </h3>
                       <p className="text-gray-400 text-xs mb-2">
-                        ${item.price.toLocaleString()}
+                        {item.salePrice ? (
+                          <>
+                            <span className="line-through mr-1">
+                              ${item.price.toLocaleString()}
+                            </span>
+                            <span className="text-red-500">
+                              ${item.salePrice.toLocaleString()}
+                            </span>
+                          </>
+                        ) : (
+                          <>${item.price.toLocaleString()}</>
+                        )}
                       </p>
                       <button
                         onClick={() =>
@@ -224,7 +237,18 @@ export default function Home({ products }: HomeProps) {
                       {item.name}
                     </h3>
                     <p className="text-gray-400 mb-4 group-hover:text-white transition">
-                      ${item.price.toLocaleString()}
+                      {item.salePrice ? (
+                        <>
+                          <span className="line-through mr-1">
+                            ${item.price.toLocaleString()}
+                          </span>
+                          <span className="text-red-500">
+                            ${item.salePrice.toLocaleString()}
+                          </span>
+                        </>
+                      ) : (
+                        <>${item.price.toLocaleString()}</>
+                      )}
                     </p>
                     <button
                       onClick={() =>
