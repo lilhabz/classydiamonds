@@ -19,6 +19,7 @@ interface OrderDetails {
   amount: number;
   customerAddress: string;
   createdAt: string;
+  orderNumber?: number;
 }
 
 export default function AdminLogsPage() {
@@ -200,6 +201,9 @@ export default function AdminLogsPage() {
                   {expandedOrders[log.orderId] && (
                     <tr className="bg-[#2a374f]">
                       <td colSpan={4} className="px-6 py-4">
+                        <p className="mb-2 text-sm">
+                          🔢 Order #: {expandedOrders[log.orderId].orderNumber ?? "N/A"}
+                        </p>
                         <p className="mb-2 text-sm">
                           📍 Address:{" "}
                           {expandedOrders[log.orderId].customerAddress}
