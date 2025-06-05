@@ -230,6 +230,34 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
 
       {/* 📦 Products & Load More */}
       <section className="px-4 sm:px-6 max-w-7xl mx-auto mb-16">
+        <div className="flex justify-end mb-4">
+          {/*
+            Dropdown filter for categories. Update the options here if you add
+            new product categories.
+          */}
+          <select
+            value={filteredCategory || "all"}
+            onChange={(e) => handleFilter(e.target.value)}
+            className="border rounded p-2 text-sm bg-[var(--bg-nav)] text-[var(--foreground)]"
+          >
+            {[
+              "All",
+              "Engagement",
+              "Wedding Bands",
+              "Rings",
+              "Bracelets",
+              "Necklaces",
+              "Earrings",
+            ].map((catName) => {
+              const slug = catName.toLowerCase().replace(/\s+/g, "-");
+              return (
+                <option key={catName} value={slug}>
+                  {catName}
+                </option>
+              );
+            })}
+          </select>
+        </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
           {filteredProducts.slice(0, visibleCount).map((product) => (
             <div
