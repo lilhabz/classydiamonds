@@ -87,8 +87,13 @@ export default function AdminProductsPage() {
 
   // 🚚 When a product is selected for editing, scroll to the form
   useEffect(() => {
-    if (editingProduct) {
-      editFormRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (editingProduct && editFormRef.current) {
+      const headerOffset = 120; // offset for sticky admin header
+      const formTop =
+        editFormRef.current.getBoundingClientRect().top +
+        window.pageYOffset -
+        headerOffset;
+      window.scrollTo({ top: formTop, behavior: "smooth" });
     }
   }, [editingProduct]);
 
@@ -355,6 +360,7 @@ export default function AdminProductsPage() {
         <form
           ref={editFormRef}
           onSubmit={handleUpdate}
+          style={{ scrollMarginTop: "120px" }}
           className="grid grid-cols-1 md:grid-cols-2 gap-4 border p-4 rounded"
         >
           <h3 className="col-span-full text-lg font-semibold">
