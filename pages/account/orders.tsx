@@ -146,7 +146,13 @@ export default function OrdersPage({
                   <div>
                     <p className="text-sm text-[#cfd2d6]">Order #:</p>
                     <p className="text-sm font-semibold break-all">
-                      #{order.orderNumber} {/* 🆕 Show short orderNumber */}
+                      #{order.orderNumber}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-[#cfd2d6]">Order ID:</p>
+                    <p className="text-sm font-semibold break-all">
+                      {order.stripeSessionId}
                     </p>
                   </div>
                   <div>

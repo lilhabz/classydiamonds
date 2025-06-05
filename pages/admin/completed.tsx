@@ -15,6 +15,7 @@ interface Order {
   amount: number;
   createdAt: string;
   stripeSessionId: string;
+  orderNumber?: number;
   shippedAt?: string;
   delivered?: boolean;
   deliveredAt?: string;
@@ -250,6 +251,9 @@ export default function CompletedOrdersPage() {
                 <h2 className="text-xl font-semibold mb-1">
                   {order.customerName} ({order.customerEmail})
                 </h2>
+                <p className="text-sm mb-2 text-gray-300">
+                  🔢 Order #: {order.orderNumber ?? "N/A"}
+                </p>
                 <p className="text-sm mb-2 text-gray-300">
                   🆔 Order ID: {order.stripeSessionId.slice(-8)}
                 </p>
