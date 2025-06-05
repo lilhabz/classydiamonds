@@ -2,6 +2,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import clientPromise from "@/lib/mongodb";
 import nodemailer from "nodemailer";
+import { buildOrderDetailsHtml } from "@/lib/emailUtils";
 
 export default async function handler(
   req: NextApiRequest,
@@ -48,11 +49,14 @@ export default async function handler(
       },
     });
 
+    const orderDetails = buildOrderDetailsHtml(order);
+
     const html = `
       <div style="font-family: Arial, sans-serif; color: #333; max-width: 600px; margin: auto;">
         <h2 style="color: #1f2a44;">Your Order Was Delivered</h2>
         <p>Hi ${order.customerName},</p>
         <p>We have confirmed that your order has been delivered. We hope you enjoy your purchase!</p>
+        ${orderDetails}
         <p style="margin-top: 30px; font-size: 14px;">
           If you have any questions, reply to this email or contact
           <a href="mailto:support@classydiamonds.com">support@classydiamonds.com</a>
