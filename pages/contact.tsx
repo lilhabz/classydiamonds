@@ -328,7 +328,7 @@ export default function ContactPage() {
                     <select
                       name="preference"
                       required
-                      className="border border-[var(--foreground)] rounded-xl px-4 py-2"
+                      className="border border-[var(--foreground)] rounded-xl px-4 py-2 bg-[var(--bg-nav)] text-[var(--foreground)]"
                     >
                       <option value="" disabled hidden selected>
                         Preferred Contact Method
@@ -340,7 +340,7 @@ export default function ContactPage() {
                     <select
                       name="type"
                       required
-                      className="border border-[var(--foreground)] rounded-xl px-4 py-2"
+                      className="border border-[var(--foreground)] rounded-xl px-4 py-2 bg-[var(--bg-nav)] text-[var(--foreground)]"
                     >
                       <option value="" disabled hidden selected>
                         Select Jewelry Type
@@ -460,7 +460,7 @@ export default function ContactPage() {
                     <select
                       name="preference"
                       required
-                      className="border border-[var(--foreground)] rounded-xl px-4 py-2"
+                      className="border border-[var(--foreground)] rounded-xl px-4 py-2 bg-[var(--bg-nav)] text-[var(--foreground)]"
                     >
                       <option value="" disabled hidden selected>
                         Preferred Contact Method

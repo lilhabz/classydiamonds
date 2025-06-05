@@ -24,6 +24,7 @@ export type ProductType = {
 export default function JewelryPage({ products }: { products: ProductType[] }) {
   const { addToCart } = useCart();
   const [visibleCount, setVisibleCount] = useState(8);
+  const [activeCategory, setActiveCategory] = useState<string>("All");
   const titleRef = useRef<HTMLHeadingElement>(null);
 
   const resetCount = () => setVisibleCount(8);
@@ -32,7 +33,19 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
     resetCount();
   }, []);
 
+  const categories = Array.from(new Set(products.map((p) => p.category)));
+
+  useEffect(() => {
+    resetCount();
+    titleRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [activeCategory]);
+
   const handleLoadMore = () => setVisibleCount((prev) => prev + 4);
+
+  const filteredProducts =
+    activeCategory === "All"
+      ? products
+      : products.filter((p) => p.category === activeCategory);
 
   const pageTitle = "Jewelry Collection | Classy Diamonds";
   const pageDesc =
@@ -77,12 +90,29 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
         >
           Our Jewelry
         </h2>
+        <div className="flex flex-wrap justify-center gap-3 mt-4">
+          {["All", ...categories].map((cat) => {
+            const label = cat
+              .replace(/-/g, " ")
+              .replace(/\b\w/g, (l) => l.toUpperCase());
+            const active = activeCategory === cat;
+            return (
+              <button
+                key={cat}
+                onClick={() => setActiveCategory(cat)}
+                className={`px-4 py-2 rounded-full font-semibold transition-transform hover:scale-105 ${active ? "bg-[var(--foreground)] text-[var(--bg-nav)]" : "bg-[var(--bg-nav)] text-[var(--foreground)] hover:bg-[#364763]"}`}
+              >
+                {label}
+              </button>
+            );
+          })}
+        </div>
       </section>
 
       {/* 📦 Products & Load More */}
       <section className="px-4 sm:px-6 max-w-7xl mx-auto mb-16">
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
-          {products.slice(0, visibleCount).map((product) => (
+          {filteredProducts.slice(0, visibleCount).map((product) => (
             <div
               key={product.id}
               className="group bg-[var(--bg-nav)] rounded-2xl overflow-hidden shadow-lg hover:scale-105 transition flex flex-col h-full"
@@ -124,7 +154,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
           ))}
         </div>
 
-          {visibleCount < products.length && (
+        {visibleCount < filteredProducts.length && (
           <div className="flex justify-center">
             <button
               onClick={handleLoadMore}
