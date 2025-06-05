@@ -100,6 +100,7 @@ export default function ProductPage({ product }: { product: ProductType }) {
               ${product.price.toLocaleString()}
             </p>
 
+
             <button
               onClick={() =>
                 addToCart({
