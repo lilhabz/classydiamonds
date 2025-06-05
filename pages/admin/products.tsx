@@ -1,6 +1,6 @@
 // 📄 pages/admin/products.tsx – Admin Product Management with Batch Save & Featured Limit 🛠️💾
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/router";
 import { getSession } from "next-auth/react";
 import Image from "next/image";
@@ -54,6 +54,7 @@ export default function AdminProductsPage() {
 
   // ✏️ Product currently being edited
   const [editingProduct, setEditingProduct] = useState<AdminProduct | null>(null);
+
 
   // 📋 Separate form state for editing
   const [editForm, setEditForm] = useState({
@@ -342,6 +343,7 @@ export default function AdminProductsPage() {
       {/* ✏️ Edit Product Form */}
       {editingProduct && (
         <form
+
           onSubmit={handleUpdate}
           className="grid grid-cols-1 md:grid-cols-2 gap-4 border p-4 rounded"
         >
