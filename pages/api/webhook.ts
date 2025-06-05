@@ -149,6 +149,7 @@ export default async function handler(
             stripeSessionId,
             createdAt: new Date(),
             shipped: false,
+            delivered: false,
             archived: false,
           });
 

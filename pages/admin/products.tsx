@@ -346,6 +346,9 @@ useEffect(() => {
         <Link href="/admin/completed" className="hover:text-yellow-300">
           ✅ Shipped
         </Link>
+        <Link href="/admin/delivered" className="hover:text-yellow-300">
+          📬 Delivered
+        </Link>
         <Link href="/admin/archived" className="hover:text-yellow-300">
           🗂 Archived
         </Link>
