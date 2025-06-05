@@ -25,6 +25,7 @@ interface AdminProduct {
   name: string;
   description: string;
   price: number;
+  salePrice?: number;
   category: Category;
   imageUrl: string;
   featured: boolean;
@@ -61,6 +62,7 @@ export default function AdminProductsPage() {
     name: "",
     description: "",
     price: "",
+    salePrice: "",
     category: "engagement" as Category,
     featured: false,
   });
@@ -70,6 +72,7 @@ export default function AdminProductsPage() {
     name: "",
     description: "",
     price: "",
+    salePrice: "",
     category: "engagement" as Category,
     featured: false,
     imageFile: null as File | null,
@@ -85,10 +88,17 @@ export default function AdminProductsPage() {
   // 📍 Ref to the edit form for scrolling
   const editFormRef = useRef<HTMLFormElement | null>(null);
 
+ khl8eb-codex/fix-scroll-behavior-on-edit-click
+  // 🚚 When a product is selected for editing, scroll the form into view
+  useEffect(() => {
+    if (editingProduct && editFormRef.current) {
+      editFormRef.current.scrollIntoView({ behavior: "smooth" });
+
   // 🚚 When a product is selected for editing, scroll to the form
   useEffect(() => {
     if (editingProduct) {
       editFormRef.current?.scrollIntoView({ behavior: "smooth" });
+ main
     }
   }, [editingProduct]);
 
@@ -144,6 +154,8 @@ export default function AdminProductsPage() {
       formData.append("name", formState.name);
       formData.append("description", formState.description);
       formData.append("price", formState.price);
+      if (formState.salePrice)
+        formData.append("salePrice", formState.salePrice);
       formData.append("category", formState.category);
       formData.append("featured", formState.featured ? "true" : "false");
       if (formState.imageFile) formData.append("image", formState.imageFile);
@@ -168,6 +180,7 @@ export default function AdminProductsPage() {
         name: "",
         description: "",
         price: "",
+        salePrice: "",
         category: "engagement",
         featured: false,
         imageFile: null,
@@ -185,6 +198,7 @@ export default function AdminProductsPage() {
       name: product.name,
       description: product.description,
       price: product.price.toString(),
+      salePrice: product.salePrice ? product.salePrice.toString() : "",
       category: product.category,
       featured: product.featured,
     });
@@ -196,6 +210,7 @@ export default function AdminProductsPage() {
       name: "",
       description: "",
       price: "",
+      salePrice: "",
       category: "engagement",
       featured: false,
     });
@@ -231,6 +246,7 @@ export default function AdminProductsPage() {
           name: editForm.name,
           description: editForm.description,
           price: parseFloat(editForm.price),
+          ...(editForm.salePrice && { salePrice: parseFloat(editForm.salePrice) }),
           category: editForm.category,
           featured: editForm.featured,
         }),
@@ -355,6 +371,7 @@ export default function AdminProductsPage() {
         <form
           ref={editFormRef}
           onSubmit={handleUpdate}
+          style={{ scrollMarginTop: "120px" }}
           className="grid grid-cols-1 md:grid-cols-2 gap-4 border p-4 rounded"
         >
           <h3 className="col-span-full text-lg font-semibold">
@@ -396,6 +413,17 @@ export default function AdminProductsPage() {
             />
           </label>
           <label>
+            🔖 Sale Price (USD)
+            <input
+              type="number"
+              value={editForm.salePrice}
+              onChange={(e) =>
+                setEditForm((f) => ({ ...f, salePrice: e.target.value }))
+              }
+              className="mt-1 w-full border rounded p-2"
+            />
+          </label>
+          <label>
             📂 Category
             <select
               value={editForm.category}
@@ -419,7 +447,7 @@ export default function AdminProductsPage() {
             </select>
           </label>
           <label className="flex items-center space-x-2">
-            ✨ Featured
+            <span>✨ Featured</span>
             <input
               type="checkbox"
               checked={editForm.featured}
@@ -489,6 +517,15 @@ export default function AdminProductsPage() {
           />
         </label>
         <label>
+          🔖 Sale Price (USD)
+          <input
+            type="number"
+            value={formState.salePrice}
+            onChange={(e) => handleInput("salePrice", e.target.value)}
+            className="mt-1 w-full border rounded p-2"
+          />
+        </label>
+        <label>
           📂 Category
           <select
             value={formState.category}
@@ -510,7 +547,7 @@ export default function AdminProductsPage() {
           </select>
         </label>
         <label className="flex items-center space-x-2">
-          ✨ Featured
+          <span>✨ Featured</span>
           <input
             type="checkbox"
             checked={formState.featured}

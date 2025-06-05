@@ -15,6 +15,7 @@ type Product = {
   name: string;
   description: string;
   price: number;
+  salePrice?: number;
   category: string;
   slug: string;
   imageUrl: string;
@@ -68,6 +69,7 @@ export default async function handler(
       name: doc.name,
       description: doc.description,
       price: doc.price,
+      salePrice: doc.salePrice,
       category: doc.category,
       slug: doc.slug,
       imageUrl: doc.imageUrl,
@@ -107,6 +109,8 @@ export default async function handler(
     const name = getString(fields.name);
     const description = getString(fields.description);
     const price = parseFloat(getString(fields.price, "0"));
+    const salePriceStr = getString(fields.salePrice);
+    const salePrice = salePriceStr ? parseFloat(salePriceStr) : undefined;
     const category = getString(fields.category);
     const featured = getString(fields.featured, "false") === "true";
     const tagsRaw = fields.tags;
@@ -156,6 +160,7 @@ export default async function handler(
       name,
       description,
       price,
+      ...(salePrice !== undefined && { salePrice }),
       category,
       slug,
       imageUrl,
