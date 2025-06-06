@@ -7,6 +7,7 @@ import Link from "next/link";
 import Head from "next/head";
 import { useCart } from "@/context/CartContext";
 import { useState, useRef, useEffect } from "react";
+import { useRouter } from "next/router";
 import clientPromise from "@/lib/mongodb";
 import { GetServerSideProps } from "next";
 import Breadcrumbs from "@/components/Breadcrumbs";
@@ -36,6 +37,27 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
   }, []);
 
   const categories = Array.from(new Set(products.map((p) => p.category)));
+
+  const router = useRouter();
+
+  // Handle category from query string and optional scrolling
+  useEffect(() => {
+    if (!router.isReady) return;
+
+    const { category, scroll } = router.query;
+
+    if (typeof category === "string" && category) {
+      setActiveCategory(category);
+      resetCount();
+    }
+
+    if (scroll === "true") {
+      // Delay to ensure DOM is ready before scrolling
+      setTimeout(() => {
+        titleRef.current?.scrollIntoView({ behavior: "smooth" });
+      }, 0);
+    }
+  }, [router.isReady]);
 
   useEffect(() => {
     if (initialMount.current) {
