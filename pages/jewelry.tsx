@@ -38,6 +38,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
 
   const categories = Array.from(new Set(products.map((p) => p.category)));
 
+
   // Utility to format category slugs like "wedding-bands" -> "Wedding Bands"
   const formatCategory = (cat: string) =>
     cat.replace(/-/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
@@ -54,6 +55,8 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
     }
   };
 
+=======
+
   const router = useRouter();
 
   // Handle category from query string and optional scrolling
@@ -69,7 +72,13 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
 
     if (scroll === "true") {
       // Delay to ensure DOM is ready before scrolling
+
       setTimeout(scrollToTitle, 0);
+
+      setTimeout(() => {
+        titleRef.current?.scrollIntoView({ behavior: "smooth" });
+      }, 0);
+
     }
   }, [router.isReady]);
 
