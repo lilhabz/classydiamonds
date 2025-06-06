@@ -38,6 +38,25 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
 
   const categories = Array.from(new Set(products.map((p) => p.category)));
 
+
+  // Utility to format category slugs like "wedding-bands" -> "Wedding Bands"
+  const formatCategory = (cat: string) =>
+    cat.replace(/-/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
+
+  const scrollToTitle = () => {
+    const header = document.querySelector("header");
+    const offset = (header as HTMLElement | null)?.clientHeight || 80;
+    if (titleRef.current) {
+      const top =
+        titleRef.current.getBoundingClientRect().top +
+        window.pageYOffset -
+        offset;
+      window.scrollTo({ top, behavior: "smooth" });
+    }
+  };
+
+=======
+
   const router = useRouter();
 
   // Handle category from query string and optional scrolling
@@ -53,9 +72,13 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
 
     if (scroll === "true") {
       // Delay to ensure DOM is ready before scrolling
+
+      setTimeout(scrollToTitle, 0);
+
       setTimeout(() => {
         titleRef.current?.scrollIntoView({ behavior: "smooth" });
       }, 0);
+
     }
   }, [router.isReady]);
 
@@ -65,7 +88,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
       return;
     }
     resetCount();
-    titleRef.current?.scrollIntoView({ behavior: "smooth" });
+    scrollToTitle();
   }, [activeCategory]);
 
   const handleLoadMore = () => setVisibleCount((prev) => prev + 4);
@@ -116,7 +139,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
           ref={titleRef}
           className="text-2xl sm:text-3xl font-semibold text-center mb-8"
         >
-          Our Jewelry
+          {activeCategory === "All" ? "Our Jewelry" : formatCategory(activeCategory)}
         </h2>
         <div className="flex flex-wrap justify-center gap-3 mt-4">
           {["All", ...categories].map((cat) => {
