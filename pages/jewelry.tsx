@@ -7,6 +7,7 @@ import Link from "next/link";
 import Head from "next/head";
 import { useCart } from "@/context/CartContext";
 import { useState, useRef, useEffect } from "react";
+import { useRouter } from "next/router";
 import clientPromise from "@/lib/mongodb";
 import { GetServerSideProps } from "next";
 import Breadcrumbs from "@/components/Breadcrumbs";
@@ -37,13 +38,48 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
 
   const categories = Array.from(new Set(products.map((p) => p.category)));
 
+  // Utility to format category slugs like "wedding-bands" -> "Wedding Bands"
+  const formatCategory = (cat: string) =>
+    cat.replace(/-/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
+
+  const scrollToTitle = () => {
+    const header = document.querySelector("header");
+    const offset = (header as HTMLElement | null)?.clientHeight || 80;
+    if (titleRef.current) {
+      const top =
+        titleRef.current.getBoundingClientRect().top +
+        window.pageYOffset -
+        offset;
+      window.scrollTo({ top, behavior: "smooth" });
+    }
+  };
+
+  const router = useRouter();
+
+  // Handle category from query string and optional scrolling
+  useEffect(() => {
+    if (!router.isReady) return;
+
+    const { category, scroll } = router.query;
+
+    if (typeof category === "string" && category) {
+      setActiveCategory(category);
+      resetCount();
+    }
+
+    if (scroll === "true") {
+      // Delay to ensure DOM is ready before scrolling
+      setTimeout(scrollToTitle, 0);
+    }
+  }, [router.isReady]);
+
   useEffect(() => {
     if (initialMount.current) {
       initialMount.current = false;
       return;
     }
     resetCount();
-    titleRef.current?.scrollIntoView({ behavior: "smooth" });
+    scrollToTitle();
   }, [activeCategory]);
 
   const handleLoadMore = () => setVisibleCount((prev) => prev + 4);
@@ -94,7 +130,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
           ref={titleRef}
           className="text-2xl sm:text-3xl font-semibold text-center mb-8"
         >
-          Our Jewelry
+          {activeCategory === "All" ? "Our Jewelry" : formatCategory(activeCategory)}
         </h2>
         <div className="flex flex-wrap justify-center gap-3 mt-4">
           {["All", ...categories].map((cat) => {
@@ -105,7 +141,17 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
             return (
               <button
                 key={cat}
-                onClick={() => setActiveCategory(cat)}
+                onClick={() => {
+                  setActiveCategory(cat);
+                  router.push(
+                    {
+                      pathname: "/jewelry",
+                      query: { category: cat, scroll: "true" },
+                    },
+                    undefined,
+                    { shallow: true }
+                  );
+                }}
                 className={`px-4 py-2 rounded-full font-semibold transition-transform hover:scale-105 ${active ? "bg-[var(--foreground)] text-[var(--bg-nav)]" : "bg-[var(--bg-nav)] text-[var(--foreground)] hover:bg-[#364763]"}`}
               >
                 {label}
