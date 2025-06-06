@@ -7,6 +7,7 @@ import Link from "next/link";
 import Head from "next/head";
 import { useCart } from "@/context/CartContext";
 import { useState, useRef, useEffect } from "react";
+import { useRouter } from "next/router";
 import clientPromise from "@/lib/mongodb";
 import { GetServerSideProps } from "next";
 import Breadcrumbs from "@/components/Breadcrumbs";
@@ -24,10 +25,28 @@ export type ProductType = {
 
 export default function JewelryPage({ products }: { products: ProductType[] }) {
   const { addToCart } = useCart();
+  const router = useRouter();
   const [visibleCount, setVisibleCount] = useState(8);
   const [activeCategory, setActiveCategory] = useState<string>("All");
   const titleRef = useRef<HTMLHeadingElement>(null);
   const initialMount = useRef(true);
+
+  // Initialize active category from query params
+  useEffect(() => {
+    const { category } = router.query;
+    if (typeof category === "string") {
+      setActiveCategory(category.toLowerCase());
+    }
+  }, [router.query.category]);
+
+  // Optionally scroll to the products grid when coming from the home page
+  useEffect(() => {
+    if (router.query.scroll === "true") {
+      setTimeout(() => {
+        titleRef.current?.scrollIntoView({ behavior: "smooth" });
+      }, 100);
+    }
+  }, [router.query.scroll]);
 
   const resetCount = () => setVisibleCount(8);
   // Reset count on initial mount
@@ -45,6 +64,13 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
     resetCount();
     titleRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [activeCategory]);
+
+  const headingLabel =
+    activeCategory === "All"
+      ? "Our Jewelry"
+      : activeCategory
+          .replace(/-/g, " ")
+          .replace(/\b\w/g, (l) => l.toUpperCase());
 
   const handleLoadMore = () => setVisibleCount((prev) => prev + 4);
 
@@ -94,7 +120,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
           ref={titleRef}
           className="text-2xl sm:text-3xl font-semibold text-center mb-8"
         >
-          Our Jewelry
+          {headingLabel}
         </h2>
         <div className="flex flex-wrap justify-center gap-3 mt-4">
           {["All", ...categories].map((cat) => {
