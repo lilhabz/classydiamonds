@@ -74,6 +74,8 @@ export const authOptions: AuthOptions = {
   // 📨 Use JWT sessions
   session: {
     strategy: "jwt" as const,
+    // Limit session lifetime to 15 minutes for improved security
+    maxAge: 15 * 60,
   },
 
   // 🔄 Callbacks to modify token & session
