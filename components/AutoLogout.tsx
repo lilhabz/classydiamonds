@@ -1,3 +1,4 @@
+
 "use client";
 
 import {
@@ -34,12 +35,29 @@ export default function IdleTimerProvider({
   children: ReactNode;
 }) {
   const { data: session } = useSession();
+
+import { useEffect, useRef } from "react";
+import { useSession, signOut } from "next-auth/react";
+import { useRouter } from "next/router";
+
+const INACTIVITY_LIMIT = 15 * 60 * 1000; // 15 minutes in ms
+
+const AutoLogout = () => {
+  const { data: session } = useSession();
+  const router = useRouter();
+
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const [remaining, setRemaining] = useState(INACTIVITY_LIMIT);
 
   useEffect(() => {
+
     if (!session) return;
+
+    if (!session?.user?.isAdmin || !router.pathname.startsWith("/admin")) {
+      return;
+    }
+
 
     const resetTimer = () => {
       if (timerRef.current) clearTimeout(timerRef.current);
@@ -72,7 +90,14 @@ export default function IdleTimerProvider({
       );
       setRemaining(INACTIVITY_LIMIT);
     };
+
   }, [session]);
+
+  }, [session, router.pathname]);
+
+  return null;
+};
+
 
   return (
     <IdleTimerContext.Provider value={{ remaining }}>
