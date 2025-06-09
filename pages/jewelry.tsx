@@ -55,8 +55,6 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
     }
   };
 
-=======
-
   const router = useRouter();
 
   // Handle category from query string and optional scrolling
