@@ -24,7 +24,9 @@ interface OrderDetails {
 
 export default function AdminLogsPage() {
   const { data: session, status } = useSession();
-  const [logs, setLogs] = useState<AdminLog[]>([]);
+  const [orderLogs, setOrderLogs] = useState<
+    { orderId: string; logs: AdminLog[] }[]
+  >([]);
   const [loading, setLoading] = useState(true);
   const [expandedOrders, setExpandedOrders] = useState<
     Record<string, OrderDetails>
@@ -39,7 +41,25 @@ export default function AdminLogsPage() {
     try {
       const res = await fetch("/api/admin/logs");
       const data = await res.json();
-      setLogs(data.logs || []);
+      const grouped: Record<string, AdminLog[]> = {};
+      (data.logs || []).forEach((log: AdminLog) => {
+        if (!grouped[log.orderId]) grouped[log.orderId] = [];
+        grouped[log.orderId].push(log);
+      });
+      const aggregated = Object.entries(grouped)
+        .map(([orderId, logs]) => ({
+          orderId,
+          logs: logs.sort(
+            (a, b) =>
+              new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+          ),
+        }))
+        .sort(
+          (a, b) =>
+            new Date(b.logs[0].timestamp).getTime() -
+            new Date(a.logs[0].timestamp).getTime()
+        );
+      setOrderLogs(aggregated);
     } catch (err) {
       console.error("❌ Failed to fetch admin logs:", err);
     } finally {
@@ -68,12 +88,17 @@ export default function AdminLogsPage() {
 
   const downloadCSV = () => {
     const headers = ["Order ID", "Action", "Timestamp", "Admin"];
-    const rows = logs.map((log) => [
-      log.orderId,
-      log.action,
-      new Date(log.timestamp).toLocaleString(),
-      log.performedBy,
-    ]);
+    const rows: string[][] = [];
+    orderLogs.forEach(({ orderId, logs }) => {
+      logs.forEach((log) => {
+        rows.push([
+          orderId,
+          log.action,
+          new Date(log.timestamp).toLocaleString(),
+          log.performedBy,
+        ]);
+      });
+    });
 
     const csvContent = [headers, ...rows].map((r) => r.join(",")).join("\n");
     const blob = new Blob([csvContent], { type: "text/csv" });
@@ -86,10 +111,12 @@ export default function AdminLogsPage() {
     document.body.removeChild(link);
   };
 
-  const filteredLogs = logs.filter(
-    (log) =>
-      log.orderId.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      log.performedBy.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredOrderLogs = orderLogs.filter(
+    ({ orderId, logs }) =>
+      orderId.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      logs.some((l) =>
+        l.performedBy.toLowerCase().includes(searchQuery.toLowerCase())
+      )
   );
 
   if (status === "loading")
@@ -153,7 +180,7 @@ export default function AdminLogsPage() {
 
       {loading ? (
         <p>Loading logs...</p>
-      ) : filteredLogs.length === 0 ? (
+      ) : filteredOrderLogs.length === 0 ? (
         <p>No matching admin logs found.</p>
       ) : (
         <div className="overflow-auto">
@@ -167,72 +194,82 @@ export default function AdminLogsPage() {
               </tr>
             </thead>
             <tbody>
-              {filteredLogs.map((log) => (
-                <>
-                  <tr
-                    key={log._id}
-                    className="border-b border-[var(--bg-nav)] cursor-pointer"
-                    onClick={() => fetchOrderDetails(log.orderId)}
-                  >
-                    <td className="py-2 px-4 text-blue-300 hover:text-blue-400">
-                      {log.orderId.slice(-8)}
-                    </td>
-                    <td
-                      className={`py-2 px-4 capitalize ${
-                        log.action === "shipped"
-                          ? "text-green-400"
-                          : log.action === "delivered"
-                          ? "text-purple-400"
-                          : log.action === "restore"
-                          ? "text-blue-400"
-                          : log.action === "tracking"
-                          ? "text-teal-300"
-                          : "text-yellow-300"
-                      }`}
+              {filteredOrderLogs.map(({ orderId, logs }) => {
+                const latest = logs[0];
+                return (
+                  <>
+                    <tr
+                      key={orderId}
+                      className="border-b border-[var(--bg-nav)] cursor-pointer"
+                      onClick={() => fetchOrderDetails(orderId)}
                     >
-                      {log.action}
-                    </td>
+                      <td className="py-2 px-4 text-blue-300 hover:text-blue-400">
+                        {orderId.slice(-8)}
+                      </td>
+                      <td
+                        className={`py-2 px-4 capitalize ${
+                          latest.action === "shipped"
+                            ? "text-green-400"
+                            : latest.action === "delivered"
+                            ? "text-purple-400"
+                            : latest.action === "restore"
+                            ? "text-blue-400"
+                            : latest.action === "tracking"
+                            ? "text-teal-300"
+                            : "text-yellow-300"
+                        }`}
+                      >
+                        {latest.action}
+                      </td>
 
-                    <td className="py-2 px-4 text-sm">
-                      {new Date(log.timestamp).toLocaleString()}
-                    </td>
-                    <td className="py-2 px-4 text-sm text-gray-400">
-                      {log.performedBy}
-                    </td>
-                  </tr>
-                  {expandedOrders[log.orderId] && (
-                    <tr className="bg-[#2a374f]">
-                      <td colSpan={4} className="px-6 py-4">
-                        <p className="mb-2 text-sm">
-                          🔢 Order #: {expandedOrders[log.orderId].orderNumber ?? "N/A"}
-                        </p>
-                        <p className="mb-2 text-sm">
-                          📍 Address:{" "}
-                          {expandedOrders[log.orderId].customerAddress}
-                        </p>
-                        <p className="mb-2 text-sm">
-                          🧾 Order Date:{" "}
-                          {new Date(
-                            expandedOrders[log.orderId].createdAt
-                          ).toLocaleString()}
-                        </p>
-                        <ul className="pl-4 list-disc text-sm mb-2">
-                          {expandedOrders[log.orderId].items.map((item, i) => (
-                            <li key={i}>
-                              {item.quantity}× {item.name} – ${" "}
-                              {(item.quantity * item.price).toFixed(2)}
-                            </li>
-                          ))}
-                        </ul>
-                        <p className="font-semibold">
-                          💰 Total: $
-                          {expandedOrders[log.orderId].amount.toFixed(2)}
-                        </p>
+                      <td className="py-2 px-4 text-sm">
+                        {new Date(latest.timestamp).toLocaleString()}
+                      </td>
+                      <td className="py-2 px-4 text-sm text-gray-400">
+                        {latest.performedBy}
                       </td>
                     </tr>
-                  )}
-                </>
-              ))}
+                    {expandedOrders[orderId] && (
+                      <tr className="bg-[#2a374f]">
+                        <td colSpan={4} className="px-6 py-4">
+                          <p className="mb-2 text-sm">
+                            🔢 Order #: {expandedOrders[orderId].orderNumber ?? "N/A"}
+                          </p>
+                          <p className="mb-2 text-sm">
+                            📍 Address: {expandedOrders[orderId].customerAddress}
+                          </p>
+                          <p className="mb-2 text-sm">
+                            🧾 Order Date: {new Date(
+                              expandedOrders[orderId].createdAt
+                            ).toLocaleString()}
+                          </p>
+                          <ul className="pl-4 list-disc text-sm mb-2">
+                            {expandedOrders[orderId].items.map((item, i) => (
+                              <li key={i}>
+                                {item.quantity}× {item.name} – ${" "}
+                                {(item.quantity * item.price).toFixed(2)}
+                              </li>
+                            ))}
+                          </ul>
+                          <p className="font-semibold mb-2">
+                            💰 Total: ${expandedOrders[orderId].amount.toFixed(2)}
+                          </p>
+                          <div className="text-sm mt-4">
+                            <p className="font-semibold mb-1">Admin Actions:</p>
+                            <ul className="list-disc pl-4 space-y-1">
+                              {logs.map((l) => (
+                                <li key={l._id}>
+                                  {new Date(l.timestamp).toLocaleString()} – {l.action} by {l.performedBy}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </>
+                );
+              })}
             </tbody>
           </table>
         </div>
