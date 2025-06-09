@@ -9,7 +9,6 @@ import {
   ReactNode,
 } from "react";
 import { useSession, signOut } from "next-auth/react";
-import { useRouter } from "next/router";
 
 const INACTIVITY_LIMIT = 15 * 60 * 1000; // 15 minutes in ms
 
@@ -35,12 +34,13 @@ export default function IdleTimerProvider({
   children: ReactNode;
 }) {
   const { data: session } = useSession();
-  const router = useRouter();
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const [remaining, setRemaining] = useState(INACTIVITY_LIMIT);
 
   useEffect(() => {
+    if (!session) return;
+
     const resetTimer = () => {
       if (timerRef.current) clearTimeout(timerRef.current);
       if (intervalRef.current) clearInterval(intervalRef.current);
@@ -61,13 +61,8 @@ export default function IdleTimerProvider({
       "touchstart",
     ];
 
-    const isAdmin = session?.user?.isAdmin;
-    const onAdminPage = router.pathname.startsWith("/admin");
-
-    if (isAdmin && onAdminPage) {
-      events.forEach((event) => window.addEventListener(event, resetTimer));
-      resetTimer();
-    }
+    events.forEach((event) => window.addEventListener(event, resetTimer));
+    resetTimer();
 
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
@@ -75,8 +70,9 @@ export default function IdleTimerProvider({
       events.forEach((event) =>
         window.removeEventListener(event, resetTimer)
       );
+      setRemaining(INACTIVITY_LIMIT);
     };
-  }, [session, router.pathname]);
+  }, [session]);
 
   return (
     <IdleTimerContext.Provider value={{ remaining }}>
