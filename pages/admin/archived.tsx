@@ -56,7 +56,9 @@ export default function ArchivedOrdersPage() {
       const res = await fetch("/api/admin/archived", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ orderId, restore: true, adminName }),
+
+        body: JSON.stringify({ orderId, restore: true, adminName: session?.user?.firstName }),
+
       });
       const result = await res.json();
       if (res.ok) fetchArchivedOrders();
