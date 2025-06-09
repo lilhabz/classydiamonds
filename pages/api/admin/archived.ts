@@ -2,6 +2,8 @@
 
 import type { NextApiRequest, NextApiResponse } from "next";
 import clientPromise from "@/lib/mongodb";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "../auth/[...nextauth]";
 
 export default async function handler(
   req: NextApiRequest,
@@ -27,7 +29,12 @@ export default async function handler(
   }
 
   if (req.method === "POST") {
-    const { orderId, restore } = req.body;
+    const session = await getServerSession(req, res, authOptions);
+    const { orderId, restore, adminName: bodyName } = req.body;
+    const adminName =
+      bodyName ||
+      session?.user?.firstName ||
+      session?.user?.name?.split(" ")[0];
 
     if (!orderId) {
       return res.status(400).json({ error: "Missing orderId" });
@@ -52,7 +59,7 @@ export default async function handler(
         orderId,
         action: restore ? "restore" : "archive",
         timestamp: new Date(),
-        performedBy: "admin", // replace later with session.user.email
+        performedBy: adminName || "unknown",
       });
 
       return res.status(200).json({ success: true });

@@ -2,6 +2,8 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import clientPromise from "@/lib/mongodb";
 import nodemailer from "nodemailer";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "./auth/[...nextauth]";
 import { buildOrderDetailsHtml } from "@/lib/emailUtils";
 
 export default async function handler(
@@ -12,7 +14,12 @@ export default async function handler(
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const { orderId, adminEmail } = req.body;
+  const session = await getServerSession(req, res, authOptions);
+  const { orderId, adminName: bodyName } = req.body;
+  const adminName =
+    bodyName ||
+    session?.user?.firstName ||
+    session?.user?.name?.split(" ")[0];
   if (!orderId) {
     return res.status(400).json({ error: "Missing orderId" });
   }
@@ -38,7 +45,7 @@ export default async function handler(
       orderId,
       action: "delivered",
       timestamp: new Date(),
-      performedBy: adminEmail || "unknown",
+      performedBy: adminName || "unknown",
     });
 
     const transporter = nodemailer.createTransport({

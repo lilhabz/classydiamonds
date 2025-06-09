@@ -54,10 +54,12 @@ export default function AdminOrdersPage() {
     if (!confirmed) return;
 
     try {
+      const adminName =
+        session?.user?.firstName || session?.user?.name?.split(" ")[0];
       const res = await fetch("/api/shipped", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ orderId }),
+        body: JSON.stringify({ orderId, adminName }),
       });
       const result = await res.json();
       if (res.ok) fetchOrders();
@@ -74,10 +76,12 @@ export default function AdminOrdersPage() {
     if (!confirmed) return;
 
     try {
+      const adminName =
+        session?.user?.firstName || session?.user?.name?.split(" ")[0];
       const res = await fetch("/api/admin/archived", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ orderId }),
+        body: JSON.stringify({ orderId, adminName }),
       });
       const result = await res.json();
       if (res.ok) fetchOrders();
