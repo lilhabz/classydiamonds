@@ -8,6 +8,7 @@ import { SessionProvider } from "next-auth/react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { CartProvider } from "@/context/CartContext";
+import AutoLogout from "@/components/AutoLogout";
 
 // ⚡ Import the SpeedInsights component (no HOC wrapper needed)
 import { SpeedInsights } from "@vercel/speed-insights/next";
@@ -46,6 +47,8 @@ function App({ Component, pageProps: { session, ...pageProps } }: AppProps) {
       <CartProvider>
         {/* 🌐 Navbar */}
         <Navbar />
+        {/* ⏳ Auto logout after inactivity */}
+        <AutoLogout />
 
         {/* 📦 Main Content */}
         <div className="pt-20 flex flex-col min-h-screen bg-[#1f2a44] text-[#e0e0e0]">
