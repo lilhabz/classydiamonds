@@ -27,7 +27,7 @@ export default async function handler(
   }
 
   if (req.method === "POST") {
-    const { orderId, restore } = req.body;
+    const { orderId, restore, adminName } = req.body;
 
     if (!orderId) {
       return res.status(400).json({ error: "Missing orderId" });
@@ -52,7 +52,7 @@ export default async function handler(
         orderId,
         action: restore ? "restore" : "archive",
         timestamp: new Date(),
-        performedBy: "admin", // replace later with session.user.email
+        performedBy: adminName || "unknown",
       });
 
       return res.status(200).json({ success: true });
