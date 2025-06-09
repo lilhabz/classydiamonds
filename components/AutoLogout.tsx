@@ -4,7 +4,7 @@ import { signOut } from "next-auth/react";
 const INACTIVITY_LIMIT = 15 * 60 * 1000; // 15 minutes in ms
 
 const AutoLogout = () => {
-  const timerRef = useRef<NodeJS.Timeout>();
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     const resetTimer = () => {
