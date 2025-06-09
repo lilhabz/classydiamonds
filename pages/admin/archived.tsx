@@ -60,7 +60,7 @@ export default function ArchivedOrdersPage() {
         
 
 
-        body: JSON.stringify({ orderId, restore: true, adminName: session?.user?.firstName }),
+        body: JSON.stringify({ orderId, restore: true, adminName }),
 
 
       });
