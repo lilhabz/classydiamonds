@@ -11,6 +11,8 @@ import {
 } from "react";
 import { useSession, signOut } from "next-auth/react";
 
+
+
 const INACTIVITY_LIMIT = 15 * 60 * 1000; // 15 minutes in ms
 
 interface IdleTimerContextValue {
@@ -38,13 +40,40 @@ export default function IdleTimerProvider({
 
 import { useEffect, useRef } from "react";
 import { useSession, signOut } from "next-auth/react";
+
 import { useRouter } from "next/router";
 
 const INACTIVITY_LIMIT = 15 * 60 * 1000; // 15 minutes in ms
 
+
+interface IdleTimerContextValue {
+  remaining: number;
+}
+
+const IdleTimerContext = createContext<IdleTimerContextValue | undefined>(
+  undefined
+);
+
+export function useIdleTimer() {
+  const context = useContext(IdleTimerContext);
+  if (!context) {
+    throw new Error("useIdleTimer must be used within IdleTimerProvider");
+  }
+  return context;
+}
+
+export default function IdleTimerProvider({
+  children,
+}: {
+  children: ReactNode;
+}) {
+  const { data: session } = useSession();
+  const router = useRouter();
+
 const AutoLogout = () => {
   const { data: session } = useSession();
   const router = useRouter();
+
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -52,7 +81,10 @@ const AutoLogout = () => {
 
   useEffect(() => {
 
+
+
     if (!session) return;
+
 
     if (!session?.user?.isAdmin || !router.pathname.startsWith("/admin")) {
       return;
@@ -91,12 +123,17 @@ const AutoLogout = () => {
       setRemaining(INACTIVITY_LIMIT);
     };
 
+  }, [session, router.pathname]);
+
+
+
   }, [session]);
 
   }, [session, router.pathname]);
 
   return null;
 };
+
 
 
   return (
