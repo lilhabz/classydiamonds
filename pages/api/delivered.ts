@@ -2,6 +2,8 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import clientPromise from "@/lib/mongodb";
 import nodemailer from "nodemailer";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "./auth/[...nextauth]";
 import { buildOrderDetailsHtml } from "@/lib/emailUtils";
 
 export default async function handler(
@@ -12,7 +14,9 @@ export default async function handler(
     return res.status(405).json({ error: "Method not allowed" });
   }
 
+
   const { orderId, adminName } = req.body;
+
   if (!orderId) {
     return res.status(400).json({ error: "Missing orderId" });
   }

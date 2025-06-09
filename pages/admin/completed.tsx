@@ -66,7 +66,9 @@ export default function CompletedOrdersPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
 
+
         body: JSON.stringify({ orderId, adminName: session?.user?.firstName }),
+
 
       });
       const result = await res.json();
@@ -95,7 +97,9 @@ export default function CompletedOrdersPage() {
           trackingNumber: input.trackingNumber,
           carrier: input.carrier,
 
+
           adminName: session?.user?.firstName,
+
 
         }),
       });
@@ -123,7 +127,9 @@ export default function CompletedOrdersPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
 
+
         body: JSON.stringify({ orderId, adminName: session?.user?.firstName }),
+
 
       });
       const result = await res.json();

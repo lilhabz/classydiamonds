@@ -1,5 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import nodemailer from "nodemailer";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "./auth/[...nextauth]";
 import clientPromise from "@/lib/mongodb";
 import { buildOrderDetailsHtml } from "@/lib/emailUtils";
 
@@ -11,7 +13,9 @@ export default async function handler(
     return res.status(405).json({ error: "Method not allowed" });
   }
 
+
   const { orderId, trackingNumber, carrier, adminName } = req.body;
+
   if (!orderId || !trackingNumber) {
     return res.status(400).json({ error: "Missing orderId or trackingNumber" });
   }

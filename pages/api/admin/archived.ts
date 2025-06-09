@@ -2,6 +2,8 @@
 
 import type { NextApiRequest, NextApiResponse } from "next";
 import clientPromise from "@/lib/mongodb";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "../auth/[...nextauth]";
 
 export default async function handler(
   req: NextApiRequest,
@@ -27,7 +29,9 @@ export default async function handler(
   }
 
   if (req.method === "POST") {
+
     const { orderId, restore, adminName } = req.body;
+
 
     if (!orderId) {
       return res.status(400).json({ error: "Missing orderId" });
