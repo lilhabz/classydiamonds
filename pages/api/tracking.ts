@@ -11,7 +11,7 @@ export default async function handler(
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const { orderId, trackingNumber, carrier, adminEmail } = req.body;
+  const { orderId, trackingNumber, carrier, adminName } = req.body;
   if (!orderId || !trackingNumber) {
     return res.status(400).json({ error: "Missing orderId or trackingNumber" });
   }
@@ -39,7 +39,7 @@ export default async function handler(
       orderId,
       action: "tracking",
       timestamp: new Date(),
-      performedBy: adminEmail || "unknown",
+      performedBy: adminName || "unknown",
     });
 
     const transporter = nodemailer.createTransport({
