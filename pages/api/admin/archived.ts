@@ -52,7 +52,7 @@ export default async function handler(
         orderId,
         action: restore ? "restore" : "archive",
         timestamp: new Date(),
-        performedBy: "admin", // replace later with session.user.email
+        performedBy: req.body.adminName || "unknown",
       });
 
       return res.status(200).json({ success: true });

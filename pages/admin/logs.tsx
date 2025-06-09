@@ -12,6 +12,7 @@ interface AdminLog {
   action: "archive" | "restore" | "shipped" | "delivered" | "tracking";
   timestamp: string;
   performedBy: string;
+  orderNumber?: number;
 }
 
 interface OrderDetails {
@@ -26,8 +27,8 @@ export default function AdminLogsPage() {
   const { data: session, status } = useSession();
   const [logs, setLogs] = useState<AdminLog[]>([]);
   const [loading, setLoading] = useState(true);
-  const [expandedOrders, setExpandedOrders] = useState<
-    Record<string, OrderDetails>
+  const [expandedRows, setExpandedRows] = useState<
+    Record<string, { details: OrderDetails; history: AdminLog[] }>
   >({});
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -47,11 +48,11 @@ export default function AdminLogsPage() {
     }
   };
 
-  const fetchOrderDetails = async (orderId: string) => {
-    if (expandedOrders[orderId]) {
-      const updated = { ...expandedOrders };
-      delete updated[orderId];
-      setExpandedOrders(updated);
+  const fetchOrderDetails = async (logId: string, orderId: string) => {
+    if (expandedRows[logId]) {
+      const updated = { ...expandedRows };
+      delete updated[logId];
+      setExpandedRows(updated);
       return;
     }
 
@@ -59,7 +60,11 @@ export default function AdminLogsPage() {
       const res = await fetch(`/api/admin/order?orderId=${orderId}`);
       const data = await res.json();
       if (res.ok) {
-        setExpandedOrders((prev) => ({ ...prev, [orderId]: data }));
+        const history = logs.filter((l) => l.orderId === orderId);
+        setExpandedRows((prev) => ({
+          ...prev,
+          [logId]: { details: data, history },
+        }));
       }
     } catch (err) {
       console.error("❌ Failed to fetch order details:", err);
@@ -67,9 +72,10 @@ export default function AdminLogsPage() {
   };
 
   const downloadCSV = () => {
-    const headers = ["Order ID", "Action", "Timestamp", "Admin"];
+    const headers = ["Order ID", "Order #", "Action", "Timestamp", "Admin"];
     const rows = logs.map((log) => [
       log.orderId,
+      log.orderNumber ?? "",
       log.action,
       new Date(log.timestamp).toLocaleString(),
       log.performedBy,
@@ -161,6 +167,7 @@ export default function AdminLogsPage() {
             <thead className="bg-[var(--bg-nav)]">
               <tr>
                 <th className="py-2 px-4">🆔 Order ID</th>
+                <th className="py-2 px-4">#</th>
                 <th className="py-2 px-4">Action</th>
                 <th className="py-2 px-4">Time</th>
                 <th className="py-2 px-4">Admin</th>
@@ -172,11 +179,12 @@ export default function AdminLogsPage() {
                   <tr
                     key={log._id}
                     className="border-b border-[var(--bg-nav)] cursor-pointer"
-                    onClick={() => fetchOrderDetails(log.orderId)}
+                    onClick={() => fetchOrderDetails(log._id, log.orderId)}
                   >
                     <td className="py-2 px-4 text-blue-300 hover:text-blue-400">
                       {log.orderId.slice(-8)}
                     </td>
+                    <td className="py-2 px-4">{log.orderNumber ?? "-"}</td>
                     <td
                       className={`py-2 px-4 capitalize ${
                         log.action === "shipped"
@@ -200,24 +208,24 @@ export default function AdminLogsPage() {
                       {log.performedBy}
                     </td>
                   </tr>
-                  {expandedOrders[log.orderId] && (
+                  {expandedRows[log._id] && (
                     <tr className="bg-[#2a374f]">
-                      <td colSpan={4} className="px-6 py-4">
+                      <td colSpan={5} className="px-6 py-4">
                         <p className="mb-2 text-sm">
-                          🔢 Order #: {expandedOrders[log.orderId].orderNumber ?? "N/A"}
+                          🔢 Order #: {expandedRows[log._id].details.orderNumber ?? "N/A"}
                         </p>
                         <p className="mb-2 text-sm">
                           📍 Address:{" "}
-                          {expandedOrders[log.orderId].customerAddress}
+                          {expandedRows[log._id].details.customerAddress}
                         </p>
                         <p className="mb-2 text-sm">
                           🧾 Order Date:{" "}
                           {new Date(
-                            expandedOrders[log.orderId].createdAt
+                            expandedRows[log._id].details.createdAt
                           ).toLocaleString()}
                         </p>
                         <ul className="pl-4 list-disc text-sm mb-2">
-                          {expandedOrders[log.orderId].items.map((item, i) => (
+                          {expandedRows[log._id].details.items.map((item, i) => (
                             <li key={i}>
                               {item.quantity}× {item.name} – ${" "}
                               {(item.quantity * item.price).toFixed(2)}
@@ -226,8 +234,18 @@ export default function AdminLogsPage() {
                         </ul>
                         <p className="font-semibold">
                           💰 Total: $
-                          {expandedOrders[log.orderId].amount.toFixed(2)}
+                          {expandedRows[log._id].details.amount.toFixed(2)}
                         </p>
+                        <div className="mt-4">
+                          <p className="font-semibold mb-1">History:</p>
+                          <ul className="pl-4 list-disc text-sm">
+                            {expandedRows[log._id].history.map((h) => (
+                              <li key={h._id}>
+                                {h.action} – {new Date(h.timestamp).toLocaleString()} – {h.performedBy}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
                       </td>
                     </tr>
                   )}

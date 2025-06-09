@@ -15,10 +15,30 @@ export default async function handler(
     const client = await clientPromise;
     const db = client.db();
 
+    // Join with orders collection to fetch the human friendly order number
     const logs = await db
       .collection("adminLogs")
-      .find({})
-      .sort({ timestamp: -1 })
+      .aggregate([
+        { $sort: { timestamp: -1 } },
+        {
+          $lookup: {
+            from: "orders",
+            localField: "orderId",
+            foreignField: "stripeSessionId",
+            as: "order",
+          },
+        },
+        { $unwind: { path: "$order", preserveNullAndEmptyArrays: true } },
+        {
+          $project: {
+            orderId: 1,
+            action: 1,
+            timestamp: 1,
+            performedBy: 1,
+            orderNumber: "$order.orderNumber",
+          },
+        },
+      ])
       .toArray();
 
     return res.status(200).json({ logs });

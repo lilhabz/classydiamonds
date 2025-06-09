@@ -57,7 +57,7 @@ export default function AdminOrdersPage() {
       const res = await fetch("/api/shipped", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ orderId }),
+        body: JSON.stringify({ orderId, adminName: session?.user?.firstName }),
       });
       const result = await res.json();
       if (res.ok) fetchOrders();
@@ -77,7 +77,7 @@ export default function AdminOrdersPage() {
       const res = await fetch("/api/admin/archived", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ orderId }),
+        body: JSON.stringify({ orderId, adminName: session?.user?.firstName }),
       });
       const result = await res.json();
       if (res.ok) fetchOrders();
