@@ -8,6 +8,7 @@ import { useRouter } from "next/router";
 import { useSession, signOut } from "next-auth/react";
 import { FiUser, FiShoppingCart, FiSearch, FiMenu, FiX } from "react-icons/fi";
 import { useCart } from "@/context/CartContext";
+import { useIdleTimer } from "@/components/AutoLogout";
 
 // 📝 Search results can be either site pages or products.
 // Update field mappings here if your schemas change.
@@ -31,8 +32,15 @@ const Navbar = () => {
   const router = useRouter();
   const pathname = router.pathname;
   const { data: session } = useSession();
+  const { remaining } = useIdleTimer();
   const { cartItems, increaseQty, decreaseQty, removeFromCart, addedItemName } =
     useCart();
+  const showCountdown =
+    session?.user?.isAdmin && pathname.startsWith("/admin");
+  const minutes = Math.floor(remaining / 60000);
+  const seconds = Math.floor((remaining % 60000) / 1000)
+    .toString()
+    .padStart(2, "0");
 
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -269,6 +277,11 @@ const Navbar = () => {
                 </span>
               )}
             </button>
+            {showCountdown && (
+              <span className="text-xs text-yellow-300">
+                {minutes}:{seconds}
+              </span>
+            )}
           </div>
         </div>
 
@@ -383,6 +396,12 @@ const Navbar = () => {
                 </span>
               )}
             </button>
+
+            {showCountdown && (
+              <span className="text-sm text-yellow-300">
+                {minutes}:{seconds}
+              </span>
+            )}
 
             {/* 🔍 Search Icon – toggles dropdown */}
             <button
