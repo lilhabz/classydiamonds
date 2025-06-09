@@ -65,7 +65,11 @@ export default function CompletedOrdersPage() {
       const res = await fetch("/api/delivered", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ orderId, adminName }),
+
+
+        body: JSON.stringify({ orderId, adminName: session?.user?.firstName }),
+
+
       });
       const result = await res.json();
       if (res.ok) fetchCompletedOrders();
@@ -92,7 +96,11 @@ export default function CompletedOrdersPage() {
           orderId,
           trackingNumber: input.trackingNumber,
           carrier: input.carrier,
-          adminName,
+
+
+          adminName: session?.user?.firstName,
+
+
         }),
       });
       const result = await res.json();
@@ -118,7 +126,11 @@ export default function CompletedOrdersPage() {
       const res = await fetch("/api/admin/archived", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ orderId, adminName }),
+
+
+        body: JSON.stringify({ orderId, adminName: session?.user?.firstName }),
+
+
       });
       const result = await res.json();
       if (res.ok) fetchCompletedOrders();

@@ -29,12 +29,9 @@ export default async function handler(
   }
 
   if (req.method === "POST") {
-    const session = await getServerSession(req, res, authOptions);
-    const { orderId, restore, adminName: bodyName } = req.body;
-    const adminName =
-      bodyName ||
-      session?.user?.firstName ||
-      session?.user?.name?.split(" ")[0];
+
+    const { orderId, restore, adminName } = req.body;
+
 
     if (!orderId) {
       return res.status(400).json({ error: "Missing orderId" });

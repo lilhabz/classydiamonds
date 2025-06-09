@@ -14,12 +14,9 @@ export default async function handler(
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const session = await getServerSession(req, res, authOptions);
-  const { orderId, adminName: bodyName } = req.body;
-  const adminName =
-    bodyName ||
-    session?.user?.firstName ||
-    session?.user?.name?.split(" ")[0];
+
+  const { orderId, adminName } = req.body;
+
   if (!orderId) {
     return res.status(400).json({ error: "Missing orderId" });
   }

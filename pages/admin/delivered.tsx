@@ -62,7 +62,11 @@ export default function DeliveredOrdersPage() {
       const res = await fetch("/api/admin/archived", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ orderId, adminName }),
+
+
+        body: JSON.stringify({ orderId, adminName: session?.user?.firstName }),
+
+
       });
       const result = await res.json();
       if (res.ok) fetchDeliveredOrders();
