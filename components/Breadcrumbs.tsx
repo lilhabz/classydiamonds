@@ -45,6 +45,7 @@ export default function Breadcrumbs({
         </li>
         {segments.map((seg, i) => {
           const href = buildHref(i);
+          const disableScroll = isProductPage && i === 0;
           const label =
             customLabels[seg] ??
             seg.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
@@ -54,6 +55,7 @@ export default function Breadcrumbs({
               <span className="mx-1">›</span>
               <Link
                 href={href}
+                scroll={disableScroll ? false : undefined}
                 className="hover:text-white text-white/70 capitalize"
               >
                 {label}
