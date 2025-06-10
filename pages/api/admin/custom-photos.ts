@@ -1,7 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { v2 as cloudinary } from "cloudinary";
 import clientPromise from "@/lib/mongodb";
-import formidable from "formidable";
+import { IncomingForm } from "formidable";
 
 export const config = { api: { bodyParser: false } };
 
@@ -58,7 +58,7 @@ export default async function handler(
   }
 
   try {
-    const form = new formidable.IncomingForm();
+    const form = new IncomingForm();
     const { files } = await new Promise<any>((resolve, reject) => {
       form.parse(req, (err, _fields, fls) =>
         err ? reject(err) : resolve({ files: fls })
