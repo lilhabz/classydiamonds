@@ -123,6 +123,7 @@ export const jewelryData = [
     image: "/products/twist-rope-ring.jpg",
     slug: "twist-rope-wedding-ring",
     category: "wedding-bands",
+    gender: "him",
   },
   {
     id: 206,
@@ -131,6 +132,7 @@ export const jewelryData = [
     image: "/products/beveled-edge.jpg",
     slug: "beveled-edge-band",
     category: "wedding-bands",
+    gender: "him",
   },
   {
     id: 207,
@@ -343,6 +345,7 @@ export const jewelryData = [
     image: "/products/nameplate-necklace.jpg",
     slug: "gold-nameplate-necklace",
     category: "necklaces",
+    gender: "her",
   },
   {
     id: 503,
@@ -424,6 +427,7 @@ export const jewelryData = [
     image: "/products/gold-hoops.jpg",
     slug: "gold-hoop-earrings",
     category: "earrings",
+    gender: "her",
   },
   {
     id: 603,
