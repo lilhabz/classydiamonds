@@ -323,7 +323,7 @@ export default function Home({ products }: HomeProps) {
             Gifts for Him & Her
           </h2>
           <div className="grid grid-cols-2 gap-4 justify-center max-w-2xl mx-auto">
-            [
+            {[
               { name: "For Him", image: "/category/his-gift-cat.jpg" },
               { name: "For Her", image: "/category/her-gift-cat.jpg" },
             ].map((gift, index) => (
