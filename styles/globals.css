@@ -48,6 +48,15 @@ header {
   scrollbar-width: none;
 }
 
+/* 🖱️ Pointer cursor for all standard clickable elements */
+button,
+a,
+input[type="button"],
+input[type="submit"],
+input[type="reset"] {
+  cursor: pointer;
+}
+
 /* ✅ Scroll Snap Classes (do NOT use @apply) */
 .scroll-snap-x {
   scroll-snap-type: x mandatory;
