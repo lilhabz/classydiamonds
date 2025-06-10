@@ -149,8 +149,10 @@ export default function WatchesPage({ products }: WatchesProps) {
         <Breadcrumbs />
       </div>
 
+
         <section className="pt-16 pb-8 px-4 sm:px-6 max-w-7xl mx-auto">
         <h1 className="text-3xl font-bold text-white text-center mb-6">Watches</h1>
+
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
           {watchProducts.map((product) => (
             <div
@@ -184,7 +186,9 @@ export default function WatchesPage({ products }: WatchesProps) {
                     quantity: 1,
                   });
                 }}
+
                 className="m-4 px-6 py-3 bg-[#e0e0e0] text-[#1f2a44] rounded-xl hover:scale-105 transition"
+
               >
                 Add to Cart
               </button>
