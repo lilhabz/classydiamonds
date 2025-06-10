@@ -158,20 +158,24 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
       <section className="pt-16 pb-8 px-4 sm:px-6 max-w-7xl mx-auto">
         <h2
           ref={titleRef}
-          className="text-2xl sm:text-3xl font-semibold text-center mb-8"
+          className="text-2xl sm:text-3xl font-semibold text-center"
         >
-          {`${
-            genderFilter === "him"
-              ? "For Him - "
-              : genderFilter === "her"
-              ? "For Her - "
-              : ""
-          }${
-            activeCategory === "All"
-              ? "Our Jewelry"
-              : formatCategory(activeCategory)
-          }`}
+          {genderFilter === "him"
+            ? "For Him"
+            : genderFilter === "her"
+            ? "For Her"
+            : activeCategory === "All"
+            ? "Our Jewelry"
+            : formatCategory(activeCategory)}
         </h2>
+        {genderFilter && (
+          <p className="text-xl sm:text-2xl text-center mt-2 mb-6">
+            {activeCategory === "All"
+              ? "All Jewelry"
+              : formatCategory(activeCategory)}
+          </p>
+        )}
+        {!genderFilter && <div className="mb-8" />}
         <div className="flex flex-wrap justify-center gap-3 mt-4">
           {["All", ...categories].map((cat) => {
             const label = cat
