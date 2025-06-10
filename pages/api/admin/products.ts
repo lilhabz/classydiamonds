@@ -115,10 +115,14 @@ export default async function handler(
     const salePrice = salePriceStr ? parseFloat(salePriceStr) : undefined;
     const category = getString(fields.category);
     const featured = getString(fields.featured, "false") === "true";
+
     const genderStr = getString(fields.gender, "unisex");
     const gender: "unisex" | "him" | "her" = ["unisex", "him", "her"].includes(genderStr)
       ? (genderStr as "unisex" | "him" | "her")
       : "unisex";
+
+    const gender = getString(fields.gender, "unisex");
+
     const tagsRaw = fields.tags;
     const tags = Array.isArray(tagsRaw)
       ? tagsRaw.filter(Boolean)
