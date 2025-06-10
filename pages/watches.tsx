@@ -1,209 +1,80 @@
-// 📄 pages/watches.tsx – Watches Collection Page matching jewelry layout ⌚
-
-"use client";
-
+import Head from "next/head";
 import Image from "next/image";
 import Link from "next/link";
-import Head from "next/head";
-import { useCart } from "@/context/CartContext";
-import { useState, useRef, useEffect } from "react";
-import { useRouter } from "next/router";
-import clientPromise from "@/lib/mongodb";
 import { GetServerSideProps } from "next";
-import Breadcrumbs from "@/components/Breadcrumbs";
+import clientPromise from "@/lib/mongodb";
+import { useCart } from "@/context/CartContext";
 
 export type ProductType = {
   id: string;
-  slug: string;
+  slug?: string;
   name: string;
   price: number;
-  salePrice?: number;
   image: string;
   category: string;
-  gender?: "unisex" | "him" | "her";
-  description?: string;
 };
 
-export default function WatchesPage({ products }: { products: ProductType[] }) {
+interface WatchesProps {
+  products: ProductType[];
+}
+
+export default function WatchesPage({ products }: WatchesProps) {
   const { addToCart } = useCart();
-  const [visibleCount, setVisibleCount] = useState(8);
-  const [activeCategory, setActiveCategory] = useState<string>("All");
-  const [genderFilter, setGenderFilter] = useState<"him" | "her" | null>(null);
-  const heroRef = useRef<HTMLElement>(null);
-  const titleRef = useRef<HTMLHeadingElement>(null);
-  const initialMount = useRef(true);
 
-  const resetCount = () => setVisibleCount(8);
-  // Reset count on initial mount
-  useEffect(() => {
-    resetCount();
-  }, []);
+  const placeholders: ProductType[] = [
+    {
+      id: "p1",
+      name: "Classic Gold Watch",
+      price: 899,
+      image: "/products/placeholder.jpg",
+      slug: "#",
+      category: "watches",
+    },
+    {
+      id: "p2",
+      name: "Elegant Silver Watch",
+      price: 799,
+      image: "/products/placeholder.jpg",
+      slug: "#",
+      category: "watches",
+    },
+    {
+      id: "p3",
+      name: "Modern Chronograph",
+      price: 999,
+      image: "/products/placeholder.jpg",
+      slug: "#",
+      category: "watches",
+    },
+  ];
 
-  const genderedProducts = genderFilter
-    ? products.filter((p) => p.gender === genderFilter)
-    : products;
-  const categories = Array.from(
-    new Set(genderedProducts.map((p) => p.category))
-  );
-
-
-  // Utility to format category slugs like "wedding-bands" -> "Wedding Bands"
-  const formatCategory = (cat: string) =>
-    cat.replace(/-/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
-
-  const scrollToTitle = () => {
-    const header = document.querySelector("header");
-    const offset = (header as HTMLElement | null)?.clientHeight || 0;
-    if (heroRef.current) {
-      const bottom =
-        heroRef.current.getBoundingClientRect().bottom +
-        window.pageYOffset -
-        offset;
-      window.scrollTo({ top: bottom, behavior: "smooth" });
-    } else if (titleRef.current) {
-      const top =
-        titleRef.current.getBoundingClientRect().top +
-        window.pageYOffset -
-        offset;
-      window.scrollTo({ top, behavior: "smooth" });
-    }
-  };
-
-  const router = useRouter();
-
-  // Handle category from query string and optional scrolling
-  useEffect(() => {
-    if (!router.isReady) return;
-
-    const { category, scroll } = router.query;
-
-  if (typeof category === "string" && category) {
-    if (category === "for-him") {
-      setGenderFilter("him");
-      setActiveCategory("All");
-    } else if (category === "for-her") {
-      setGenderFilter("her");
-      setActiveCategory("All");
-    } else {
-      setActiveCategory(category);
-      setGenderFilter(null);
-    }
-    resetCount();
-  }
-
-    if (scroll === "true") {
-      // Delay to ensure DOM is ready before scrolling
-      setTimeout(scrollToTitle, 0);
-    }
-  }, [router.isReady]);
-
-  useEffect(() => {
-    if (initialMount.current) {
-      initialMount.current = false;
-      return;
-    }
-    resetCount();
-    scrollToTitle();
-  }, [activeCategory, genderFilter]);
-
-  const handleLoadMore = () => setVisibleCount((prev) => prev + 4);
-
-  const filteredByGender = genderFilter
-    ? products.filter((p) => p.gender === genderFilter)
-    : products;
-  const filteredProducts =
-    activeCategory === "All"
-      ? filteredByGender
-      : filteredByGender.filter((p) => p.category === activeCategory);
-
-  const pageTitle = "Watch Collection | Classy Diamonds";
-  const pageDesc = "Discover luxury timepieces crafted with precision.";
+  const watchProducts = products.length > 0 ? products : placeholders;
 
   return (
-    <div className="min-h-screen flex flex-col bg-[var(--bg-page)] text-[var(--foreground)]">
+    <div className="min-h-screen bg-[var(--bg-page)] text-[var(--foreground)]">
       <Head>
-        <title>{pageTitle}</title>
-        <meta name="description" content={pageDesc} />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-      </Head>
-
-      {/* 🌟 Hero */}
-      <section
-        ref={heroRef}
-        className="-mt-20 relative w-full h-[80vh] flex items-center justify-center overflow-hidden"
-      >
-        <Image
-          src="/hero-jewelry.jpg"
-          alt="Watch Hero"
-          fill
-          className="object-cover"
+        <title>Watches</title>
+        <meta
+          name="description"
+          content="Browse our selection of luxury watches."
         />
-        <div className="absolute inset-0 bg-black/50 pointer-events-none" />
-        <div className="relative z-10 text-center px-4">
-          <h1 className="text-3xl md:text-6xl font-bold mb-4 text-[var(--foreground)]">
-            Watch Collection
-          </h1>
-          <p className="text-base md:text-xl max-w-2xl mx-auto text-[var(--foreground)]">
-            Explore precision-crafted timepieces.
-          </p>
-        </div>
-      </section>
-
-      <div className="pl-4 pr-4 sm:pl-8 sm:pr-8 mt-6 mb-6">
-        <Breadcrumbs />
-      </div>
-
-      {/* 💎 Title */}
-      <section className="pt-16 pb-8 px-4 sm:px-6 max-w-7xl mx-auto">
-        <h2
-          ref={titleRef}
-          className="text-2xl sm:text-3xl font-semibold text-center"
-        >
-          {genderFilter === "him"
-            ? "For Him"
-            : genderFilter === "her"
-            ? "For Her"
-            : activeCategory === "All"
-            ? "Our Watches"
-            : formatCategory(activeCategory)}
-        </h2>
-        {genderFilter && (
-          <p className="text-xl sm:text-2xl text-center mt-2 mb-6">
-            {activeCategory === "All"
-              ? "All Watches"
-              : formatCategory(activeCategory)}
-          </p>
-        )}
-        {!genderFilter && <div className="mb-8" />}
-        <div className="flex flex-wrap justify-center gap-3 mt-4">
-          {["All", ...categories].map((cat) => {
-            const label = cat
-              .replace(/-/g, " ")
-              .replace(/\b\w/g, (l) => l.toUpperCase());
-            const active = activeCategory === cat;
-            return (
-              <button
-                key={cat}
-                onClick={() => setActiveCategory(cat)}
-                className={`px-4 py-2 rounded-full font-semibold transition-transform hover:scale-105 ${active ? "bg-[var(--foreground)] text-[var(--bg-nav)]" : "bg-[var(--bg-nav)] text-[var(--foreground)] hover:bg-[#364763]"}`}
-              >
-                {label}
-              </button>
-            );
-          })}
-        </div>
-      </section>
-
-      {/* 📦 Products & Load More */}
-      <section className="px-4 sm:px-6 max-w-7xl mx-auto mb-16">
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
-          {filteredProducts.slice(0, visibleCount).map((product) => (
+      </Head>
+      <section className="max-w-7xl mx-auto px-4 py-12">
+        <h1 className="text-3xl font-bold text-white mb-6">Watches</h1>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+          {watchProducts.map((product) => (
             <div
               key={product.id}
               className="group bg-[var(--bg-nav)] rounded-2xl overflow-hidden shadow-lg hover:scale-105 transition flex flex-col h-full"
             >
-              <Link href={`/category/${product.category}/${product.slug}`}>
-                <div className="w-full h-44 sm:h-48 relative">
+              <Link
+                href={
+                  product.slug && product.slug !== "#"
+                    ? `/category/${product.category}/${product.slug}`
+                    : "#"
+                }
+              >
+                <div className="w-full h-44 relative">
                   <Image
                     src={product.image}
                     alt={product.name}
@@ -216,79 +87,51 @@ export default function WatchesPage({ products }: { products: ProductType[] }) {
                     {product.name}
                   </h3>
                   <p className="text-[#cfd2d6]">
-                    {product.salePrice ? (
-                      <>
-                        <span className="line-through mr-1">
-                          ${product.price.toLocaleString()}
-                        </span>
-                        <span className="text-red-500">
-                          ${product.salePrice.toLocaleString()}
-                        </span>
-                      </>
-                    ) : (
-                      <>${product.price.toLocaleString()}</>
-                    )}
+                    ${product.price.toLocaleString()}
                   </p>
                 </div>
               </Link>
-              <button
-                onClick={(e) => {
-                  e.preventDefault();
-                  addToCart({
-                    id: product.id,
-                    name: product.name,
-                    price: product.price,
-                    image: product.image,
-                    quantity: 1,
-                  });
-                }}
-                className="m-4 px-4 py-2 bg-[var(--foreground)] text-[var(--bg-nav)] rounded-xl font-semibold hover:bg-gray-100 hover:scale-105 hover:shadow-2xl transition"
-              >
-                Add to Cart
-              </button>
+              {product.slug && product.slug !== "#" && (
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    addToCart({
+                      id: product.id,
+                      name: product.name,
+                      price: product.price,
+                      image: product.image,
+                      quantity: 1,
+                    });
+                  }}
+                  className="m-4 px-4 py-2 bg-[var(--foreground)] text-[var(--bg-nav)] rounded-xl font-semibold hover:bg-gray-100 hover:scale-105 hover:shadow-2xl transition"
+                >
+                  Add to Cart
+                </button>
+              )}
             </div>
           ))}
         </div>
-
-        {visibleCount < filteredProducts.length && (
-          <div className="flex justify-center">
-            <button
-              onClick={handleLoadMore}
-              className="px-8 py-4 bg-[var(--foreground)] text-[var(--bg-nav)] rounded-full"
-            >
-              Load More
-            </button>
-          </div>
-        )}
       </section>
     </div>
   );
 }
 
-// Server-side data fetching
-export const getServerSideProps: GetServerSideProps = async ({ query }) => {
+export const getServerSideProps: GetServerSideProps<WatchesProps> = async () => {
   const client = await clientPromise;
-  let genderQuery: "him" | "her" | undefined;
-  if (query.category === "for-him") genderQuery = "him";
-  if (query.category === "for-her") genderQuery = "her";
-  const filter = genderQuery
-    ? { category: "watches", gender: genderQuery }
-    : { category: "watches" };
   const productsRaw = await client
     .db()
     .collection("products")
-    .find(filter)
+    .find({ category: "watches" })
     .toArray();
+
   const products: ProductType[] = productsRaw.map((p: any) => ({
     id: p._id.toString(),
     slug: p.slug,
     name: p.name,
     price: p.price,
-    salePrice: p.salePrice ?? null,
     image: p.imageUrl || p.image,
     category: p.category,
-    gender: p.gender || "unisex",
-    description: p.description || "",
   }));
+
   return { props: { products } };
 };
