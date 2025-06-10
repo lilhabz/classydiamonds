@@ -243,7 +243,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
                     quantity: 1,
                   });
                 }}
-                className="m-4 px-4 py-2 bg-[var(--foreground)] text-[var(--bg-nav)] rounded-xl font-semibold hover:bg-gray-100 hover:scale-105 hover:shadow-2xl transition"
+                className="m-4 px-6 py-3 bg-[#e0e0e0] text-[#1f2a44] rounded-xl hover:scale-105 transition"
               >
                 Add to Cart
               </button>
