@@ -20,6 +20,7 @@ export type ProductType = {
   salePrice?: number;
   image: string;
   category: string;
+  gender?: "unisex" | "him" | "her";
   description?: string;
 };
 
@@ -27,6 +28,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
   const { addToCart } = useCart();
   const [visibleCount, setVisibleCount] = useState(8);
   const [activeCategory, setActiveCategory] = useState<string>("All");
+  const [genderFilter, setGenderFilter] = useState<"him" | "her" | null>(null);
   const heroRef = useRef<HTMLElement>(null);
   const titleRef = useRef<HTMLHeadingElement>(null);
   const initialMount = useRef(true);
@@ -37,7 +39,12 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
     resetCount();
   }, []);
 
-  const categories = Array.from(new Set(products.map((p) => p.category)));
+  const genderedProducts = genderFilter
+    ? products.filter((p) => p.gender === genderFilter)
+    : products;
+  const categories = Array.from(
+    new Set(genderedProducts.map((p) => p.category))
+  );
 
 
   // Utility to format category slugs like "wedding-bands" -> "Wedding Bands"
@@ -72,6 +79,9 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
 
     if (typeof category === "string" && category) {
       setActiveCategory(category);
+      if (category === "for-him") setGenderFilter("him");
+      else if (category === "for-her") setGenderFilter("her");
+      else setGenderFilter(null);
       resetCount();
     }
 
@@ -88,14 +98,17 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
     }
     resetCount();
     scrollToTitle();
-  }, [activeCategory]);
+  }, [activeCategory, genderFilter]);
 
   const handleLoadMore = () => setVisibleCount((prev) => prev + 4);
 
+  const filteredByGender = genderFilter
+    ? products.filter((p) => p.gender === genderFilter)
+    : products;
   const filteredProducts =
     activeCategory === "All"
-      ? products
-      : products.filter((p) => p.category === activeCategory);
+      ? filteredByGender
+      : filteredByGender.filter((p) => p.category === activeCategory);
 
   const pageTitle = "Jewelry Collection | Classy Diamonds";
   const pageDesc =
@@ -234,9 +247,13 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
 }
 
 // Server-side data fetching
-export const getServerSideProps: GetServerSideProps = async () => {
+export const getServerSideProps: GetServerSideProps = async ({ query }) => {
   const client = await clientPromise;
-  const productsRaw = await client.db().collection("products").find().toArray();
+  let genderQuery: "him" | "her" | undefined;
+  if (query.category === "for-him") genderQuery = "him";
+  if (query.category === "for-her") genderQuery = "her";
+  const filter = genderQuery ? { gender: genderQuery } : {};
+  const productsRaw = await client.db().collection("products").find(filter).toArray();
   const products: ProductType[] = productsRaw.map((p: any) => ({
     id: p._id.toString(),
     slug: p.slug,
@@ -245,6 +262,7 @@ export const getServerSideProps: GetServerSideProps = async () => {
     salePrice: p.salePrice ?? null,
     image: p.imageUrl || p.image,
     category: p.category,
+    gender: p.gender || "unisex",
     description: p.description || "",
   }));
   return { props: { products } };

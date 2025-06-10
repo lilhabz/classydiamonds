@@ -17,6 +17,7 @@ interface Product {
   salePrice?: number;
   image: string;
   category: string;
+  gender?: "unisex" | "him" | "her";
   slug: string;
 }
 

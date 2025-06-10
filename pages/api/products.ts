@@ -42,8 +42,10 @@ export default async function handler(
   // 🔍 Fetch all products
   if (req.method === "GET") {
     try {
-      const { category } = req.query;
-      const filter = category ? { category } : {};
+      const { category, gender } = req.query as { category?: string; gender?: string };
+      const filter: any = {};
+      if (category) filter.category = category;
+      if (gender) filter.gender = gender;
       const products = await db.collection("products").find(filter).toArray();
       return res.status(200).json(products);
     } catch (err) {

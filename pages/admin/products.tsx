@@ -30,6 +30,7 @@ interface AdminProduct {
   category: Category;
   imageUrl: string;
   featured: boolean;
+  gender?: "unisex" | "him" | "her";
   tags: string[];
 }
 
@@ -66,6 +67,7 @@ export default function AdminProductsPage() {
     salePrice: "",
     category: "engagement" as Category,
     featured: false,
+    gender: "unisex" as "unisex" | "him" | "her",
   });
 
   // 📋 Form state for adding a new product
@@ -76,6 +78,7 @@ export default function AdminProductsPage() {
     salePrice: "",
     category: "engagement" as Category,
     featured: false,
+    gender: "unisex" as "unisex" | "him" | "her",
     imageFile: null as File | null,
   });
 
@@ -156,6 +159,7 @@ useEffect(() => {
         formData.append("salePrice", formState.salePrice);
       formData.append("category", formState.category);
       formData.append("featured", formState.featured ? "true" : "false");
+      formData.append("gender", formState.gender);
       if (formState.imageFile) formData.append("image", formState.imageFile);
 
       const res = await fetch("/api/admin/products", {
@@ -181,6 +185,7 @@ useEffect(() => {
         salePrice: "",
         category: "engagement",
         featured: false,
+        gender: "unisex",
         imageFile: null,
       });
       setStatus({ loading: false, error: "", success: "Product added 🎉" });
@@ -199,6 +204,7 @@ useEffect(() => {
       salePrice: product.salePrice ? product.salePrice.toString() : "",
       category: product.category,
       featured: product.featured,
+      gender: product.gender ?? "unisex",
     });
   };
 
@@ -211,6 +217,7 @@ useEffect(() => {
       salePrice: "",
       category: "engagement",
       featured: false,
+      gender: "unisex",
     });
   };
 
@@ -247,6 +254,7 @@ useEffect(() => {
           ...(editForm.salePrice && { salePrice: parseFloat(editForm.salePrice) }),
           category: editForm.category,
           featured: editForm.featured,
+          gender: editForm.gender,
         }),
       });
       const data = await res.json();
@@ -450,6 +458,26 @@ useEffect(() => {
               ))}
             </select>
           </label>
+          <label>
+            🏷️ Gender
+            <select
+              value={editForm.gender}
+              onChange={(e) =>
+                setEditForm((f) => ({ ...f, gender: e.target.value as "unisex" | "him" | "her" }))
+              }
+              className="mt-1 w-full border rounded p-2 bg-[var(--bg-nav)] text-[var(--foreground)]"
+            >
+              {[
+                { v: "unisex", label: "Unisex" },
+                { v: "him", label: "For Him" },
+                { v: "her", label: "For Her" },
+              ].map((g) => (
+                <option key={g.v} value={g.v}>
+                  {g.label}
+                </option>
+              ))}
+            </select>
+          </label>
           <label className="flex items-center space-x-2">
             <span>✨ Featured</span>
             <input
@@ -546,6 +574,24 @@ useEffect(() => {
             ].map((cat) => (
               <option key={cat} value={cat}>
                 {cat}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          🏷️ Gender
+          <select
+            value={formState.gender}
+            onChange={(e) => handleInput("gender", e.target.value)}
+            className="mt-1 w-full border rounded p-2 bg-[var(--bg-nav)] text-[var(--foreground)]"
+          >
+            {[
+              { v: "unisex", label: "Unisex" },
+              { v: "him", label: "For Him" },
+              { v: "her", label: "For Her" },
+            ].map((g) => (
+              <option key={g.v} value={g.v}>
+                {g.label}
               </option>
             ))}
           </select>
