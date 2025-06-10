@@ -14,11 +14,7 @@ export default function Document() {
           crossOrigin="anonymous"
         />
 
-        {/* 🧭 Canonical URL for SEO */}
-        <link
-          rel="canonical"
-          href="https://classydiamonds.vercel.app/contact"
-        />
+        {/* 🧭 Canonical links should be page specific and will be set in each page */}
 
         {/* ⏱️ Recommended if adding Google Fonts manually */}
         {/* <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=YourFont&display=swap" /> */}

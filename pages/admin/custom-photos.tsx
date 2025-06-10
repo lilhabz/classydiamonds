@@ -109,7 +109,9 @@ export default function AdminCustomPhotosPage() {
             className="mt-1 w-full"
           />
           {previewUrl && (
+
             <div className="mt-2 w-40 h-40 relative">
+
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={previewUrl}
