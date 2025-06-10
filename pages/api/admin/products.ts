@@ -121,8 +121,6 @@ export default async function handler(
       ? (genderStr as "unisex" | "him" | "her")
       : "unisex";
 
-    const gender = getString(fields.gender, "unisex");
-
     const tagsRaw = fields.tags;
     const tags = Array.isArray(tagsRaw)
       ? tagsRaw.filter(Boolean)
