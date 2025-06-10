@@ -4,7 +4,8 @@ import { GetServerSideProps } from "next";
 import Head from "next/head";
 import Image from "next/image";
 import Link from "next/link";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
+import { useRouter } from "next/router";
 import { useCart } from "@/context/CartContext";
 import { jewelryData } from "@/data/jewelryData"; // static data
 import Breadcrumbs from "@/components/Breadcrumbs";
@@ -43,6 +44,8 @@ export default function CategoryPage({
   const { addToCart } = useCart();
   const [visibleCount, setVisibleCount] = useState(8);
   const productsEndRef = useRef<HTMLDivElement>(null);
+  const titleRef = useRef<HTMLHeadingElement>(null);
+  const router = useRouter();
 
   // Normalize static data to Product[]
   const staticProducts: Product[] = jewelryData
@@ -101,6 +104,20 @@ export default function CategoryPage({
   const heroClass = categoryImagePosition[category.toLowerCase()];
   const heroSubtitle = categoryHeroSubtitles[category.toLowerCase()];
 
+  useEffect(() => {
+    if (!router.isReady) return;
+    if (router.query.scroll === "true") {
+      const offset = 64; // account for sticky navbar height
+      if (titleRef.current) {
+        const top =
+          titleRef.current.getBoundingClientRect().top +
+          window.pageYOffset -
+          offset;
+        window.scrollTo({ top, behavior: "smooth" });
+      }
+    }
+  }, [router.isReady]);
+
   return (
     <div className="min-h-screen flex flex-col bg-[var(--bg-page)] text-[var(--foreground)]">
       {/* 🔖 Head Meta */}
@@ -141,7 +158,10 @@ export default function CategoryPage({
 
       {/* 💍 Product Grid Section */}
       <section className="py-20 px-4 sm:px-6 max-w-7xl mx-auto">
-        <h2 className="text-2xl sm:text-3xl font-semibold text-center mb-12">
+        <h2
+          ref={titleRef}
+          className="text-2xl sm:text-3xl font-semibold text-center mb-12 scroll-mt-16"
+        >
           {prettyCategory} Pieces
         </h2>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">

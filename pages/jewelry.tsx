@@ -44,8 +44,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
     cat.replace(/-/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
 
   const scrollToTitle = () => {
-    const header = document.querySelector("header");
-    const offset = (header as HTMLElement | null)?.clientHeight || 80;
+    const offset = 64; // account for sticky navbar height
     if (titleRef.current) {
       const top =
         titleRef.current.getBoundingClientRect().top +
@@ -70,13 +69,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
 
     if (scroll === "true") {
       // Delay to ensure DOM is ready before scrolling
-
       setTimeout(scrollToTitle, 0);
-
-      setTimeout(() => {
-        titleRef.current?.scrollIntoView({ behavior: "smooth" });
-      }, 0);
-
     }
   }, [router.isReady]);
 
@@ -135,7 +128,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
       <section className="pt-16 pb-8 px-4 sm:px-6 max-w-7xl mx-auto">
         <h2
           ref={titleRef}
-          className="text-2xl sm:text-3xl font-semibold text-center mb-8"
+          className="text-2xl sm:text-3xl font-semibold text-center mb-8 scroll-mt-16"
         >
           {activeCategory === "All" ? "Our Jewelry" : formatCategory(activeCategory)}
         </h2>
