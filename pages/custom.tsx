@@ -2,12 +2,25 @@
 
 import Head from "next/head";
 import Image from "next/image";
+import { useEffect, useState } from "react";
 
 import Breadcrumbs from "@/components/Breadcrumbs";
 
 import heroImage from "../public/hero-custom.jpg";
 
 export default function CustomPage() {
+  const [photos, setPhotos] = useState<{ _id: string; imageUrl: string }[]>([]);
+  const [selected, setSelected] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function load() {
+      const res = await fetch('/api/custom-photos');
+      const data = await res.json();
+      setPhotos(data.photos || []);
+    }
+    load();
+  }, []);
+
   return (
     <div className="min-h-screen flex flex-col bg-[var(--bg-page)] text-[var(--foreground)]">
       {/* 🌐 Head Metadata */}
@@ -45,6 +58,18 @@ export default function CustomPage() {
           </p>
         </div>
       </section>
+
+      {selected && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50"
+          onClick={() => setSelected(null)}
+        >
+          <div className="relative w-11/12 max-w-3xl" onClick={(e) => e.stopPropagation()}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={selected} alt="Custom enlarged" className="w-full h-auto rounded" />
+          </div>
+        </div>
+      )}
 
       <div className="pl-4 pr-4 sm:pl-8 sm:pr-8 mt-6 mb-6">
         <Breadcrumbs />
@@ -86,17 +111,25 @@ export default function CustomPage() {
         <h2 className="text-2xl sm:text-3xl font-semibold text-center mb-12 sm:mb-16 text-[var(--foreground)]">
           Custom Creations
         </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 sm:gap-8">
-          {[1, 2, 3].map((i) => (
-            <div
-              key={i}
-              className="group bg-[var(--bg-nav)] rounded-2xl shadow-md hover:shadow-2xl hover:scale-105 transition-all duration-300 flex items-center justify-center h-72 sm:h-80 cursor-pointer"
-            >
-              <p className="text-[#cfd2d6] group-hover:text-white transition-colors text-base sm:text-lg">
-                Custom Piece Coming Soon
-              </p>
-            </div>
-          ))}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+          {photos.length === 0 ? (
+            <p>No custom creations yet.</p>
+          ) : (
+            photos.map((p) => (
+              <button
+                key={p._id}
+                onClick={() => setSelected(p.imageUrl)}
+                className="relative w-full h-32 sm:h-36 md:h-40"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={p.imageUrl}
+                  alt="Custom creation"
+                  className="object-cover rounded w-full h-full"
+                />
+              </button>
+            ))
+          )}
         </div>
       </section>
 
