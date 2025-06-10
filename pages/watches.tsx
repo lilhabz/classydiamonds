@@ -1,9 +1,12 @@
-import Head from "next/head";
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
+import Head from "next/head";
+import { useCart } from "@/context/CartContext";
 import { GetServerSideProps } from "next";
 import clientPromise from "@/lib/mongodb";
-import { useCart } from "@/context/CartContext";
+import Breadcrumbs from "@/components/Breadcrumbs";
 
 export type ProductType = {
   id: string;
@@ -121,20 +124,32 @@ export default function WatchesPage({ products }: WatchesProps) {
   ];
 
   const watchProducts =
-    products.length >= 12
-      ? products.slice(0, 12)
-      : [...products, ...placeholders].slice(0, 12);
+    products.length >= 12 ? products.slice(0, 12) : [...products, ...placeholders].slice(0, 12);
 
   return (
-    <div className="min-h-screen bg-[var(--bg-page)] text-[var(--foreground)]">
+    <div className="min-h-screen flex flex-col bg-[var(--bg-page)] text-[var(--foreground)]">
       <Head>
         <title>Watches</title>
-        <meta
-          name="description"
-          content="Browse our selection of luxury watches."
-        />
+        <meta name="description" content="Browse our selection of luxury watches." />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
-      <section className="max-w-7xl mx-auto px-4 py-12">
+
+      <section className="-mt-20 relative w-full h-[80vh] flex items-center justify-center overflow-hidden">
+        <Image src="/hero-jewelry.jpg" alt="Watch Hero" fill className="object-cover" />
+        <div className="absolute inset-0 bg-black/50 pointer-events-none" />
+        <div className="relative z-10 text-center px-4">
+          <h1 className="text-3xl md:text-6xl font-bold mb-4 text-[var(--foreground)]">Watch Collection</h1>
+          <p className="text-base md:text-xl max-w-2xl mx-auto text-[var(--foreground)]">
+            Explore precision-crafted timepieces.
+          </p>
+        </div>
+      </section>
+
+      <div className="pl-4 pr-4 sm:pl-8 sm:pr-8 mt-6 mb-6">
+        <Breadcrumbs />
+      </div>
+
+      <section className="pt-16 pb-8 px-4 sm:px-6 max-w-7xl mx-auto">
         <h1 className="text-3xl font-bold text-white mb-6">Watches</h1>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
           {watchProducts.map((product) => (
@@ -143,11 +158,7 @@ export default function WatchesPage({ products }: WatchesProps) {
               className="group bg-[var(--bg-nav)] rounded-2xl overflow-hidden shadow-lg hover:scale-105 transition flex flex-col h-full"
             >
               <Link
-                href={
-                  product.slug && product.slug !== "#"
-                    ? `/category/${product.category}/${product.slug}`
-                    : "#"
-                }
+                href={product.slug && product.slug !== "#" ? `/category/${product.category}/${product.slug}` : "#"}
               >
                 <div className="w-full h-44 sm:h-48 relative">
                   <Image
@@ -158,12 +169,8 @@ export default function WatchesPage({ products }: WatchesProps) {
                   />
                 </div>
                 <div className="p-4 text-center flex-1 flex flex-col justify-between">
-                  <h3 className="font-semibold text-[var(--foreground)]">
-                    {product.name}
-                  </h3>
-                  <p className="text-[#cfd2d6]">
-                    ${product.price.toLocaleString()}
-                  </p>
+                  <h3 className="font-semibold text-[var(--foreground)]">{product.name}</h3>
+                  <p className="text-[#cfd2d6]">${product.price.toLocaleString()}</p>
                 </div>
               </Link>
               {product.slug && product.slug !== "#" && (
@@ -193,11 +200,7 @@ export default function WatchesPage({ products }: WatchesProps) {
 
 export const getServerSideProps: GetServerSideProps<WatchesProps> = async () => {
   const client = await clientPromise;
-  const productsRaw = await client
-    .db()
-    .collection("products")
-    .find({ category: "watches" })
-    .toArray();
+  const productsRaw = await client.db().collection("products").find({ category: "watches" }).toArray();
 
   const products: ProductType[] = productsRaw.map((p: any) => ({
     id: p._id.toString(),
