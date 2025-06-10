@@ -15,7 +15,8 @@ type Category =
   | "rings"
   | "bracelets"
   | "necklaces"
-  | "earrings";
+  | "earrings"
+  | "watches";
 
 const allCategories: Category[] = [
   "engagement",
@@ -24,6 +25,7 @@ const allCategories: Category[] = [
   "bracelets",
   "necklaces",
   "earrings",
+  "watches",
 ];
 
 
@@ -511,6 +513,7 @@ useEffect(() => {
                 "bracelets",
                 "necklaces",
                 "earrings",
+                "watches",
               ].map((cat) => (
                 <option key={cat} value={cat}>
                   {cat}
@@ -631,6 +634,7 @@ useEffect(() => {
               "bracelets",
               "necklaces",
               "earrings",
+              "watches",
             ].map((cat) => (
               <option key={cat} value={cat}>
                 {cat}
