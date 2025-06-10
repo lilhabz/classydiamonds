@@ -217,7 +217,7 @@ export default function CategoryPage({
                         quantity: 1,
                       });
                     }}
-                    className="w-full px-6 py-3 bg-[var(--foreground)] text-[var(--bg-nav)] rounded-xl font-semibold hover:scale-105 hover:bg-gray-200 transition duration-300"
+                    className="w-full px-6 py-3 bg-[#e0e0e0] text-[#1f2a44] rounded-xl hover:scale-105 transition"
                   >
                     Add to Cart
                   </button>

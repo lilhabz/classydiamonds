@@ -124,7 +124,7 @@ export default function ProductPage({ product }: { product: ProductType }) {
                   quantity: 1,
                 })
               }
-              className="mt-4 px-8 py-4 bg-[var(--foreground)] text-[var(--bg-nav)] rounded-full text-lg font-semibold hover:bg-gray-100 hover:scale-105 transition-transform duration-300 cursor-pointer"
+            className="mt-4 px-6 py-3 bg-[#e0e0e0] text-[#1f2a44] rounded-xl hover:scale-105 transition"
             >
               Add to Cart
             </button>
