@@ -531,4 +531,22 @@ export const jewelryData = [
     category: "earrings",
     gender: "her",
   },
+
+  // ⌚ Watches
+  {
+    id: 705,
+    name: "Classic Gold Watch",
+    price: 3200,
+    image: "/products/placeholder.jpg",
+    slug: "classic-gold-watch",
+    category: "watches",
+  },
+  {
+    id: 706,
+    name: "Modern Chronograph Watch",
+    price: 2800,
+    image: "/products/placeholder.jpg",
+    slug: "modern-chronograph",
+    category: "watches",
+  },
 ];

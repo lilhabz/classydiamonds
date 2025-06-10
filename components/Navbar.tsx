@@ -302,7 +302,7 @@ const Navbar = () => {
 
           {/* 🔗 Center: Navigation Links */}
           <nav className="flex flex-wrap justify-center gap-6 text-[#e0e0e0] font-semibold text-sm">
-            {"Home Jewelry Custom Contact".split(" ").map((name) => {
+            {"Home Jewelry Watches Custom Contact".split(" ").map((name) => {
               const href = `/${name === "Home" ? "" : name.toLowerCase()}`;
               return (
                 <Link
@@ -426,7 +426,7 @@ const Navbar = () => {
             borderRadius: "0 0 0.75rem 0.75rem",
           }}
         >
-          {"Home Jewelry Custom Contact".split(" ").map((name) => {
+          {"Home Jewelry Watches Custom Contact".split(" ").map((name) => {
             const href = `/${name === "Home" ? "" : name.toLowerCase()}`;
             return (
               <Link

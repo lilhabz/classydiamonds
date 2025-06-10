@@ -38,23 +38,4 @@ export const productsData = [
     description: "Elegant pearl drop earrings perfect for special occasions.",
     category: "earrings",
   },
-  {
-    id: 5,
-    slug: "classic-gold-watch",
-    name: "Classic Gold Watch",
-    price: 3200,
-    image: "/products/placeholder.jpg",
-    description: "A timeless gold watch with precision movement.",
-    category: "watches",
-  },
-  {
-    id: 6,
-    slug: "modern-chronograph",
-    name: "Modern Chronograph Watch",
-    price: 2800,
-    image: "/products/placeholder.jpg",
-    description:
-      "Sleek chronograph with leather band and stopwatch function.",
-    category: "watches",
-  },
 ];
