@@ -109,7 +109,9 @@ export default function AdminCustomPhotosPage() {
             className="mt-1 w-full"
           />
           {previewUrl && (
-            <div className="mt-2 w-32 h-32 relative">
+
+            <div className="mt-2 w-40 h-40 relative">
+
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={previewUrl}
@@ -129,7 +131,7 @@ export default function AdminCustomPhotosPage() {
       </form>
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
         {photos.map((p) => (
-          <div key={p._id} className="relative w-full h-32 sm:h-36 md:h-40">
+          <div key={p._id} className="relative w-full h-40">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={p.imageUrl} alt="Custom creation" className="object-cover rounded w-full h-full" />
           </div>

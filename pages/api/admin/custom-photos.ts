@@ -75,10 +75,18 @@ export default async function handler(
 
     const uploadResult = await cloudinary.uploader.upload(imageFile.filepath, {
       folder: "classy-diamonds/custom/original",
-      transformation: [{ quality: "auto" }, { fetch_format: "auto" }],
+      transformation: [
+        { width: 600, height: 600, crop: "fill", gravity: "auto" },
+        { quality: "auto" },
+        { fetch_format: "auto" },
+      ],
       eager: [
         {
           folder: "classy-diamonds/custom/compressed",
+          width: 600,
+          height: 600,
+          crop: "fill",
+          gravity: "auto",
           quality: "auto",
           fetch_format: "auto",
         },
