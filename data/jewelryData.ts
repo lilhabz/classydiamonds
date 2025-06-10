@@ -489,4 +489,42 @@ export const jewelryData = [
     slug: "blue-topaz-stud-earrings",
     category: "earrings",
   },
+  // 🎁 For Him
+  {
+    id: 701,
+    name: "Titanium Link Bracelet",
+    price: 900,
+    image: "/products/titanium-link-bracelet.jpg",
+    slug: "titanium-link-bracelet",
+    category: "bracelets",
+    gender: "him",
+  },
+  {
+    id: 702,
+    name: "Stainless Steel Cuff",
+    price: 750,
+    image: "/products/stainless-steel-cuff.jpg",
+    slug: "stainless-steel-cuff",
+    category: "bracelets",
+    gender: "him",
+  },
+  // 🎁 For Her
+  {
+    id: 703,
+    name: "Rose Gold Heart Necklace",
+    price: 1250,
+    image: "/products/rose-gold-heart-necklace.jpg",
+    slug: "rose-gold-heart-necklace",
+    category: "necklaces",
+    gender: "her",
+  },
+  {
+    id: 704,
+    name: "Dainty Diamond Studs",
+    price: 2100,
+    image: "/products/dainty-diamond-studs.jpg",
+    slug: "dainty-diamond-studs",
+    category: "earrings",
+    gender: "her",
+  },
 ];
