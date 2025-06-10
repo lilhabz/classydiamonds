@@ -690,6 +690,36 @@ useEffect(() => {
 
       {/* 🗂️ Existing Products Table */}
       <h2 className="text-xl font-semibold mt-8">🗂️ Current Products</h2>
+      <div className="flex flex-wrap gap-4 mt-2">
+        <label className="flex flex-col text-sm">
+          <span>Category</span>
+          <select
+            value={categoryFilter}
+            onChange={(e) => setCategoryFilter(e.target.value)}
+            className="mt-1 border rounded p-2 bg-[var(--bg-nav)] text-[var(--foreground)]"
+          >
+            <option value="all">All</option>
+            {allCategories.map((c) => (
+              <option key={c} value={c}>
+                {c}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="flex flex-col text-sm">
+          <span>Gender</span>
+          <select
+            value={genderFilter}
+            onChange={(e) => setGenderFilter(e.target.value)}
+            className="mt-1 border rounded p-2 bg-[var(--bg-nav)] text-[var(--foreground)]"
+          >
+            <option value="all">All</option>
+            <option value="him">For Him</option>
+            <option value="her">For Her</option>
+            <option value="unisex">Unisex</option>
+          </select>
+        </label>
+      </div>
       {loadingList ? (
         <p>Loading...</p>
       ) : (
