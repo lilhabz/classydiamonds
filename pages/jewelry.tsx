@@ -77,13 +77,19 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
 
     const { category, scroll } = router.query;
 
-    if (typeof category === "string" && category) {
+  if (typeof category === "string" && category) {
+    if (category === "for-him") {
+      setGenderFilter("him");
+      setActiveCategory("All");
+    } else if (category === "for-her") {
+      setGenderFilter("her");
+      setActiveCategory("All");
+    } else {
       setActiveCategory(category);
-      if (category === "for-him") setGenderFilter("him");
-      else if (category === "for-her") setGenderFilter("her");
-      else setGenderFilter(null);
-      resetCount();
+      setGenderFilter(null);
     }
+    resetCount();
+  }
 
     if (scroll === "true") {
       // Delay to ensure DOM is ready before scrolling
