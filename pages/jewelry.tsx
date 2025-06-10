@@ -70,13 +70,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
 
     if (scroll === "true") {
       // Delay to ensure DOM is ready before scrolling
-
       setTimeout(scrollToTitle, 0);
-
-      setTimeout(() => {
-        titleRef.current?.scrollIntoView({ behavior: "smooth" });
-      }, 0);
-
     }
   }, [router.isReady]);
 
