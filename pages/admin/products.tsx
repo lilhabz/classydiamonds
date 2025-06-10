@@ -1,6 +1,6 @@
 // 📄 pages/admin/products.tsx – Admin Product Management with Batch Save & Featured Limit 🛠️💾
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useRouter } from "next/router";
 import { getSession } from "next-auth/react";
 import Image from "next/image";
@@ -16,6 +16,15 @@ type Category =
   | "bracelets"
   | "necklaces"
   | "earrings";
+
+const allCategories: Category[] = [
+  "engagement",
+  "wedding-bands",
+  "rings",
+  "bracelets",
+  "necklaces",
+  "earrings",
+];
 
 
 // 🛠️ AdminProduct type mirrors collection
@@ -89,6 +98,10 @@ export default function AdminProductsPage() {
     success: "",
   });
 
+  // 🔍 Filtering dropdown state
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [genderFilter, setGenderFilter] = useState<string>("all");
+
   // 📍 Ref to the edit form for scrolling
   const editFormRef = useRef<HTMLFormElement | null>(null);
 
@@ -108,6 +121,19 @@ useEffect(() => {
   const featuredCount = Object.values(rowEdits).filter(
     (edit) => edit.featured
   ).length;
+
+  const filteredProducts = useMemo(() => {
+    return products.filter((p) => {
+      if (categoryFilter !== "all" && p.category !== categoryFilter) {
+        return false;
+      }
+      const g = p.gender ?? "unisex";
+      if (genderFilter !== "all" && g !== genderFilter) {
+        return false;
+      }
+      return true;
+    });
+  }, [products, categoryFilter, genderFilter]);
 
   // ==================== LOAD PRODUCTS ====================
   useEffect(() => {
@@ -373,6 +399,36 @@ useEffect(() => {
 
       <div className="max-w-4xl mx-auto space-y-6">
         <h2 className="text-2xl font-bold">🛠️ Manage Products</h2>
+        <div className="flex flex-wrap gap-4 mt-2">
+          <label className="flex flex-col text-sm">
+            <span>Category</span>
+            <select
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value)}
+              className="mt-1 border rounded p-2 bg-[var(--bg-nav)] text-[var(--foreground)]"
+            >
+              <option value="all">All</option>
+              {allCategories.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="flex flex-col text-sm">
+            <span>Gender</span>
+            <select
+              value={genderFilter}
+              onChange={(e) => setGenderFilter(e.target.value)}
+              className="mt-1 border rounded p-2 bg-[var(--bg-nav)] text-[var(--foreground)]"
+            >
+              <option value="all">All</option>
+              <option value="him">For Him</option>
+              <option value="her">For Her</option>
+              <option value="unisex">Unisex</option>
+            </select>
+          </label>
+        </div>
 
       {/* ❗ Status Messages */}
       {status.error && <p className="text-red-500">❌ {status.error}</p>}
@@ -652,12 +708,13 @@ useEffect(() => {
                 <th className="p-2">Image</th>
                 <th className="p-2">Name</th>
                 <th className="p-2">Category</th>
+                <th className="p-2">Gender</th>
                 <th className="p-2">Featured</th>
                 <th className="p-2">Actions</th>
               </tr>
             </thead>
             <tbody>
-              {products.map((p) => {
+              {filteredProducts.map((p) => {
                 const edit = rowEdits[p._id];
                 return (
                   <tr key={p._id} className="border-t">
@@ -694,19 +751,15 @@ useEffect(() => {
                         }
                         className="border rounded p-1 bg-[var(--bg-nav)] text-[var(--foreground)]"
                       >
-                        {[
-                          "engagement",
-                          "wedding-bands",
-                          "rings",
-                          "bracelets",
-                          "necklaces",
-                          "earrings",
-                        ].map((c) => (
+                        {allCategories.map((c) => (
                           <option key={c} value={c}>
                             {c}
                           </option>
                         ))}
                       </select>
+                    </td>
+                    <td className="p-2 capitalize">
+                      {p.gender ?? "unisex"}
                     </td>
                     <td className="p-2 text-center">
                       <input
