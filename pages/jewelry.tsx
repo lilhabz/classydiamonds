@@ -27,6 +27,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
   const { addToCart } = useCart();
   const [visibleCount, setVisibleCount] = useState(8);
   const [activeCategory, setActiveCategory] = useState<string>("All");
+  const heroRef = useRef<HTMLElement>(null);
   const titleRef = useRef<HTMLHeadingElement>(null);
   const initialMount = useRef(true);
 
@@ -45,8 +46,14 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
 
   const scrollToTitle = () => {
     const header = document.querySelector("header");
-    const offset = (header as HTMLElement | null)?.clientHeight || 80;
-    if (titleRef.current) {
+    const offset = (header as HTMLElement | null)?.clientHeight || 0;
+    if (heroRef.current) {
+      const bottom =
+        heroRef.current.getBoundingClientRect().bottom +
+        window.pageYOffset -
+        offset;
+      window.scrollTo({ top: bottom, behavior: "smooth" });
+    } else if (titleRef.current) {
       const top =
         titleRef.current.getBoundingClientRect().top +
         window.pageYOffset -
@@ -70,13 +77,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
 
     if (scroll === "true") {
       // Delay to ensure DOM is ready before scrolling
-
       setTimeout(scrollToTitle, 0);
-
-      setTimeout(() => {
-        titleRef.current?.scrollIntoView({ behavior: "smooth" });
-      }, 0);
-
     }
   }, [router.isReady]);
 
@@ -109,7 +110,10 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
       </Head>
 
       {/* 🌟 Hero */}
-      <section className="-mt-20 relative w-full h-[80vh] flex items-center justify-center overflow-hidden">
+      <section
+        ref={heroRef}
+        className="-mt-20 relative w-full h-[80vh] flex items-center justify-center overflow-hidden"
+      >
         <Image
           src="/hero-jewelry.jpg"
           alt="Jewelry Hero"
