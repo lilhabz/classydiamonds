@@ -21,11 +21,21 @@ export async function getServerSideProps(context: any) {
 export default function AdminCustomPhotosPage() {
   const [photos, setPhotos] = useState<CustomPhoto[]>([]);
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [status, setStatus] = useState({ loading: false, error: "", success: "" });
 
   useEffect(() => {
     loadPhotos();
   }, []);
+
+  useEffect(() => {
+    if (imageFile) {
+      const url = URL.createObjectURL(imageFile);
+      setPreviewUrl(url);
+      return () => URL.revokeObjectURL(url);
+    }
+    setPreviewUrl(null);
+  }, [imageFile]);
 
   const loadPhotos = async () => {
     const res = await fetch("/api/custom-photos");
@@ -98,6 +108,16 @@ export default function AdminCustomPhotosPage() {
             onChange={(e) => setImageFile(e.target.files?.[0] || null)}
             className="mt-1 w-full"
           />
+          {previewUrl && (
+            <div className="mt-2 w-32 h-32 relative">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={previewUrl}
+                alt="Preview"
+                className="object-cover rounded w-full h-full"
+              />
+            </div>
+          )}
         </label>
         <button
           type="submit"
