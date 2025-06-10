@@ -46,9 +46,84 @@ export default function WatchesPage({ products }: WatchesProps) {
       slug: "#",
       category: "watches",
     },
+    {
+      id: "p4",
+      name: "Vintage Leather Watch",
+      price: 650,
+      image: "/products/placeholder.jpg",
+      slug: "#",
+      category: "watches",
+    },
+    {
+      id: "p5",
+      name: "Minimalist Steel Watch",
+      price: 720,
+      image: "/products/placeholder.jpg",
+      slug: "#",
+      category: "watches",
+    },
+    {
+      id: "p6",
+      name: "Luxury Diamond Watch",
+      price: 1500,
+      image: "/products/placeholder.jpg",
+      slug: "#",
+      category: "watches",
+    },
+    {
+      id: "p7",
+      name: "Sporty Digital Watch",
+      price: 550,
+      image: "/products/placeholder.jpg",
+      slug: "#",
+      category: "watches",
+    },
+    {
+      id: "p8",
+      name: "Sleek Ceramic Watch",
+      price: 1100,
+      image: "/products/placeholder.jpg",
+      slug: "#",
+      category: "watches",
+    },
+    {
+      id: "p9",
+      name: "Bold Diver Watch",
+      price: 950,
+      image: "/products/placeholder.jpg",
+      slug: "#",
+      category: "watches",
+    },
+    {
+      id: "p10",
+      name: "Retro Quartz Watch",
+      price: 480,
+      image: "/products/placeholder.jpg",
+      slug: "#",
+      category: "watches",
+    },
+    {
+      id: "p11",
+      name: "Automatic GMT Watch",
+      price: 1300,
+      image: "/products/placeholder.jpg",
+      slug: "#",
+      category: "watches",
+    },
+    {
+      id: "p12",
+      name: "Premium Titanium Watch",
+      price: 1750,
+      image: "/products/placeholder.jpg",
+      slug: "#",
+      category: "watches",
+    },
   ];
 
-  const watchProducts = products.length > 0 ? products : placeholders;
+  const watchProducts =
+    products.length >= 12
+      ? products.slice(0, 12)
+      : [...products, ...placeholders].slice(0, 12);
 
   return (
     <div className="min-h-screen bg-[var(--bg-page)] text-[var(--foreground)]">
@@ -61,7 +136,7 @@ export default function WatchesPage({ products }: WatchesProps) {
       </Head>
       <section className="max-w-7xl mx-auto px-4 py-12">
         <h1 className="text-3xl font-bold text-white mb-6">Watches</h1>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
           {watchProducts.map((product) => (
             <div
               key={product.id}
@@ -74,7 +149,7 @@ export default function WatchesPage({ products }: WatchesProps) {
                     : "#"
                 }
               >
-                <div className="w-full h-44 relative">
+                <div className="w-full h-44 sm:h-48 relative">
                   <Image
                     src={product.image}
                     alt={product.name}
