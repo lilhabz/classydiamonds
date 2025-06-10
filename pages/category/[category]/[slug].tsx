@@ -19,6 +19,7 @@ type ProductType = {
   image: string;
   slug: string;
   category: string;
+  gender?: "unisex" | "him" | "her";
   description?: string;
 };
 
@@ -150,6 +151,7 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
     image: p.imageUrl,
     slug: p.slug,
     category: p.category,
+    gender: p.gender || "unisex",
     description: p.description || "",
   };
   return { props: { product } };

@@ -15,6 +15,7 @@ type Product = {
   slug: string;
   imageUrl: string;
   featured: boolean;
+  gender?: "unisex" | "him" | "her";
   tags: string[];
   createdAt: Date;
 };
