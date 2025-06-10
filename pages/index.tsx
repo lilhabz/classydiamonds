@@ -100,7 +100,7 @@ export default function Home({ products }: HomeProps) {
               Discover handcrafted engagement rings, wedding bands, and fine
               jewelry.
             </p>
-            <Link href="/jewelry">
+            <Link href={{ pathname: "/jewelry", query: { scroll: "true" } }}>
               <button className="px-8 py-4 bg-[#e0e0e0] text-[#1f2a44] rounded-full hover:scale-105 transition">
                 Shop Now
               </button>
@@ -329,9 +329,13 @@ export default function Home({ products }: HomeProps) {
             ].map((gift, index) => (
               <Link
                 key={gift.name}
-                href={`/category/${gift.name
-                  .toLowerCase()
-                  .replace(/\s+/g, "-")}`}
+                href={{
+                  pathname: "/jewelry",
+                  query: {
+                    category: gift.name.toLowerCase().replace(/\s+/g, "-"),
+                    scroll: "true",
+                  },
+                }}
                 className="group relative rounded-xl overflow-hidden shadow-md hover:shadow-xl hover:scale-105 transition-transform duration-300"
               >
                 <div className="relative aspect-[4/3] w-full">
