@@ -149,8 +149,10 @@ export default function WatchesPage({ products }: WatchesProps) {
         <Breadcrumbs />
       </div>
 
-      <section className="pt-16 pb-8 px-4 sm:px-6 max-w-7xl mx-auto">
-        <h1 className="text-3xl font-bold text-white mb-6">Watches</h1>
+
+        <section className="pt-16 pb-8 px-4 sm:px-6 max-w-7xl mx-auto">
+        <h1 className="text-3xl font-bold text-white text-center mb-6">Watches</h1>
+
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
           {watchProducts.map((product) => (
             <div
@@ -173,23 +175,21 @@ export default function WatchesPage({ products }: WatchesProps) {
                   <p className="text-[#cfd2d6]">${product.price.toLocaleString()}</p>
                 </div>
               </Link>
-              {product.slug && product.slug !== "#" && (
-                <button
-                  onClick={(e) => {
-                    e.preventDefault();
-                    addToCart({
-                      id: product.id,
-                      name: product.name,
-                      price: product.price,
-                      image: product.image,
-                      quantity: 1,
-                    });
-                  }}
-                  className="m-4 px-4 py-2 bg-[var(--foreground)] text-[var(--bg-nav)] rounded-xl font-semibold hover:bg-gray-100 hover:scale-105 hover:shadow-2xl transition"
-                >
-                  Add to Cart
-                </button>
-              )}
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  addToCart({
+                    id: product.id,
+                    name: product.name,
+                    price: product.price,
+                    image: product.image,
+                    quantity: 1,
+                  });
+                }}
+                className="m-4 px-4 py-2 bg-[var(--foreground)] text-[var(--bg-nav)] rounded-xl font-semibold hover:bg-gray-100 hover:scale-105 hover:shadow-2xl transition"
+              >
+                Add to Cart
+              </button>
             </div>
           ))}
         </div>
