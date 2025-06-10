@@ -61,7 +61,7 @@ export default function AdminProductsPage() {
 
   // 💾 Local edits tracked here before batch save
   const [rowEdits, setRowEdits] = useState<
-    Record<string, { category: Category; featured: boolean }>
+    Record<string, { featured: boolean }>
   >({});
 
   // ✏️ Product currently being edited
@@ -102,6 +102,19 @@ export default function AdminProductsPage() {
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [genderFilter, setGenderFilter] = useState<string>("all");
 
+  const [sortConfig, setSortConfig] = useState<{
+    field: "category" | "gender" | "skuNumber";
+    direction: "asc" | "desc";
+  }>({ field: "skuNumber", direction: "asc" });
+
+  const handleSort = (field: "category" | "gender" | "skuNumber") => {
+    setSortConfig((s) =>
+      s.field === field
+        ? { field, direction: s.direction === "asc" ? "desc" : "asc" }
+        : { field, direction: "asc" }
+    );
+  };
+
   // 📍 Ref to the edit form for scrolling
   const editFormRef = useRef<HTMLFormElement | null>(null);
 
@@ -135,6 +148,29 @@ useEffect(() => {
     });
   }, [products, categoryFilter, genderFilter]);
 
+  const sortedProducts = useMemo(() => {
+    const data = [...filteredProducts];
+    data.sort((a, b) => {
+      const { field, direction } = sortConfig;
+      let va: string | number = "";
+      let vb: string | number = "";
+      if (field === "gender") {
+        va = a.gender ?? "unisex";
+        vb = b.gender ?? "unisex";
+      } else if (field === "category") {
+        va = a.category;
+        vb = b.category;
+      } else if (field === "skuNumber") {
+        va = a.skuNumber ?? 0;
+        vb = b.skuNumber ?? 0;
+      }
+      if (va < vb) return direction === "asc" ? -1 : 1;
+      if (va > vb) return direction === "asc" ? 1 : -1;
+      return 0;
+    });
+    return data;
+  }, [filteredProducts, sortConfig]);
+
   // ==================== LOAD PRODUCTS ====================
   useEffect(() => {
     async function load() {
@@ -144,9 +180,9 @@ useEffect(() => {
         const data = await res.json();
         setProducts(data.products);
         // Initialize rowEdits from fetched data
-        const edits: Record<string, { category: Category; featured: boolean }> = {};
+        const edits: Record<string, { featured: boolean }> = {};
         data.products.forEach((p: AdminProduct) => {
-          edits[p._id] = { category: p.category, featured: p.featured };
+          edits[p._id] = { featured: p.featured };
         });
         setRowEdits(edits);
       } catch (err: any) {
@@ -200,7 +236,6 @@ useEffect(() => {
       setRowEdits((e) => ({
         ...e,
         [data.product._id]: {
-          category: data.product.category,
           featured: data.product.featured,
         },
       }));
@@ -254,7 +289,6 @@ useEffect(() => {
     const updatedEdits = {
       ...rowEdits,
       [editingProduct._id]: {
-        category: editForm.category as Category,
         featured: editForm.featured,
       },
     };
@@ -314,8 +348,7 @@ useEffect(() => {
         // Find original to compare
         const orig = products.find((p) => p._id === id);
         if (!orig) return null;
-        if (orig.category === edits.category && orig.featured === edits.featured)
-          return null;
+        if (orig.featured === edits.featured) return null;
         // If trying to set featured=true on a product, but count >=4, skip
         if (edits.featured && featuredCount > 4) {
           throw new Error("Too many featured items selected.");
@@ -397,38 +430,9 @@ useEffect(() => {
         </Link>
       </nav>
 
-      <div className="max-w-4xl mx-auto space-y-6">
+      <div className="max-w-6xl mx-auto space-y-6">
         <h2 className="text-2xl font-bold">🛠️ Manage Products</h2>
-        <div className="flex flex-wrap gap-4 mt-2">
-          <label className="flex flex-col text-sm">
-            <span>Category</span>
-            <select
-              value={categoryFilter}
-              onChange={(e) => setCategoryFilter(e.target.value)}
-              className="mt-1 border rounded p-2 bg-[var(--bg-nav)] text-[var(--foreground)]"
-            >
-              <option value="all">All</option>
-              {allCategories.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="flex flex-col text-sm">
-            <span>Gender</span>
-            <select
-              value={genderFilter}
-              onChange={(e) => setGenderFilter(e.target.value)}
-              className="mt-1 border rounded p-2 bg-[var(--bg-nav)] text-[var(--foreground)]"
-            >
-              <option value="all">All</option>
-              <option value="him">For Him</option>
-              <option value="her">For Her</option>
-              <option value="unisex">Unisex</option>
-            </select>
-          </label>
-        </div>
+
 
       {/* ❗ Status Messages */}
       {status.error && <p className="text-red-500">❌ {status.error}</p>}
@@ -690,36 +694,7 @@ useEffect(() => {
 
       {/* 🗂️ Existing Products Table */}
       <h2 className="text-xl font-semibold mt-8">🗂️ Current Products</h2>
-      <div className="flex flex-wrap gap-4 mt-2">
-        <label className="flex flex-col text-sm">
-          <span>Category</span>
-          <select
-            value={categoryFilter}
-            onChange={(e) => setCategoryFilter(e.target.value)}
-            className="mt-1 border rounded p-2 bg-[var(--bg-nav)] text-[var(--foreground)]"
-          >
-            <option value="all">All</option>
-            {allCategories.map((c) => (
-              <option key={c} value={c}>
-                {c}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="flex flex-col text-sm">
-          <span>Gender</span>
-          <select
-            value={genderFilter}
-            onChange={(e) => setGenderFilter(e.target.value)}
-            className="mt-1 border rounded p-2 bg-[var(--bg-nav)] text-[var(--foreground)]"
-          >
-            <option value="all">All</option>
-            <option value="him">For Him</option>
-            <option value="her">For Her</option>
-            <option value="unisex">Unisex</option>
-          </select>
-        </label>
-      </div>
+
       {loadingList ? (
         <p>Loading...</p>
       ) : (
@@ -733,18 +708,50 @@ useEffect(() => {
           )}
           <table className="w-full table-auto border-collapse">
             <thead>
-              <tr className="bg-[var(--bg-nav)]">
-                <th className="p-2">SKU</th>
+              <tr className="bg-[var(--bg-nav)] text-left align-top">
+                <th className="p-2 cursor-pointer" onClick={() => handleSort("skuNumber")}>SKU</th>
                 <th className="p-2">Image</th>
                 <th className="p-2">Name</th>
-                <th className="p-2">Category</th>
-                <th className="p-2">Gender</th>
+                <th className="p-2">
+                  <div className="flex items-center justify-between">
+                    <span>Category</span>
+                    <button type="button" onClick={() => handleSort("category")}>↕</button>
+                  </div>
+                  <select
+                    value={categoryFilter}
+                    onChange={(e) => setCategoryFilter(e.target.value)}
+                    className="mt-1 w-full border rounded p-1 bg-[var(--bg-nav)] text-[var(--foreground)]"
+                  >
+                    <option value="all">All</option>
+                    {allCategories.map((c) => (
+                      <option key={c} value={c}>
+                        {c}
+                      </option>
+                    ))}
+                  </select>
+                </th>
+                <th className="p-2">
+                  <div className="flex items-center justify-between">
+                    <span>Gender</span>
+                    <button type="button" onClick={() => handleSort("gender")}>↕</button>
+                  </div>
+                  <select
+                    value={genderFilter}
+                    onChange={(e) => setGenderFilter(e.target.value)}
+                    className="mt-1 w-full border rounded p-1 bg-[var(--bg-nav)] text-[var(--foreground)]"
+                  >
+                    <option value="all">All</option>
+                    <option value="him">For Him</option>
+                    <option value="her">For Her</option>
+                    <option value="unisex">Unisex</option>
+                  </select>
+                </th>
                 <th className="p-2">Featured</th>
                 <th className="p-2">Actions</th>
               </tr>
             </thead>
             <tbody>
-              {filteredProducts.map((p) => {
+              {sortedProducts.map((p) => {
                 const edit = rowEdits[p._id];
                 return (
                   <tr key={p._id} className="border-t">
@@ -767,27 +774,7 @@ useEffect(() => {
                         {p.name}
                       </Link>
                     </td>
-                    <td className="p-2">
-                      <select
-                        value={edit.category}
-                        onChange={(e) =>
-                          setRowEdits((r) => ({
-                            ...r,
-                            [p._id]: {
-                              ...r[p._id],
-                              category: e.target.value as Category,
-                            },
-                          }))
-                        }
-                        className="border rounded p-1 bg-[var(--bg-nav)] text-[var(--foreground)]"
-                      >
-                        {allCategories.map((c) => (
-                          <option key={c} value={c}>
-                            {c}
-                          </option>
-                        ))}
-                      </select>
-                    </td>
+                    <td className="p-2 capitalize">{p.category}</td>
                     <td className="p-2 capitalize">
                       {p.gender ?? "unisex"}
                     </td>
