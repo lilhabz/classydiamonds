@@ -329,7 +329,13 @@ export default function Home({ products }: HomeProps) {
             ].map((gift, index) => (
               <Link
                 key={gift.name}
-                href="/jewelry"
+                href={{
+                  pathname: "/jewelry",
+                  query: {
+                    gender: gift.name.toLowerCase().split(" ")[1],
+                    scroll: "true",
+                  },
+                }}
                 className="group relative rounded-xl overflow-hidden shadow-md hover:shadow-xl hover:scale-105 transition-transform duration-300"
               >
                 <div className="relative aspect-[4/3] w-full">

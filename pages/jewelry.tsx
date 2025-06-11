@@ -83,11 +83,11 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
 
     const { category, gender, scroll } = router.query;
 
-    if (gender === "him" || category === "for-him") {
+    if (gender === "him") {
       setGenderFilter("him");
       setActiveCategory("All");
       resetCount();
-    } else if (gender === "her" || category === "for-her") {
+    } else if (gender === "her") {
       setGenderFilter("her");
       setActiveCategory("All");
       resetCount();
@@ -293,9 +293,10 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
 // Server-side data fetching
 export const getServerSideProps: GetServerSideProps = async ({ query }) => {
   const client = await clientPromise;
-  let genderQuery: "him" | "her" | undefined;
-  if (query.category === "for-him") genderQuery = "him";
-  if (query.category === "for-her") genderQuery = "her";
+  const genderQuery =
+    query.gender === "him" || query.gender === "her"
+      ? (query.gender as "him" | "her")
+      : undefined;
   const filter = genderQuery ? { gender: genderQuery } : {};
   const productsRaw = await client.db().collection("products").find(filter).toArray();
   const products: ProductType[] = productsRaw.map((p: any) => ({
