@@ -175,55 +175,51 @@ export default function CategoryPage({
                   href={`/category/${product.category}/${product.slug}`}
                   className="flex-1"
                 >
-                  <div className="w-full h-48 relative">
-                    <Image
-                      src={product.image}
-                      alt={product.name}
-                      fill
-                      className="object-cover group-hover:scale-110 transition-transform duration-300"
-                    />
-                  </div>
-                  <div className="p-4 text-center">
-                    <h3 className="text-lg font-semibold text-[#cfd2d6] group-hover:text-white">
-                      {product.name}
-                    </h3>
-                    <p className="mt-1 text-gray-400 group-hover:text-white">
-                      {product.salePrice ? (
-                        <>
-                          <span className="line-through mr-1">
-                            ${product.price.toLocaleString()}
-                          </span>
-                          <span className="text-red-500">
-                            ${product.salePrice.toLocaleString()}
-                          </span>
-                        </>
-                      ) : (
-                        <>${product.price.toLocaleString()}</>
-                      )}
-                    </p>
-                  </div>
-                </Link>
-                {/* 🛒 Add to Cart */}
-                <div className="p-6 pt-0">
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      addToCart({
-                        id: product._id,
-                        name: product.name,
-                        price: product.price,
-                        image: product.image,
-                        quantity: 1,
-                      });
-                    }}
-                    className="w-full px-6 py-3 bg-[#e0e0e0] text-[#1f2a44] rounded-xl hover:scale-105 transition"
-                  >
-                    Add to Cart
-                  </button>
+                <div className="w-full h-44 sm:h-48 relative">
+                  <Image
+                    src={product.image}
+                    alt={product.name}
+                    fill
+                    className="object-cover group-hover:scale-110 transition"
+                  />
                 </div>
-              </div>
+                <div className="p-4 text-center flex-1 flex flex-col justify-between">
+                  <h3 className="font-semibold text-[var(--foreground)]">
+                    {product.name}
+                  </h3>
+                  <p className="text-[#cfd2d6]">
+                    {product.salePrice ? (
+                      <>
+                        <span className="line-through mr-1">
+                          ${product.price.toLocaleString()}
+                        </span>
+                        <span className="text-red-500">
+                          ${product.salePrice.toLocaleString()}
+                        </span>
+                      </>
+                    ) : (
+                      <>${product.price.toLocaleString()}</>
+                    )}
+                  </p>
+                </div>
+              </Link>
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  addToCart({
+                    id: product._id,
+                    name: product.name,
+                    price: product.price,
+                    image: product.image,
+                    quantity: 1,
+                  });
+                }}
+                className="m-4 px-6 py-3 bg-[#e0e0e0] text-[#1f2a44] rounded-xl hover:scale-105 transition"
+              >
+                Add to Cart
+              </button>
             </div>
+          </div>
           ))}
         </div>
         {/* 🔽 Load More */}

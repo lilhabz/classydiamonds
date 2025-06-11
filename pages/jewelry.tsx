@@ -199,6 +199,25 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
               </button>
             );
           })}
+
+          {[
+            { label: "For Him", value: "him" },
+            { label: "For Her", value: "her" },
+          ].map((g) => {
+            const active = genderFilter === g.value;
+            return (
+              <button
+                key={g.value}
+                onClick={() => {
+                  setGenderFilter(g.value as "him" | "her");
+                  setActiveCategory("All");
+                }}
+                className={`px-4 py-2 rounded-full font-semibold transition-transform hover:scale-105 ${active ? "bg-[var(--foreground)] text-[var(--bg-nav)]" : "bg-[var(--bg-nav)] text-[var(--foreground)] hover:bg-[#364763]"}`}
+              >
+                {g.label}
+              </button>
+            );
+          })}
         </div>
       </section>
 
