@@ -8,6 +8,7 @@ import Image from "next/image";
 import { GetServerSideProps } from "next";
 import { useCart } from "@/context/CartContext";
 import clientPromise from "@/lib/mongodb";
+import { useRouter } from "next/router";
 
 // 🔷 OPTION 2 (static fallback) requires this import:
 // import { productsData as staticFeatured } from "@/data/productsData";
@@ -70,6 +71,39 @@ export const getServerSideProps: GetServerSideProps<HomeProps> = async () => {
 export default function Home({ products }: HomeProps) {
   const { addToCart } = useCart();
   const featured = products;
+
+  type Gift = { name: string; image: string };
+
+  function GiftButton({ gift, index }: { gift: Gift; index: number }) {
+    const router = useRouter();
+    return (
+      <button
+        type="button"
+        onClick={() => {
+          localStorage.setItem(
+            "preselectedCategory",
+            gift.name.toLowerCase().replace(/\s+/g, "-")
+          );
+          router.push("/jewelry");
+        }}
+        className="group relative rounded-xl overflow-hidden shadow-md hover:shadow-xl hover:scale-105 transition-transform duration-300 cursor-pointer"
+      >
+        <div className="relative aspect-[4/3] w-full">
+          <Image
+            src={gift.image}
+            alt={gift.name}
+            fill
+            priority={index < 1}
+            className="object-cover rounded-xl group-hover:scale-110 transition-transform duration-300"
+          />
+          <div className="absolute inset-0 bg-black/40 z-10" />
+          <span className="absolute inset-0 flex items-center justify-center text-sm sm:text-base font-semibold text-white z-20">
+            {gift.name}
+          </span>
+        </div>
+      </button>
+    );
+  }
 
   return (
     <>
@@ -327,31 +361,7 @@ export default function Home({ products }: HomeProps) {
               { name: "For Him", image: "/category/his-gift-cat.jpg" },
               { name: "For Her", image: "/category/her-gift-cat.jpg" },
             ].map((gift, index) => (
-              <Link
-                key={gift.name}
-                href={{
-                  pathname: "/jewelry",
-                  query: {
-                    category: gift.name.toLowerCase().replace(/\s+/g, "-"),
-                    scroll: "true",
-                  },
-                }}
-                className="group relative rounded-xl overflow-hidden shadow-md hover:shadow-xl hover:scale-105 transition-transform duration-300"
-              >
-                <div className="relative aspect-[4/3] w-full">
-                  <Image
-                    src={gift.image}
-                    alt={gift.name}
-                    fill
-                    priority={index < 1}
-                    className="object-cover rounded-xl group-hover:scale-110 transition-transform duration-300"
-                  />
-                  <div className="absolute inset-0 bg-black/40 z-10" />
-                  <span className="absolute inset-0 flex items-center justify-center text-sm sm:text-base font-semibold text-white z-20">
-                    {gift.name}
-                  </span>
-                </div>
-              </Link>
+              <GiftButton key={gift.name} gift={gift} index={index} />
             ))}
           </div>
         </section>
