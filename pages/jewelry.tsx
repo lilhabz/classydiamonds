@@ -73,8 +73,11 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
   const scrollBelowHero = () => {
     if (heroRef.current) {
       const offset =
-        heroRef.current.offsetTop + heroRef.current.offsetHeight + 1;
-      window.scrollTo({ top: offset, behavior: "smooth" });
+        heroRef.current.offsetTop + heroRef.current.offsetHeight;
+      window.scrollTo({
+        top: offset,
+        behavior: "smooth",
+      });
     }
   };
 
