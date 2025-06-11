@@ -40,7 +40,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
   }, []);
 
   const allCategories = Array.from(new Set(products.map((p) => p.category)));
-  const categoryFilters = ["for-him", "for-her", ...allCategories];
+  const categoryFilters = [...allCategories, "for-him", "for-her"];
   const genderedProducts = genderFilter
     ? products.filter((p) => p.gender === genderFilter)
     : products;
