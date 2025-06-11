@@ -162,7 +162,7 @@ export default function WatchesPage({ products }: WatchesProps) {
               <Link
                 href={product.slug && product.slug !== "#" ? `/category/${product.category}/${product.slug}` : "#"}
               >
-                <div className="w-full h-44 sm:h-48 relative">
+                <div className="product-card-img">
                   <Image
                     src={product.image}
                     alt={product.name}

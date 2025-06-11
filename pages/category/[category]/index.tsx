@@ -175,7 +175,7 @@ export default function CategoryPage({
                   href={`/category/${product.category}/${product.slug}`}
                   className="flex-1"
                 >
-                <div className="w-full h-44 sm:h-48 relative">
+                <div className="product-card-img">
                   <Image
                     src={product.image}
                     alt={product.name}
