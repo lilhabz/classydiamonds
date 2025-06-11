@@ -70,18 +70,16 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
   const formatCategory = (cat: string) =>
     cat.replace(/-/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
 
-    const scrollBelowHero = () => {
-    if (!heroRef.current) return;
-    // account for your fixed navbar height so breadcrumbs sit just below the hero
-    const navHeight = document.querySelector('nav')?.clientHeight || 0;
-    const heroBottom =
-      heroRef.current.offsetTop + heroRef.current.offsetHeight;
-    window.scrollTo({
-      top: heroBottom - navHeight,
-      behavior: 'smooth',
-    });
+  const scrollBelowHero = () => {
+    if (heroRef.current) {
+      const offset =
+        heroRef.current.offsetTop + heroRef.current.offsetHeight;
+      window.scrollTo({
+        top: offset,
+        behavior: "smooth",
+      });
+    }
   };
-
 
   const router = useRouter();
 
