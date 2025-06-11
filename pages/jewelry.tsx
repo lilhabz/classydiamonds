@@ -52,19 +52,20 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
     cat.replace(/-/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
 
   const scrollToTitle = () => {
-    const header = document.querySelector("header");
-    const offset = (header as HTMLElement | null)?.clientHeight || 0;
+    // Header shrinks when scrolled; use its collapsed height for alignment
+    const headerHeight = 64; // px
+
     if (heroRef.current) {
       const bottom =
-        heroRef.current.getBoundingClientRect().bottom +
-        window.pageYOffset -
-        offset;
+        heroRef.current.offsetTop +
+        heroRef.current.offsetHeight -
+        headerHeight;
       window.scrollTo({ top: bottom, behavior: "smooth" });
     } else if (titleRef.current) {
       const top =
         titleRef.current.getBoundingClientRect().top +
         window.pageYOffset -
-        offset;
+        headerHeight;
       window.scrollTo({ top, behavior: "smooth" });
     }
   };
