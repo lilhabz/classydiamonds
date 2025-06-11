@@ -38,6 +38,24 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
     resetCount();
   }, []);
 
+  useEffect(() => {
+    const stored = localStorage.getItem("preselectedCategory");
+    if (stored) {
+      if (stored === "for-him") {
+        setGenderFilter("him");
+        setActiveCategory("All");
+      } else if (stored === "for-her") {
+        setGenderFilter("her");
+        setActiveCategory("All");
+      } else {
+        setActiveCategory(stored);
+        setGenderFilter(null);
+      }
+      resetCount();
+      localStorage.removeItem("preselectedCategory");
+    }
+  }, []);
+
   const allCategories = Array.from(new Set(products.map((p) => p.category)));
   const categoryFilters = [...allCategories, "for-him", "for-her"];
   const genderedProducts = genderFilter
