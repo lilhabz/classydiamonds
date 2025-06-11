@@ -1,4 +1,4 @@
-// 📄 pages/jewelry.tsx – Simplified Shop Page Without Category Filters 📦
+// 📄 pages/jewelry.tsx – Shop Page with Unified Scroll Anchor & Consistent Scroll Position
 
 "use client";
 
@@ -31,15 +31,16 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
   const [genderFilter, setGenderFilter] = useState<"him" | "her" | null>(null);
   const titleRef = useRef<HTMLHeadingElement>(null);
   const heroRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
   const headerRef = useRef<HTMLDivElement>(null);
   const initialMount = useRef(true);
 
   const resetCount = () => setVisibleCount(8);
-  // Reset count on initial mount
   useEffect(() => {
     resetCount();
   }, []);
 
+  // Read preselected filter and scroll
   useEffect(() => {
     const stored = localStorage.getItem("preselectedCategory");
     if (stored) {
@@ -55,40 +56,32 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
       }
       resetCount();
       localStorage.removeItem("preselectedCategory");
-      setTimeout(scrollBelowHero, 0);
+      scrollBelowHero();
     }
   }, []);
 
   const allCategories = Array.from(new Set(products.map((p) => p.category)));
   const categoryFilters = [...allCategories, "for-him", "for-her"];
-  const genderedProducts = genderFilter
-    ? products.filter((p) => p.gender === genderFilter)
-    : products;
 
-
-  // Utility to format category slugs like "wedding-bands" -> "Wedding Bands"
   const formatCategory = (cat: string) =>
     cat.replace(/-/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
 
+  // Unified scroll: scroll to anchor under hero, adjusted for navbar height
   const scrollBelowHero = () => {
-    if (heroRef.current) {
-      const offset =
-        heroRef.current.offsetTop + heroRef.current.offsetHeight;
-      window.scrollTo({
-        top: offset,
-        behavior: "smooth",
-      });
+    if (scrollRef.current) {
+      const nav = document.querySelector('nav');
+      const navHeight = nav?.clientHeight || 0;
+      const offset = scrollRef.current.offsetTop - navHeight;
+      window.scrollTo({ top: offset, behavior: 'smooth' });
     }
   };
 
   const router = useRouter();
 
-  // Handle query params for category/gender and optional scrolling
+  // Handle URL params for filters + optional scroll
   useEffect(() => {
     if (!router.isReady) return;
-
     const { category, gender, scroll } = router.query;
-
     if (gender === "him" || category === "for-him") {
       setGenderFilter("him");
       setActiveCategory("All");
@@ -102,13 +95,10 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
       setGenderFilter(null);
       resetCount();
     }
-
-    if (scroll === "true") {
-      // Delay to ensure DOM is ready before scrolling
-      setTimeout(scrollBelowHero, 0);
-    }
+    if (scroll === "true") scrollBelowHero();
   }, [router.isReady]);
 
+  // Scroll on filter change (excluding initial mount)
   useEffect(() => {
     if (initialMount.current) {
       initialMount.current = false;
@@ -162,11 +152,15 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
         </div>
       </section>
 
+      {/* Anchor for unified scroll (positions under hero) */}
+      <div ref={scrollRef} />
+
+      {/* Breadcrumbs */}
       <div className="pl-4 pr-4 sm:pl-8 sm:pr-8 mt-6 mb-6">
         <Breadcrumbs />
       </div>
 
-      {/* 💎 Title */}
+      {/* 💎 Title & Filters */}
       <section
         ref={headerRef}
         className="pt-16 pb-8 px-4 sm:px-6 max-w-7xl mx-auto"
@@ -183,16 +177,20 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
             ? "Our Jewelry"
             : formatCategory(activeCategory)}
         </h2>
-        {genderFilter && (
+        {genderFilter ? (
           <p className="text-xl sm:text-2xl text-center mt-2 mb-6">
             {activeCategory === "All"
               ? "All Jewelry"
               : formatCategory(activeCategory)}
           </p>
+        ) : (
+          <div className="mb-8" />
         )}
-        {!genderFilter && <div className="mb-8" />}
         <div className="flex flex-wrap justify-center gap-3 mt-4">
-          {["All", ...categoryFilters].map((cat) => {
+          {[
+            "All",
+            ...categoryFilters
+          ].map((cat) => {
             const label = cat
               .replace(/-/g, " ")
               .replace(/\b\w/g, (l) => l.toUpperCase());
@@ -219,8 +217,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
                   active
                     ? "bg-[var(--foreground)] text-[var(--bg-nav)]"
                     : "bg-[var(--bg-nav)] text-[var(--foreground)] hover:bg-[#364763]"
-                }`}
-              >
+                }`}>
                 {label}
               </button>
             );
@@ -237,7 +234,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
               className="group bg-[var(--bg-nav)] rounded-2xl overflow-hidden shadow-lg hover:scale-105 transition flex flex-col h-full justify-between"
             >
               <Link href={`/category/${product.category}/${product.slug}`} className="flex-1 flex flex-col h-full">
-                <div className="product-card-img">
+                <div className="product-card-img flex-1 relative">
                   <Image
                     src={product.image}
                     alt={product.name}
