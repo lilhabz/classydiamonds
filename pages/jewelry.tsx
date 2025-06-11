@@ -30,7 +30,8 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
   const [activeCategory, setActiveCategory] = useState<string>("All");
   const [genderFilter, setGenderFilter] = useState<"him" | "her" | null>(null);
   const titleRef = useRef<HTMLHeadingElement>(null);
-  const heroRef = useRef<HTMLElement>(null);
+  const heroRef = useRef<HTMLDivElement>(null);
+  const headerRef = useRef<HTMLDivElement>(null);
   const initialMount = useRef(true);
 
   const resetCount = () => setVisibleCount(8);
@@ -71,7 +72,8 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
 
   const scrollBelowHero = () => {
     if (heroRef.current) {
-      const offset = heroRef.current.offsetTop + heroRef.current.offsetHeight;
+      const offset =
+        heroRef.current.offsetTop + heroRef.current.offsetHeight + 1;
       window.scrollTo({ top: offset, behavior: "smooth" });
     }
   };
@@ -162,7 +164,10 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
       </div>
 
       {/* 💎 Title */}
-      <section className="pt-16 pb-8 px-4 sm:px-6 max-w-7xl mx-auto">
+      <section
+        ref={headerRef}
+        className="pt-16 pb-8 px-4 sm:px-6 max-w-7xl mx-auto"
+      >
         <h2
           ref={titleRef}
           className="text-2xl sm:text-3xl font-semibold text-center"
