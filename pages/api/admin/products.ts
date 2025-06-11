@@ -4,7 +4,7 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { v2 as cloudinary } from "cloudinary";
 import slugify from "slugify";
 import clientPromise from "@/lib/mongodb";
-import formidable from "formidable";
+import { IncomingForm } from "formidable";
 
 // Disable Next.js built-in body parser to handle multipart/form-data
 export const config = { api: { bodyParser: false } };
@@ -92,7 +92,7 @@ export default async function handler(
 
   try {
     // 🛠️ Parse multipart/form-data
-    const form = new formidable.IncomingForm();
+    const form = new IncomingForm();
     const { fields, files } = await new Promise<any>((resolve, reject) => {
       form.parse(req, (err, flds, fls) =>
         err ? reject(err) : resolve({ fields: flds, files: fls })
