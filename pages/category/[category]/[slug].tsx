@@ -13,6 +13,7 @@ import { useRouter } from "next/router"; // keep client-side router if needed
 // 🔢 Product type from database
 type ProductType = {
   id: string; // _id from MongoDB as string
+  skuNumber?: number;
   name: string;
   price: number;
   salePrice?: number;
@@ -95,6 +96,9 @@ export default function ProductPage({ product }: { product: ProductType }) {
             <h1 className="text-4xl font-bold text-[var(--foreground)]">
               {product.name}
             </h1>
+            {product.skuNumber !== undefined && (
+              <p className="text-sm text-gray-400">SKU # {String(product.skuNumber).padStart(5, "0")}</p>
+            )}
             <p className="text-lg text-[#cfd2d6]">
               {product.description || "Beautiful handcrafted piece."}
             </p>
@@ -145,6 +149,7 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
   }
   const product: ProductType = {
     id: p._id.toString(),
+    skuNumber: p.skuNumber ?? null,
     name: p.name,
     price: p.price,
     salePrice: p.salePrice ?? null,
