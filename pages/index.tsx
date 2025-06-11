@@ -189,7 +189,7 @@ export default function Home({ products }: HomeProps) {
                 featured.map((item) => (
                   <div
                     key={item._id}
-                    className="flex-shrink-0 w-48 bg-[#25304f] rounded-2xl shadow-lg"
+                    className="flex-shrink-0 w-48 bg-[#25304f] rounded-2xl shadow-lg flex flex-col h-full justify-between"
                   >
                     <Link href={`/category/${item.category}/${item.slug}`}>
                       <Image
@@ -197,10 +197,10 @@ export default function Home({ products }: HomeProps) {
                         alt={item.name}
                         width={192}
                         height={192}
-                        className="rounded-t-2xl object-cover"
+                        className="rounded-t-2xl object-cover h-48 w-full"
                       />
                     </Link>
-                    <div className="p-4 text-center">
+                    <div className="p-4 text-center flex flex-col flex-grow justify-between">
                       <h3 className="text-sm font-semibold text-[#cfd2d6] truncate">
                         {item.name}
                       </h3>
@@ -254,23 +254,23 @@ export default function Home({ products }: HomeProps) {
               featured.map((item) => (
                 <div
                   key={item._id}
-                  className="group bg-[#25304f] rounded-2xl overflow-hidden shadow-lg hover:scale-105 transition"
+                  className="group bg-[#25304f] rounded-2xl overflow-hidden shadow-lg hover:scale-105 transition flex flex-col h-full justify-between"
                 >
                   <Link href={`/category/${item.category}/${item.slug}`}>
-                    <div className="relative w-full h-72">
+                    <div className="relative w-full h-64">
                       <Image
                         src={item.image}
                         alt={item.name}
                         fill
-                        className="object-cover group-hover:scale-110 transition"
+                        className="object-cover group-hover:scale-110 transition h-full w-full"
                       />
                     </div>
                   </Link>
-                  <div className="p-6 text-center">
-                    <h3 className="text-xl text-[#cfd2d6] mb-2 group-hover:text-white transition">
+                  <div className="p-6 text-center flex flex-col flex-grow justify-between">
+                    <h3 className="text-xl text-[#cfd2d6] mb-2 group-hover:text-white transition truncate text-sm">
                       {item.name}
                     </h3>
-                    <p className="text-gray-400 mb-4 group-hover:text-white transition">
+                    <p className="text-gray-400 mb-4 group-hover:text-white transition text-sm">
                       {item.salePrice ? (
                         <>
                           <span className="line-through mr-1">

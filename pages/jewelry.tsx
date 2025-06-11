@@ -30,6 +30,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
   const [activeCategory, setActiveCategory] = useState<string>("All");
   const [genderFilter, setGenderFilter] = useState<"him" | "her" | null>(null);
   const titleRef = useRef<HTMLHeadingElement>(null);
+  const heroRef = useRef<HTMLElement>(null);
   const initialMount = useRef(true);
 
   const resetCount = () => setVisibleCount(8);
@@ -53,6 +54,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
       }
       resetCount();
       localStorage.removeItem("preselectedCategory");
+      setTimeout(scrollBelowHero, 0);
     }
   }, []);
 
@@ -67,16 +69,10 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
   const formatCategory = (cat: string) =>
     cat.replace(/-/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
 
-  const scrollToTitle = () => {
-    const header = document.querySelector("header");
-    const offset = (header as HTMLElement | null)?.clientHeight || 80;
-
-    if (titleRef.current) {
-      const top =
-        titleRef.current.getBoundingClientRect().top +
-        window.pageYOffset -
-        offset;
-      window.scrollTo({ top, behavior: "smooth" });
+  const scrollBelowHero = () => {
+    if (heroRef.current) {
+      const offset = heroRef.current.offsetTop + heroRef.current.offsetHeight;
+      window.scrollTo({ top: offset, behavior: "smooth" });
     }
   };
 
@@ -104,7 +100,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
 
     if (scroll === "true") {
       // Delay to ensure DOM is ready before scrolling
-      setTimeout(scrollToTitle, 0);
+      setTimeout(scrollBelowHero, 0);
     }
   }, [router.isReady]);
 
@@ -114,7 +110,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
       return;
     }
     resetCount();
-    scrollToTitle();
+    scrollBelowHero();
   }, [activeCategory, genderFilter]);
 
   const handleLoadMore = () => setVisibleCount((prev) => prev + 4);
@@ -141,6 +137,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
 
       {/* 🌟 Hero */}
       <section
+        ref={heroRef}
         className="-mt-20 relative w-full h-[80vh] flex items-center justify-center overflow-hidden"
       >
         <Image
@@ -229,22 +226,22 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
           {filteredProducts.slice(0, visibleCount).map((product) => (
             <div
               key={product.id}
-              className="group bg-[var(--bg-nav)] rounded-2xl overflow-hidden shadow-lg hover:scale-105 transition flex flex-col h-full"
+              className="group bg-[var(--bg-nav)] rounded-2xl overflow-hidden shadow-lg hover:scale-105 transition flex flex-col h-full justify-between"
             >
-              <Link href={`/category/${product.category}/${product.slug}`} className="flex-1 flex flex-col">
+              <Link href={`/category/${product.category}/${product.slug}`} className="flex-1 flex flex-col h-full">
                 <div className="product-card-img">
                   <Image
                     src={product.image}
                     alt={product.name}
                     fill
-                    className="object-cover group-hover:scale-110 transition"
+                    className="object-cover group-hover:scale-110 transition h-full w-full"
                   />
                 </div>
                 <div className="p-4 text-center flex-1 flex flex-col justify-between">
-                  <h3 className="font-semibold text-[var(--foreground)]">
+                  <h3 className="font-semibold text-[var(--foreground)] truncate text-sm">
                     {product.name}
                   </h3>
-                  <p className="text-[#cfd2d6]">
+                  <p className="text-[#cfd2d6] text-sm">
                     {product.salePrice ? (
                       <>
                         <span className="line-through mr-1">

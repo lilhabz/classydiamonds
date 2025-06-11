@@ -107,6 +107,6 @@ input[type="reset"] {
 
 @layer components {
   .product-card-img {
-    @apply w-full h-44 sm:h-48 relative;
+    @apply relative w-full h-64;
   }
 }
