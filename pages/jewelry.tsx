@@ -174,14 +174,12 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
             ? "Our Jewelry"
             : formatCategory(activeCategory)}
         </h2>
-        {genderFilter && (
+        {genderFilter && activeCategory !== "All" && (
           <p className="text-xl sm:text-2xl text-center mt-2 mb-6">
-            {activeCategory === "All"
-              ? "All Jewelry"
-              : formatCategory(activeCategory)}
+            {formatCategory(activeCategory)}
           </p>
         )}
-        {!genderFilter && <div className="mb-8" />}
+        {(!genderFilter || activeCategory === "All") && <div className="mb-8" />}
         <div className="flex flex-wrap justify-center gap-3 mt-4">
           {["All", ...categoryFilters].map((cat) => {
             const label = cat
@@ -205,6 +203,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
                     setGenderFilter(null);
                     setActiveCategory(cat);
                   }
+                  scrollToTitle();
                 }}
                 className={`px-4 py-2 rounded-full font-semibold transition-transform hover:scale-105 ${
                   active
