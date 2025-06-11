@@ -228,7 +228,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
               className="group bg-[var(--bg-nav)] rounded-2xl overflow-hidden shadow-lg hover:scale-105 transition flex flex-col h-full"
             >
               <Link href={`/category/${product.category}/${product.slug}`}>
-                <div className="w-full h-44 sm:h-48 relative">
+                <div className="product-card-img">
                   <Image
                     src={product.image}
                     alt={product.name}

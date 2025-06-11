@@ -104,3 +104,9 @@ input[type="reset"] {
 .hidden-scroll-snap-include {
   display: none;
 }
+
+@layer components {
+  .product-card-img {
+    @apply w-full h-44 sm:h-48 relative;
+  }
+}

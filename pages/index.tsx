@@ -332,7 +332,7 @@ export default function Home({ products }: HomeProps) {
                 href={{
                   pathname: "/jewelry",
                   query: {
-                    gender: gift.name.toLowerCase().split(" ")[1],
+                    category: gift.name.toLowerCase().replace(/\s+/g, "-"),
                     scroll: "true",
                   },
                 }}
