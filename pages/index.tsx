@@ -8,6 +8,7 @@ import Image from "next/image";
 import { GetServerSideProps } from "next";
 import { useCart } from "@/context/CartContext";
 import clientPromise from "@/lib/mongodb";
+import { useRouter } from "next/router";
 
 // 🔷 OPTION 2 (static fallback) requires this import:
 // import { productsData as staticFeatured } from "@/data/productsData";
@@ -70,6 +71,39 @@ export const getServerSideProps: GetServerSideProps<HomeProps> = async () => {
 export default function Home({ products }: HomeProps) {
   const { addToCart } = useCart();
   const featured = products;
+
+  type Gift = { name: string; image: string };
+
+  function GiftButton({ gift, index }: { gift: Gift; index: number }) {
+    const router = useRouter();
+    return (
+      <button
+        type="button"
+        onClick={() => {
+          localStorage.setItem(
+            "preselectedCategory",
+            gift.name.toLowerCase().replace(/\s+/g, "-")
+          );
+          router.push("/jewelry");
+        }}
+        className="group relative rounded-xl overflow-hidden shadow-md hover:shadow-xl hover:scale-105 transition-transform duration-300 cursor-pointer"
+      >
+        <div className="relative aspect-[4/3] w-full">
+          <Image
+            src={gift.image}
+            alt={gift.name}
+            fill
+            priority={index < 1}
+            className="object-cover rounded-xl group-hover:scale-110 transition-transform duration-300"
+          />
+          <div className="absolute inset-0 bg-black/40 z-10" />
+          <span className="absolute inset-0 flex items-center justify-center text-sm sm:text-base font-semibold text-white z-20">
+            {gift.name}
+          </span>
+        </div>
+      </button>
+    );
+  }
 
   return (
     <>
@@ -155,7 +189,7 @@ export default function Home({ products }: HomeProps) {
                 featured.map((item) => (
                   <div
                     key={item._id}
-                    className="flex-shrink-0 w-48 bg-[#25304f] rounded-2xl shadow-lg"
+                    className="flex-shrink-0 w-48 bg-[#25304f] rounded-2xl shadow-lg flex flex-col h-full justify-between"
                   >
                     <Link href={`/category/${item.category}/${item.slug}`}>
                       <Image
@@ -163,10 +197,10 @@ export default function Home({ products }: HomeProps) {
                         alt={item.name}
                         width={192}
                         height={192}
-                        className="rounded-t-2xl object-cover"
+                        className="rounded-t-2xl object-cover h-48 w-full"
                       />
                     </Link>
-                    <div className="p-4 text-center">
+                    <div className="p-4 text-center flex flex-col flex-grow justify-between">
                       <h3 className="text-sm font-semibold text-[#cfd2d6] truncate">
                         {item.name}
                       </h3>
@@ -220,23 +254,23 @@ export default function Home({ products }: HomeProps) {
               featured.map((item) => (
                 <div
                   key={item._id}
-                  className="group bg-[#25304f] rounded-2xl overflow-hidden shadow-lg hover:scale-105 transition"
+                  className="group bg-[#25304f] rounded-2xl overflow-hidden shadow-lg hover:scale-105 transition flex flex-col h-full justify-between"
                 >
                   <Link href={`/category/${item.category}/${item.slug}`}>
-                    <div className="relative w-full h-72">
+                    <div className="relative w-full h-64">
                       <Image
                         src={item.image}
                         alt={item.name}
                         fill
-                        className="object-cover group-hover:scale-110 transition"
+                        className="object-cover group-hover:scale-110 transition h-full w-full"
                       />
                     </div>
                   </Link>
-                  <div className="p-6 text-center">
-                    <h3 className="text-xl text-[#cfd2d6] mb-2 group-hover:text-white transition">
+                  <div className="p-6 text-center flex flex-col flex-grow justify-between">
+                    <h3 className="text-xl text-[#cfd2d6] mb-2 group-hover:text-white transition truncate text-sm">
                       {item.name}
                     </h3>
-                    <p className="text-gray-400 mb-4 group-hover:text-white transition">
+                    <p className="text-gray-400 mb-4 group-hover:text-white transition text-sm">
                       {item.salePrice ? (
                         <>
                           <span className="line-through mr-1">
@@ -327,25 +361,7 @@ export default function Home({ products }: HomeProps) {
               { name: "For Him", image: "/category/his-gift-cat.jpg" },
               { name: "For Her", image: "/category/her-gift-cat.jpg" },
             ].map((gift, index) => (
-              <Link
-                key={gift.name}
-                href="/jewelry"
-                className="group relative rounded-xl overflow-hidden shadow-md hover:shadow-xl hover:scale-105 transition-transform duration-300"
-              >
-                <div className="relative aspect-[4/3] w-full">
-                  <Image
-                    src={gift.image}
-                    alt={gift.name}
-                    fill
-                    priority={index < 1}
-                    className="object-cover rounded-xl group-hover:scale-110 transition-transform duration-300"
-                  />
-                  <div className="absolute inset-0 bg-black/40 z-10" />
-                  <span className="absolute inset-0 flex items-center justify-center text-sm sm:text-base font-semibold text-white z-20">
-                    {gift.name}
-                  </span>
-                </div>
-              </Link>
+              <GiftButton key={gift.name} gift={gift} index={index} />
             ))}
           </div>
         </section>

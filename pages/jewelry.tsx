@@ -29,14 +29,34 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
   const [visibleCount, setVisibleCount] = useState(8);
   const [activeCategory, setActiveCategory] = useState<string>("All");
   const [genderFilter, setGenderFilter] = useState<"him" | "her" | null>(null);
-  const heroRef = useRef<HTMLElement>(null);
   const titleRef = useRef<HTMLHeadingElement>(null);
+  const heroRef = useRef<HTMLDivElement>(null);
+  const headerRef = useRef<HTMLDivElement>(null);
   const initialMount = useRef(true);
 
   const resetCount = () => setVisibleCount(8);
   // Reset count on initial mount
   useEffect(() => {
     resetCount();
+  }, []);
+
+  useEffect(() => {
+    const stored = localStorage.getItem("preselectedCategory");
+    if (stored) {
+      if (stored === "for-him") {
+        setGenderFilter("him");
+        setActiveCategory("All");
+      } else if (stored === "for-her") {
+        setGenderFilter("her");
+        setActiveCategory("All");
+      } else {
+        setActiveCategory(stored);
+        setGenderFilter(null);
+      }
+      resetCount();
+      localStorage.removeItem("preselectedCategory");
+      setTimeout(scrollBelowHero, 0);
+    }
   }, []);
 
   const allCategories = Array.from(new Set(products.map((p) => p.category)));
@@ -50,28 +70,14 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
   const formatCategory = (cat: string) =>
     cat.replace(/-/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
 
-  const scrollToTitle = () => {
-
-    // Header shrinks when scrolled; use its collapsed height for alignment
-    const headerHeight = 64; // px
-
-
+  const scrollBelowHero = () => {
     if (heroRef.current) {
-      const bottom =
-        heroRef.current.offsetTop +
-        heroRef.current.offsetHeight -
-            
-        headerHeight;
-
-  
-
-      window.scrollTo({ top: bottom, behavior: "smooth" });
-    } else if (titleRef.current) {
-      const top =
-        titleRef.current.getBoundingClientRect().top +
-        window.pageYOffset -
-        headerHeight;
-      window.scrollTo({ top, behavior: "smooth" });
+      const offset =
+        heroRef.current.offsetTop + heroRef.current.offsetHeight;
+      window.scrollTo({
+        top: offset,
+        behavior: "smooth",
+      });
     }
   };
 
@@ -99,7 +105,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
 
     if (scroll === "true") {
       // Delay to ensure DOM is ready before scrolling
-      setTimeout(scrollToTitle, 0);
+      setTimeout(scrollBelowHero, 0);
     }
   }, [router.isReady]);
 
@@ -109,7 +115,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
       return;
     }
     resetCount();
-    scrollToTitle();
+    scrollBelowHero();
   }, [activeCategory, genderFilter]);
 
   const handleLoadMore = () => setVisibleCount((prev) => prev + 4);
@@ -161,7 +167,10 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
       </div>
 
       {/* 💎 Title */}
-      <section className="pt-16 pb-8 px-4 sm:px-6 max-w-7xl mx-auto">
+      <section
+        ref={headerRef}
+        className="pt-16 pb-8 px-4 sm:px-6 max-w-7xl mx-auto"
+      >
         <h2
           ref={titleRef}
           className="text-2xl sm:text-3xl font-semibold text-center"
@@ -206,11 +215,11 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
                     setActiveCategory(cat);
                   }
                 }}
-                className={`px-4 py-2 rounded-full font-semibold transition-transform hover:scale-105 ${
+                className={px-4 py-2 rounded-full font-semibold transition-transform hover:scale-105 ${
                   active
                     ? "bg-[var(--foreground)] text-[var(--bg-nav)]"
                     : "bg-[var(--bg-nav)] text-[var(--foreground)] hover:bg-[#364763]"
-                }`}
+                }}
               >
                 {label}
               </button>
@@ -225,22 +234,22 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
           {filteredProducts.slice(0, visibleCount).map((product) => (
             <div
               key={product.id}
-              className="group bg-[var(--bg-nav)] rounded-2xl overflow-hidden shadow-lg hover:scale-105 transition flex flex-col h-full"
+              className="group bg-[var(--bg-nav)] rounded-2xl overflow-hidden shadow-lg hover:scale-105 transition flex flex-col h-full justify-between"
             >
-              <Link href={`/category/${product.category}/${product.slug}`} className="flex-1 flex flex-col">
+              <Link href={/category/${product.category}/${product.slug}} className="flex-1 flex flex-col h-full">
                 <div className="product-card-img">
                   <Image
                     src={product.image}
                     alt={product.name}
                     fill
-                    className="object-cover group-hover:scale-110 transition"
+                    className="object-cover group-hover:scale-110 transition h-full w-full"
                   />
                 </div>
                 <div className="p-4 text-center flex-1 flex flex-col justify-between">
-                  <h3 className="font-semibold text-[var(--foreground)]">
+                  <h3 className="font-semibold text-[var(--foreground)] truncate text-sm">
                     {product.name}
                   </h3>
-                  <p className="text-[#cfd2d6]">
+                  <p className="text-[#cfd2d6] text-sm">
                     {product.salePrice ? (
                       <>
                         <span className="line-through mr-1">
