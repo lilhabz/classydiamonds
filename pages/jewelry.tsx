@@ -221,13 +221,13 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
 
       {/* 📦 Products & Load More */}
       <section className="px-4 sm:px-6 max-w-7xl mx-auto mb-16">
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6 auto-rows-fr">
           {filteredProducts.slice(0, visibleCount).map((product) => (
             <div
               key={product.id}
               className="group bg-[var(--bg-nav)] rounded-2xl overflow-hidden shadow-lg hover:scale-105 transition flex flex-col h-full"
             >
-              <Link href={`/category/${product.category}/${product.slug}`}>
+              <Link href={`/category/${product.category}/${product.slug}`} className="flex-1 flex flex-col">
                 <div className="product-card-img">
                   <Image
                     src={product.image}

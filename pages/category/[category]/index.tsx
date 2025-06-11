@@ -166,7 +166,7 @@ export default function CategoryPage({
         >
           {prettyCategory} Pieces
         </h2>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6 auto-rows-fr">
           {allProducts.slice(0, visibleCount).map((product) => (
             <div key={product._id} className="group">
               <div className="bg-[var(--bg-nav)] rounded-2xl overflow-hidden shadow-lg hover:ring-2 hover:ring-[var(--foreground)] hover:scale-105 transition-transform duration-300 flex flex-col h-full">
