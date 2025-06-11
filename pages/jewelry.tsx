@@ -29,7 +29,6 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
   const [visibleCount, setVisibleCount] = useState(8);
   const [activeCategory, setActiveCategory] = useState<string>("All");
   const [genderFilter, setGenderFilter] = useState<"him" | "her" | null>(null);
-  const heroRef = useRef<HTMLElement>(null);
   const titleRef = useRef<HTMLHeadingElement>(null);
   const initialMount = useRef(true);
 
@@ -51,26 +50,14 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
     cat.replace(/-/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
 
   const scrollToTitle = () => {
+    const header = document.querySelector("header");
+    const offset = (header as HTMLElement | null)?.clientHeight || 80;
 
-    // Header shrinks when scrolled; use its collapsed height for alignment
-    const headerHeight = 64; // px
-
-
-    if (heroRef.current) {
-      const bottom =
-        heroRef.current.offsetTop +
-        heroRef.current.offsetHeight -
-            
-        headerHeight;
-
-  
-
-      window.scrollTo({ top: bottom, behavior: "smooth" });
-    } else if (titleRef.current) {
+    if (titleRef.current) {
       const top =
         titleRef.current.getBoundingClientRect().top +
         window.pageYOffset -
-        headerHeight;
+        offset;
       window.scrollTo({ top, behavior: "smooth" });
     }
   };
@@ -136,7 +123,6 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
 
       {/* 🌟 Hero */}
       <section
-        ref={heroRef}
         className="-mt-20 relative w-full h-[80vh] flex items-center justify-center overflow-hidden"
       >
         <Image
