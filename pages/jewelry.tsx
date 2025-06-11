@@ -1,4 +1,4 @@
-// 📄 pages/jewelry.tsx – Simplified Shop Page Without Category Filters 📦
+// 📄 pages/jewelry.tsx – Fully Fixed and Commented Jewelry Page 💎
 
 "use client";
 
@@ -35,7 +35,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
   const initialMount = useRef(true);
 
   const resetCount = () => setVisibleCount(8);
-  // Reset count on initial mount
+
   useEffect(() => {
     resetCount();
   }, []);
@@ -61,29 +61,16 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
 
   const allCategories = Array.from(new Set(products.map((p) => p.category)));
   const categoryFilters = [...allCategories, "for-him", "for-her"];
-  const genderedProducts = genderFilter
-    ? products.filter((p) => p.gender === genderFilter)
-    : products;
-
-
-  // Utility to format category slugs like "wedding-bands" -> "Wedding Bands"
-  const formatCategory = (cat: string) =>
-    cat.replace(/-/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
 
   const scrollBelowHero = () => {
     if (heroRef.current) {
-      const offset =
-        heroRef.current.offsetTop + heroRef.current.offsetHeight;
-      window.scrollTo({
-        top: offset,
-        behavior: "smooth",
-      });
+      const offset = heroRef.current.offsetTop + heroRef.current.offsetHeight;
+      window.scrollTo({ top: offset, behavior: "smooth" });
     }
   };
 
   const router = useRouter();
 
-  // Handle query params for category/gender and optional scrolling
   useEffect(() => {
     if (!router.isReady) return;
 
@@ -92,19 +79,17 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
     if (gender === "him" || category === "for-him") {
       setGenderFilter("him");
       setActiveCategory("All");
-      resetCount();
     } else if (gender === "her" || category === "for-her") {
       setGenderFilter("her");
       setActiveCategory("All");
-      resetCount();
     } else if (typeof category === "string" && category) {
       setActiveCategory(category);
       setGenderFilter(null);
-      resetCount();
     }
 
+    resetCount();
+
     if (scroll === "true") {
-      // Delay to ensure DOM is ready before scrolling
       setTimeout(scrollBelowHero, 0);
     }
   }, [router.isReady]);
@@ -120,9 +105,13 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
 
   const handleLoadMore = () => setVisibleCount((prev) => prev + 4);
 
+  const formatCategory = (cat: string) =>
+    cat.replace(/-/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
+
   const filteredByGender = genderFilter
     ? products.filter((p) => p.gender === genderFilter)
     : products;
+
   const filteredProducts =
     activeCategory === "All"
       ? filteredByGender
@@ -140,7 +129,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
 
-      {/* 🌟 Hero */}
+      {/* 🌟 Hero Section */}
       <section
         ref={heroRef}
         className="-mt-20 relative w-full h-[80vh] flex items-center justify-center overflow-hidden"
@@ -162,11 +151,12 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
         </div>
       </section>
 
+      {/* 🧭 Breadcrumbs */}
       <div className="pl-4 pr-4 sm:pl-8 sm:pr-8 mt-6 mb-6">
         <Breadcrumbs />
       </div>
 
-      {/* 💎 Title */}
+      {/* 💎 Category Header */}
       <section
         ref={headerRef}
         className="pt-16 pb-8 px-4 sm:px-6 max-w-7xl mx-auto"
@@ -191,15 +181,24 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
           </p>
         )}
         {!genderFilter && <div className="mb-8" />}
+
         <div className="flex flex-wrap justify-center gap-3 mt-4">
           {["All", ...categoryFilters].map((cat) => {
             const label = cat
               .replace(/-/g, " ")
               .replace(/\b\w/g, (l) => l.toUpperCase());
             const active =
-              (cat === "for-him" && genderFilter === "him" && activeCategory === "All") ||
-              (cat === "for-her" && genderFilter === "her" && activeCategory === "All") ||
-              (cat !== "for-him" && cat !== "for-her" && activeCategory === cat && !genderFilter);
+              (cat === "for-him" &&
+                genderFilter === "him" &&
+                activeCategory === "All") ||
+              (cat === "for-her" &&
+                genderFilter === "her" &&
+                activeCategory === "All") ||
+              (cat !== "for-him" &&
+                cat !== "for-her" &&
+                activeCategory === cat &&
+                !genderFilter);
+
             return (
               <button
                 key={cat}
@@ -215,11 +214,11 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
                     setActiveCategory(cat);
                   }
                 }}
-                className={px-4 py-2 rounded-full font-semibold transition-transform hover:scale-105 ${
+                className={`px-4 py-2 rounded-full font-semibold transition-transform hover:scale-105 ${
                   active
                     ? "bg-[var(--foreground)] text-[var(--bg-nav)]"
                     : "bg-[var(--bg-nav)] text-[var(--foreground)] hover:bg-[#364763]"
-                }}
+                }`}
               >
                 {label}
               </button>
@@ -228,7 +227,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
         </div>
       </section>
 
-      {/* 📦 Products & Load More */}
+      {/* 🛒 Product Grid */}
       <section className="px-4 sm:px-6 max-w-7xl mx-auto mb-16">
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6 auto-rows-fr">
           {filteredProducts.slice(0, visibleCount).map((product) => (
@@ -236,13 +235,16 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
               key={product.id}
               className="group bg-[var(--bg-nav)] rounded-2xl overflow-hidden shadow-lg hover:scale-105 transition flex flex-col h-full justify-between"
             >
-              <Link href={/category/${product.category}/${product.slug}} className="flex-1 flex flex-col h-full">
-                <div className="product-card-img">
+              <Link
+                href={`/category/${product.category}/${product.slug}`}
+                className="flex-1 flex flex-col h-full"
+              >
+                <div className="relative w-full aspect-square">
                   <Image
                     src={product.image}
                     alt={product.name}
                     fill
-                    className="object-cover group-hover:scale-110 transition h-full w-full"
+                    className="object-cover group-hover:scale-110 transition"
                   />
                 </div>
                 <div className="p-4 text-center flex-1 flex flex-col justify-between">
@@ -285,7 +287,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
         </div>
 
         {visibleCount < filteredProducts.length && (
-          <div className="flex justify-center">
+          <div className="flex justify-center mt-10">
             <button
               onClick={handleLoadMore}
               className="px-8 py-4 bg-[var(--foreground)] text-[var(--bg-nav)] rounded-full"
@@ -299,14 +301,18 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
   );
 }
 
-// Server-side data fetching
+// 🧠 Server-side data loader
 export const getServerSideProps: GetServerSideProps = async ({ query }) => {
   const client = await clientPromise;
   let genderQuery: "him" | "her" | undefined;
   if (query.category === "for-him") genderQuery = "him";
   if (query.category === "for-her") genderQuery = "her";
   const filter = genderQuery ? { gender: genderQuery } : {};
-  const productsRaw = await client.db().collection("products").find(filter).toArray();
+  const productsRaw = await client
+    .db()
+    .collection("products")
+    .find(filter)
+    .toArray();
   const products: ProductType[] = productsRaw.map((p: any) => ({
     id: p._id.toString(),
     slug: p.slug,
@@ -320,4 +326,3 @@ export const getServerSideProps: GetServerSideProps = async ({ query }) => {
   }));
   return { props: { products } };
 };
-///111
