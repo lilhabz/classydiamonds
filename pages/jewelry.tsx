@@ -39,12 +39,11 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
     resetCount();
   }, []);
 
+  const allCategories = Array.from(new Set(products.map((p) => p.category)));
+  const categoryFilters = ["for-him", "for-her", ...allCategories];
   const genderedProducts = genderFilter
     ? products.filter((p) => p.gender === genderFilter)
     : products;
-  const categories = Array.from(
-    new Set(genderedProducts.map((p) => p.category))
-  );
 
 
   // Utility to format category slugs like "wedding-bands" -> "Wedding Bands"
@@ -78,25 +77,25 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
 
   const router = useRouter();
 
-  // Handle category from query string and optional scrolling
+  // Handle query params for category/gender and optional scrolling
   useEffect(() => {
     if (!router.isReady) return;
 
-    const { category, scroll } = router.query;
+    const { category, gender, scroll } = router.query;
 
-  if (typeof category === "string" && category) {
-    if (category === "for-him") {
+    if (gender === "him" || category === "for-him") {
       setGenderFilter("him");
       setActiveCategory("All");
-    } else if (category === "for-her") {
+      resetCount();
+    } else if (gender === "her" || category === "for-her") {
       setGenderFilter("her");
       setActiveCategory("All");
-    } else {
+      resetCount();
+    } else if (typeof category === "string" && category) {
       setActiveCategory(category);
       setGenderFilter(null);
+      resetCount();
     }
-    resetCount();
-  }
 
     if (scroll === "true") {
       // Delay to ensure DOM is ready before scrolling
@@ -184,37 +183,36 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
         )}
         {!genderFilter && <div className="mb-8" />}
         <div className="flex flex-wrap justify-center gap-3 mt-4">
-          {["All", ...categories].map((cat) => {
+          {["All", ...categoryFilters].map((cat) => {
             const label = cat
               .replace(/-/g, " ")
               .replace(/\b\w/g, (l) => l.toUpperCase());
-            const active = activeCategory === cat;
+            const active =
+              (cat === "for-him" && genderFilter === "him" && activeCategory === "All") ||
+              (cat === "for-her" && genderFilter === "her" && activeCategory === "All") ||
+              (cat !== "for-him" && cat !== "for-her" && activeCategory === cat && !genderFilter);
             return (
               <button
                 key={cat}
-                onClick={() => setActiveCategory(cat)}
-                className={`px-4 py-2 rounded-full font-semibold transition-transform hover:scale-105 ${active ? "bg-[var(--foreground)] text-[var(--bg-nav)]" : "bg-[var(--bg-nav)] text-[var(--foreground)] hover:bg-[#364763]"}`}
+                onClick={() => {
+                  if (cat === "for-him") {
+                    setGenderFilter("him");
+                    setActiveCategory("All");
+                  } else if (cat === "for-her") {
+                    setGenderFilter("her");
+                    setActiveCategory("All");
+                  } else {
+                    setGenderFilter(null);
+                    setActiveCategory(cat);
+                  }
+                }}
+                className={`px-4 py-2 rounded-full font-semibold transition-transform hover:scale-105 ${
+                  active
+                    ? "bg-[var(--foreground)] text-[var(--bg-nav)]"
+                    : "bg-[var(--bg-nav)] text-[var(--foreground)] hover:bg-[#364763]"
+                }`}
               >
                 {label}
-              </button>
-            );
-          })}
-
-          {[
-            { label: "For Him", value: "him" },
-            { label: "For Her", value: "her" },
-          ].map((g) => {
-            const active = genderFilter === g.value;
-            return (
-              <button
-                key={g.value}
-                onClick={() => {
-                  setGenderFilter(g.value as "him" | "her");
-                  setActiveCategory("All");
-                }}
-                className={`px-4 py-2 rounded-full font-semibold transition-transform hover:scale-105 ${active ? "bg-[var(--foreground)] text-[var(--bg-nav)]" : "bg-[var(--bg-nav)] text-[var(--foreground)] hover:bg-[#364763]"}`}
-              >
-                {g.label}
               </button>
             );
           })}
