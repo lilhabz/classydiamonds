@@ -29,7 +29,6 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
   const [visibleCount, setVisibleCount] = useState(8);
   const [activeCategory, setActiveCategory] = useState<string>("All");
   const [genderFilter, setGenderFilter] = useState<"him" | "her" | null>(null);
-  const heroRef = useRef<HTMLElement>(null);
   const titleRef = useRef<HTMLHeadingElement>(null);
   const initialMount = useRef(true);
 
@@ -51,26 +50,14 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
     cat.replace(/-/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
 
   const scrollToTitle = () => {
+    const header = document.querySelector("header");
+    const offset = (header as HTMLElement | null)?.clientHeight || 80;
 
-    // Header shrinks when scrolled; use its collapsed height for alignment
-    const headerHeight = 64; // px
-
-
-    if (heroRef.current) {
-      const bottom =
-        heroRef.current.offsetTop +
-        heroRef.current.offsetHeight -
-            
-        headerHeight;
-
-  
-
-      window.scrollTo({ top: bottom, behavior: "smooth" });
-    } else if (titleRef.current) {
+    if (titleRef.current) {
       const top =
         titleRef.current.getBoundingClientRect().top +
         window.pageYOffset -
-        headerHeight;
+        offset;
       window.scrollTo({ top, behavior: "smooth" });
     }
   };
@@ -136,7 +123,6 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
 
       {/* 🌟 Hero */}
       <section
-        ref={heroRef}
         className="-mt-20 relative w-full h-[80vh] flex items-center justify-center overflow-hidden"
       >
         <Image
@@ -221,13 +207,13 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
 
       {/* 📦 Products & Load More */}
       <section className="px-4 sm:px-6 max-w-7xl mx-auto mb-16">
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6 auto-rows-fr">
           {filteredProducts.slice(0, visibleCount).map((product) => (
             <div
               key={product.id}
               className="group bg-[var(--bg-nav)] rounded-2xl overflow-hidden shadow-lg hover:scale-105 transition flex flex-col h-full"
             >
-              <Link href={`/category/${product.category}/${product.slug}`}>
+              <Link href={`/category/${product.category}/${product.slug}`} className="flex-1 flex flex-col">
                 <div className="product-card-img">
                   <Image
                     src={product.image}
