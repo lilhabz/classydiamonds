@@ -169,25 +169,25 @@ export default function CategoryPage({
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6 auto-rows-fr">
           {allProducts.slice(0, visibleCount).map((product) => (
             <div key={product._id} className="group">
-              <div className="bg-[var(--bg-nav)] rounded-2xl overflow-hidden shadow-lg hover:ring-2 hover:ring-[var(--foreground)] hover:scale-105 transition-transform duration-300 flex flex-col h-full">
+              <div className="bg-[var(--bg-nav)] rounded-2xl overflow-hidden shadow-lg hover:ring-2 hover:ring-[var(--foreground)] hover:scale-105 transition-transform duration-300 flex flex-col h-full justify-between">
                 {/* 🔗 Product Link & Image */}
                 <Link
                   href={`/category/${product.category}/${product.slug}`}
-                  className="flex-1"
+                  className="flex-1 flex flex-col h-full"
                 >
                 <div className="product-card-img">
                   <Image
                     src={product.image}
                     alt={product.name}
                     fill
-                    className="object-cover group-hover:scale-110 transition"
+                    className="object-cover group-hover:scale-110 transition h-full w-full"
                   />
                 </div>
                 <div className="p-4 text-center flex-1 flex flex-col justify-between">
-                  <h3 className="font-semibold text-[var(--foreground)]">
+                  <h3 className="font-semibold text-[var(--foreground)] truncate text-sm">
                     {product.name}
                   </h3>
-                  <p className="text-[#cfd2d6]">
+                  <p className="text-[#cfd2d6] text-sm">
                     {product.salePrice ? (
                       <>
                         <span className="line-through mr-1">

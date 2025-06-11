@@ -157,23 +157,23 @@ export default function WatchesPage({ products }: WatchesProps) {
           {watchProducts.map((product) => (
             <div
               key={product.id}
-              className="group bg-[var(--bg-nav)] rounded-2xl overflow-hidden shadow-lg hover:scale-105 transition flex flex-col h-full"
+              className="group bg-[var(--bg-nav)] rounded-2xl overflow-hidden shadow-lg hover:scale-105 transition flex flex-col h-full justify-between"
             >
               <Link
                 href={product.slug && product.slug !== "#" ? `/category/${product.category}/${product.slug}` : "#"}
-                className="flex-1 flex flex-col"
+                className="flex-1 flex flex-col h-full"
               >
                 <div className="product-card-img">
                   <Image
                     src={product.image}
                     alt={product.name}
                     fill
-                    className="object-cover group-hover:scale-110 transition"
+                    className="object-cover group-hover:scale-110 transition h-full w-full"
                   />
                 </div>
                 <div className="p-4 text-center flex-1 flex flex-col justify-between">
-                  <h3 className="font-semibold text-[var(--foreground)]">{product.name}</h3>
-                  <p className="text-[#cfd2d6]">${product.price.toLocaleString()}</p>
+                  <h3 className="font-semibold text-[var(--foreground)] truncate text-sm">{product.name}</h3>
+                  <p className="text-[#cfd2d6] text-sm">${product.price.toLocaleString()}</p>
                 </div>
               </Link>
               <button
