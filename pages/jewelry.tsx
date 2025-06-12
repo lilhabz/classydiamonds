@@ -63,8 +63,11 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
   const categoryFilters = [...allCategories, "for-him", "for-her"];
 
   const scrollBelowHero = () => {
+    const navHeight =
+      document.querySelector("header")?.getBoundingClientRect().height || 0;
     if (heroRef.current) {
-      const offset = heroRef.current.offsetTop + heroRef.current.offsetHeight;
+      const offset =
+        heroRef.current.offsetTop + heroRef.current.offsetHeight - navHeight;
       window.scrollTo({ top: offset, behavior: "smooth" });
     }
   };
