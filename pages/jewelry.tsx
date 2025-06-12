@@ -59,8 +59,16 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
     }
   }, []);
 
-  const allCategories = Array.from(new Set(products.map((p) => p.category)));
-  const categoryFilters = [...allCategories, "for-him", "for-her"];
+  // Keep filters in a fixed order instead of relying on product data
+  const staticCategories = [
+    "rings",
+    "engagement",
+    "wedding-bands",
+    "bracelets",
+    "necklaces",
+    "earrings",
+  ];
+  const categoryFilters = [...staticCategories, "for-him", "for-her"];
 
   const scrollBelowHero = () => {
     const navHeight =
