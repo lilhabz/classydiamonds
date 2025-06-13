@@ -1,4 +1,4 @@
-// 📄 pages/jewelry.tsx – FULL ORIGINAL + Scroll-Fix & Comments 💎
+// 📄 pages/jewelry.tsx – Fully Fixed and Commented Jewelry Page 💎
 
 "use client";
 
@@ -12,7 +12,6 @@ import clientPromise from "@/lib/mongodb";
 import { GetServerSideProps } from "next";
 import Breadcrumbs from "@/components/Breadcrumbs";
 
-// 🔖 Type for each product
 export type ProductType = {
   id: string;
   slug: string;
@@ -27,61 +26,74 @@ export type ProductType = {
 
 export default function JewelryPage({ products }: { products: ProductType[] }) {
   const { addToCart } = useCart();
-
-  // 🔢 State for “Load More”
   const [visibleCount, setVisibleCount] = useState(8);
-
-  // 🎯 Currently selected category
   const [activeCategory, setActiveCategory] = useState<string>("All");
-
-  // 📌 Ref to the hero section for scroll calculations
+  const [genderFilter, setGenderFilter] = useState<"him" | "her" | null>(null);
+  const titleRef = useRef<HTMLHeadingElement>(null);
   const heroRef = useRef<HTMLDivElement>(null);
+  const headerRef = useRef<HTMLDivElement>(null);
+  const initialMount = useRef(true);
 
-  // ➕ Reset visibleCount to default
   const resetCount = () => setVisibleCount(8);
 
-  // 🚚 Scroll just below the hero, accounting for navbar height
+  useEffect(() => {
+    resetCount();
+  }, []);
+
+  useEffect(() => {
+    const stored = localStorage.getItem("preselectedCategory");
+    if (stored) {
+      if (stored === "for-him") {
+        setGenderFilter("him");
+        setActiveCategory("All");
+      } else if (stored === "for-her") {
+        setGenderFilter("her");
+        setActiveCategory("All");
+      } else {
+        setActiveCategory(stored);
+        setGenderFilter(null);
+      }
+      resetCount();
+      localStorage.removeItem("preselectedCategory");
+      setTimeout(scrollBelowHero, 0);
+    }
+  }, []);
+
+  const allCategories = Array.from(new Set(products.map((p) => p.category)));
+  const categoryFilters = [...allCategories, "for-him", "for-her"];
+
   const scrollBelowHero = () => {
-    const navHeight =
-      document.querySelector("header")?.getBoundingClientRect().height || 0;
     if (heroRef.current) {
-      const offset =
-        heroRef.current.offsetTop + heroRef.current.offsetHeight - navHeight;
+      const offset = heroRef.current.offsetTop + heroRef.current.offsetHeight;
       window.scrollTo({ top: offset, behavior: "smooth" });
     }
   };
 
-  // 🔄 Router-based initial filter + scroll
   const router = useRouter();
+
   useEffect(() => {
     if (!router.isReady) return;
+
     const { category, gender, scroll } = router.query;
 
-    // 🏷️ Determine activeCategory from query
-    if (typeof category === "string" && category) {
+    if (gender === "him" || category === "for-him") {
+      setGenderFilter("him");
+      setActiveCategory("All");
+    } else if (gender === "her" || category === "for-her") {
+      setGenderFilter("her");
+      setActiveCategory("All");
+    } else if (typeof category === "string" && category) {
       setActiveCategory(category);
-    } else if (gender === "him") {
-      setActiveCategory("for-him");
-    } else if (gender === "her") {
-      setActiveCategory("for-her");
+      setGenderFilter(null);
     }
 
-    // 🔄 Reset count on filter change
     resetCount();
 
-    // 🚚 If scroll=true OR gender filter, scroll on load
-    if (scroll === "true" || typeof gender === "string") {
+    if (scroll === "true") {
       setTimeout(scrollBelowHero, 0);
     }
-  }, [
-    router.isReady,
-    router.query.category,
-    router.query.gender,
-    router.query.scroll,
-  ]);
+  }, [router.isReady]);
 
-  // 🔄 On every subsequent activeCategory change (via button), scroll
-  const initialMount = useRef(true);
   useEffect(() => {
     if (initialMount.current) {
       initialMount.current = false;
@@ -89,37 +101,28 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
     }
     resetCount();
     scrollBelowHero();
-  }, [activeCategory]);
+  }, [activeCategory, genderFilter]);
 
-  // 🧮 Build category list
-  const allCategories = Array.from(new Set(products.map((p) => p.category)));
-  const categoryFilters = ["All", ...allCategories, "for-him", "for-her"];
+  const handleLoadMore = () => setVisibleCount((prev) => prev + 4);
 
-  // 🎨 Prettify slug strings
   const formatCategory = (cat: string) =>
     cat.replace(/-/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
 
-  // 📋 Filter products
+  const filteredByGender = genderFilter
+    ? products.filter((p) => p.gender === genderFilter)
+    : products;
+
   const filteredProducts =
-    activeCategory === "for-him"
-      ? products.filter((p) => p.gender === "him")
-      : activeCategory === "for-her"
-      ? products.filter((p) => p.gender === "her")
-      : activeCategory === "All"
-      ? products
-      : products.filter((p) => p.category === activeCategory);
+    activeCategory === "All"
+      ? filteredByGender
+      : filteredByGender.filter((p) => p.category === activeCategory);
 
-  // 🛒 “Load More” handler
-  const handleLoadMore = () => setVisibleCount((prev) => prev + 4);
-
-  // 🔖 SEO metadata
   const pageTitle = "Jewelry Collection | Classy Diamonds";
   const pageDesc =
     "Explore timeless engagement rings, wedding bands, necklaces, earrings, and more.";
 
   return (
     <div className="min-h-screen flex flex-col bg-[var(--bg-page)] text-[var(--foreground)]">
-      {/* 🔖 Head Meta */}
       <Head>
         <title>{pageTitle}</title>
         <meta name="description" content={pageDesc} />
@@ -139,55 +142,82 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
         />
         <div className="absolute inset-0 bg-black/50 pointer-events-none" />
         <div className="relative z-10 text-center px-4">
-          <h1 className="text-3xl md:text-6xl font-bold mb-4">
+          <h1 className="text-3xl md:text-6xl font-bold mb-4 text-[var(--foreground)]">
             Jewelry Collection
           </h1>
-          <p className="text-base md:text-xl max-w-2xl mx-auto">
+          <p className="text-base md:text-xl max-w-2xl mx-auto text-[var(--foreground)]">
             Discover timeless pieces crafted with passion.
           </p>
         </div>
       </section>
 
-      {/* 🧭 Breadcrumbs Section */}
+      {/* 🧭 Breadcrumbs */}
       <div className="pl-4 pr-4 sm:pl-8 sm:pr-8 mt-6 mb-6">
         <Breadcrumbs />
       </div>
 
-      {/* 💎 Category Header Section */}
-      <section className="pt-16 pb-8 px-4 sm:px-6 max-w-7xl mx-auto">
-        <h2 className="text-2xl sm:text-3xl font-semibold text-center">
-          {activeCategory === "for-him"
+      {/* 💎 Category Header */}
+      <section
+        ref={headerRef}
+        className="pt-16 pb-8 px-4 sm:px-6 max-w-7xl mx-auto"
+      >
+        <h2
+          ref={titleRef}
+          className="text-2xl sm:text-3xl font-semibold text-center"
+        >
+          {genderFilter === "him"
             ? "For Him"
-            : activeCategory === "for-her"
+            : genderFilter === "her"
             ? "For Her"
             : activeCategory === "All"
             ? "Our Jewelry"
             : formatCategory(activeCategory)}
         </h2>
+        {genderFilter && (
+          <p className="text-xl sm:text-2xl text-center mt-2 mb-6">
+            {activeCategory === "All"
+              ? "All Jewelry"
+              : formatCategory(activeCategory)}
+          </p>
+        )}
+        {!genderFilter && <div className="mb-8" />}
 
         <div className="flex flex-wrap justify-center gap-3 mt-4">
-          {categoryFilters.map((cat) => {
-            const label = formatCategory(cat);
-            const isActive = activeCategory === cat;
+          {["All", ...categoryFilters].map((cat) => {
+            const label = cat
+              .replace(/-/g, " ")
+              .replace(/\b\w/g, (l) => l.toUpperCase());
+            const active =
+              (cat === "for-him" &&
+                genderFilter === "him" &&
+                activeCategory === "All") ||
+              (cat === "for-her" &&
+                genderFilter === "her" &&
+                activeCategory === "All") ||
+              (cat !== "for-him" &&
+                cat !== "for-her" &&
+                activeCategory === cat &&
+                !genderFilter);
+
             return (
               <button
                 key={cat}
                 onClick={() => {
-                  // 🚀 Navigate and scroll just like shop‐by‐category links
-                  router.push(
-                    {
-                      pathname: "/jewelry",
-                      query: { category: cat, scroll: "true" },
-                    },
-                    undefined,
-                    { shallow: true }
-                  );
-                  setActiveCategory(cat);
+                  if (cat === "for-him") {
+                    setGenderFilter("him");
+                    setActiveCategory("All");
+                  } else if (cat === "for-her") {
+                    setGenderFilter("her");
+                    setActiveCategory("All");
+                  } else {
+                    setGenderFilter(null);
+                    setActiveCategory(cat);
+                  }
                 }}
                 className={`px-4 py-2 rounded-full font-semibold transition-transform hover:scale-105 ${
-                  isActive
+                  active
                     ? "bg-[var(--foreground)] text-[var(--bg-nav)]"
-                    : "bg-[var(--bg-nav)] text-[var(--foreground)]"
+                    : "bg-[var(--bg-nav)] text-[var(--foreground)] hover:bg-[#364763]"
                 }`}
               >
                 {label}
@@ -197,7 +227,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
         </div>
       </section>
 
-      {/* 🛒 Product Grid Section */}
+      {/* 🛒 Product Grid */}
       <section className="px-4 sm:px-6 max-w-7xl mx-auto mb-16">
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6 auto-rows-fr">
           {filteredProducts.slice(0, visibleCount).map((product) => (
@@ -206,7 +236,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
               className="group bg-[var(--bg-nav)] rounded-2xl overflow-hidden shadow-lg hover:scale-105 transition flex flex-col h-full justify-between"
             >
               <Link
-                href={`/category/${product.category}/${product.slug}?scroll=true`}
+                href={`/category/${product.category}/${product.slug}`}
                 className="flex-1 flex flex-col h-full"
               >
                 <div className="relative w-full aspect-square">
@@ -218,7 +248,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
                   />
                 </div>
                 <div className="p-4 text-center flex-1 flex flex-col justify-between">
-                  <h3 className="font-semibold truncate text-sm">
+                  <h3 className="font-semibold text-[var(--foreground)] truncate text-sm">
                     {product.name}
                   </h3>
                   <p className="text-[#cfd2d6] text-sm">
@@ -237,8 +267,6 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
                   </p>
                 </div>
               </Link>
-
-              {/* ➕ Add to Cart button */}
               <button
                 onClick={(e) => {
                   e.preventDefault();
