@@ -1,4 +1,4 @@
-// 📄 pages/jewelry.tsx – Fully Fixed and Commented Jewelry Page 💎
+// 📄 pages/jewelry.tsx – FULL ORIGINAL + Scroll-Fix & Comments 💎
 
 "use client";
 
@@ -27,29 +27,18 @@ export type ProductType = {
 
 export default function JewelryPage({ products }: { products: ProductType[] }) {
   const { addToCart } = useCart();
+
+  // 🔢 State for “Load More”
   const [visibleCount, setVisibleCount] = useState(8);
+
+  // 🎯 Currently selected category
   const [activeCategory, setActiveCategory] = useState<string>("All");
+
+  // 📌 Ref to the hero section for scroll calculations
   const heroRef = useRef<HTMLDivElement>(null);
-  const headerRef = useRef<HTMLDivElement>(null);
 
-  // 🎯 Reset visible count to default
+  // ➕ Reset visibleCount to default
   const resetCount = () => setVisibleCount(8);
-
-  // 🚀 On mount, check localStorage for preselected category
-  useEffect(() => {
-    resetCount();
-    const stored = localStorage.getItem("preselectedCategory");
-    if (stored) {
-      setActiveCategory(stored);
-      resetCount();
-      localStorage.removeItem("preselectedCategory");
-      setTimeout(scrollBelowHero, 0);
-    }
-  }, []);
-
-  // 🧮 Categories array
-  const allCategories = Array.from(new Set(products.map((p) => p.category)));
-  const categoryFilters = [...allCategories, "for-him", "for-her"];
 
   // 🚚 Scroll just below the hero, accounting for navbar height
   const scrollBelowHero = () => {
@@ -62,14 +51,13 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
     }
   };
 
+  // 🔄 Router-based initial filter + scroll
   const router = useRouter();
-
-  // 🔄 On router ready, set filter and scroll for any category or gender param
   useEffect(() => {
     if (!router.isReady) return;
-
     const { category, gender, scroll } = router.query;
 
+    // 🏷️ Determine activeCategory from query
     if (typeof category === "string" && category) {
       setActiveCategory(category);
     } else if (gender === "him") {
@@ -78,23 +66,40 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
       setActiveCategory("for-her");
     }
 
-    // 🛠 Reset count each time filter param changes
+    // 🔄 Reset count on filter change
     resetCount();
 
-    // 🚚 Always scroll when scroll=true OR gender filter used
+    // 🚚 If scroll=true OR gender filter, scroll on load
     if (scroll === "true" || typeof gender === "string") {
       setTimeout(scrollBelowHero, 0);
     }
-  }, [router.isReady]);
+  }, [
+    router.isReady,
+    router.query.category,
+    router.query.gender,
+    router.query.scroll,
+  ]);
 
-  // 🔄 Handler for Load More button
-  const handleLoadMore = () => setVisibleCount((prev) => prev + 4);
+  // 🔄 On every subsequent activeCategory change (via button), scroll
+  const initialMount = useRef(true);
+  useEffect(() => {
+    if (initialMount.current) {
+      initialMount.current = false;
+      return;
+    }
+    resetCount();
+    scrollBelowHero();
+  }, [activeCategory]);
 
-  // 🎨 Format display label from slug
+  // 🧮 Build category list
+  const allCategories = Array.from(new Set(products.map((p) => p.category)));
+  const categoryFilters = ["All", ...allCategories, "for-him", "for-her"];
+
+  // 🎨 Prettify slug strings
   const formatCategory = (cat: string) =>
     cat.replace(/-/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
 
-  // 📋 Filter products based on activeCategory
+  // 📋 Filter products
   const filteredProducts =
     activeCategory === "for-him"
       ? products.filter((p) => p.gender === "him")
@@ -104,6 +109,9 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
       ? products
       : products.filter((p) => p.category === activeCategory);
 
+  // 🛒 “Load More” handler
+  const handleLoadMore = () => setVisibleCount((prev) => prev + 4);
+
   // 🔖 SEO metadata
   const pageTitle = "Jewelry Collection | Classy Diamonds";
   const pageDesc =
@@ -111,6 +119,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
 
   return (
     <div className="min-h-screen flex flex-col bg-[var(--bg-page)] text-[var(--foreground)]">
+      {/* 🔖 Head Meta */}
       <Head>
         <title>{pageTitle}</title>
         <meta name="description" content={pageDesc} />
@@ -145,10 +154,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
       </div>
 
       {/* 💎 Category Header Section */}
-      <section
-        ref={headerRef}
-        className="pt-16 pb-8 px-4 sm:px-6 max-w-7xl mx-auto"
-      >
+      <section className="pt-16 pb-8 px-4 sm:px-6 max-w-7xl mx-auto">
         <h2 className="text-2xl sm:text-3xl font-semibold text-center">
           {activeCategory === "for-him"
             ? "For Him"
@@ -160,15 +166,15 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
         </h2>
 
         <div className="flex flex-wrap justify-center gap-3 mt-4">
-          {["All", ...categoryFilters].map((cat) => {
+          {categoryFilters.map((cat) => {
             const label = formatCategory(cat);
-            const active = activeCategory === cat;
+            const isActive = activeCategory === cat;
             return (
               <button
                 key={cat}
                 onClick={() => setActiveCategory(cat)}
                 className={`px-4 py-2 rounded-full font-semibold transition-transform hover:scale-105 ${
-                  active
+                  isActive
                     ? "bg-[var(--foreground)] text-[var(--bg-nav)]"
                     : "bg-[var(--bg-nav)] text-[var(--foreground)]"
                 }`}
@@ -189,7 +195,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
               className="group bg-[var(--bg-nav)] rounded-2xl overflow-hidden shadow-lg hover:scale-105 transition flex flex-col h-full justify-between"
             >
               <Link
-                href={`/category/${product.category}/${product.slug}?scroll=true`} // 📌 ensure scroll param on detail navigation
+                href={`/category/${product.category}/${product.slug}?scroll=true`}
                 className="flex-1 flex flex-col h-full"
               >
                 <div className="relative w-full aspect-square">

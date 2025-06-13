@@ -71,19 +71,17 @@ export const getServerSideProps: GetServerSideProps<HomeProps> = async () => {
 export default function Home({ products }: HomeProps) {
   const { addToCart } = useCart();
   const featured = products;
+  const router = useRouter();
 
   type Gift = { name: string; image: string };
 
   function GiftButton({ gift, index }: { gift: Gift; index: number }) {
-    const router = useRouter();
+    const slug = gift.name.toLowerCase().replace(/\s+/g, "-");
     return (
       <button
         type="button"
         onClick={() => {
-          localStorage.setItem(
-            "preselectedCategory",
-            gift.name.toLowerCase().replace(/\s+/g, "-")
-          );
+          localStorage.setItem("preselectedCategory", slug);
           router.push("/jewelry");
         }}
         className="group relative rounded-xl overflow-hidden shadow-md hover:shadow-xl hover:scale-105 transition-transform duration-300 cursor-pointer"
@@ -354,6 +352,7 @@ export default function Home({ products }: HomeProps) {
         {/* 🎁 Gifts for Him & Her Section */}
         <section className="py-16 sm:py-20 px-4 sm:px-10 w-full">
           <h2 className="text-2xl sm:text-3xl font-semibold text-center mb-12 sm:mb-16">
+            {" "}
             Gifts for Him & Her
           </h2>
           <div className="grid grid-cols-2 gap-4 justify-center max-w-2xl mx-auto">
@@ -402,9 +401,11 @@ export default function Home({ products }: HomeProps) {
         <section className="--bg-page py-16 sm:py-20 px-4 sm:px-6">
           <div className="max-w-5xl mx-auto text-center">
             <h2 className="text-3xl sm:text-4xl font-bold mb-8">
+              {" "}
               Bring Your Vision to Life
             </h2>
             <p className="text-base sm:text-lg text-[#cfd2d6] mb-8 leading-relaxed">
+              {" "}
               Whether you’re imagining a one-of-a-kind engagement ring or
               redesigning a meaningful family heirloom, Ned brings decades of
               expertise to every detail. At Classy Diamonds, custom jewelry
@@ -415,7 +416,8 @@ export default function Home({ products }: HomeProps) {
               href="/custom"
               className="inline-block mt-4 px-8 py-4 bg-[#e0e0e0] text-[#1f2a44] rounded-full font-semibold text-base sm:text-lg hover:bg-white hover:scale-105 transition-transform duration-300"
             >
-              Start Your Custom Piece
+              {" "}
+              Start Your Custom Piece{" "}
             </Link>
           </div>
         </section>
