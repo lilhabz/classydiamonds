@@ -16,6 +16,15 @@ export default function Breadcrumbs({
     .split("/")
     .filter((s) => Boolean(s) && s !== "category");
 
+  const genderParam =
+    router.query.gender === "him"
+      ? "for-him"
+      : router.query.gender === "her"
+      ? "for-her"
+      : router.query.category === "for-him" || router.query.category === "for-her"
+      ? (router.query.category as string)
+      : null;
+
   const isProductPage = router.pathname === "/category/[category]/[slug]";
 
   const buildHref = (index: number) => {
@@ -43,6 +52,17 @@ export default function Breadcrumbs({
             Home
           </Link>
         </li>
+        {genderParam && (
+          <li className="flex items-center">
+            <span className="mx-1">›</span>
+            <Link
+              href={`/jewelry?gender=${genderParam === "for-him" ? "him" : "her"}&scroll=true`}
+              className="hover:text-white text-white/70 capitalize"
+            >
+              {genderParam === "for-him" ? "For Him" : "For Her"}
+            </Link>
+          </li>
+        )}
         {segments.map((seg, i) => {
           const href = buildHref(i);
           const disableScroll = isProductPage && i === 0;

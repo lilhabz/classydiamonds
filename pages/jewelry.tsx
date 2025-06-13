@@ -236,7 +236,14 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
               className="group bg-[var(--bg-nav)] rounded-2xl overflow-hidden shadow-lg hover:scale-105 transition flex flex-col h-full justify-between"
             >
               <Link
-                href={`/category/${product.category}/${product.slug}`}
+                href={
+                  genderFilter
+                    ? {
+                        pathname: `/category/${product.category}/${product.slug}`,
+                        query: { gender: genderFilter },
+                      }
+                    : `/category/${product.category}/${product.slug}`
+                }
                 className="flex-1 flex flex-col h-full"
               >
                 <div className="relative w-full aspect-square">
