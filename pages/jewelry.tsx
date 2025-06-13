@@ -172,7 +172,18 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
             return (
               <button
                 key={cat}
-                onClick={() => setActiveCategory(cat)}
+                onClick={() => {
+                  // 🚀 Navigate and scroll just like shop‐by‐category links
+                  router.push(
+                    {
+                      pathname: "/jewelry",
+                      query: { category: cat, scroll: "true" },
+                    },
+                    undefined,
+                    { shallow: true }
+                  );
+                  setActiveCategory(cat);
+                }}
                 className={`px-4 py-2 rounded-full font-semibold transition-transform hover:scale-105 ${
                   isActive
                     ? "bg-[var(--foreground)] text-[var(--bg-nav)]"

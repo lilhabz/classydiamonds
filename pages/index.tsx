@@ -71,7 +71,7 @@ export const getServerSideProps: GetServerSideProps<HomeProps> = async () => {
 export default function Home({ products }: HomeProps) {
   const { addToCart } = useCart();
   const featured = products;
-  const router = useRouter();
+  const router = useRouter(); // 🔄 router for navigation
 
   type Gift = { name: string; image: string };
 
@@ -81,8 +81,11 @@ export default function Home({ products }: HomeProps) {
       <button
         type="button"
         onClick={() => {
-          localStorage.setItem("preselectedCategory", slug);
-          router.push("/jewelry");
+          // 🚀 Navigate just like “Shop by Category” — include scroll=true
+          router.push({
+            pathname: "/jewelry",
+            query: { category: slug, scroll: "true" },
+          });
         }}
         className="group relative rounded-xl overflow-hidden shadow-md hover:shadow-xl hover:scale-105 transition-transform duration-300 cursor-pointer"
       >
@@ -189,7 +192,9 @@ export default function Home({ products }: HomeProps) {
                     key={item._id}
                     className="flex-shrink-0 w-48 bg-[#25304f] rounded-2xl shadow-lg flex flex-col h-full justify-between"
                   >
-                    <Link href={`/category/${item.category}/${item.slug}`}>
+                    <Link
+                      href={`/category/${item.category}/${item.slug}?scroll=true`}
+                    >
                       <Image
                         src={item.image}
                         alt={item.name}
@@ -254,7 +259,9 @@ export default function Home({ products }: HomeProps) {
                   key={item._id}
                   className="group bg-[#25304f] rounded-2xl overflow-hidden shadow-lg hover:scale-105 transition flex flex-col h-full justify-between"
                 >
-                  <Link href={`/category/${item.category}/${item.slug}`}>
+                  <Link
+                    href={`/category/${item.category}/${item.slug}?scroll=true`}
+                  >
                     <div className="relative w-full h-64">
                       <Image
                         src={item.image}
@@ -352,7 +359,6 @@ export default function Home({ products }: HomeProps) {
         {/* 🎁 Gifts for Him & Her Section */}
         <section className="py-16 sm:py-20 px-4 sm:px-10 w-full">
           <h2 className="text-2xl sm:text-3xl font-semibold text-center mb-12 sm:mb-16">
-            {" "}
             Gifts for Him & Her
           </h2>
           <div className="grid grid-cols-2 gap-4 justify-center max-w-2xl mx-auto">
