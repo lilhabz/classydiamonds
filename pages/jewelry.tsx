@@ -28,7 +28,6 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
   const { addToCart } = useCart();
   const [visibleCount, setVisibleCount] = useState(8);
   const [activeCategory, setActiveCategory] = useState<string>("All");
-  const [genderFilter, setGenderFilter] = useState<"him" | "her" | null>(null);
   const titleRef = useRef<HTMLHeadingElement>(null);
   const heroRef = useRef<HTMLDivElement>(null);
   const headerRef = useRef<HTMLDivElement>(null);
@@ -43,16 +42,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
   useEffect(() => {
     const stored = localStorage.getItem("preselectedCategory");
     if (stored) {
-      if (stored === "for-him") {
-        setGenderFilter("him");
-        setActiveCategory("All");
-      } else if (stored === "for-her") {
-        setGenderFilter("her");
-        setActiveCategory("All");
-      } else {
-        setActiveCategory(stored);
-        setGenderFilter(null);
-      }
+      setActiveCategory(stored);
       resetCount();
       localStorage.removeItem("preselectedCategory");
       setTimeout(scrollBelowHero, 0);
@@ -79,15 +69,12 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
 
     const { category, gender, scroll } = router.query;
 
-    if (gender === "him" || category === "for-him") {
-      setGenderFilter("him");
-      setActiveCategory("All");
-    } else if (gender === "her" || category === "for-her") {
-      setGenderFilter("her");
-      setActiveCategory("All");
-    } else if (typeof category === "string" && category) {
+    if (typeof category === "string" && category) {
       setActiveCategory(category);
-      setGenderFilter(null);
+    } else if (gender === "him") {
+      setActiveCategory("for-him");
+    } else if (gender === "her") {
+      setActiveCategory("for-her");
     }
 
     resetCount();
@@ -104,21 +91,21 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
     }
     resetCount();
     scrollBelowHero();
-  }, [activeCategory, genderFilter]);
+  }, [activeCategory]);
 
   const handleLoadMore = () => setVisibleCount((prev) => prev + 4);
 
   const formatCategory = (cat: string) =>
     cat.replace(/-/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
 
-  const filteredByGender = genderFilter
-    ? products.filter((p) => p.gender === genderFilter)
-    : products;
-
   const filteredProducts =
-    activeCategory === "All"
-      ? filteredByGender
-      : filteredByGender.filter((p) => p.category === activeCategory);
+    activeCategory === "for-him"
+      ? products.filter((p) => p.gender === "him")
+      : activeCategory === "for-her"
+      ? products.filter((p) => p.gender === "her")
+      : activeCategory === "All"
+      ? products
+      : products.filter((p) => p.category === activeCategory);
 
   const pageTitle = "Jewelry Collection | Classy Diamonds";
   const pageDesc =
@@ -168,54 +155,28 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
           ref={titleRef}
           className="text-2xl sm:text-3xl font-semibold text-center"
         >
-          {genderFilter === "him"
+          {activeCategory === "for-him"
             ? "For Him"
-            : genderFilter === "her"
+            : activeCategory === "for-her"
             ? "For Her"
             : activeCategory === "All"
             ? "Our Jewelry"
             : formatCategory(activeCategory)}
         </h2>
-        {genderFilter && (
-          <p className="text-xl sm:text-2xl text-center mt-2 mb-6">
-            {activeCategory === "All"
-              ? "All Jewelry"
-              : formatCategory(activeCategory)}
-          </p>
-        )}
-        {!genderFilter && <div className="mb-8" />}
+        <div className="mb-8" />
 
         <div className="flex flex-wrap justify-center gap-3 mt-4">
           {["All", ...categoryFilters].map((cat) => {
             const label = cat
               .replace(/-/g, " ")
               .replace(/\b\w/g, (l) => l.toUpperCase());
-            const active =
-              (cat === "for-him" &&
-                genderFilter === "him" &&
-                activeCategory === "All") ||
-              (cat === "for-her" &&
-                genderFilter === "her" &&
-                activeCategory === "All") ||
-              (cat !== "for-him" &&
-                cat !== "for-her" &&
-                activeCategory === cat &&
-                !genderFilter);
+            const active = activeCategory === cat;
 
             return (
               <button
                 key={cat}
                 onClick={() => {
-                  if (cat === "for-him") {
-                    setGenderFilter("him");
-                    setActiveCategory("All");
-                  } else if (cat === "for-her") {
-                    setGenderFilter("her");
-                    setActiveCategory("All");
-                  } else {
-                    setGenderFilter(null);
-                    setActiveCategory(cat);
-                  }
+                  setActiveCategory(cat);
                 }}
                 className={`px-4 py-2 rounded-full font-semibold transition-transform hover:scale-105 ${
                   active
