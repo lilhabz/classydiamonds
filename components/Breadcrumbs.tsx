@@ -27,6 +27,15 @@ export default function Breadcrumbs({
 
   const isProductPage = router.pathname === "/category/[category]/[slug]";
 
+  let filteredSegments = [...segments];
+
+  // When browsing gender pages ("For Him"/"For Her") without subcategories,
+  // show only the gender crumb. For product pages with a gender filter,
+  // keep just the product slug.
+  if (genderParam) {
+    filteredSegments = isProductPage ? segments.slice(-1) : [];
+  }
+
   const buildHref = (index: number) => {
     const key = segments[index];
 
@@ -47,11 +56,13 @@ export default function Breadcrumbs({
   return (
     <nav className="text-sm text-gray-400 mb-4 px-2">
       <ol className="flex flex-wrap items-center space-x-2">
-        <li>
-          <Link href="/" className="hover:text-white text-white/80">
-            Home
-          </Link>
-        </li>
+        {!(genderParam && !isProductPage) && (
+          <li>
+            <Link href="/" className="hover:text-white text-white/80">
+              Home
+            </Link>
+          </li>
+        )}
         {genderParam && (
           <li className="flex items-center">
             <span className="mx-1">›</span>
@@ -63,9 +74,10 @@ export default function Breadcrumbs({
             </Link>
           </li>
         )}
-        {segments.map((seg, i) => {
-          const href = buildHref(i);
-          const disableScroll = isProductPage && i === 0;
+        {filteredSegments.map((seg, i) => {
+          const origIndex = segments.indexOf(seg);
+          const href = buildHref(origIndex);
+          const disableScroll = isProductPage && origIndex === 0;
           const label =
             customLabels[seg] ??
             seg.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
