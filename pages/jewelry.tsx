@@ -12,6 +12,7 @@ import clientPromise from "@/lib/mongodb";
 import { GetServerSideProps } from "next";
 import Breadcrumbs from "@/components/Breadcrumbs";
 
+// 🔖 Type for each product
 export type ProductType = {
   id: string;
   slug: string;
@@ -28,18 +29,15 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
   const { addToCart } = useCart();
   const [visibleCount, setVisibleCount] = useState(8);
   const [activeCategory, setActiveCategory] = useState<string>("All");
-  const titleRef = useRef<HTMLHeadingElement>(null);
   const heroRef = useRef<HTMLDivElement>(null);
   const headerRef = useRef<HTMLDivElement>(null);
-  const initialMount = useRef(true);
 
+  // 🎯 Reset visible count to default
   const resetCount = () => setVisibleCount(8);
 
+  // 🚀 On mount, check localStorage for preselected category
   useEffect(() => {
     resetCount();
-  }, []);
-
-  useEffect(() => {
     const stored = localStorage.getItem("preselectedCategory");
     if (stored) {
       setActiveCategory(stored);
@@ -49,9 +47,11 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
     }
   }, []);
 
+  // 🧮 Categories array
   const allCategories = Array.from(new Set(products.map((p) => p.category)));
   const categoryFilters = [...allCategories, "for-him", "for-her"];
 
+  // 🚚 Scroll just below the hero, accounting for navbar height
   const scrollBelowHero = () => {
     const navHeight =
       document.querySelector("header")?.getBoundingClientRect().height || 0;
@@ -64,6 +64,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
 
   const router = useRouter();
 
+  // 🔄 On router ready, set filter and scroll for any category or gender param
   useEffect(() => {
     if (!router.isReady) return;
 
@@ -77,27 +78,23 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
       setActiveCategory("for-her");
     }
 
+    // 🛠 Reset count each time filter param changes
     resetCount();
 
-    if (scroll === "true") {
+    // 🚚 Always scroll when scroll=true OR gender filter used
+    if (scroll === "true" || typeof gender === "string") {
       setTimeout(scrollBelowHero, 0);
     }
   }, [router.isReady]);
 
-  useEffect(() => {
-    if (initialMount.current) {
-      initialMount.current = false;
-      return;
-    }
-    resetCount();
-    scrollBelowHero();
-  }, [activeCategory]);
-
+  // 🔄 Handler for Load More button
   const handleLoadMore = () => setVisibleCount((prev) => prev + 4);
 
+  // 🎨 Format display label from slug
   const formatCategory = (cat: string) =>
     cat.replace(/-/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
 
+  // 📋 Filter products based on activeCategory
   const filteredProducts =
     activeCategory === "for-him"
       ? products.filter((p) => p.gender === "him")
@@ -107,6 +104,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
       ? products
       : products.filter((p) => p.category === activeCategory);
 
+  // 🔖 SEO metadata
   const pageTitle = "Jewelry Collection | Classy Diamonds";
   const pageDesc =
     "Explore timeless engagement rings, wedding bands, necklaces, earrings, and more.";
@@ -132,29 +130,26 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
         />
         <div className="absolute inset-0 bg-black/50 pointer-events-none" />
         <div className="relative z-10 text-center px-4">
-          <h1 className="text-3xl md:text-6xl font-bold mb-4 text-[var(--foreground)]">
+          <h1 className="text-3xl md:text-6xl font-bold mb-4">
             Jewelry Collection
           </h1>
-          <p className="text-base md:text-xl max-w-2xl mx-auto text-[var(--foreground)]">
+          <p className="text-base md:text-xl max-w-2xl mx-auto">
             Discover timeless pieces crafted with passion.
           </p>
         </div>
       </section>
 
-      {/* 🧭 Breadcrumbs */}
+      {/* 🧭 Breadcrumbs Section */}
       <div className="pl-4 pr-4 sm:pl-8 sm:pr-8 mt-6 mb-6">
         <Breadcrumbs />
       </div>
 
-      {/* 💎 Category Header */}
+      {/* 💎 Category Header Section */}
       <section
         ref={headerRef}
         className="pt-16 pb-8 px-4 sm:px-6 max-w-7xl mx-auto"
       >
-        <h2
-          ref={titleRef}
-          className="text-2xl sm:text-3xl font-semibold text-center"
-        >
+        <h2 className="text-2xl sm:text-3xl font-semibold text-center">
           {activeCategory === "for-him"
             ? "For Him"
             : activeCategory === "for-her"
@@ -163,25 +158,19 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
             ? "Our Jewelry"
             : formatCategory(activeCategory)}
         </h2>
-        <div className="mb-8" />
 
         <div className="flex flex-wrap justify-center gap-3 mt-4">
           {["All", ...categoryFilters].map((cat) => {
-            const label = cat
-              .replace(/-/g, " ")
-              .replace(/\b\w/g, (l) => l.toUpperCase());
+            const label = formatCategory(cat);
             const active = activeCategory === cat;
-
             return (
               <button
                 key={cat}
-                onClick={() => {
-                  setActiveCategory(cat);
-                }}
+                onClick={() => setActiveCategory(cat)}
                 className={`px-4 py-2 rounded-full font-semibold transition-transform hover:scale-105 ${
                   active
                     ? "bg-[var(--foreground)] text-[var(--bg-nav)]"
-                    : "bg-[var(--bg-nav)] text-[var(--foreground)] hover:bg-[#364763]"
+                    : "bg-[var(--bg-nav)] text-[var(--foreground)]"
                 }`}
               >
                 {label}
@@ -191,7 +180,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
         </div>
       </section>
 
-      {/* 🛒 Product Grid */}
+      {/* 🛒 Product Grid Section */}
       <section className="px-4 sm:px-6 max-w-7xl mx-auto mb-16">
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6 auto-rows-fr">
           {filteredProducts.slice(0, visibleCount).map((product) => (
@@ -200,7 +189,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
               className="group bg-[var(--bg-nav)] rounded-2xl overflow-hidden shadow-lg hover:scale-105 transition flex flex-col h-full justify-between"
             >
               <Link
-                href={`/category/${product.category}/${product.slug}`}
+                href={`/category/${product.category}/${product.slug}?scroll=true`} // 📌 ensure scroll param on detail navigation
                 className="flex-1 flex flex-col h-full"
               >
                 <div className="relative w-full aspect-square">
@@ -212,7 +201,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
                   />
                 </div>
                 <div className="p-4 text-center flex-1 flex flex-col justify-between">
-                  <h3 className="font-semibold text-[var(--foreground)] truncate text-sm">
+                  <h3 className="font-semibold truncate text-sm">
                     {product.name}
                   </h3>
                   <p className="text-[#cfd2d6] text-sm">
@@ -231,6 +220,8 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
                   </p>
                 </div>
               </Link>
+
+              {/* ➕ Add to Cart button */}
               <button
                 onClick={(e) => {
                   e.preventDefault();
