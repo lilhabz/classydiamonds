@@ -77,6 +77,7 @@ export default function Home({ products }: HomeProps) {
 
   function GiftButton({ gift, index }: { gift: Gift; index: number }) {
     const slug = gift.name.toLowerCase().replace(/\s+/g, "-");
+    const gender = slug === "for-him" ? "him" : slug === "for-her" ? "her" : null;
     return (
       <button
         type="button"
@@ -84,7 +85,9 @@ export default function Home({ products }: HomeProps) {
           // 🚀 Navigate just like “Shop by Category” — include scroll=true
           router.push({
             pathname: "/jewelry",
-            query: { category: slug, scroll: "true" },
+            query: gender
+              ? { gender, scroll: "true" }
+              : { category: slug, scroll: "true" },
           });
         }}
         className="group relative rounded-xl overflow-hidden shadow-md hover:shadow-xl hover:scale-105 transition-transform duration-300 cursor-pointer"
