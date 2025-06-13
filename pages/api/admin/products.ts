@@ -131,26 +131,24 @@ export default async function handler(
     // 📁 Handle image file
     const rawFile = files.image;
     const imageFile = Array.isArray(rawFile) ? rawFile[0] : rawFile;
-    if (!imageFile || typeof imageFile === "string") {
-      return res
-        .status(400)
-        .json({ success: false, message: "Image file missing" });
-    }
+    let imageUrl = "/products/placeholder.jpg";
 
-    // ☁️ Upload to Cloudinary
-    const uploadResult = await cloudinary.uploader.upload(imageFile.filepath, {
-      folder: "classy-diamonds/original",
-      transformation: [{ quality: "auto" }, { fetch_format: "auto" }],
-      eager: [
-        {
-          folder: "classy-diamonds/compressed",
-          quality: "auto",
-          fetch_format: "auto",
-        },
-      ],
-    });
-    const imageUrl =
-      uploadResult.eager?.[0]?.secure_url || uploadResult.secure_url;
+    if (imageFile && typeof imageFile !== "string") {
+      // ☁️ Upload to Cloudinary
+      const uploadResult = await cloudinary.uploader.upload(imageFile.filepath, {
+        folder: "classy-diamonds/original",
+        transformation: [{ quality: "auto" }, { fetch_format: "auto" }],
+        eager: [
+          {
+            folder: "classy-diamonds/compressed",
+            quality: "auto",
+            fetch_format: "auto",
+          },
+        ],
+      });
+      imageUrl =
+        uploadResult.eager?.[0]?.secure_url || uploadResult.secure_url;
+    }
 
     // 🔢 Determine next skuNumber
     const top = await collection

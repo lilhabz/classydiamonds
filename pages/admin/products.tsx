@@ -676,11 +676,10 @@ useEffect(() => {
           )}
         </label>
         <label>
-          🖼️ Image
+          🖼️ Image (optional)
           <input
             type="file"
             accept="image/*"
-            required
             onChange={(e) =>
               handleInput("imageFile", e.target.files?.[0] ?? null)
             }
