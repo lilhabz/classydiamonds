@@ -34,10 +34,11 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
   const headerRef = useRef<HTMLDivElement>(null);
   const initialMount = useRef(true);
 
-  const resetCount = () => setVisibleCount(8);
+  const resetCount = (gender?: "him" | "her" | null) =>
+    setVisibleCount(gender ? 12 : 8);
 
   useEffect(() => {
-    resetCount();
+    resetCount(genderFilter);
   }, []);
 
   useEffect(() => {
@@ -46,14 +47,16 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
       if (stored === "for-him") {
         setGenderFilter("him");
         setActiveCategory("All");
+        resetCount("him");
       } else if (stored === "for-her") {
         setGenderFilter("her");
         setActiveCategory("All");
+        resetCount("her");
       } else {
         setActiveCategory(stored);
         setGenderFilter(null);
+        resetCount();
       }
-      resetCount();
       localStorage.removeItem("preselectedCategory");
       setTimeout(scrollBelowHero, 0);
     }
@@ -79,15 +82,18 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
     if (gender === "him" || category === "for-him") {
       setGenderFilter("him");
       setActiveCategory("All");
+      resetCount("him");
     } else if (gender === "her" || category === "for-her") {
       setGenderFilter("her");
       setActiveCategory("All");
+      resetCount("her");
     } else if (typeof category === "string" && category) {
       setActiveCategory(category);
       setGenderFilter(null);
+      resetCount();
+    } else {
+      resetCount();
     }
-
-    resetCount();
 
     if (scroll === "true") {
       setTimeout(scrollBelowHero, 0);
@@ -99,7 +105,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
       initialMount.current = false;
       return;
     }
-    resetCount();
+    resetCount(genderFilter);
     scrollBelowHero();
   }, [activeCategory, genderFilter]);
 
@@ -116,6 +122,22 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
     activeCategory === "All"
       ? filteredByGender
       : filteredByGender.filter((p) => p.category === activeCategory);
+
+  const visibleProducts = filteredProducts.slice(0, visibleCount);
+  let finalProducts: (ProductType | { id: string; isPlaceholder: true })[] = [
+    ...visibleProducts,
+  ];
+  if (
+    (genderFilter === "him" || genderFilter === "her") &&
+    finalProducts.length < 12
+  ) {
+    const placeholdersNeeded = 12 - finalProducts.length;
+    const placeholders = Array.from({ length: placeholdersNeeded }).map((_, i) => ({
+      id: `placeholder-${i}`,
+      isPlaceholder: true as const,
+    }));
+    finalProducts = [...finalProducts, ...placeholders];
+  }
 
   const pageTitle = "Jewelry Collection | Classy Diamonds";
   const pageDesc =
@@ -230,59 +252,68 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
       {/* 🛒 Product Grid */}
       <section className="px-4 sm:px-6 max-w-7xl mx-auto mb-16">
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6 auto-rows-fr">
-          {filteredProducts.slice(0, visibleCount).map((product) => (
-            <div
-              key={product.id}
-              className="group bg-[var(--bg-nav)] rounded-2xl overflow-hidden shadow-lg hover:scale-105 transition flex flex-col h-full justify-between"
-            >
-              <Link
-                href={`/category/${product.category}/${product.slug}`}
-                className="flex-1 flex flex-col h-full"
+          {finalProducts.map((product) => (
+            product.isPlaceholder ? (
+              <div
+                key={product.id}
+                className="bg-[var(--bg-nav)] rounded-2xl flex items-center justify-center h-48"
               >
-                <div className="relative w-full aspect-square">
-                  <Image
-                    src={product.image}
-                    alt={product.name}
-                    fill
-                    className="object-cover group-hover:scale-110 transition"
-                  />
-                </div>
-                <div className="p-4 text-center flex-1 flex flex-col justify-between">
-                  <h3 className="font-semibold text-[var(--foreground)] truncate text-sm">
-                    {product.name}
-                  </h3>
-                  <p className="text-[#cfd2d6] text-sm">
-                    {product.salePrice ? (
-                      <>
-                        <span className="line-through mr-1">
-                          ${product.price.toLocaleString()}
-                        </span>
-                        <span className="text-red-500">
-                          ${product.salePrice.toLocaleString()}
-                        </span>
-                      </>
-                    ) : (
-                      <>${product.price.toLocaleString()}</>
-                    )}
-                  </p>
-                </div>
-              </Link>
-              <button
-                onClick={(e) => {
-                  e.preventDefault();
-                  addToCart({
-                    id: product.id,
-                    name: product.name,
-                    price: product.price,
-                    image: product.image,
-                    quantity: 1,
-                  });
-                }}
-                className="m-4 px-6 py-3 bg-[#e0e0e0] text-[#1f2a44] rounded-xl hover:scale-105 transition"
+                <span className="text-[#cfd2d6] text-sm">Coming Soon</span>
+              </div>
+            ) : (
+              <div
+                key={product.id}
+                className="group bg-[var(--bg-nav)] rounded-2xl overflow-hidden shadow-lg hover:scale-105 transition flex flex-col h-full justify-between"
               >
-                Add to Cart
-              </button>
-            </div>
+                <Link
+                  href={`/category/${product.category}/${product.slug}`}
+                  className="flex-1 flex flex-col h-full"
+                >
+                  <div className="relative w-full aspect-square">
+                    <Image
+                      src={product.image}
+                      alt={product.name}
+                      fill
+                      className="object-cover group-hover:scale-110 transition"
+                    />
+                  </div>
+                  <div className="p-4 text-center flex-1 flex flex-col justify-between">
+                    <h3 className="font-semibold text-[var(--foreground)] truncate text-sm">
+                      {product.name}
+                    </h3>
+                    <p className="text-[#cfd2d6] text-sm">
+                      {product.salePrice ? (
+                        <>
+                          <span className="line-through mr-1">
+                            ${product.price.toLocaleString()}
+                          </span>
+                          <span className="text-red-500">
+                            ${product.salePrice.toLocaleString()}
+                          </span>
+                        </>
+                      ) : (
+                        <>${product.price.toLocaleString()}</>
+                      )}
+                    </p>
+                  </div>
+                </Link>
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    addToCart({
+                      id: product.id,
+                      name: product.name,
+                      price: product.price,
+                      image: product.image,
+                      quantity: 1,
+                    });
+                  }}
+                  className="m-4 px-6 py-3 bg-[#e0e0e0] text-[#1f2a44] rounded-xl hover:scale-105 transition"
+                >
+                  Add to Cart
+                </button>
+              </div>
+            )
           ))}
         </div>
 
