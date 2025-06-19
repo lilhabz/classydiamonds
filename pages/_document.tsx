@@ -6,6 +6,8 @@ export default function Document() {
   return (
     <Html lang="en">
       <Head>
+        {/* Mobile responsive viewport */}
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
         {/* ✅ Preconnect to Google for Map iframe speed */}
         <link rel="preconnect" href="https://www.google.com" />
         <link
