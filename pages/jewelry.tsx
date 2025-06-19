@@ -69,6 +69,10 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
     }
   };
 
+  const scrollToHeader = () => {
+    headerRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
   const router = useRouter();
 
   useEffect(() => {
@@ -100,7 +104,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
       return;
     }
     resetCount();
-    scrollBelowHero();
+    scrollToHeader();
   }, [activeCategory, genderFilter]);
 
   const handleLoadMore = () => setVisibleCount((prev) => prev + 4);
@@ -182,10 +186,9 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
         )}
         {!genderFilter && <div className="mb-8" />}
 
-        <div
-          className="flex flex-nowrap overflow-x-auto whitespace-nowrap no-scrollbar justify-start gap-3 mt-4 sm:flex-wrap sm:overflow-visible sm:whitespace-normal sm:justify-center"
-        >
-          {["All", ...categoryFilters].map((cat) => {
+        <div className="overflow-x-auto no-scrollbar sm:overflow-visible mt-4">
+          <div className="flex space-x-3 w-max py-2 whitespace-nowrap sm:flex-wrap sm:space-x-3 sm:w-full sm:whitespace-normal sm:justify-center">
+            {["All", ...categoryFilters].map((cat) => {
             const label = cat
               .replace(/-/g, " ")
               .replace(/\b\w/g, (l) => l.toUpperCase());
@@ -226,6 +229,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
               </button>
             );
           })}
+        </div>
         </div>
       </section>
 
