@@ -153,7 +153,6 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
             Discover timeless pieces crafted with passion.
           </p>
         </div>
-        </div>
       </section>
 
       {/* 🧭 Breadcrumbs */}
