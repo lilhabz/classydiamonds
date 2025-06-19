@@ -216,7 +216,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
                     setActiveCategory(cat);
                   }
                 }}
-                className={`px-4 py-2 rounded-full font-semibold transition-transform hover:scale-105 ${
+                className={`flex-shrink-0 px-4 py-2 rounded-full font-semibold transition-transform hover:scale-105 ${
                   active
                     ? "bg-[var(--foreground)] text-[var(--bg-nav)]"
                     : "bg-[var(--bg-nav)] text-[var(--foreground)] hover:bg-[#364763]"
