@@ -204,31 +204,30 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
                 activeCategory === cat &&
                 !genderFilter);
 
-            return (
-              <button
-                key={cat}
-                onClick={() => {
-                  if (cat === "for-him") {
-                    setGenderFilter("him");
-                    setActiveCategory("All");
-                  } else if (cat === "for-her") {
-                    setGenderFilter("her");
-                    setActiveCategory("All");
-                  } else {
-                    setGenderFilter(null);
-                    setActiveCategory(cat);
-                  }
-                }}
-                className={`touch-pan-x flex-shrink-0 px-4 py-2 rounded-full font-semibold transition-transform hover:scale-105 ${
-                  active
-                    ? "bg-[var(--foreground)] text-[var(--bg-nav)]"
-                    : "bg-[var(--bg-nav)] text-[var(--foreground)] hover:bg-[#364763]"
-                }`}
-              >
-                {label}
-              </button>
-            );
-          })}
+              const href =
+                cat === "for-him"
+                  ? { pathname: "/jewelry", query: { gender: "him" } }
+                  : cat === "for-her"
+                  ? { pathname: "/jewelry", query: { gender: "her" } }
+                  : cat === "All"
+                  ? "/jewelry"
+                  : { pathname: "/jewelry", query: { category: cat } };
+
+              return (
+                <Link
+                  key={cat}
+                  href={href}
+                  scroll={false}
+                  className={`touch-pan-x flex-shrink-0 px-4 py-2 rounded-full font-semibold transition-transform hover:scale-105 ${
+                    active
+                      ? "bg-[var(--foreground)] text-[var(--bg-nav)]"
+                      : "bg-[var(--bg-nav)] text-[var(--foreground)] hover:bg-[#364763]"
+                  }`}
+                >
+                  {label}
+                </Link>
+              );
+            })}
         </div>
         </div>
       </section>
