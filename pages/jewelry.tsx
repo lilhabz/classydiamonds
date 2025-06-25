@@ -186,7 +186,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
         )}
         {!genderFilter && <div className="mb-8" />}
 
-        <div className="overflow-x-auto no-scrollbar sm:overflow-visible mt-4">
+        <div className="overflow-x-auto no-scrollbar sm:overflow-visible mt-4 scroll-snap-x -mx-4 px-4">
           <div className="flex space-x-3 w-max py-2 whitespace-nowrap sm:flex-wrap sm:space-x-3 sm:w-full sm:whitespace-normal sm:justify-center">
             {["All", ...categoryFilters].map((cat) => {
             const label = cat
@@ -219,7 +219,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
                     setActiveCategory(cat);
                   }
                 }}
-                className={`flex-shrink-0 px-4 py-2 rounded-full font-semibold transition-transform hover:scale-105 ${
+                className={`flex-shrink-0 px-4 py-2 rounded-full font-semibold transition-transform hover:scale-105 scroll-snap-start ${
                   active
                     ? "bg-[var(--foreground)] text-[var(--bg-nav)]"
                     : "bg-[var(--bg-nav)] text-[var(--foreground)] hover:bg-[#364763]"
