@@ -182,7 +182,9 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
         )}
         {!genderFilter && <div className="mb-8" />}
 
-        <div className="flex flex-wrap justify-center gap-3 mt-4">
+        <div
+          className="flex flex-nowrap overflow-x-auto no-scrollbar whitespace-nowrap w-max sm:w-auto justify-start gap-3 px-4 mt-4 sm:flex-wrap sm:justify-center"
+        >
           {["All", ...categoryFilters].map((cat) => {
             const label = cat
               .replace(/-/g, " ")
@@ -214,7 +216,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
                     setActiveCategory(cat);
                   }
                 }}
-                className={`px-4 py-2 rounded-full font-semibold transition-transform hover:scale-105 ${
+                className={`flex-shrink-0 px-4 py-2 rounded-full font-semibold transition-transform hover:scale-105 ${
                   active
                     ? "bg-[var(--foreground)] text-[var(--bg-nav)]"
                     : "bg-[var(--bg-nav)] text-[var(--foreground)] hover:bg-[#364763]"
