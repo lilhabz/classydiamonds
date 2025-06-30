@@ -188,7 +188,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
         </div>
 
 
-        <div className="overflow-x-auto no-scrollbar">
+        <div className="overflow-x-auto no-scrollbar touch-pan-x">
           <div
             className="flex flex-nowrap whitespace-nowrap w-max justify-start gap-3 px-4 sm:flex-wrap sm:justify-center"
           >
