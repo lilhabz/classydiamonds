@@ -183,7 +183,11 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
         {!genderFilter && <div className="mb-8" />}
 
         <div
+
           className="flex flex-nowrap overflow-x-auto no-scrollbar whitespace-nowrap w-max sm:w-auto justify-start gap-3 px-4 mt-4 sm:flex-wrap sm:justify-center"
+
+
+
         >
           {["All", ...categoryFilters].map((cat) => {
             const label = cat
