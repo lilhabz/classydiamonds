@@ -165,10 +165,11 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
         ref={headerRef}
         className="pt-16 pb-8 px-4 sm:px-6 max-w-7xl mx-auto"
       >
-        <h2
-          ref={titleRef}
-          className="text-2xl sm:text-3xl font-semibold text-center"
-        >
+        <div className="text-center mb-4">
+          <h2
+            ref={titleRef}
+            className="text-2xl sm:text-3xl font-semibold"
+          >
           {genderFilter === "him"
             ? "For Him"
             : genderFilter === "her"
@@ -176,33 +177,37 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
             : activeCategory === "All"
             ? "Our Jewelry"
             : formatCategory(activeCategory)}
-        </h2>
-        {genderFilter && (
-          <p className="text-xl sm:text-2xl text-center mt-2 mb-6">
+          </h2>
+          {genderFilter && (
+            <p className="text-xl sm:text-2xl mt-2">
             {activeCategory === "All"
               ? "All Jewelry"
               : formatCategory(activeCategory)}
           </p>
-        )}
-        {!genderFilter && <div className="mb-8" />}
+          )}
+        </div>
 
-        <div className="w-full overflow-x-auto no-scrollbar mt-4">
-          <div className="flex space-x-3 w-max py-2 whitespace-nowrap">
+
+        <div className="overflow-x-auto no-scrollbar">
+          <div
+            className="flex flex-nowrap whitespace-nowrap w-max justify-start gap-3 px-4 sm:flex-wrap sm:justify-center"
+          >
             {["All", ...categoryFilters].map((cat) => {
-            const label = cat
-              .replace(/-/g, " ")
-              .replace(/\b\w/g, (l) => l.toUpperCase());
-            const active =
-              (cat === "for-him" &&
-                genderFilter === "him" &&
-                activeCategory === "All") ||
-              (cat === "for-her" &&
-                genderFilter === "her" &&
-                activeCategory === "All") ||
-              (cat !== "for-him" &&
-                cat !== "for-her" &&
-                activeCategory === cat &&
-                !genderFilter);
+              const label = cat
+                .replace(/-/g, " ")
+                .replace(/\b\w/g, (l) => l.toUpperCase());
+              const active =
+                (cat === "for-him" &&
+                  genderFilter === "him" &&
+                  activeCategory === "All") ||
+                (cat === "for-her" &&
+                  genderFilter === "her" &&
+                  activeCategory === "All") ||
+                (cat !== "for-him" &&
+                  cat !== "for-her" &&
+                  activeCategory === cat &&
+                  !genderFilter);
+
 
               return (
                 <button
@@ -229,8 +234,11 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
                 </button>
               );
             })}
+
+          </div>
+
         </div>
-        </div>
+
       </section>
 
       {/* 🛒 Product Grid */}
