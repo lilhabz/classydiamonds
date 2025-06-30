@@ -188,9 +188,9 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
         </div>
 
 
-        <div className="overflow-x-auto no-scrollbar touch-pan-x">
+        <div className="sm:overflow-visible overflow-x-auto no-scrollbar touch-pan-x">
           <div
-            className="flex flex-nowrap whitespace-nowrap w-max justify-start gap-3 px-4 sm:flex-wrap sm:justify-center"
+            className="flex flex-wrap justify-center gap-3 px-4"
           >
             {["All", ...categoryFilters].map((cat) => {
               const label = cat
