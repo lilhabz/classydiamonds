@@ -161,10 +161,11 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
         ref={headerRef}
         className="pt-16 pb-8 px-4 sm:px-6 max-w-7xl mx-auto"
       >
-        <h2
-          ref={titleRef}
-          className="text-2xl sm:text-3xl font-semibold text-center"
-        >
+        <div className="text-center mb-4">
+          <h2
+            ref={titleRef}
+            className="text-2xl sm:text-3xl font-semibold"
+          >
           {genderFilter === "him"
             ? "For Him"
             : genderFilter === "her"
@@ -172,65 +173,64 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
             : activeCategory === "All"
             ? "Our Jewelry"
             : formatCategory(activeCategory)}
-        </h2>
-        {genderFilter && (
-          <p className="text-xl sm:text-2xl text-center mt-2 mb-6">
+          </h2>
+          {genderFilter && (
+            <p className="text-xl sm:text-2xl mt-2">
             {activeCategory === "All"
               ? "All Jewelry"
               : formatCategory(activeCategory)}
           </p>
-        )}
-        {!genderFilter && <div className="mb-8" />}
-
-        <div
-
-          className="flex flex-nowrap overflow-x-auto no-scrollbar whitespace-nowrap w-max sm:w-auto justify-start gap-3 px-4 mt-4 sm:flex-wrap sm:justify-center"
-
-
-
-        >
-          {["All", ...categoryFilters].map((cat) => {
-            const label = cat
-              .replace(/-/g, " ")
-              .replace(/\b\w/g, (l) => l.toUpperCase());
-            const active =
-              (cat === "for-him" &&
-                genderFilter === "him" &&
-                activeCategory === "All") ||
-              (cat === "for-her" &&
-                genderFilter === "her" &&
-                activeCategory === "All") ||
-              (cat !== "for-him" &&
-                cat !== "for-her" &&
-                activeCategory === cat &&
-                !genderFilter);
-
-            return (
-              <button
-                key={cat}
-                onClick={() => {
-                  if (cat === "for-him") {
-                    setGenderFilter("him");
-                    setActiveCategory("All");
-                  } else if (cat === "for-her") {
-                    setGenderFilter("her");
-                    setActiveCategory("All");
-                  } else {
-                    setGenderFilter(null);
-                    setActiveCategory(cat);
-                  }
-                }}
-                className={`flex-shrink-0 px-4 py-2 rounded-full font-semibold transition-transform hover:scale-105 ${
-                  active
-                    ? "bg-[var(--foreground)] text-[var(--bg-nav)]"
-                    : "bg-[var(--bg-nav)] text-[var(--foreground)] hover:bg-[#364763]"
-                }`}
-              >
-                {label}
-              </button>
-            );
-          })}
+          )}
         </div>
+
+        <div className="overflow-x-auto no-scrollbar">
+          <div
+            className="flex flex-nowrap whitespace-nowrap w-max justify-start gap-3 px-4 sm:flex-wrap sm:justify-center"
+          >
+            {["All", ...categoryFilters].map((cat) => {
+              const label = cat
+                .replace(/-/g, " ")
+                .replace(/\b\w/g, (l) => l.toUpperCase());
+              const active =
+                (cat === "for-him" &&
+                  genderFilter === "him" &&
+                  activeCategory === "All") ||
+                (cat === "for-her" &&
+                  genderFilter === "her" &&
+                  activeCategory === "All") ||
+                (cat !== "for-him" &&
+                  cat !== "for-her" &&
+                  activeCategory === cat &&
+                  !genderFilter);
+
+              return (
+                <button
+                  key={cat}
+                  onClick={() => {
+                    if (cat === "for-him") {
+                      setGenderFilter("him");
+                      setActiveCategory("All");
+                    } else if (cat === "for-her") {
+                      setGenderFilter("her");
+                      setActiveCategory("All");
+                    } else {
+                      setGenderFilter(null);
+                      setActiveCategory(cat);
+                    }
+                  }}
+                  className={`flex-shrink-0 px-4 py-2 rounded-full font-semibold transition-transform hover:scale-105 ${
+                    active
+                      ? "bg-[var(--foreground)] text-[var(--bg-nav)]"
+                      : "bg-[var(--bg-nav)] text-[var(--foreground)] hover:bg-[#364763]"
+                  }`}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
       </section>
 
       {/* 🛒 Product Grid */}
