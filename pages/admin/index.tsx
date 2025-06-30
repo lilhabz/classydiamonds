@@ -173,7 +173,7 @@ export default function AdminOrdersPage() {
 
       <h1 className="text-3xl font-bold mb-6">🛠️ Admin Dashboard</h1>
 
-      <nav className="flex space-x-6 mb-8 border-b border-[var(--bg-nav)] pb-4 text-[var(--foreground)] text-sm font-semibold">
+      <nav className="flex flex-wrap justify-center sm:justify-start gap-2 sm:space-x-6 mb-8 border-b border-[var(--bg-nav)] pb-4 text-[var(--foreground)] text-sm font-semibold">
         <Link href="/admin" className="text-yellow-400">
           📦 Orders
         </Link>

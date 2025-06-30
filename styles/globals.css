@@ -48,6 +48,11 @@ header {
   scrollbar-width: none;
 }
 
+/* 🚼 Touch-action utilities */
+.touch-pan-x {
+  touch-action: pan-x;
+}
+
 /* 🖱️ Pointer cursor for all standard clickable elements */
 button,
 a,

@@ -69,6 +69,10 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
     }
   };
 
+  const scrollToHeader = () => {
+    headerRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
   const router = useRouter();
 
   useEffect(() => {
@@ -100,7 +104,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
       return;
     }
     resetCount();
-    scrollBelowHero();
+    scrollToHeader();
   }, [activeCategory, genderFilter]);
 
   const handleLoadMore = () => setVisibleCount((prev) => prev + 4);
@@ -183,6 +187,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
           )}
         </div>
 
+
         <div className="overflow-x-auto no-scrollbar">
           <div
             className="flex flex-nowrap whitespace-nowrap w-max justify-start gap-3 px-4 sm:flex-wrap sm:justify-center"
@@ -202,6 +207,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
                   cat !== "for-her" &&
                   activeCategory === cat &&
                   !genderFilter);
+
 
               return (
                 <button
@@ -228,7 +234,9 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
                 </button>
               );
             })}
+
           </div>
+
         </div>
 
       </section>
@@ -242,7 +250,14 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
               className="group bg-[var(--bg-nav)] rounded-2xl overflow-hidden shadow-lg hover:scale-105 transition flex flex-col h-full justify-between"
             >
               <Link
-                href={`/category/${product.category}/${product.slug}`}
+                href={
+                  genderFilter
+                    ? {
+                        pathname: `/category/${product.category}/${product.slug}`,
+                        query: { gender: genderFilter },
+                      }
+                    : `/category/${product.category}/${product.slug}`
+                }
                 className="flex-1 flex flex-col h-full"
               >
                 <div className="relative w-full aspect-square">
