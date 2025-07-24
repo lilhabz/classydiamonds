@@ -450,9 +450,15 @@ export default function CartPage() {
             <button
               type="submit"
               disabled={isLoading}
-              className="mt-2 px-6 py-3 bg-white text-[#1f2a44] rounded-full font-semibold hover:bg-gray-100 transition hover:scale-105"
+              className="mt-2 px-6 py-3 bg-white text-[#1f2a44] rounded-full font-semibold flex items-center justify-center gap-2 hover:bg-gray-100 transition hover:scale-105"
             >
-              {isLoading ? "Processing..." : "Proceed to Checkout"}
+              {isLoading ? (
+                "Processing..."
+              ) : (
+                <>
+                  🔒 <span>Secure Checkout</span>
+                </>
+              )}
             </button>
           </form>
         </aside>
