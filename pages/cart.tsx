@@ -12,22 +12,6 @@ export default function CartPage() {
   const { cartItems, removeFromCart, increaseQty, decreaseQty, clearCart } =
     useCart();
 
-  // ─── Replace single "address" string with a structured address object ───
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    phone: "", // 📞 Phone number
-    // 👇 Structured shipping address fields:
-    street1: "",
-    street2: "",
-    city: "",
-    state: "PA", // default to Pennsylvania
-    zip: "",
-    country: "United States", // default to United States
-    notes: "", // 📝 Order notes (e.g., engraving, ring size, delivery instructions)
-    paymentMethod: "stripe", // 🏷️ Default to Stripe; placeholder for others
-  });
-
   const [isLoading, setIsLoading] = useState(false);
 
   const total = cartItems.reduce(
@@ -35,77 +19,29 @@ export default function CartPage() {
     0
   );
 
-  const handleInputChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >
-  ) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleCheckout = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleCheckout = async () => {
     if (cartItems.length === 0) return;
-
-    // ─── Basic front-end validation ─────────────────────────────────────────
-    if (
-      !formData.name ||
-      !formData.email ||
-      !formData.phone ||
-      !formData.street1 ||
-      !formData.city ||
-      !formData.state ||
-      !formData.zip ||
-      !formData.country
-    ) {
-      alert("❌ Please fill in all required fields (marked with *).");
-      return;
-    }
 
     setIsLoading(true);
     try {
-      // ─── Decide which payment flow based on paymentMethod ────────────────
-      if (formData.paymentMethod === "stripe") {
-        // ─── Stripe checkout ───────────────────────────────────────────────
-        const response = await fetch("/api/checkout", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            items: cartItems,
-            name: formData.name,
-            email: formData.email,
-            phone: formData.phone,
-            address: {
-              street1: formData.street1,
-              street2: formData.street2,
-              city: formData.city,
-              state: formData.state,
-              zip: formData.zip,
-              country: formData.country,
-            },
-            notes: formData.notes,
-            paymentMethod: "stripe", // 🏷️ Let backend know
-          }),
-        });
+      const response = await fetch("/api/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ items: cartItems }),
+      });
 
-        const text = await response.text();
-        try {
-          const data = JSON.parse(text);
-          if (data?.url) {
-            window.location.href = data.url;
-          } else {
-            alert("❌ Checkout failed. No URL returned.");
-            console.error("❌ Raw response:", text);
-          }
-        } catch (err) {
-          alert("❌ Checkout failed. Server response was not valid JSON.");
-          console.error("❌ Could not parse response:", text);
+      const text = await response.text();
+      try {
+        const data = JSON.parse(text);
+        if (data?.url) {
+          window.location.href = data.url;
+        } else {
+          alert("❌ Checkout failed. No URL returned.");
+          console.error("❌ Raw response:", text);
         }
-      } else {
-        // ─── Placeholder: Other payment methods ─────────────────────────────
-        // 🔧 For future upgrades: Apple Pay, Google Pay, etc.
-        alert("🚧 Payment method not implemented yet.");
+      } catch (err) {
+        alert("❌ Checkout failed. Server response was not valid JSON.");
+        console.error("❌ Could not parse response:", text);
       }
     } catch (error) {
       console.error("❌ Checkout fetch error:", error);
@@ -115,73 +51,6 @@ export default function CartPage() {
     }
   };
 
-  // ─── Array of U.S. States for dropdown ───────────────────────────────────
-  const usStates = [
-    { value: "AL", label: "Alabama" },
-    { value: "AK", label: "Alaska" },
-    { value: "AZ", label: "Arizona" },
-    { value: "AR", label: "Arkansas" },
-    { value: "CA", label: "California" },
-    { value: "CO", label: "Colorado" },
-    { value: "CT", label: "Connecticut" },
-    { value: "DE", label: "Delaware" },
-    { value: "FL", label: "Florida" },
-    { value: "GA", label: "Georgia" },
-    { value: "HI", label: "Hawaii" },
-    { value: "ID", label: "Idaho" },
-    { value: "IL", label: "Illinois" },
-    { value: "IN", label: "Indiana" },
-    { value: "IA", label: "Iowa" },
-    { value: "KS", label: "Kansas" },
-    { value: "KY", label: "Kentucky" },
-    { value: "LA", label: "Louisiana" },
-    { value: "ME", label: "Maine" },
-    { value: "MD", label: "Maryland" },
-    { value: "MA", label: "Massachusetts" },
-    { value: "MI", label: "Michigan" },
-    { value: "MN", label: "Minnesota" },
-    { value: "MS", label: "Mississippi" },
-    { value: "MO", label: "Missouri" },
-    { value: "MT", label: "Montana" },
-    { value: "NE", label: "Nebraska" },
-    { value: "NV", label: "Nevada" },
-    { value: "NH", label: "New Hampshire" },
-    { value: "NJ", label: "New Jersey" },
-    { value: "NM", label: "New Mexico" },
-    { value: "NY", label: "New York" },
-    { value: "NC", label: "North Carolina" },
-    { value: "ND", label: "North Dakota" },
-    { value: "OH", label: "Ohio" },
-    { value: "OK", label: "Oklahoma" },
-    { value: "OR", label: "Oregon" },
-    { value: "PA", label: "Pennsylvania" },
-    { value: "RI", label: "Rhode Island" },
-    { value: "SC", label: "South Carolina" },
-    { value: "SD", label: "South Dakota" },
-    { value: "TN", label: "Tennessee" },
-    { value: "TX", label: "Texas" },
-    { value: "UT", label: "Utah" },
-    { value: "VT", label: "Vermont" },
-    { value: "VA", label: "Virginia" },
-    { value: "WA", label: "Washington" },
-    { value: "WV", label: "West Virginia" },
-    { value: "WI", label: "Wisconsin" },
-    { value: "WY", label: "Wyoming" },
-  ];
-
-  // ─── Array of Countries for dropdown (few examples) ─────────────────────
-  const countries = [
-    "United States",
-    "Canada",
-    "United Kingdom",
-    "Australia",
-    "Germany",
-    "France",
-    "Mexico",
-    "Japan",
-    "China",
-    "India",
-  ];
 
   return (
     <div className="min-h-screen flex flex-col bg-[var(--bg-page)] text-[var(--foreground)]">
@@ -274,152 +143,29 @@ export default function CartPage() {
           </p>
 
           {/* 🛒 Continue Shopping */}
-          <Link
-            href="/jewelry"
-            className="text-sm text-white underline hover:text-gray-300"
-          >
-            ← Continue Shopping
-          </Link>
-
-          {/* 📟 Checkout Info */}
-          <form onSubmit={handleCheckout} className="flex flex-col gap-4 mt-4">
-            {/* ─── Name, Email, Phone ─────────────────────────────────────────── */}
-            <input
-              type="text"
-              name="name"
-              placeholder="Full Name *"
-              required
-              value={formData.name}
-              onChange={handleInputChange}
-              className="px-4 py-2 rounded bg-white text-[#1f2a44]"
-            />
-            <input
-              type="email"
-              name="email"
-              placeholder="Email Address *"
-              required
-              value={formData.email}
-              onChange={handleInputChange}
-              className="px-4 py-2 rounded bg-white text-[#1f2a44]"
-            />
-            <input
-              type="text"
-              name="phone"
-              placeholder="Phone Number *"
-              required
-              value={formData.phone}
-              onChange={handleInputChange}
-              className="px-4 py-2 rounded bg-white text-[#1f2a44]"
-            />
-
-            {/* ─── Full Shipping Address Fields ───────────────────────────────── */}
-            <input
-              type="text"
-              name="street1"
-              placeholder="Street Address Line 1 *"
-              required
-              value={formData.street1}
-              onChange={handleInputChange}
-              className="px-4 py-2 rounded bg-white text-[#1f2a44]"
-            />
-            <input
-              type="text"
-              name="street2"
-              placeholder="Street Address Line 2 (Apt, Suite, etc.)"
-              value={formData.street2}
-              onChange={handleInputChange}
-              className="px-4 py-2 rounded bg-white text-[#1f2a44]"
-            />
-            <input
-              type="text"
-              name="city"
-              placeholder="City *"
-              required
-              value={formData.city}
-              onChange={handleInputChange}
-              className="px-4 py-2 rounded bg-white text-[#1f2a44]"
-            />
-
-            {/* ─── State Dropdown ────────────────────────────────────────────── */}
-            <select
-              name="state"
-              required
-              value={formData.state}
-              onChange={handleInputChange}
-              className="px-4 py-2 rounded bg-white text-[#1f2a44]"
+            <Link
+              href="/jewelry"
+              className="text-sm text-white underline hover:text-gray-300"
             >
-              <option value="" disabled>
-                Select State *
-              </option>
-              {usStates.map((st) => (
-                <option key={st.value} value={st.value}>
-                  {st.label}
-                </option>
-              ))}
-            </select>
+              ← Continue Shopping
+            </Link>
 
-            <input
-              type="text"
-              name="zip"
-              placeholder="ZIP/Postal Code *"
-              required
-              value={formData.zip}
-              onChange={handleInputChange}
-              className="px-4 py-2 rounded bg-white text-[#1f2a44]"
-            />
-
-            {/* ─── Country Dropdown ──────────────────────────────────────────── */}
-            <select
-              name="country"
-              required
-              value={formData.country}
-              onChange={handleInputChange}
-              className="px-4 py-2 rounded bg-white text-[#1f2a44]"
-            >
-              <option value="" disabled>
-                Select Country *
-              </option>
-              {countries.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
-            </select>
-
-            {/* ─── Payment Method Notice (Stripe Only) ───────────────────────────── */}
-            <div className="px-4 py-3 rounded bg-white text-[#1f2a44] flex items-center gap-2">
-              <span className="text-xl">💳</span>
-              <p className="text-sm font-semibold">
-                All major debit/credit cards, Apple Pay, and Google Pay are securely
-                processed through Stripe.
-              </p>
+            <div className="mt-4">
+              <button
+                onClick={handleCheckout}
+                disabled={isLoading}
+                className="w-full px-6 py-3 bg-white text-[#1f2a44] rounded-full font-semibold flex items-center justify-center gap-2 hover:bg-gray-100 transition hover:scale-105"
+              >
+                {isLoading ? (
+                  "Processing..."
+                ) : (
+                  <>
+                    🔒 <span>Secure Checkout</span>
+                  </>
+                )}
+              </button>
             </div>
 
-            {/* ─── Order Notes ─────────────────────────────────────────────────── */}
-            <textarea
-              name="notes"
-              placeholder="Order Notes (e.g. engraving, ring size, delivery instructions)"
-              value={formData.notes}
-              onChange={handleInputChange}
-              className="px-4 py-2 rounded bg-white text-[#1f2a44]"
-              rows={3}
-            />
-
-            {/* ─── Submit Button ──────────────────────────────────────────────── */}
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="mt-2 px-6 py-3 bg-white text-[#1f2a44] rounded-full font-semibold flex items-center justify-center gap-2 hover:bg-gray-100 transition hover:scale-105"
-            >
-              {isLoading ? (
-                "Processing..."
-              ) : (
-                <>
-                  🔒 <span>Secure Checkout</span>
-                </>
-              )}
-            </button>
-          </form>
         </aside>
       </main>
     </div>
