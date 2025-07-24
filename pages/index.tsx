@@ -131,7 +131,7 @@ export default function Home({ products }: HomeProps) {
           />
           <div className="absolute inset-0 bg-black/50" />
           <div className="relative z-10 text-center px-4">
-            <h1 className="text-3xl sm:text-4xl md:text-6xl font-serif font-bold tracking-wide leading-tight text-[#e0e0e0] mb-6">
+            <h1 className="text-3xl sm:text-4xl md:text-6xl font-serif font-bold tracking-wider leading-snug text-[#e0e0e0] mb-6">
               Timeless Elegance
             </h1>
             <p className="text-base sm:text-lg md:text-xl text-[#e0e0e0] mb-8 max-w-2xl mx-auto leading-relaxed">
@@ -377,7 +377,7 @@ export default function Home({ products }: HomeProps) {
         {/* 🛠️ About Section */}
         <section className="py-16 sm:py-20 px-4 sm:px-6 --bg-page">
           <div className="max-w-4xl mx-auto text-center">
-            <h2 className="text-2xl sm:text-3xl font-serif font-semibold mb-6 sm:mb-8">
+            <h2 className="text-2xl sm:text-3xl font-serif font-semibold mb-6 sm:mb-8 tracking-wide">
               Craftsmanship You Can Trust
             </h2>
             <p className="text-base sm:text-lg text-[#cfd2d6] leading-relaxed">
@@ -393,7 +393,7 @@ export default function Home({ products }: HomeProps) {
         {/* 💎 Why Choose Us Section */}
         <section className="py-16 sm:py-20 px-4 sm:px-6 --bg-page">
           <div className="max-w-4xl mx-auto text-center">
-            <h2 className="text-3xl sm:text-4xl font-serif font-bold mb-8 sm:mb-10">
+            <h2 className="text-3xl sm:text-4xl font-serif font-bold mb-8 sm:mb-10 tracking-wide">
               Why Choose Classy Diamonds?
             </h2>
             <p className="text-base sm:text-lg text-[#cfd2d6] leading-relaxed">
@@ -409,7 +409,7 @@ export default function Home({ products }: HomeProps) {
         {/* ✍️ Custom Jewelry CTA */}
         <section className="--bg-page py-16 sm:py-20 px-4 sm:px-6">
           <div className="max-w-5xl mx-auto text-center">
-            <h2 className="text-3xl sm:text-4xl font-serif font-bold mb-8">
+            <h2 className="text-3xl sm:text-4xl font-serif font-bold mb-8 tracking-wide">
               {" "}
               Bring Your Vision to Life
             </h2>

@@ -49,7 +49,7 @@ export default function CustomPage() {
         </div>
 
         <div className="relative z-10 px-4">
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-6 text-[var(--foreground)]">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-serif font-bold tracking-wider leading-snug mb-6 text-[var(--foreground)]">
             Create Your Dream Piece
           </h1>
           <p className="text-base sm:text-lg md:text-xl max-w-2xl mx-auto text-[var(--foreground)]">
@@ -77,7 +77,7 @@ export default function CustomPage() {
 
       {/* 🧭 How It Works Section */}
       <section className="px-4 sm:px-6 py-16 sm:py-20 max-w-7xl mx-auto">
-        <h2 className="text-2xl sm:text-3xl font-semibold text-center mb-12 sm:mb-16 text-[var(--foreground)]">
+        <h2 className="text-2xl sm:text-3xl font-serif font-semibold tracking-wide leading-snug text-center mb-12 sm:mb-16 text-[var(--foreground)]">
           How It Works
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8">
@@ -108,7 +108,7 @@ export default function CustomPage() {
 
       {/* 💎 Custom Creations Grid */}
       <section className="px-4 sm:px-6 py-16 sm:py-20 max-w-7xl mx-auto">
-        <h2 className="text-2xl sm:text-3xl font-semibold text-center mb-12 sm:mb-16 text-[var(--foreground)]">
+        <h2 className="text-2xl sm:text-3xl font-serif font-semibold tracking-wide leading-snug text-center mb-12 sm:mb-16 text-[var(--foreground)]">
           Custom Creations
         </h2>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
@@ -136,7 +136,7 @@ export default function CustomPage() {
       {/* 📣 Call to Action */}
       <section className="py-16 sm:py-20 px-4 sm:px-6">
         <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-2xl sm:text-3xl font-semibold mb-6 sm:mb-8 text-[var(--foreground)]">
+          <h2 className="text-2xl sm:text-3xl font-serif font-semibold tracking-wide leading-snug mb-6 sm:mb-8 text-[var(--foreground)]">
             Ready to Create Your Piece?
           </h2>
           <p className="text-base sm:text-lg mb-6 sm:mb-8 leading-relaxed text-[#cfd2d6]">

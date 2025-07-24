@@ -138,7 +138,7 @@ export default function WatchesPage({ products }: WatchesProps) {
         <Image src="/hero-jewelry.jpg" alt="Watch Hero" fill className="object-cover" />
         <div className="absolute inset-0 bg-black/50 pointer-events-none" />
         <div className="relative z-10 text-center px-4">
-          <h1 className="text-3xl md:text-6xl font-serif font-bold tracking-wide leading-tight mb-4 text-[var(--foreground)]">Watch Collection</h1>
+          <h1 className="text-3xl md:text-6xl font-serif font-bold tracking-wider leading-snug mb-4 text-[var(--foreground)]">Watch Collection</h1>
           <p className="text-base md:text-xl max-w-2xl mx-auto text-[var(--foreground)] leading-relaxed tracking-wide">
             Explore precision-crafted timepieces.
           </p>
@@ -157,7 +157,7 @@ export default function WatchesPage({ products }: WatchesProps) {
           {watchProducts.map((product) => (
             <div
               key={product.id}
-              className="group bg-[var(--bg-nav)] rounded-2xl overflow-hidden shadow-lg hover:shadow-xl hover:ring-2 hover:ring-[var(--foreground)] hover:scale-105 transition-transform duration-300 flex flex-col h-full justify-between"
+              className="group bg-[var(--bg-nav)] rounded-2xl overflow-hidden shadow-md hover:shadow-2xl hover:ring-2 hover:ring-[var(--foreground)] hover:scale-105 transition-transform duration-300 flex flex-col h-full justify-between"
             >
               <Link
                 href={product.slug && product.slug !== "#" ? `/category/${product.category}/${product.slug}` : "#"}
