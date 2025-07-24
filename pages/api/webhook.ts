@@ -80,6 +80,33 @@ export default async function handler(
         country,
       };
 
+      // 📮 Extract shipping details directly from the session
+      const shippingDetails = (session as any).shipping_details as
+        | {
+            name?: string;
+            address?: Stripe.Address;
+          }
+        | null;
+      const shippingName = shippingDetails?.name || "";
+      const shippingAddr = shippingDetails?.address || ({} as Stripe.Address);
+      const shipStreet = (shippingAddr.line1 as string) || "";
+      const shipLine2 = (shippingAddr.line2 as string) || "";
+      const shipCity = (shippingAddr.city as string) || "";
+      const shipState = (shippingAddr.state as string) || "";
+      const shipZip = (shippingAddr.postal_code as string) || "";
+      const shipCountry = (shippingAddr.country as string) || "";
+      const shippingAddress = `${shipStreet}${
+        shipLine2 ? `, ${shipLine2}` : ""
+      }, ${shipCity}, ${shipState} ${shipZip}, ${shipCountry}`;
+      const shippingAddressObject = {
+        street: shipStreet,
+        line2: shipLine2,
+        city: shipCity,
+        state: shipState,
+        zip: shipZip,
+        country: shipCountry,
+      };
+
       // 💲 Calculate total amount in dollars
       const amountTotal = (session.amount_total || 0) / 100;
 
@@ -142,6 +169,9 @@ export default async function handler(
             customerEmail,
             customerAddress, // single‐line address
             address: addressObject, // structured address
+            shippingName,
+            shippingAddress,
+            shipping: shippingAddressObject,
             items,
             amount: amountTotal,
             currency: session.currency || "usd",
