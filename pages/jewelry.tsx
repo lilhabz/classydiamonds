@@ -164,6 +164,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
       <section
         ref={headerRef}
         className="pt-16 pb-8 px-4 sm:px-6 max-w-7xl mx-auto"
+        style={{ scrollMarginTop: "40px" }}
       >
         <div className="text-center mb-4">
           <h2
