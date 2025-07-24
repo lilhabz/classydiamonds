@@ -131,15 +131,15 @@ export default function Home({ products }: HomeProps) {
           />
           <div className="absolute inset-0 bg-black/50" />
           <div className="relative z-10 text-center px-4">
-            <h1 className="text-3xl sm:text-4xl md:text-6xl font-bold text-[#e0e0e0] mb-6">
+            <h1 className="text-3xl sm:text-4xl md:text-6xl font-serif font-bold tracking-wide leading-tight text-[#e0e0e0] mb-6">
               Timeless Elegance
             </h1>
-            <p className="text-base sm:text-lg md:text-xl text-[#e0e0e0] mb-8 max-w-2xl mx-auto">
+            <p className="text-base sm:text-lg md:text-xl text-[#e0e0e0] mb-8 max-w-2xl mx-auto leading-relaxed">
               Discover handcrafted engagement rings, wedding bands, and fine
               jewelry.
             </p>
             <Link href={{ pathname: "/jewelry", query: { scroll: "true" } }}>
-              <button className="px-8 py-4 bg-[#e0e0e0] text-[#1f2a44] rounded-full hover:scale-105 transition">
+              <button className="px-8 py-4 bg-[#e0e0e0] text-[#1f2a44] rounded-full shadow hover:shadow-lg hover:scale-105 transition">
                 Shop Now
               </button>
             </Link>
@@ -171,7 +171,7 @@ export default function Home({ products }: HomeProps) {
                   aria-label={cat.name}
                 >
                   <img src={cat.icon} alt="" className="w-16 h-16 mx-auto" />
-                  <p className="mt-2 text-sm text-white">{cat.name}</p>
+                  <p className="mt-2 text-sm text-white tracking-wide">{cat.name}</p>
                 </Link>
               ))}
             </div>
@@ -180,7 +180,7 @@ export default function Home({ products }: HomeProps) {
 
         {/* 🛍️ Mobile-Only “Featured” Below Categories */}
         <section className="sm:hidden px-4 mt-6 mb-8">
-          <h2 className="text-2xl font-semibold text-center mb-2 text-white">
+          <h2 className="text-2xl font-serif font-semibold text-center mb-3 text-white">
             Featured Pieces
           </h2>
           <div className="overflow-x-auto">
@@ -193,7 +193,7 @@ export default function Home({ products }: HomeProps) {
                 featured.map((item) => (
                   <div
                     key={item._id}
-                    className="flex-shrink-0 w-48 bg-[#25304f] rounded-2xl shadow-lg flex flex-col h-full justify-between"
+                    className="flex-shrink-0 w-48 bg-[#25304f] rounded-2xl shadow-lg hover:shadow-xl transition-shadow flex flex-col h-full justify-between"
                   >
                     <Link
                       href={`/category/${item.category}/${item.slug}?scroll=true`}
@@ -207,7 +207,7 @@ export default function Home({ products }: HomeProps) {
                       />
                     </Link>
                     <div className="p-4 text-center flex flex-col flex-grow justify-between">
-                      <h3 className="text-sm font-semibold text-[#cfd2d6] truncate">
+                      <h3 className="text-sm font-semibold text-[#cfd2d6] truncate tracking-wide">
                         {item.name}
                       </h3>
                       <p className="text-gray-400 text-xs mb-2">
@@ -234,7 +234,7 @@ export default function Home({ products }: HomeProps) {
                             quantity: 1,
                           })
                         }
-                        className="px-3 py-2 bg-[#e0e0e0] text-[#1f2a44] rounded-xl text-sm hover:scale-105 transition"
+                        className="px-3 py-2 bg-[#e0e0e0] text-[#1f2a44] rounded-xl text-sm shadow hover:shadow-md hover:scale-105 transition"
                       >
                         Add to Cart
                       </button>
@@ -248,7 +248,7 @@ export default function Home({ products }: HomeProps) {
 
         {/* 🖥️ Desktop-Only “Featured” Above Categories */}
         <section className="hidden sm:block py-16 sm:py-20 px-4 sm:px-6 max-w-7xl mx-auto">
-          <h2 className="text-3xl sm:text-4xl font-semibold text-center mb-8">
+          <h2 className="text-3xl sm:text-4xl font-serif font-semibold text-center mb-8">
             Featured Pieces
           </h2>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-10">
@@ -260,7 +260,7 @@ export default function Home({ products }: HomeProps) {
               featured.map((item) => (
                 <div
                   key={item._id}
-                  className="group bg-[#25304f] rounded-2xl overflow-hidden shadow-lg hover:scale-105 transition flex flex-col h-full justify-between"
+                  className="group bg-[#25304f] rounded-2xl overflow-hidden shadow-lg hover:shadow-xl hover:scale-105 transition-shadow flex flex-col h-full justify-between"
                 >
                   <Link
                     href={`/category/${item.category}/${item.slug}?scroll=true`}
@@ -275,10 +275,10 @@ export default function Home({ products }: HomeProps) {
                     </div>
                   </Link>
                   <div className="p-6 text-center flex flex-col flex-grow justify-between">
-                    <h3 className="text-xl text-[#cfd2d6] mb-2 group-hover:text-white transition truncate text-sm">
+                    <h3 className="text-xl text-[#cfd2d6] mb-2 group-hover:text-white transition truncate text-sm tracking-wide">
                       {item.name}
                     </h3>
-                    <p className="text-gray-400 mb-4 group-hover:text-white transition text-sm">
+                    <p className="text-gray-400 mb-4 group-hover:text-white transition text-sm tracking-wide">
                       {item.salePrice ? (
                         <>
                           <span className="line-through mr-1">
@@ -302,7 +302,7 @@ export default function Home({ products }: HomeProps) {
                           quantity: 1,
                         })
                       }
-                      className="px-6 py-3 bg-[#e0e0e0] text-[#1f2a44] rounded-xl hover:scale-105 transition"
+                      className="px-6 py-3 bg-[#e0e0e0] text-[#1f2a44] rounded-xl shadow hover:shadow-md hover:scale-105 transition"
                     >
                       Add to Cart
                     </button>
@@ -315,7 +315,7 @@ export default function Home({ products }: HomeProps) {
 
         {/* 🛍️ Desktop-Only Category Grid */}
         <section className="hidden sm:block py-16 sm:py-20 w-full px-4 sm:px-10">
-          <h2 className="text-2xl sm:text-3xl font-semibold text-center mb-12 sm:mb-16">
+          <h2 className="text-2xl sm:text-3xl font-serif font-semibold text-center mb-12 sm:mb-16">
             Shop by Category
           </h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
@@ -339,7 +339,7 @@ export default function Home({ products }: HomeProps) {
                     scroll: "true",
                   },
                 }}
-                className="group relative rounded-xl overflow-hidden shadow-md hover:shadow-xl hover:scale-105 transition-transform duration-300"
+                className="group relative rounded-xl overflow-hidden shadow-md hover:shadow-xl hover:scale-105 transition-shadow duration-300"
               >
                 <div className="relative aspect-[4/3] w-full">
                   <Image
@@ -361,7 +361,7 @@ export default function Home({ products }: HomeProps) {
 
         {/* 🎁 Gifts for Him & Her Section */}
         <section className="py-16 sm:py-20 px-4 sm:px-10 w-full">
-          <h2 className="text-2xl sm:text-3xl font-semibold text-center mb-12 sm:mb-16">
+          <h2 className="text-2xl sm:text-3xl font-serif font-semibold text-center mb-12 sm:mb-16">
             Gifts for Him & Her
           </h2>
           <div className="grid grid-cols-2 gap-4 justify-center max-w-2xl mx-auto">
@@ -377,7 +377,7 @@ export default function Home({ products }: HomeProps) {
         {/* 🛠️ About Section */}
         <section className="py-16 sm:py-20 px-4 sm:px-6 --bg-page">
           <div className="max-w-4xl mx-auto text-center">
-            <h2 className="text-2xl sm:text-3xl font-semibold mb-6 sm:mb-8">
+            <h2 className="text-2xl sm:text-3xl font-serif font-semibold mb-6 sm:mb-8">
               Craftsmanship You Can Trust
             </h2>
             <p className="text-base sm:text-lg text-[#cfd2d6] leading-relaxed">
@@ -393,7 +393,7 @@ export default function Home({ products }: HomeProps) {
         {/* 💎 Why Choose Us Section */}
         <section className="py-16 sm:py-20 px-4 sm:px-6 --bg-page">
           <div className="max-w-4xl mx-auto text-center">
-            <h2 className="text-3xl sm:text-4xl font-bold mb-8 sm:mb-10">
+            <h2 className="text-3xl sm:text-4xl font-serif font-bold mb-8 sm:mb-10">
               Why Choose Classy Diamonds?
             </h2>
             <p className="text-base sm:text-lg text-[#cfd2d6] leading-relaxed">
@@ -409,7 +409,7 @@ export default function Home({ products }: HomeProps) {
         {/* ✍️ Custom Jewelry CTA */}
         <section className="--bg-page py-16 sm:py-20 px-4 sm:px-6">
           <div className="max-w-5xl mx-auto text-center">
-            <h2 className="text-3xl sm:text-4xl font-bold mb-8">
+            <h2 className="text-3xl sm:text-4xl font-serif font-bold mb-8">
               {" "}
               Bring Your Vision to Life
             </h2>
