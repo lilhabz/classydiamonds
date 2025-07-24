@@ -241,7 +241,7 @@ export default function AdminOrdersPage() {
             {paginatedOrders.map((order) => (
               <div
                 key={order._id}
-                className="bg-[var(--bg-nav)] p-6 rounded-xl shadow-md hover:shadow-lg transition-shadow"
+                className="bg-[var(--bg-nav)] p-6 rounded-xl shadow-md hover:shadow-xl hover:scale-105 transition-transform duration-300"
               >
                 <h2 className="text-xl font-semibold mb-1">
                   {order.customerName} ({order.customerEmail})

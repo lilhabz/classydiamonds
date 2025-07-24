@@ -157,7 +157,7 @@ export default function WatchesPage({ products }: WatchesProps) {
           {watchProducts.map((product) => (
             <div
               key={product.id}
-              className="group bg-[var(--bg-nav)] rounded-2xl overflow-hidden shadow-md hover:shadow-2xl hover:ring-2 hover:ring-[var(--foreground)] hover:scale-105 transition-transform duration-300 flex flex-col h-full justify-between"
+              className="group bg-[var(--bg-nav)] rounded-2xl overflow-hidden shadow-md hover:shadow-2xl hover:scale-105 transition-transform duration-300 flex flex-col h-full justify-between"
             >
               <Link
                 href={product.slug && product.slug !== "#" ? `/category/${product.category}/${product.slug}` : "#"}
@@ -188,7 +188,7 @@ export default function WatchesPage({ products }: WatchesProps) {
                   });
                 }}
 
-                className="m-4 px-6 py-3 bg-[#e0e0e0] text-[#1f2a44] rounded-xl hover:scale-105 hover:shadow-md transition-transform duration-300"
+                className="m-4 px-6 py-3 bg-[#e0e0e0] text-[#1f2a44] rounded-xl hover:scale-105 transition"
 
               >
                 Add to Cart

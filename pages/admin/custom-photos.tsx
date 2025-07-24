@@ -131,7 +131,10 @@ export default function AdminCustomPhotosPage() {
       </form>
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
         {photos.map((p) => (
-          <div key={p._id} className="relative w-full h-40">
+          <div
+            key={p._id}
+            className="relative w-full h-40 rounded-xl overflow-hidden shadow-md hover:shadow-xl transition"
+          >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={p.imageUrl} alt="Custom creation" className="object-cover rounded w-full h-full" />
           </div>
