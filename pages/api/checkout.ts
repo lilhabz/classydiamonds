@@ -16,7 +16,7 @@ export default async function handler(
   }
 
   try {
-    const { items, name, email, address, notes, paymentMethod } = req.body;
+    const { items, name, email, address = {}, notes, paymentMethod } = req.body;
 
     // ✅ Validate items
     if (!items || !Array.isArray(items)) {
