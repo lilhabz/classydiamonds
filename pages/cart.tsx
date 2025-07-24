@@ -102,43 +102,6 @@ export default function CartPage() {
           alert("❌ Checkout failed. Server response was not valid JSON.");
           console.error("❌ Could not parse response:", text);
         }
-      } else if (formData.paymentMethod === "paypal") {
-        // ─── Placeholder: PayPal Checkout ─────────────────────────────────
-        // 👇 You’ll need to create /api/checkout/paypal to handle PayPal sessions
-        const response = await fetch("/api/checkout/paypal", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            items: cartItems,
-            name: formData.name,
-            email: formData.email,
-            phone: formData.phone,
-            address: {
-              street1: formData.street1,
-              street2: formData.street2,
-              city: formData.city,
-              state: formData.state,
-              zip: formData.zip,
-              country: formData.country,
-            },
-            notes: formData.notes,
-            paymentMethod: "paypal",
-          }),
-        });
-
-        const text = await response.text();
-        try {
-          const data = JSON.parse(text);
-          if (data?.redirectUrl) {
-            window.location.href = data.redirectUrl;
-          } else {
-            alert("❌ PayPal checkout failed. No redirect URL.");
-            console.error("❌ Raw response:", text);
-          }
-        } catch (err) {
-          alert("❌ PayPal checkout failed. Invalid JSON response.");
-          console.error("❌ Could not parse response:", text);
-        }
       } else {
         // ─── Placeholder: Other payment methods ─────────────────────────────
         // 🔧 For future upgrades: Apple Pay, Google Pay, etc.
@@ -423,17 +386,16 @@ export default function CartPage() {
               ))}
             </select>
 
-            {/* ─── Payment Method Selector ─────────────────────────────────────── */}
+            {/* ─── Payment Method Notice (Stripe Only) ───────────────────────────── */}
             <select
               name="paymentMethod"
-              required
-              value={formData.paymentMethod}
-              onChange={handleInputChange}
-              className="px-4 py-2 rounded bg-white text-[#1f2a44]"
+              value="stripe"
+              disabled
+              className="px-4 py-2 rounded bg-white text-[#1f2a44] cursor-not-allowed"
             >
-              <option value="stripe">Pay with Stripe</option>
-              <option value="paypal">Pay with PayPal</option>
-              {/* 🔧 Placeholder: Add more payment providers here */}
+              <option value="stripe">
+                💳 Pay with Debit / Credit / Apple Pay / Google Pay (via Stripe)
+              </option>
             </select>
 
             {/* ─── Order Notes ─────────────────────────────────────────────────── */}
