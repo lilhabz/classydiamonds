@@ -1,30 +1,29 @@
-// 🚀 pages/api/checkout.ts – Stripe Checkout Session (fixed to use street1/street2)
+// 🚀 pages/api/checkout.ts – Polished Stripe Checkout with Wallet Support
 
 import type { NextApiRequest, NextApiResponse } from "next";
 import Stripe from "stripe";
 
-// Initialize Stripe with your secret key
+// 🔐 Initialize Stripe with secret key
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string);
 
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
-  // 🚫 Only allow POST
+  // 🔒 Only allow POST
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method Not Allowed" });
   }
 
   try {
-    // 🔍 Extract cart items and customer info (matching Cart page)
     const { items, name, email, address, notes, paymentMethod } = req.body;
 
-    // 🛑 Validate that items is an array
+    // ✅ Validate items
     if (!items || !Array.isArray(items)) {
       return res.status(400).json({ error: "Invalid items data" });
     }
 
-    // 📦 Build Stripe line_items array
+    // 🛍️ Format cart items for Stripe
     const line_items = items
       .filter((item: any) => item && item.name && item.price && item.quantity)
       .map((item: any) => {
@@ -42,16 +41,16 @@ export default async function handler(
         };
       });
 
-    // 📬 Build a one-line address string for convenience
+    // 📬 Format full address
     const addressString = `${address.street1 || ""}${
       address.street2 ? `, ${address.street2}` : ""
     }, ${address.city || ""}, ${address.state || ""} ${address.zip || ""}, ${
       address.country || ""
     }`;
 
-    // 🔑 Create the Stripe Checkout Session, pushing the correct metadata keys
+    // 🧾 Create the Stripe Checkout session
     const session = await stripe.checkout.sessions.create({
-      payment_method_types: ["card"],
+      payment_method_types: ["card"], // Enables Apple Pay + Google Pay automatically
       mode: "payment",
       line_items,
       success_url: `${req.headers.origin}/success?session_id={CHECKOUT_SESSION_ID}`,
@@ -60,7 +59,6 @@ export default async function handler(
         customer_name: name || "",
         customer_email: email || "",
         customer_phone: (req.body.phone as string) || "",
-        // ─── Use street1 / street2 here ─────────────────────────────────────
         address_street1: address.street1 || "",
         address_street2: address.street2 || "",
         address_city: address.city || "",
@@ -72,6 +70,8 @@ export default async function handler(
         payment_method: paymentMethod || "stripe",
         items: JSON.stringify(items),
       },
+      // 🖼️ Optional visual branding (set in Stripe dashboard)
+      // customer_email: email,  // Optional: prefill email
     });
 
     return res.status(200).json({ url: session.url });
