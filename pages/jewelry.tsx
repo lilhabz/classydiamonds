@@ -146,30 +146,30 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
         />
         <div className="absolute inset-0 bg-black/50 pointer-events-none" />
         <div className="relative z-10 text-center px-4">
-          <h1 className="text-3xl md:text-6xl font-bold mb-4 text-[var(--foreground)]">
+          <h1 className="text-3xl md:text-6xl font-serif font-bold tracking-wide leading-tight mb-4 text-[var(--foreground)]">
             Jewelry Collection
           </h1>
-          <p className="text-base md:text-xl max-w-2xl mx-auto text-[var(--foreground)]">
+          <p className="text-base md:text-xl max-w-2xl mx-auto text-[var(--foreground)] leading-relaxed tracking-wide">
             Discover timeless pieces crafted with passion.
           </p>
         </div>
       </section>
 
       {/* 🧭 Breadcrumbs */}
-      <div className="pl-4 pr-4 sm:pl-8 sm:pr-8 mt-6 mb-6">
+      <div className="pl-4 pr-4 sm:pl-8 sm:pr-8 mt-8 mb-8">
         <Breadcrumbs />
       </div>
 
       {/* 💎 Category Header */}
       <section
         ref={headerRef}
-        className="pt-16 pb-8 px-4 sm:px-6 max-w-7xl mx-auto"
+        className="pt-20 pb-12 px-4 sm:px-6 max-w-7xl mx-auto"
         style={{ scrollMarginTop: "40px" }}
       >
-        <div className="text-center mb-4">
+        <div className="text-center mb-6">
           <h2
             ref={titleRef}
-            className="text-2xl sm:text-3xl font-semibold"
+            className="text-2xl sm:text-3xl font-serif font-semibold tracking-wide"
           >
           {genderFilter === "him"
             ? "For Him"
@@ -180,7 +180,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
             : formatCategory(activeCategory)}
           </h2>
           {genderFilter && (
-            <p className="text-xl sm:text-2xl mt-2">
+            <p className="text-xl sm:text-2xl mt-2 font-serif tracking-wide">
             {activeCategory === "All"
               ? "All Jewelry"
               : formatCategory(activeCategory)}
@@ -222,7 +222,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
                       setActiveCategory(cat);
                     }
                   }}
-                  className={`flex-shrink-0 px-4 py-2 rounded-full font-semibold transition-transform hover:scale-105 ${
+                  className={`flex-shrink-0 px-4 py-2 rounded-full font-semibold tracking-wide transition-transform hover:scale-105 ${
                     active
                       ? "bg-[var(--foreground)] text-[var(--bg-nav)]"
                       : "bg-[var(--bg-nav)] text-[var(--foreground)] hover:bg-[#364763]"
@@ -238,12 +238,12 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
       </section>
 
       {/* 🛒 Product Grid */}
-      <section className="px-4 sm:px-6 max-w-7xl mx-auto mb-16">
+      <section className="mt-8 px-4 sm:px-6 max-w-7xl mx-auto mb-20">
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6 auto-rows-fr">
           {filteredProducts.slice(0, visibleCount).map((product) => (
             <div
               key={product.id}
-              className="group bg-[var(--bg-nav)] rounded-2xl overflow-hidden shadow-lg hover:scale-105 transition flex flex-col h-full justify-between"
+              className="group bg-[var(--bg-nav)] rounded-2xl overflow-hidden shadow-lg hover:shadow-xl hover:scale-105 transition-transform duration-300 flex flex-col h-full justify-between"
             >
               <Link
                 href={
@@ -261,14 +261,14 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
                     src={product.image}
                     alt={product.name}
                     fill
-                    className="object-cover group-hover:scale-110 transition"
+                    className="object-cover group-hover:scale-110 transition-transform duration-300"
                   />
                 </div>
                 <div className="p-4 text-center flex-1 flex flex-col justify-between">
-                  <h3 className="font-semibold text-[var(--foreground)] truncate text-sm">
+                  <h3 className="font-semibold text-[var(--foreground)] truncate text-sm tracking-wide leading-snug">
                     {product.name}
                   </h3>
-                  <p className="text-[#cfd2d6] text-sm">
+                  <p className="text-[#cfd2d6] text-sm leading-relaxed tracking-wide">
                     {product.salePrice ? (
                       <>
                         <span className="line-through mr-1">
