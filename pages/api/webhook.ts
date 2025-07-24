@@ -80,32 +80,46 @@ export default async function handler(
         country,
       };
 
-      // 📮 Extract shipping details directly from the session
+      // 📮 Extract shipping details directly from the session when present
       const shippingDetails = (session as any).shipping_details as
         | {
             name?: string;
             address?: Stripe.Address;
           }
         | null;
-      const shippingName = shippingDetails?.name || "";
-      const shippingAddr = shippingDetails?.address || ({} as Stripe.Address);
-      const shipStreet = (shippingAddr.line1 as string) || "";
-      const shipLine2 = (shippingAddr.line2 as string) || "";
-      const shipCity = (shippingAddr.city as string) || "";
-      const shipState = (shippingAddr.state as string) || "";
-      const shipZip = (shippingAddr.postal_code as string) || "";
-      const shipCountry = (shippingAddr.country as string) || "";
-      const shippingAddress = `${shipStreet}${
-        shipLine2 ? `, ${shipLine2}` : ""
-      }, ${shipCity}, ${shipState} ${shipZip}, ${shipCountry}`;
-      const shippingAddressObject = {
-        street: shipStreet,
-        line2: shipLine2,
-        city: shipCity,
-        state: shipState,
-        zip: shipZip,
-        country: shipCountry,
-      };
+
+      let shippingName: string | undefined;
+      let shippingAddress: string | undefined;
+      let shippingAddressObject:
+        | {
+            street: string;
+            line2: string;
+            city: string;
+            state: string;
+            zip: string;
+            country: string;
+          }
+        | undefined;
+
+      if (shippingDetails) {
+        const line1 = shippingDetails.address?.line1 || "";
+        const line2 = shippingDetails.address?.line2 || "";
+        const city = shippingDetails.address?.city || "";
+        const state = shippingDetails.address?.state || "";
+        const zip = shippingDetails.address?.postal_code || "";
+        const country = shippingDetails.address?.country || "";
+
+        shippingName = shippingDetails.name;
+        shippingAddress = `${line1}${line2 ? ", " + line2 : ""}, ${city}, ${state} ${zip}, ${country}`;
+        shippingAddressObject = {
+          street: line1,
+          line2,
+          city,
+          state,
+          zip,
+          country,
+        };
+      }
 
       // 💲 Calculate total amount in dollars
       const amountTotal = (session.amount_total || 0) / 100;
@@ -163,26 +177,12 @@ export default async function handler(
 
         if (!existing) {
           // 🗄️ Insert new order document with all fields
-          await ordersCollection.insertOne({
+          const orderDoc: any = {
             orderNumber,
             customerName,
             customerEmail,
             customerAddress, // single‐line address
             address: addressObject, // structured address
-            shippingName,
-            shippingAddress,
-            shipping: shippingAddressObject,
-            // ➕ Persist shipping details from Stripe
-            shipping_name: shippingName,
-            shipping_address: {
-              street: shipStreet,
-              line2: shipLine2,
-              city: shipCity,
-              state: shipState,
-              zip: shipZip,
-              country: shipCountry,
-            },
-            shipping_address_string: shippingAddress,
             items,
             amount: amountTotal,
             currency: session.currency || "usd",
@@ -194,7 +194,25 @@ export default async function handler(
             shipped: false,
             delivered: false,
             archived: false,
-          });
+          };
+
+          if (shippingDetails) {
+            orderDoc.shippingName = shippingName;
+            orderDoc.shippingAddress = shippingAddress;
+            orderDoc.shipping = shippingAddressObject;
+            orderDoc.shipping_name = shippingDetails.name;
+            orderDoc.shipping_address = {
+              street: shippingAddressObject!.street,
+              line2: shippingAddressObject!.line2,
+              city: shippingAddressObject!.city,
+              state: shippingAddressObject!.state,
+              zip: shippingAddressObject!.zip,
+              country: shippingAddressObject!.country,
+            };
+            orderDoc.shipping_address_string = shippingAddress;
+          }
+
+          await ordersCollection.insertOne(orderDoc);
 
           console.log(
             `✅ Order saved to MongoDB with orderNumber: ${orderNumber}`
