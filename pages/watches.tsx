@@ -138,26 +138,26 @@ export default function WatchesPage({ products }: WatchesProps) {
         <Image src="/hero-jewelry.jpg" alt="Watch Hero" fill className="object-cover" />
         <div className="absolute inset-0 bg-black/50 pointer-events-none" />
         <div className="relative z-10 text-center px-4">
-          <h1 className="text-3xl md:text-6xl font-bold mb-4 text-[var(--foreground)]">Watch Collection</h1>
-          <p className="text-base md:text-xl max-w-2xl mx-auto text-[var(--foreground)]">
+          <h1 className="text-3xl md:text-6xl font-serif font-bold tracking-wide leading-tight mb-4 text-[var(--foreground)]">Watch Collection</h1>
+          <p className="text-base md:text-xl max-w-2xl mx-auto text-[var(--foreground)] leading-relaxed tracking-wide">
             Explore precision-crafted timepieces.
           </p>
         </div>
       </section>
 
-      <div className="pl-4 pr-4 sm:pl-8 sm:pr-8 mt-6 mb-6">
+      <div className="pl-4 pr-4 sm:pl-8 sm:pr-8 mt-8 mb-8">
         <Breadcrumbs />
       </div>
 
 
-        <section className="pt-16 pb-8 px-4 sm:px-6 max-w-7xl mx-auto">
-        <h1 className="text-3xl font-bold text-white text-center mb-6">Watches</h1>
+        <section className="pt-20 pb-12 px-4 sm:px-6 max-w-7xl mx-auto">
+        <h1 className="text-3xl font-serif font-semibold tracking-wide text-white text-center mb-8">Watches</h1>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6 auto-rows-fr">
           {watchProducts.map((product) => (
             <div
               key={product.id}
-              className="group bg-[var(--bg-nav)] rounded-2xl overflow-hidden shadow-lg hover:scale-105 transition flex flex-col h-full justify-between"
+              className="group bg-[var(--bg-nav)] rounded-2xl overflow-hidden shadow-lg hover:shadow-xl hover:ring-2 hover:ring-[var(--foreground)] hover:scale-105 transition-transform duration-300 flex flex-col h-full justify-between"
             >
               <Link
                 href={product.slug && product.slug !== "#" ? `/category/${product.category}/${product.slug}` : "#"}
@@ -172,7 +172,7 @@ export default function WatchesPage({ products }: WatchesProps) {
                   />
                 </div>
                 <div className="p-4 text-center flex-1 flex flex-col justify-between">
-                  <h3 className="font-semibold text-[var(--foreground)] truncate text-sm">{product.name}</h3>
+                  <h3 className="font-semibold text-[var(--foreground)] truncate text-sm tracking-wide leading-snug">{product.name}</h3>
                   <p className="text-[#cfd2d6] text-sm">${product.price.toLocaleString()}</p>
                 </div>
               </Link>
@@ -188,7 +188,7 @@ export default function WatchesPage({ products }: WatchesProps) {
                   });
                 }}
 
-                className="m-4 px-6 py-3 bg-[#e0e0e0] text-[#1f2a44] rounded-xl hover:scale-105 transition"
+                className="m-4 px-6 py-3 bg-[#e0e0e0] text-[#1f2a44] rounded-xl hover:scale-105 hover:shadow-md transition-transform duration-300"
 
               >
                 Add to Cart
