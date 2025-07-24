@@ -172,6 +172,17 @@ export default async function handler(
             shippingName,
             shippingAddress,
             shipping: shippingAddressObject,
+            // ➕ Persist shipping details from Stripe
+            shipping_name: shippingName,
+            shipping_address: {
+              street: shipStreet,
+              line2: shipLine2,
+              city: shipCity,
+              state: shipState,
+              zip: shipZip,
+              country: shipCountry,
+            },
+            shipping_address_string: shippingAddress,
             items,
             amount: amountTotal,
             currency: session.currency || "usd",
