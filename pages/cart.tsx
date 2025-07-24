@@ -387,16 +387,13 @@ export default function CartPage() {
             </select>
 
             {/* ─── Payment Method Notice (Stripe Only) ───────────────────────────── */}
-            <select
-              name="paymentMethod"
-              value="stripe"
-              disabled
-              className="px-4 py-2 rounded bg-white text-[#1f2a44] cursor-not-allowed"
-            >
-              <option value="stripe">
-                💳 Pay with Debit / Credit / Apple Pay / Google Pay (via Stripe)
-              </option>
-            </select>
+            <div className="px-4 py-3 rounded bg-white text-[#1f2a44] flex items-center gap-2">
+              <span className="text-xl">💳</span>
+              <p className="text-sm font-semibold">
+                All major debit/credit cards, Apple Pay, and Google Pay are securely
+                processed through Stripe.
+              </p>
+            </div>
 
             {/* ─── Order Notes ─────────────────────────────────────────────────── */}
             <textarea
@@ -428,4 +425,3 @@ export default function CartPage() {
     </div>
   );
 }
-//papaeopg
