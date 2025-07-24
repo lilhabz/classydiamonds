@@ -138,7 +138,7 @@ export default function AdminLogsPage() {
         <Breadcrumbs />
       </div>
 
-      <h1 className="text-3xl font-bold mb-6">🛠️ Admin Dashboard</h1>
+      <h1 className="text-3xl font-serif font-bold tracking-wide mb-6">🛠️ Admin Dashboard</h1>
 
       {/* 🔗 Admin Navigation Tabs */}
       <nav className="flex flex-wrap justify-center sm:justify-start gap-2 sm:space-x-6 mb-8 border-b border-[var(--bg-nav)] pb-4 text-[var(--foreground)] text-sm font-semibold">

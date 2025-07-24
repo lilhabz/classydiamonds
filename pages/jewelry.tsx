@@ -146,7 +146,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
         />
         <div className="absolute inset-0 bg-black/50 pointer-events-none" />
         <div className="relative z-10 text-center px-4">
-          <h1 className="text-3xl md:text-6xl font-serif font-bold tracking-wide leading-tight mb-4 text-[var(--foreground)]">
+          <h1 className="text-3xl md:text-6xl font-serif font-bold tracking-wider leading-snug mb-4 text-[var(--foreground)]">
             Jewelry Collection
           </h1>
           <p className="text-base md:text-xl max-w-2xl mx-auto text-[var(--foreground)] leading-relaxed tracking-wide">
@@ -169,7 +169,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
         <div className="text-center mb-6">
           <h2
             ref={titleRef}
-            className="text-2xl sm:text-3xl font-serif font-semibold tracking-wide"
+            className="text-2xl sm:text-3xl font-serif font-semibold tracking-wider leading-snug"
           >
           {genderFilter === "him"
             ? "For Him"
@@ -180,7 +180,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
             : formatCategory(activeCategory)}
           </h2>
           {genderFilter && (
-            <p className="text-xl sm:text-2xl mt-2 font-serif tracking-wide">
+            <p className="text-xl sm:text-2xl mt-2 font-serif tracking-wider leading-snug">
             {activeCategory === "All"
               ? "All Jewelry"
               : formatCategory(activeCategory)}
@@ -243,7 +243,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
           {filteredProducts.slice(0, visibleCount).map((product) => (
             <div
               key={product.id}
-              className="group bg-[var(--bg-nav)] rounded-2xl overflow-hidden shadow-lg hover:shadow-xl hover:scale-105 transition-transform duration-300 flex flex-col h-full justify-between"
+              className="group bg-[var(--bg-nav)] rounded-2xl overflow-hidden shadow-md hover:shadow-2xl hover:scale-105 transition-transform duration-300 flex flex-col h-full justify-between"
             >
               <Link
                 href={

@@ -72,7 +72,7 @@ export default function AdminCustomPhotosPage() {
       <div className="pl-2 pr-2 sm:pl-4 sm:pr-4 mb-6 -mt-2">
         <Breadcrumbs />
       </div>
-      <h1 className="text-3xl font-bold mb-6">🖼 Manage Custom Creations</h1>
+      <h1 className="text-3xl font-serif font-bold tracking-wide mb-6">🖼 Manage Custom Creations</h1>
       <nav className="flex flex-wrap justify-center sm:justify-start gap-2 sm:space-x-6 mb-8 border-b border-[var(--bg-nav)] pb-4 text-[var(--foreground)] text-sm font-semibold">
         <Link href="/admin" className="hover:text-yellow-300">
           📦 Orders
