@@ -90,7 +90,7 @@ export default function Home({ products }: HomeProps) {
               : { category: slug, scroll: "true" },
           });
         }}
-        className="group relative rounded-xl overflow-hidden shadow-md hover:shadow-xl hover:scale-105 transition-transform duration-300 cursor-pointer"
+        className="group relative rounded-xl overflow-hidden shadow-md hover:shadow-2xl hover:scale-105 transition-transform duration-300 cursor-pointer"
       >
         <div className="relative aspect-[4/3] w-full">
           <Image
@@ -180,7 +180,7 @@ export default function Home({ products }: HomeProps) {
 
         {/* 🛍️ Mobile-Only “Featured” Below Categories */}
         <section className="sm:hidden px-4 mt-6 mb-8">
-          <h2 className="text-2xl font-serif font-semibold text-center mb-3 text-white">
+          <h2 className="text-2xl font-serif font-semibold tracking-wide text-center mb-4 text-white">
             Featured Pieces
           </h2>
           <div className="overflow-x-auto">
@@ -193,7 +193,7 @@ export default function Home({ products }: HomeProps) {
                 featured.map((item) => (
                   <div
                     key={item._id}
-                    className="flex-shrink-0 w-48 bg-[#25304f] rounded-2xl shadow-lg hover:shadow-xl transition-shadow flex flex-col h-full justify-between"
+                    className="flex-shrink-0 w-48 bg-[#25304f] rounded-2xl shadow-md hover:shadow-2xl hover:scale-105 transition-transform duration-300 flex flex-col h-full justify-between"
                   >
                     <Link
                       href={`/category/${item.category}/${item.slug}?scroll=true`}
@@ -248,7 +248,7 @@ export default function Home({ products }: HomeProps) {
 
         {/* 🖥️ Desktop-Only “Featured” Above Categories */}
         <section className="hidden sm:block py-16 sm:py-20 px-4 sm:px-6 max-w-7xl mx-auto">
-          <h2 className="text-3xl sm:text-4xl font-serif font-semibold text-center mb-8">
+          <h2 className="text-3xl sm:text-4xl font-serif font-semibold tracking-wide text-center mb-8">
             Featured Pieces
           </h2>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-10">
@@ -260,7 +260,7 @@ export default function Home({ products }: HomeProps) {
               featured.map((item) => (
                 <div
                   key={item._id}
-                  className="group bg-[#25304f] rounded-2xl overflow-hidden shadow-lg hover:shadow-xl hover:scale-105 transition-shadow flex flex-col h-full justify-between"
+                  className="group bg-[#25304f] rounded-2xl overflow-hidden shadow-md hover:shadow-2xl hover:scale-105 transition-transform duration-300 flex flex-col h-full justify-between"
                 >
                   <Link
                     href={`/category/${item.category}/${item.slug}?scroll=true`}
@@ -315,7 +315,7 @@ export default function Home({ products }: HomeProps) {
 
         {/* 🛍️ Desktop-Only Category Grid */}
         <section className="hidden sm:block py-16 sm:py-20 w-full px-4 sm:px-10">
-          <h2 className="text-2xl sm:text-3xl font-serif font-semibold text-center mb-12 sm:mb-16">
+          <h2 className="text-2xl sm:text-3xl font-serif font-semibold tracking-wide text-center mb-12 sm:mb-16">
             Shop by Category
           </h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
@@ -339,7 +339,7 @@ export default function Home({ products }: HomeProps) {
                     scroll: "true",
                   },
                 }}
-                className="group relative rounded-xl overflow-hidden shadow-md hover:shadow-xl hover:scale-105 transition-shadow duration-300"
+                className="group relative rounded-xl overflow-hidden shadow-md hover:shadow-2xl hover:scale-105 transition-transform duration-300"
               >
                 <div className="relative aspect-[4/3] w-full">
                   <Image
@@ -361,7 +361,7 @@ export default function Home({ products }: HomeProps) {
 
         {/* 🎁 Gifts for Him & Her Section */}
         <section className="py-16 sm:py-20 px-4 sm:px-10 w-full">
-          <h2 className="text-2xl sm:text-3xl font-serif font-semibold text-center mb-12 sm:mb-16">
+          <h2 className="text-2xl sm:text-3xl font-serif font-semibold tracking-wide text-center mb-12 sm:mb-16">
             Gifts for Him & Her
           </h2>
           <div className="grid grid-cols-2 gap-4 justify-center max-w-2xl mx-auto">

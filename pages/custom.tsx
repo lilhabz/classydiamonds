@@ -90,7 +90,7 @@ export default function CustomPage() {
                 <h3 className="text-lg sm:text-xl font-semibold mb-4 text-[var(--foreground)] group-hover:text-white transition-colors">
                   {index + 1}. {step}
                 </h3>
-                <p className="text-[#cfd2d6] group-hover:text-white transition-colors text-sm sm:text-base">
+                <p className="text-[#cfd2d6] group-hover:text-white transition-colors text-sm sm:text-base leading-relaxed">
                   {
                     [
                       "Meet with Ned to discuss your vision, style, and ideas.",
