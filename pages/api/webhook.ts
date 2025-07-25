@@ -49,46 +49,38 @@ export default async function handler(
     const metadata = session.metadata || {};
     const items = JSON.parse((metadata.items as string) || "[]");
 
-    const customerName =
-      session.customer_details?.name || metadata.customer_name || "Customer";
-    const customerEmail =
-      session.customer_details?.email ||
-      metadata.customer_email ||
-      process.env.EMAIL_USER;
+    const shippingDetails = session.shipping_details || {};
+    const shipAddr = (shippingDetails as any).address || {};
 
-    // 🏠 Manual address (from metadata)
-    const addressObject = {
-      street: metadata.address_street1 || "",
-      line2: metadata.address_street2 || "",
-      city: metadata.address_city || "",
-      state: metadata.address_state || "",
-      zip: metadata.address_zip || "",
-      country: metadata.address_country || "",
-    };
-
-    const customerAddress = `${addressObject.street}${
-      addressObject.line2 ? `, ${addressObject.line2}` : ""
-    }, ${addressObject.city}, ${addressObject.state} ${addressObject.zip}, ${
-      addressObject.country
-    }`;
-
-    // 📦 Stripe shipping_details (preferred)
-    const shippingDetails = session.shipping_details;
-    const shipName = shippingDetails?.name || "";
-    const shipAddr = shippingDetails?.address || {};
     const shippingAddressObject = {
-      street: (shipAddr as any).line1 || "",
-      line2: (shipAddr as any).line2 || "",
-      city: (shipAddr as any).city || "",
-      state: (shipAddr as any).state || "",
-      zip: (shipAddr as any).postal_code || "",
-      country: (shipAddr as any).country || "",
+      street: (shipAddr as any).line1 || metadata.address_street1 || "",
+      line2: (shipAddr as any).line2 || metadata.address_street2 || "",
+      city: (shipAddr as any).city || metadata.address_city || "",
+      state: (shipAddr as any).state || metadata.address_state || "",
+      zip: (shipAddr as any).postal_code || metadata.address_zip || "",
+      country: (shipAddr as any).country || metadata.address_country || "",
     };
+
     const shippingAddress = `${shippingAddressObject.street}${
       shippingAddressObject.line2 ? `, ${shippingAddressObject.line2}` : ""
     }, ${shippingAddressObject.city}, ${shippingAddressObject.state} ${
       shippingAddressObject.zip
     }, ${shippingAddressObject.country}`;
+
+    const shippingName =
+      (shippingDetails as any).name ||
+      session.customer_details?.name ||
+      metadata.customer_name ||
+      "Customer";
+
+    const customerName = shippingName;
+    const customerEmail =
+      session.customer_details?.email ||
+      metadata.customer_email ||
+      process.env.EMAIL_USER;
+
+    const addressObject = shippingAddressObject;
+    const customerAddress = shippingAddress;
 
     const amountTotal = (session.amount_total || 0) / 100;
     const stripeSessionId = session.id;
@@ -138,7 +130,7 @@ export default async function handler(
         shipped: false,
         delivered: false,
         archived: false,
-        shipping_name: shipName,
+        shipping_name: shippingName,
         shipping_address: shippingAddressObject,
         shipping_address_string: shippingAddress,
       };

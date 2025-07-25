@@ -124,6 +124,7 @@ export default function ProductPage({ product }: { product: ProductType }) {
                   id: product.id,
                   name: product.name,
                   price: product.price,
+                  discountedPrice: product.salePrice ?? undefined,
                   image: product.image,
                   quantity: 1,
                 })
