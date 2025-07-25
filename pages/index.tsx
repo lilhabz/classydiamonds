@@ -77,7 +77,8 @@ export default function Home({ products }: HomeProps) {
 
   function GiftButton({ gift, index }: { gift: Gift; index: number }) {
     const slug = gift.name.toLowerCase().replace(/\s+/g, "-");
-    const gender = slug === "for-him" ? "him" : slug === "for-her" ? "her" : null;
+    const gender =
+      slug === "for-him" ? "him" : slug === "for-her" ? "her" : null;
     return (
       <button
         type="button"
@@ -171,7 +172,9 @@ export default function Home({ products }: HomeProps) {
                   aria-label={cat.name}
                 >
                   <img src={cat.icon} alt="" className="w-16 h-16 mx-auto" />
-                  <p className="mt-2 text-sm text-white tracking-wide">{cat.name}</p>
+                  <p className="mt-2 text-sm text-white tracking-wide">
+                    {cat.name}
+                  </p>
                 </Link>
               ))}
             </div>
@@ -229,8 +232,8 @@ export default function Home({ products }: HomeProps) {
                           addToCart({
                             id: item._id,
                             name: item.name,
-                            price: item.salePrice ?? item.price,
-                            discountedPrice: item.salePrice ?? undefined,
+                            price: item.price, // ← the ORIGINAL price (e.g. $13)
+                            discountedPrice: item.salePrice, // ← the SALE price (e.g. $10), or undefined
                             image: item.image,
                             quantity: 1,
                           })
@@ -298,8 +301,8 @@ export default function Home({ products }: HomeProps) {
                         addToCart({
                           id: item._id,
                           name: item.name,
-                          price: item.salePrice ?? item.price,
-                          discountedPrice: item.salePrice ?? undefined,
+                          price: item.price, // ← the ORIGINAL price (e.g. $13)
+                          discountedPrice: item.salePrice, // ← the SALE price (e.g. $10), or undefined
                           image: item.image,
                           quantity: 1,
                         })

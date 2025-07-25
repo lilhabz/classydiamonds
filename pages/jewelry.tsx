@@ -171,70 +171,66 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
             ref={titleRef}
             className="text-2xl sm:text-3xl font-serif font-semibold tracking-wider leading-snug"
           >
-          {genderFilter === "him"
-            ? "For Him"
-            : genderFilter === "her"
-            ? "For Her"
-            : activeCategory === "All"
-            ? "Our Jewelry"
-            : formatCategory(activeCategory)}
+            {genderFilter === "him"
+              ? "For Him"
+              : genderFilter === "her"
+              ? "For Her"
+              : activeCategory === "All"
+              ? "Our Jewelry"
+              : formatCategory(activeCategory)}
           </h2>
           {genderFilter && (
             <p className="text-xl sm:text-2xl mt-2 font-serif tracking-wider leading-snug">
-            {activeCategory === "All"
-              ? "All Jewelry"
-              : formatCategory(activeCategory)}
-          </p>
+              {activeCategory === "All"
+                ? "All Jewelry"
+                : formatCategory(activeCategory)}
+            </p>
           )}
         </div>
 
-
         <div className="flex flex-wrap justify-center gap-3 px-4">
-            {["All", ...categoryFilters].map((cat) => {
-              const label = cat
-                .replace(/-/g, " ")
-                .replace(/\b\w/g, (l) => l.toUpperCase());
-              const active =
-                (cat === "for-him" &&
-                  genderFilter === "him" &&
-                  activeCategory === "All") ||
-                (cat === "for-her" &&
-                  genderFilter === "her" &&
-                  activeCategory === "All") ||
-                (cat !== "for-him" &&
-                  cat !== "for-her" &&
-                  activeCategory === cat &&
-                  !genderFilter);
+          {["All", ...categoryFilters].map((cat) => {
+            const label = cat
+              .replace(/-/g, " ")
+              .replace(/\b\w/g, (l) => l.toUpperCase());
+            const active =
+              (cat === "for-him" &&
+                genderFilter === "him" &&
+                activeCategory === "All") ||
+              (cat === "for-her" &&
+                genderFilter === "her" &&
+                activeCategory === "All") ||
+              (cat !== "for-him" &&
+                cat !== "for-her" &&
+                activeCategory === cat &&
+                !genderFilter);
 
-
-              return (
-                <button
-                  key={cat}
-                  onClick={() => {
-                    if (cat === "for-him") {
-                      setGenderFilter("him");
-                      setActiveCategory("All");
-                    } else if (cat === "for-her") {
-                      setGenderFilter("her");
-                      setActiveCategory("All");
-                    } else {
-                      setGenderFilter(null);
-                      setActiveCategory(cat);
-                    }
-                  }}
-                  className={`flex-shrink-0 px-4 py-2 rounded-full font-semibold tracking-wide transition-transform hover:scale-105 ${
-                    active
-                      ? "bg-[var(--foreground)] text-[var(--bg-nav)]"
-                      : "bg-[var(--bg-nav)] text-[var(--foreground)] hover:bg-[#364763]"
-                  }`}
-                >
-                  {label}
-                </button>
-              );
-            })}
-
-          </div>
-
+            return (
+              <button
+                key={cat}
+                onClick={() => {
+                  if (cat === "for-him") {
+                    setGenderFilter("him");
+                    setActiveCategory("All");
+                  } else if (cat === "for-her") {
+                    setGenderFilter("her");
+                    setActiveCategory("All");
+                  } else {
+                    setGenderFilter(null);
+                    setActiveCategory(cat);
+                  }
+                }}
+                className={`flex-shrink-0 px-4 py-2 rounded-full font-semibold tracking-wide transition-transform hover:scale-105 ${
+                  active
+                    ? "bg-[var(--foreground)] text-[var(--bg-nav)]"
+                    : "bg-[var(--bg-nav)] text-[var(--foreground)] hover:bg-[#364763]"
+                }`}
+              >
+                {label}
+              </button>
+            );
+          })}
+        </div>
       </section>
 
       {/* 🛒 Product Grid */}
@@ -290,8 +286,8 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
                   addToCart({
                     id: product.id,
                     name: product.name,
-                    price: product.salePrice ?? product.price,
-                    discountedPrice: product.salePrice ?? undefined,
+                    price: product.price, // ← original price (e.g. $13)
+                    discountedPrice: product.salePrice, // ← sale price (e.g. $10) or undefined
                     image: product.image,
                     quantity: 1,
                   });
