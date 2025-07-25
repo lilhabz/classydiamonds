@@ -97,7 +97,9 @@ export default function ProductPage({ product }: { product: ProductType }) {
               {product.name}
             </h1>
             {product.skuNumber !== undefined && (
-              <p className="text-sm text-gray-400">SKU # {String(product.skuNumber).padStart(5, "0")}</p>
+              <p className="text-sm text-gray-400">
+                SKU # {String(product.skuNumber).padStart(5, "0")}
+              </p>
             )}
             <p className="text-lg text-[#cfd2d6]">
               {product.description || "Beautiful handcrafted piece."}
@@ -117,19 +119,18 @@ export default function ProductPage({ product }: { product: ProductType }) {
               )}
             </p>
 
-
             <button
               onClick={() =>
                 addToCart({
                   id: product.id,
                   name: product.name,
-                  price: product.salePrice ?? product.price,
-                  discountedPrice: product.salePrice ?? undefined,
+                  price: product.price, // ← original price (e.g. $13)
+                  discountedPrice: product.salePrice, // ← sale price (e.g. $10), or undefined
                   image: product.image,
                   quantity: 1,
                 })
               }
-            className="mt-4 px-6 py-3 bg-[#e0e0e0] text-[#1f2a44] rounded-xl hover:scale-105 transition"
+              className="mt-4 px-6 py-3 bg-[#e0e0e0] text-[#1f2a44] rounded-xl hover:scale-105 transition"
             >
               Add to Cart
             </button>
