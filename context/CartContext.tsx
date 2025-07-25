@@ -70,21 +70,25 @@ export function CartProvider({ children }: { children: ReactNode }) {
   // ➕ Add (or bump quantity)
   const addToCart = (item: CartItemInput) => {
     setCartItems((prev) => {
-      // determine salePrice
+      // 1️⃣ compute sale price
       const sale = item.discountedPrice ?? item.price;
       const isDiscounted = sale < item.price;
 
+      // 2️⃣ build CartItem with aliases
       const newItem: CartItem = {
         id: item.id,
         name: item.name,
-        originalPrice: item.price,
-        salePrice: sale,
-        price: sale, // ← alias for your old `price`
-        discountedPrice: isDiscounted ? sale : undefined, // ← alias
+        originalPrice: item.price, // your “before” price
+        salePrice: sale, // your “after” price
+        price: item.price, // ← alias for original price
+        discountedPrice: isDiscounted // ← alias for sale price
+          ? sale
+          : undefined,
         image: item.image,
         quantity: item.quantity,
       };
 
+      // 3️⃣ add or increment
       const exists = prev.find((p) => p.id === newItem.id);
       if (exists) {
         return prev.map((p) =>
@@ -96,6 +100,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       return [...prev, newItem];
     });
 
+    // your toast logic stays the same
     setAddedItemName(item.name);
     setTimeout(() => setAddedItemName(null), 2500);
   };
