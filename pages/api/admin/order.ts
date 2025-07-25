@@ -1,33 +1,65 @@
 // 📂 pages/api/admin/order.ts – Return single order details by orderId (including discounts)
 import type { NextApiRequest, NextApiResponse } from "next";
+import { ObjectId } from "mongodb";
 import clientPromise from "@/lib/mongodb";
+
+interface RawOrder {
+  _id: ObjectId;
+  customerName: string;
+  customerEmail: string;
+  customerAddress: string;
+  shipping_address_string?: string;
+  items?: Array<{
+    name: string;
+    quantity: number;
+    originalPrice: number;
+    salePrice?: number;
+  }>;
+  amount: number;
+  currency?: string;
+  paymentStatus?: string;
+  address?: {
+    street?: string;
+    line2?: string;
+    city?: string;
+    state?: string;
+    zip?: string;
+    country?: string;
+  };
+  createdAt: Date;
+  stripeSessionId: string;
+  orderNumber?: number;
+  shipped?: boolean;
+  archived?: boolean;
+}
+
+type OrderResponse =
+  | {
+      orderNumber: number | null;
+      items: {
+        name: string;
+        quantity: number;
+        price: number;
+        discountedPrice?: number;
+      }[];
+      amount: number;
+      currency: string;
+      paymentStatus: string;
+      customerAddress: string;
+      address: RawOrder["address"];
+      createdAt: string;
+      shipped: boolean;
+      archived: boolean;
+      shipping_address_string: string;
+    }
+  | { error: string };
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse<
-    | {
-        orderNumber: number | null;
-        items: Array<{
-          name: string;
-          quantity: number;
-          price: number;
-          discountedPrice?: number;
-        }>;
-        amount: number;
-        currency: string;
-        paymentStatus: string;
-        customerAddress: string;
-        address: any;
-        createdAt: string;
-        shipped: boolean;
-        archived: boolean;
-        shipping_address_string: string;
-      }
-    | { error: string }
-  >
+  res: NextApiResponse<OrderResponse>
 ) {
   if (req.method !== "GET") {
-    return res.status(405).json({ error: "Method Not Allowed" });
+    return res.status(405).json({ error: "Method not allowed" });
   }
 
   const { orderId } = req.query;
@@ -40,7 +72,7 @@ export default async function handler(
     const db = client.db();
 
     const o = await db
-      .collection("orders")
+      .collection<RawOrder>("orders")
       .findOne({ stripeSessionId: orderId });
 
     if (!o) {
@@ -48,28 +80,25 @@ export default async function handler(
     }
 
     const items =
-      (o.items || []).map((i: any) => ({
+      o.items?.map((i) => ({
         name: i.name,
         quantity: i.quantity,
-        price: i.originalPrice, // original price
-        discountedPrice: i.salePrice !== undefined ? i.salePrice : undefined, // sale price if any
+        price: i.originalPrice,
+        discountedPrice: i.salePrice,
       })) || [];
 
     return res.status(200).json({
       orderNumber: o.orderNumber ?? null,
       items,
       amount: o.amount,
-      currency: o.currency || "usd",
-      paymentStatus: o.paymentStatus || "",
-      customerAddress: o.customerAddress || "",
-      address: o.address || {},
-      createdAt:
-        o.createdAt instanceof Date
-          ? o.createdAt.toISOString()
-          : new Date(o.createdAt).toISOString(),
+      currency: o.currency ?? "usd",
+      paymentStatus: o.paymentStatus ?? "",
+      customerAddress: o.customerAddress,
+      address: o.address ?? {},
+      createdAt: o.createdAt.toISOString(),
       shipped: o.shipped ?? false,
       archived: o.archived ?? false,
-      shipping_address_string: o.shipping_address_string || "",
+      shipping_address_string: o.shipping_address_string ?? "",
     });
   } catch (err: any) {
     console.error("❌ Failed to fetch order:", err);
