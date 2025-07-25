@@ -209,7 +209,7 @@ export default function CategoryPage({
                   addToCart({
                     id: product._id,
                     name: product.name,
-                    price: product.price,
+                    price: product.salePrice ?? product.price,
                     discountedPrice: product.salePrice ?? undefined,
                     image: product.image,
                     quantity: 1,

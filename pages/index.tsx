@@ -229,7 +229,7 @@ export default function Home({ products }: HomeProps) {
                           addToCart({
                             id: item._id,
                             name: item.name,
-                            price: item.price,
+                            price: item.salePrice ?? item.price,
                             discountedPrice: item.salePrice ?? undefined,
                             image: item.image,
                             quantity: 1,
@@ -298,7 +298,7 @@ export default function Home({ products }: HomeProps) {
                         addToCart({
                           id: item._id,
                           name: item.name,
-                          price: item.price,
+                          price: item.salePrice ?? item.price,
                           discountedPrice: item.salePrice ?? undefined,
                           image: item.image,
                           quantity: 1,

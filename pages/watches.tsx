@@ -183,7 +183,7 @@ export default function WatchesPage({ products }: WatchesProps) {
                   addToCart({
                     id: product.id,
                     name: product.name,
-                    price: product.price,
+                    price: product.salePrice ?? product.price,
                     discountedPrice: product.salePrice ?? undefined,
                     image: product.image,
                     quantity: 1,

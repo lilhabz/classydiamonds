@@ -15,7 +15,8 @@ export default function CartPage() {
   const [isLoading, setIsLoading] = useState(false);
 
   const total = cartItems.reduce(
-    (sum, item) => sum + item.price * item.quantity,
+    (sum, item) =>
+      sum + (item.discountedPrice ?? item.price) * item.quantity,
     0
   );
 
@@ -86,11 +87,13 @@ export default function CartPage() {
                     {item.name}
                   </h2>
                   <p className="text-sm text-gray-400">
-                    ${item.price.toLocaleString()}
+                    ${(item.discountedPrice ?? item.price).toLocaleString()}
                   </p>
                   {item.quantity > 1 && (
                     <p className="text-sm text-gray-400 mt-1">
-                      Subtotal: ${(item.price * item.quantity).toLocaleString()}
+                      Subtotal: ${(
+                        (item.discountedPrice ?? item.price) * item.quantity
+                      ).toLocaleString()}
                     </p>
                   )}
                   <div className="mt-3 flex items-center justify-center md:justify-start gap-3">
