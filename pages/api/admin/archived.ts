@@ -13,30 +13,54 @@ export default async function handler(
   const db = client.db();
 
   if (req.method === "GET") {
-    // ✅ Return archived orders
     try {
-      const archivedOrders = await db
+      // 1️⃣ Fetch raw archived orders
+      const raw = await db
         .collection("orders")
         .find({ archived: true })
         .sort({ archivedAt: -1 })
         .toArray();
 
-      return res.status(200).json({ orders: archivedOrders });
-    } catch (err) {
+      // 2️⃣ Remap each order’s items to expose both prices
+      const orders = raw.map((o: any) => ({
+        _id: o._id.toString(),
+        customerName: o.customerName,
+        customerEmail: o.customerEmail,
+        customerAddress: o.customerAddress,
+        shipping_address_string: o.shipping_address_string,
+        amount: o.amount,
+        currency: o.currency || "usd",
+        paymentStatus: o.paymentStatus || "",
+        createdAt: o.createdAt,
+        archived: o.archived ?? false,
+        archivedAt: o.archivedAt,
+        orderNumber: o.orderNumber,
+        stripeSessionId: o.stripeSessionId,
+
+        // remapped items
+        items: (o.items || []).map((i: any) => ({
+          name: i.name,
+          quantity: i.quantity,
+          price: i.originalPrice, // original price
+          discountedPrice:
+            i.salePrice !== undefined // sale price if discounted
+              ? i.salePrice
+              : undefined,
+        })),
+      }));
+
+      return res.status(200).json({ orders });
+    } catch (err: any) {
       console.error("❌ Failed to fetch archived orders:", err);
       return res.status(500).json({ error: "Server error" });
     }
   }
 
   if (req.method === "POST") {
-
     const { orderId, restore, adminName } = req.body;
-
-
     if (!orderId) {
       return res.status(400).json({ error: "Missing orderId" });
     }
-
     try {
       const update = restore
         ? { $set: { archived: false }, $unset: { archivedAt: "" } }
@@ -60,7 +84,7 @@ export default async function handler(
       });
 
       return res.status(200).json({ success: true });
-    } catch (err) {
+    } catch (err: any) {
       console.error("❌ Failed to update archive state:", err);
       return res.status(500).json({ error: "Server error" });
     }

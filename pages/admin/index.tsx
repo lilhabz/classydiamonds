@@ -1,4 +1,4 @@
-// ✅ Enhanced pages/admin/index.tsx to show unshipped orders with discounted prices 🔐🛠️
+// ✅ pages/admin/index.tsx – Admin Orders with Original & Sale Prices 🔐🛠️
 
 import { useEffect, useState } from "react";
 import Head from "next/head";
@@ -15,8 +15,8 @@ interface Order {
   items?: {
     name: string;
     quantity: number;
-    price: number;
-    discountedPrice?: number;
+    originalPrice: number; // ← your “before” price
+    salePrice?: number; // ← your “after” price if discounted
   }[];
   amount: number;
   createdAt: string;
@@ -64,9 +64,11 @@ export default function AdminOrdersPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ orderId, adminName }),
       });
-      const result = await res.json();
       if (res.ok) fetchOrders();
-      else alert("❌ " + result.error);
+      else {
+        const result = await res.json();
+        alert("❌ " + result.error);
+      }
     } catch (err) {
       console.error("❌ Error shipping order:", err);
     }
@@ -82,9 +84,11 @@ export default function AdminOrdersPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ orderId, adminName }),
       });
-      const result = await res.json();
       if (res.ok) fetchOrders();
-      else alert("❌ " + result.error);
+      else {
+        const result = await res.json();
+        alert("❌ " + result.error);
+      }
     } catch (err) {
       console.error("❌ Error archiving order:", err);
     }
@@ -97,10 +101,10 @@ export default function AdminOrdersPage() {
       order.customerEmail,
       order.stripeSessionId,
       `$${order.amount.toFixed(2)}`,
-      new Date(order.createdAt || "").toLocaleString(),
+      new Date(order.createdAt).toLocaleString(),
       (order.items || [])
         .map((i) => {
-          const unit = i.discountedPrice ?? i.price;
+          const unit = i.salePrice ?? i.originalPrice;
           return `${i.quantity}× ${i.name} - $${(unit * i.quantity).toFixed(
             2
           )}`;
@@ -111,12 +115,11 @@ export default function AdminOrdersPage() {
     const csvContent = [headers, ...rows].map((r) => r.join(",")).join("\n");
     const blob = new Blob([csvContent], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "unshipped_orders.csv";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "unshipped_orders.csv";
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   const printPDF = () => {
@@ -133,32 +136,31 @@ export default function AdminOrdersPage() {
 
   const filteredOrders = orders.filter((order) => {
     if (order.archived || order.shipped) return false;
-    const query = searchQuery.toLowerCase();
-    const matchQuery =
-      order.customerName?.toLowerCase().includes(query) ||
-      order.customerEmail?.toLowerCase().includes(query) ||
-      order.stripeSessionId?.toLowerCase().includes(query);
-    const orderDate = new Date(order.createdAt || "");
-    const afterStart = startDate ? orderDate >= new Date(startDate) : true;
-    const beforeEnd = endDate ? orderDate <= new Date(endDate) : true;
-    return matchQuery && afterStart && beforeEnd;
+    const q = searchQuery.toLowerCase();
+    const matchQ =
+      order.customerName.toLowerCase().includes(q) ||
+      order.customerEmail.toLowerCase().includes(q) ||
+      order.stripeSessionId.toLowerCase().includes(q);
+    const d = new Date(order.createdAt);
+    const after = startDate ? d >= new Date(startDate) : true;
+    const before = endDate ? d <= new Date(endDate) : true;
+    return matchQ && after && before;
   });
 
   const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
-  const paginatedOrders = filteredOrders.slice(
+  const paginated = filteredOrders.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
 
   if (status === "loading")
     return <div className="p-6">Checking access...</div>;
-  if (!session?.user?.isAdmin) {
+  if (!session?.user?.isAdmin)
     return (
       <div className="p-6 text-red-300 font-semibold">
         ❌ Unauthorized – Admins only
       </div>
     );
-  }
 
   return (
     <div className="min-h-screen bg-[var(--bg-page)] text-[var(--foreground)] p-6">
@@ -174,7 +176,7 @@ export default function AdminOrdersPage() {
         🛠️ Admin Dashboard
       </h1>
 
-      <nav className="flex flex-wrap justify-center sm:justify-start gap-2 sm:space-x-6 mb-8 border-b border-[var(--bg-nav)] pb-4 text-[var(--foreground)] text-sm font-semibold">
+      <nav className="flex flex-wrap justify-center sm:justify-start gap-2 sm:space-x-6 mb-8 border-b border-[var(--bg-nav)] pb-4 text-sm font-semibold">
         <Link href="/admin" className="text-yellow-400">
           📦 Orders
         </Link>
@@ -198,25 +200,26 @@ export default function AdminOrdersPage() {
         </Link>
       </nav>
 
+      {/* Filters & Export */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 mb-6">
         <input
           type="text"
           placeholder="Search by name, email, or ID..."
-          className="w-full sm:w-1/3 mb-2 sm:mb-0 px-4 py-2 rounded bg-[var(--bg-nav)] text-white"
+          className="w-full sm:w-1/3 px-4 py-2 rounded bg-[var(--bg-nav)] text-white mb-2 sm:mb-0"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
         />
         <input
           type="date"
+          className="px-2 py-1 rounded bg-[#2e3a58] text-white"
           value={startDate}
           onChange={(e) => setStartDate(e.target.value)}
-          className="px-2 py-1 rounded bg-[#2e3a58] text-white"
         />
         <input
           type="date"
+          className="px-2 py-1 rounded bg-[#2e3a58] text-white"
           value={endDate}
           onChange={(e) => setEndDate(e.target.value)}
-          className="px-2 py-1 rounded bg-[#2e3a58] text-white"
         />
         <button
           onClick={downloadCSV}
@@ -232,55 +235,54 @@ export default function AdminOrdersPage() {
         </button>
       </div>
 
+      {/* Orders List */}
       <div id="print-area" className="space-y-8">
-        {paginatedOrders.map((order) => (
+        {paginated.map((order) => (
           <div
             key={order._id}
-            className="bg-[var(--bg-nav)] p-6 rounded-xl shadow-md transition-all duration-200"
+            className="bg-[var(--bg-nav)] p-6 rounded-xl shadow-md transition-all"
           >
             <h2 className="text-xl font-semibold mb-1">
               {order.customerName} ({order.customerEmail})
             </h2>
-            <p className="text-sm mb-2 text-gray-300">
+            <p className="text-sm text-gray-300 mb-2">
               🔢 Order #: {order.orderNumber ?? "N/A"}
             </p>
-            <p className="text-sm mb-2 text-gray-300">
+            <p className="text-sm text-gray-300 mb-2">
               🆔 Order ID: {order.stripeSessionId.slice(-8)}
             </p>
-            <p className="mb-2 text-sm">
+            <p className="text-sm mb-2">
               📍 {order.shipping_address_string || order.customerAddress}
             </p>
-            <p className="mb-2 text-sm">
-              🧾 Order Date: {new Date(order.createdAt).toLocaleString()}
+            <p className="text-sm mb-4">
+              🧾 Date: {new Date(order.createdAt).toLocaleString()}
             </p>
 
             <ul className="mb-4 pl-4 list-disc text-sm">
-              {order.items?.map((item, index) => {
-                const unit = item.discountedPrice ?? item.price;
-                const originalTotal = item.price * item.quantity;
-                const finalTotal = unit * item.quantity;
-
+              {order.items?.map((it, idx) => {
+                const orig = it.originalPrice * it.quantity;
+                const sale = (it.salePrice ?? it.originalPrice) * it.quantity;
                 return (
-                  <li key={index}>
-                    {item.quantity}× {item.name} –{" "}
-                    {item.discountedPrice !== undefined ? (
+                  <li key={idx}>
+                    {it.quantity}× {it.name} –{" "}
+                    {it.salePrice !== undefined ? (
                       <>
                         <span className="line-through text-gray-400 mr-2">
-                          ${originalTotal.toFixed(2)}
+                          ${orig.toFixed(2)}
                         </span>
                         <span className="text-red-400 font-semibold">
-                          ${finalTotal.toFixed(2)}
+                          ${sale.toFixed(2)}
                         </span>
                       </>
                     ) : (
-                      <span>${originalTotal.toFixed(2)}</span>
+                      <span>${orig.toFixed(2)}</span>
                     )}
                   </li>
                 );
               })}
             </ul>
 
-            <div className="flex justify-between items-center gap-2">
+            <div className="flex justify-between items-center">
               <span className="text-lg font-semibold">
                 💰 Total: ${order.amount.toFixed(2)}
               </span>
@@ -303,28 +305,27 @@ export default function AdminOrdersPage() {
         ))}
       </div>
 
+      {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex justify-center mt-8 space-x-2">
-          {[...Array(totalPages)].map((_, index) => (
+          {Array.from({ length: totalPages }).map((_, idx) => (
             <button
-              key={index}
-              onClick={() => setCurrentPage(index + 1)}
+              key={idx}
+              onClick={() => setCurrentPage(idx + 1)}
               className={`px-3 py-1 rounded ${
-                currentPage === index + 1
+                currentPage === idx + 1
                   ? "bg-blue-600"
                   : "bg-[var(--bg-nav)] hover:bg-blue-500"
               }`}
             >
-              {index + 1}
+              {idx + 1}
             </button>
           ))}
         </div>
       )}
 
       <button
-        onClick={() => {
-          window.location.href = "/";
-        }}
+        onClick={() => (window.location.href = "/")}
         className="mt-8 text-sm text-red-300 underline"
       >
         Exit Admin Panel 🔒

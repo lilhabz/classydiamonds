@@ -14,8 +14,8 @@ type Product = {
   skuNumber: number;
   name: string;
   description: string;
-  price: number;
-  salePrice?: number;
+  price: number; // original price
+  discountedPrice?: number; // sale price, if any
   category: string;
   slug: string;
   imageUrl: string;
@@ -59,18 +59,19 @@ export default async function handler(
 
   const client = await clientPromise;
   const db = client.db();
-  const collection = db.collection<Product>("products");
+  const collection = db.collection("products");
 
   // 📝 GET: list all products, sorted by skuNumber
   if (req.method === "GET") {
     const raw = await collection.find().sort({ skuNumber: 1 }).toArray();
+
     const products: Product[] = raw.map((doc: any) => ({
       _id: doc._id,
       skuNumber: doc.skuNumber ?? 0,
       name: doc.name,
       description: doc.description,
-      price: doc.price,
-      salePrice: doc.salePrice,
+      price: doc.price, // original price
+      discountedPrice: doc.salePrice, // sale price if present
       category: doc.category,
       slug: doc.slug,
       imageUrl: doc.imageUrl,
@@ -79,6 +80,7 @@ export default async function handler(
       tags: doc.tags || [],
       createdAt: doc.createdAt,
     }));
+
     return res.status(200).json({ success: true, products });
   }
 
@@ -117,7 +119,9 @@ export default async function handler(
     const featured = getString(fields.featured, "false") === "true";
 
     const genderStr = getString(fields.gender, "unisex");
-    const gender: "unisex" | "him" | "her" = ["unisex", "him", "her"].includes(genderStr)
+    const gender: "unisex" | "him" | "her" = ["unisex", "him", "her"].includes(
+      genderStr
+    )
       ? (genderStr as "unisex" | "him" | "her")
       : "unisex";
 
@@ -135,19 +139,21 @@ export default async function handler(
 
     if (imageFile && typeof imageFile !== "string") {
       // ☁️ Upload to Cloudinary
-      const uploadResult = await cloudinary.uploader.upload(imageFile.filepath, {
-        folder: "classy-diamonds/original",
-        transformation: [{ quality: "auto" }, { fetch_format: "auto" }],
-        eager: [
-          {
-            folder: "classy-diamonds/compressed",
-            quality: "auto",
-            fetch_format: "auto",
-          },
-        ],
-      });
-      imageUrl =
-        uploadResult.eager?.[0]?.secure_url || uploadResult.secure_url;
+      const uploadResult = await cloudinary.uploader.upload(
+        imageFile.filepath,
+        {
+          folder: "classy-diamonds/original",
+          transformation: [{ quality: "auto" }, { fetch_format: "auto" }],
+          eager: [
+            {
+              folder: "classy-diamonds/compressed",
+              quality: "auto",
+              fetch_format: "auto",
+            },
+          ],
+        }
+      );
+      imageUrl = uploadResult.eager?.[0]?.secure_url || uploadResult.secure_url;
     }
 
     // 🔢 Determine next skuNumber
@@ -176,17 +182,15 @@ export default async function handler(
       createdAt: new Date(),
     };
 
-    // 💾 Insert into MongoDB (cast to any to avoid missing _id error)
+    // 💾 Insert into MongoDB
     const result = await collection.insertOne(newProduct as any);
     const product: Product = { _id: result.insertedId, ...newProduct };
     return res.status(201).json({ success: true, product });
   } catch (error: any) {
     console.error("API Error:", error);
-    return res
-      .status(500)
-      .json({
-        success: false,
-        message: error.message || "Internal Server Error",
-      });
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Internal Server Error",
+    });
   }
 }

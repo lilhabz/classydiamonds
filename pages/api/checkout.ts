@@ -8,7 +8,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string, {
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse
+  res: NextApiResponse<{ url?: string; error?: string }>
 ) {
   if (req.method !== "POST") {
     res.setHeader("Allow", "POST");
@@ -28,8 +28,8 @@ export default async function handler(
       items: Array<{
         id: string;
         name: string;
-        price: number; // original price
-        discountedPrice?: number; // sale price if discounted
+        price: number;
+        discountedPrice?: number;
         image: string;
         quantity: number;
       }>;
@@ -54,34 +54,34 @@ export default async function handler(
 
     // 1️⃣ Compute totals
     const originalTotal = items.reduce(
-      (sum, item) => sum + item.price * item.quantity,
+      (sum, i) => sum + i.price * i.quantity,
       0
     );
     const saleTotal = items.reduce(
-      (sum, item) => sum + (item.discountedPrice ?? item.price) * item.quantity,
+      (sum, i) => sum + (i.discountedPrice ?? i.price) * i.quantity,
       0
     );
     const discountAmount = Math.round((originalTotal - saleTotal) * 100); // in cents
 
-    // 2️⃣ Build line items at the ORIGINAL price
+    // 2️⃣ Build line items at ORIGINAL price
     const line_items: Stripe.Checkout.SessionCreateParams.LineItem[] =
-      items.map((item) => {
+      items.map((i) => {
         const productData: Stripe.Checkout.SessionCreateParams.LineItem.PriceData.ProductData =
-          { name: item.name };
-        if (item.image?.startsWith("http")) {
-          productData.images = [item.image];
+          { name: i.name };
+        if (i.image?.startsWith("http")) {
+          productData.images = [i.image];
         }
         return {
           price_data: {
             currency: "usd",
             product_data: productData,
-            unit_amount: Math.round(item.price * 100), // original price
+            unit_amount: Math.round(i.price * 100),
           },
-          quantity: item.quantity,
+          quantity: i.quantity,
         };
       });
 
-    // 3️⃣ Create a one‑time coupon if there is a discount
+    // 3️⃣ One‑time coupon if discounted
     let couponId: string | undefined;
     if (discountAmount > 0) {
       const coupon = await stripe.coupons.create({
@@ -92,21 +92,19 @@ export default async function handler(
       couponId = coupon.id;
     }
 
-    // 4️⃣ Format shipping address string
+    // 4️⃣ Flatten shipping address
     const addressString = `${address.street1 || ""}${
       address.street2 ? `, ${address.street2}` : ""
     }, ${address.city || ""}, ${address.state || ""} ${address.zip || ""}, ${
       address.country || ""
     }`;
 
-    // 5️⃣ Create the Checkout Session
+    // 5️⃣ Create session
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
       mode: "payment",
       customer_email: email,
-      shipping_address_collection: {
-        allowed_countries: ["US"],
-      },
+      shipping_address_collection: { allowed_countries: ["US"] },
       shipping_options: [
         {
           shipping_rate_data: {
@@ -125,20 +123,16 @@ export default async function handler(
         customer_address: addressString,
         notes: notes || "",
         payment_method: paymentMethod || "stripe",
-
-        // capture totals in cents
         original_price_total: Math.round(originalTotal * 100).toString(),
         sale_price_total: Math.round(saleTotal * 100).toString(),
-
-        // capture per-item pricing
         items: JSON.stringify(
-          items.map((item) => ({
-            id: item.id,
-            name: item.name,
-            quantity: item.quantity,
-            originalPrice: item.price,
-            salePrice: item.discountedPrice ?? item.price,
-            image: item.image,
+          items.map((i) => ({
+            id: i.id,
+            name: i.name,
+            quantity: i.quantity,
+            originalPrice: i.price,
+            salePrice: i.discountedPrice ?? i.price,
+            image: i.image,
           }))
         ),
       },
@@ -146,7 +140,8 @@ export default async function handler(
       cancel_url: `${req.headers.origin}/cart`,
     });
 
-    return res.status(200).json({ url: session.url });
+    // coerce `null` → `undefined` so it matches `{ url?: string }`
+    return res.status(200).json({ url: session.url ?? undefined });
   } catch (err: any) {
     console.error("❌ Stripe Checkout Error:", err);
     return res
