@@ -6,18 +6,20 @@ import Link from "next/link";
 import { useSession } from "next-auth/react";
 import Breadcrumbs from "@/components/Breadcrumbs";
 
+interface OrderItem {
+  name: string;
+  quantity: number;
+  originalPrice: number; // “before” price
+  salePrice?: number; // “after” price if discounted
+}
+
 interface Order {
   _id: string;
   customerName: string;
   customerEmail: string;
   customerAddress: string;
   shipping_address_string?: string;
-  items?: {
-    name: string;
-    quantity: number;
-    originalPrice: number; // ← your “before” price
-    salePrice?: number; // ← your “after” price if discounted
-  }[];
+  items: OrderItem[];
   amount: number;
   createdAt: string;
   stripeSessionId: string;
@@ -40,69 +42,60 @@ export default function AdminOrdersPage() {
     if (session?.user?.isAdmin) fetchOrders();
   }, [session]);
 
-  const fetchOrders = async () => {
+  async function fetchOrders() {
     try {
       const res = await fetch("/api/admin/orders");
       if (!res.ok) throw new Error(`Status ${res.status}`);
-      const data = await res.json();
-      setOrders(data.orders || []);
+      const { orders: data } = await res.json();
+      setOrders(data || []);
     } catch (err) {
       console.error("❌ Failed to fetch orders:", err);
     } finally {
       setLoading(false);
     }
-  };
+  }
 
-  const confirmAndShip = async (orderId: string) => {
-    if (!window.confirm(`📦 Mark this order as shipped?\nOrder ID: ${orderId}`))
-      return;
-    try {
-      const adminName =
-        session?.user?.firstName || session?.user?.name?.split(" ")[0];
-      const res = await fetch("/api/shipped", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ orderId, adminName }),
-      });
-      if (res.ok) fetchOrders();
-      else {
-        const result = await res.json();
-        alert("❌ " + result.error);
-      }
-    } catch (err) {
-      console.error("❌ Error shipping order:", err);
+  async function confirmAndShip(orderId: string) {
+    if (!confirm(`📦 Mark order ${orderId} as shipped?`)) return;
+    const adminName =
+      session?.user?.firstName || session?.user?.name?.split(" ")[0];
+    const res = await fetch("/api/shipped", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ orderId, adminName }),
+    });
+    if (res.ok) fetchOrders();
+    else {
+      const { error } = await res.json();
+      alert("❌ " + error);
     }
-  };
+  }
 
-  const archiveOrder = async (orderId: string) => {
-    if (!window.confirm(`📦 Archive this order?\nOrder ID: ${orderId}`)) return;
-    try {
-      const adminName =
-        session?.user?.firstName || session?.user?.name?.split(" ")[0];
-      const res = await fetch("/api/admin/archived", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ orderId, adminName }),
-      });
-      if (res.ok) fetchOrders();
-      else {
-        const result = await res.json();
-        alert("❌ " + result.error);
-      }
-    } catch (err) {
-      console.error("❌ Error archiving order:", err);
+  async function archiveOrder(orderId: string) {
+    if (!confirm(`🗂 Archive order ${orderId}?`)) return;
+    const adminName =
+      session?.user?.firstName || session?.user?.name?.split(" ")[0];
+    const res = await fetch("/api/admin/archived", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ orderId, adminName }),
+    });
+    if (res.ok) fetchOrders();
+    else {
+      const { error } = await res.json();
+      alert("❌ " + error);
     }
-  };
+  }
 
-  const downloadCSV = () => {
+  function downloadCSV() {
     const headers = ["Name", "Email", "Order ID", "Total", "Date", "Items"];
-    const rows = orders.map((order) => [
-      order.customerName,
-      order.customerEmail,
-      order.stripeSessionId,
-      `$${order.amount.toFixed(2)}`,
-      new Date(order.createdAt).toLocaleString(),
-      (order.items || [])
+    const rows = orders.map((o) => [
+      o.customerName,
+      o.customerEmail,
+      o.stripeSessionId,
+      `$${o.amount.toFixed(2)}`,
+      new Date(o.createdAt).toLocaleString(),
+      o.items
         .map((i) => {
           const unit = i.salePrice ?? i.originalPrice;
           return `${i.quantity}× ${i.name} - $${(unit * i.quantity).toFixed(
@@ -111,20 +104,19 @@ export default function AdminOrdersPage() {
         })
         .join(" | "),
     ]);
-
-    const csvContent = [headers, ...rows].map((r) => r.join(",")).join("\n");
-    const blob = new Blob([csvContent], { type: "text/csv" });
+    const csv = [headers, ...rows].map((r) => r.join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "unshipped_orders.csv";
+    a.download = "orders.csv";
     a.click();
     URL.revokeObjectURL(url);
-  };
+  }
 
-  const printPDF = () => {
+  function printPDF() {
     const content = document.getElementById("print-area")?.innerHTML;
-    const win = window.open("", "", "width=800,height=600");
+    const win = window.open("", "_blank", "width=800,height=600");
     if (win && content) {
       win.document.write(`<html><body>${content}</body></html>`);
       win.document.close();
@@ -132,34 +124,30 @@ export default function AdminOrdersPage() {
       win.print();
       win.close();
     }
-  };
+  }
 
-  const filteredOrders = orders.filter((order) => {
-    if (order.archived || order.shipped) return false;
+  const filtered = orders.filter((o) => {
+    if (o.archived || o.shipped) return false;
     const q = searchQuery.toLowerCase();
     const matchQ =
-      order.customerName.toLowerCase().includes(q) ||
-      order.customerEmail.toLowerCase().includes(q) ||
-      order.stripeSessionId.toLowerCase().includes(q);
-    const d = new Date(order.createdAt);
-    const after = startDate ? d >= new Date(startDate) : true;
-    const before = endDate ? d <= new Date(endDate) : true;
+      o.customerName.toLowerCase().includes(q) ||
+      o.customerEmail.toLowerCase().includes(q) ||
+      o.stripeSessionId.toLowerCase().includes(q);
+    const date = new Date(o.createdAt);
+    const after = startDate ? date >= new Date(startDate) : true;
+    const before = endDate ? date <= new Date(endDate) : true;
     return matchQ && after && before;
   });
-
-  const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
-  const paginated = filteredOrders.slice(
+  const totalPages = Math.ceil(filtered.length / itemsPerPage);
+  const pageData = filtered.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
 
-  if (status === "loading")
-    return <div className="p-6">Checking access...</div>;
+  if (status === "loading") return <div className="p-6">Checking access…</div>;
   if (!session?.user?.isAdmin)
     return (
-      <div className="p-6 text-red-300 font-semibold">
-        ❌ Unauthorized – Admins only
-      </div>
+      <div className="p-6 text-red-300 font-semibold">❌ Unauthorized</div>
     );
 
   return (
@@ -168,104 +156,92 @@ export default function AdminOrdersPage() {
         <title>Admin Orders | Classy Diamonds</title>
       </Head>
 
-      <div className="pl-2 pr-2 sm:pl-4 sm:pr-4 mb-6 -mt-2">
+      <div className="mb-6">
         <Breadcrumbs />
       </div>
 
-      <h1 className="text-3xl font-serif font-bold tracking-wide mb-6">
-        🛠️ Admin Dashboard
-      </h1>
+      <h1 className="text-3xl font-serif font-bold mb-6">🛠️ Admin Dashboard</h1>
 
-      <nav className="flex flex-wrap justify-center sm:justify-start gap-2 sm:space-x-6 mb-8 border-b border-[var(--bg-nav)] pb-4 text-sm font-semibold">
-        <Link href="/admin" className="text-yellow-400">
-          📦 Orders
+      <nav className="flex flex-wrap gap-4 mb-8 border-b pb-4 text-sm font-semibold">
+        <Link href="/admin">
+          <a className="text-yellow-400">📦 Orders</a>
         </Link>
-        <Link href="/admin/completed" className="hover:text-yellow-300">
-          ✅ Shipped
+        <Link href="/admin/completed">
+          <a>✅ Shipped</a>
         </Link>
-        <Link href="/admin/delivered" className="hover:text-yellow-300">
-          📬 Delivered
+        <Link href="/admin/delivered">
+          <a>📬 Delivered</a>
         </Link>
-        <Link href="/admin/archived" className="hover:text-yellow-300">
-          🗂 Archived
+        <Link href="/admin/archived">
+          <a>🗂 Archived</a>
         </Link>
-        <Link href="/admin/products" className="hover:text-yellow-300">
-          🛠 Products
-        </Link>
-        <Link href="/admin/custom-photos" className="hover:text-yellow-300">
-          🖼 Custom
-        </Link>
-        <Link href="/admin/logs" className="hover:text-yellow-300">
-          📝 Logs
+        <Link href="/admin/products">
+          <a>🛠 Products</a>
         </Link>
       </nav>
 
-      {/* Filters & Export */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 mb-6">
+      <div className="flex flex-col sm:flex-row gap-4 mb-6">
         <input
           type="text"
-          placeholder="Search by name, email, or ID..."
-          className="w-full sm:w-1/3 px-4 py-2 rounded bg-[var(--bg-nav)] text-white mb-2 sm:mb-0"
+          placeholder="Search by name/email/ID…"
+          className="px-4 py-2 rounded bg-[var(--bg-nav)] text-white flex-1"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
         />
         <input
           type="date"
-          className="px-2 py-1 rounded bg-[#2e3a58] text-white"
+          className="px-2 py-1 rounded bg-[var(--bg-nav)] text-white"
           value={startDate}
           onChange={(e) => setStartDate(e.target.value)}
         />
         <input
           type="date"
-          className="px-2 py-1 rounded bg-[#2e3a58] text-white"
+          className="px-2 py-1 rounded bg-[var(--bg-nav)] text-white"
           value={endDate}
           onChange={(e) => setEndDate(e.target.value)}
         />
         <button
           onClick={downloadCSV}
-          className="bg-green-600 hover:bg-green-700 px-4 py-2 rounded text-sm"
+          className="bg-green-600 px-4 py-2 rounded text-sm"
         >
-          Export CSV 📄
+          Export CSV
         </button>
         <button
           onClick={printPDF}
-          className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded text-sm"
+          className="bg-blue-600 px-4 py-2 rounded text-sm"
         >
-          Print PDF 🖨️
+          Print PDF
         </button>
       </div>
 
-      {/* Orders List */}
       <div id="print-area" className="space-y-8">
-        {paginated.map((order) => (
+        {pageData.map((order) => (
           <div
             key={order._id}
-            className="bg-[var(--bg-nav)] p-6 rounded-xl shadow-md transition-all"
+            className="bg-[var(--bg-nav)] p-6 rounded-xl shadow"
           >
             <h2 className="text-xl font-semibold mb-1">
               {order.customerName} ({order.customerEmail})
             </h2>
             <p className="text-sm text-gray-300 mb-2">
-              🔢 Order #: {order.orderNumber ?? "N/A"}
+              🔢 Order #: {order.orderNumber ?? "N/A"} | 🆔{" "}
+              {order.stripeSessionId.slice(-8)}
             </p>
-            <p className="text-sm text-gray-300 mb-2">
-              🆔 Order ID: {order.stripeSessionId.slice(-8)}
+            <p className="mb-2">
+              📍 {order.shipping_address_string ?? order.customerAddress}
             </p>
-            <p className="text-sm mb-2">
-              📍 {order.shipping_address_string || order.customerAddress}
-            </p>
-            <p className="text-sm mb-4">
+            <p className="mb-4">
               🧾 Date: {new Date(order.createdAt).toLocaleString()}
             </p>
 
-            <ul className="mb-4 pl-4 list-disc text-sm">
-              {order.items?.map((it, idx) => {
+            <ul className="mb-4 list-disc pl-4 text-sm">
+              {order.items.map((it, idx) => {
                 const orig = it.originalPrice * it.quantity;
                 const sale = (it.salePrice ?? it.originalPrice) * it.quantity;
                 return (
                   <li key={idx}>
-                    {it.quantity}× {it.name} –{" "}
-                    {it.salePrice !== undefined ? (
+                    {it.quantity}× {it.name} —{" "}
+                    {it.salePrice != null ? (
                       <>
                         <span className="line-through text-gray-400 mr-2">
                           ${orig.toFixed(2)}
@@ -286,16 +262,16 @@ export default function AdminOrdersPage() {
               <span className="text-lg font-semibold">
                 💰 Total: ${order.amount.toFixed(2)}
               </span>
-              <div className="flex gap-2">
+              <div className="space-x-2">
                 <button
                   onClick={() => confirmAndShip(order.stripeSessionId)}
-                  className="bg-green-600 hover:bg-green-700 px-4 py-2 rounded text-sm"
+                  className="bg-green-600 px-4 py-2 rounded text-sm"
                 >
                   Mark as Shipped 🚚
                 </button>
                 <button
                   onClick={() => archiveOrder(order.stripeSessionId)}
-                  className="bg-yellow-600 hover:bg-yellow-700 px-4 py-2 rounded text-sm"
+                  className="bg-yellow-600 px-4 py-2 rounded text-sm"
                 >
                   Archive 🗂
                 </button>
@@ -305,20 +281,19 @@ export default function AdminOrdersPage() {
         ))}
       </div>
 
-      {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex justify-center mt-8 space-x-2">
-          {Array.from({ length: totalPages }).map((_, idx) => (
+          {Array.from({ length: totalPages }).map((_, i) => (
             <button
-              key={idx}
-              onClick={() => setCurrentPage(idx + 1)}
+              key={i}
+              onClick={() => setCurrentPage(i + 1)}
               className={`px-3 py-1 rounded ${
-                currentPage === idx + 1
+                currentPage === i + 1
                   ? "bg-blue-600"
                   : "bg-[var(--bg-nav)] hover:bg-blue-500"
               }`}
             >
-              {idx + 1}
+              {i + 1}
             </button>
           ))}
         </div>

@@ -1,4 +1,4 @@
-// 📂 pages/api/admin/orders.ts – Return all orders for Admin Dashboard (including discounts)
+// 📂 pages/api/admin/orders.ts
 import type { NextApiRequest, NextApiResponse } from "next";
 import { ObjectId } from "mongodb";
 import clientPromise from "@/lib/mongodb";
@@ -25,52 +25,59 @@ interface RawOrder {
   archived?: boolean;
 }
 
-type OrderResponse = {
-  orders?: {
-    _id: string;
-    customerName: string;
-    customerEmail: string;
-    customerAddress: string;
-    shipping_address_string?: string;
-    items: {
-      name: string;
-      quantity: number;
-      price: number;
-      discountedPrice?: number;
-    }[];
-    amount: number;
-    currency: string;
-    paymentStatus: string;
-    createdAt: string;
-    stripeSessionId: string;
-    orderNumber: number | null;
-    shipped: boolean;
-    archived: boolean;
-  }[];
-  error?: string;
-};
+interface OrderItem {
+  name: string;
+  quantity: number;
+  price: number;
+  discountedPrice?: number;
+}
+
+interface Order {
+  _id: string;
+  customerName: string;
+  customerEmail: string;
+  customerAddress: string;
+  shipping_address_string?: string;
+  items: OrderItem[];
+  amount: number;
+  currency: string;
+  paymentStatus: string;
+  createdAt: string;
+  stripeSessionId: string;
+  orderNumber: number | null;
+  shipped: boolean;
+  archived: boolean;
+}
+
+type OrdersResponse = {
+  orders: Order[];
+} & ({ error?: never } | { error: string });
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse<OrderResponse>
+  res: NextApiResponse<OrdersResponse>
 ) {
   if (req.method !== "GET") {
-    return res.status(405).json({ error: "Method not allowed" });
+    return res.status(405).json({ error: "Method not allowed", orders: [] });
   }
 
   try {
     const client = await clientPromise;
     const db = client.db();
 
-    // now typed as RawOrder[], so o._id is ObjectId
-    const rawOrders = await db
-      .collection<RawOrder>("orders")
+    // Fetch raw orders (you’ll get WithId<Document>[] under the hood)
+    const raw = await db
+      .collection("orders")
       .find({})
       .sort({ createdAt: -1, _id: -1 })
       .toArray();
 
-    const orders = rawOrders.map((o) => ({
-      _id: o._id.toHexString(), // use toHexString() on ObjectId
+    // Cast them to our RawOrder shape
+    const rawOrders = raw as unknown as RawOrder[];
+
+    // Map into API-friendly shape
+    const orders: Order[] = rawOrders.map((o) => ({
+      _id: o._id.toHexString(),
       customerName: o.customerName,
       customerEmail: o.customerEmail,
       customerAddress: o.customerAddress,
@@ -94,6 +101,6 @@ export default async function handler(
     return res.status(200).json({ orders });
   } catch (err: any) {
     console.error("❌ Failed to fetch all orders:", err);
-    return res.status(500).json({ error: "Server error" });
+    return res.status(500).json({ error: "Server error", orders: [] });
   }
 }
