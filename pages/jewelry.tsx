@@ -290,7 +290,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
                   addToCart({
                     id: product.id,
                     name: product.name,
-                    price: product.price,
+                    price: product.salePrice ?? product.price,
                     discountedPrice: product.salePrice ?? undefined,
                     image: product.image,
                     quantity: 1,
