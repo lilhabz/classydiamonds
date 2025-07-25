@@ -35,7 +35,9 @@ export default async function handler(
           price_data: {
             currency: "usd",
             product_data,
-            unit_amount: Math.round(item.price * 100),
+            unit_amount: Math.round(
+              ((item.discountedPrice ?? item.price) as number) * 100
+            ),
           },
           quantity: item.quantity,
         };
@@ -71,7 +73,14 @@ export default async function handler(
         customer_address: addressString,
         notes: notes || "",
         payment_method: paymentMethod || "stripe",
-        items: JSON.stringify(items),
+        items: JSON.stringify(
+          items.map((item: any) => ({
+            name: item.name,
+            quantity: item.quantity,
+            price: item.discountedPrice ?? item.price,
+            image: item.image,
+          }))
+        ),
       },
       // 🖼️ Optional visual branding (set in Stripe dashboard)
       // customer_email: email,  // Optional: prefill email
