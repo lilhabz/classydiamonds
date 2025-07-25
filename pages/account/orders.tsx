@@ -183,19 +183,18 @@ export default function OrdersPage({
                 </div>
 
                 {/* ─── Shipping Address ─────────────────────────────────────────────── */}
-                {order.address && (
+                {order.shipping_address && (
                   <div className="mt-4 text-sm text-[#cfd2d6]">
                     <p className="font-medium text-[var(--foreground)]">
                       Shipping Address:
                     </p>
                     <p>
-                      {order.address.street}
-                      {order.address.line2
-                        ? `, ${order.address.line2}`
-                        : ""}{" "}
-                      {/* 🏠 Line 2 if present */}, {order.address.city},{" "}
-                      {order.address.state} {order.address.zip},{" "}
-                      {order.address.country}
+                      {order.shipping_address.street}
+                      {order.shipping_address.line2
+                        ? `, ${order.shipping_address.line2}`
+                        : ""},{" "}
+                      {order.shipping_address.city}, {order.shipping_address.state}{" "}
+                      {order.shipping_address.zip}, {order.shipping_address.country}
                     </p>
                   </div>
                 )}

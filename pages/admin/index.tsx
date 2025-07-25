@@ -11,6 +11,7 @@ interface Order {
   customerName: string;
   customerEmail: string;
   customerAddress: string;
+  shipping_address_string?: string;
   items?: { name: string; quantity: number; price: number }[];
   amount: number;
   createdAt: string;
@@ -252,7 +253,9 @@ export default function AdminOrdersPage() {
                 <p className="text-sm mb-2 text-gray-300">
                   🆔 Order ID: {order.stripeSessionId.slice(-8)}
                 </p>
-                <p className="mb-2 text-sm">📍 {order.customerAddress}</p>
+                <p className="mb-2 text-sm">
+                  📍 {order.shipping_address_string || order.customerAddress}
+                </p>
                 <p className="mb-2 text-sm">
                   🧾 Order Date: {new Date(order.createdAt).toLocaleString()}
                 </p>
