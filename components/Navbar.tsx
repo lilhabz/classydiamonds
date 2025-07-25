@@ -507,12 +507,13 @@ const Navbar = () => {
                     <p className="text-sm text-[#cfd2d6]">{item.name}</p>
 
                     {/* 💲 Price Display */}
-                    {item.discountedPrice ? (
+                    {item.discountedPrice !== undefined &&
+                    item.discountedPrice < item.price ? (
                       <div className="text-xs">
                         <span className="line-through text-gray-400 mr-1">
                           ${item.price.toFixed(2)}
                         </span>
-                        <span className="text-red-400 font-semibold">
+                        <span className="text-green-400 font-semibold">
                           ${item.discountedPrice.toFixed(2)}
                         </span>
                       </div>
