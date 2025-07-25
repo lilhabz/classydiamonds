@@ -13,9 +13,9 @@ export default function CartPage() {
     useCart();
   const [isLoading, setIsLoading] = useState(false);
 
-  // 🧮 Calculate cart total using discount if available
+  // 🧮 Calculate cart total using salePrice
   const total = cartItems.reduce(
-    (sum, item) => sum + (item.discountedPrice ?? item.price) * item.quantity,
+    (sum, item) => sum + item.salePrice * item.quantity,
     0
   );
 
@@ -89,29 +89,25 @@ export default function CartPage() {
                   </h2>
 
                   {/* 💲 Price Display with Discount if Available */}
-                  {item.discountedPrice !== undefined &&
-                  item.discountedPrice < item.price ? (
+                  {item.salePrice < item.originalPrice ? (
                     <div className="text-sm sm:text-base mt-1">
                       <span className="line-through text-gray-400 mr-2">
-                        ${item.price.toFixed(2)}
+                        ${item.originalPrice.toFixed(2)}
                       </span>
                       <span className="text-green-400 font-semibold">
-                        ${item.discountedPrice.toFixed(2)}
+                        ${item.salePrice.toFixed(2)}
                       </span>
                     </div>
                   ) : (
                     <p className="text-sm text-gray-400 mt-1">
-                      ${item.price.toFixed(2)}
+                      ${item.originalPrice.toFixed(2)}
                     </p>
                   )}
 
                   {/* 🧮 Subtotal if Quantity > 1 */}
                   {item.quantity > 1 && (
                     <p className="text-sm text-gray-400 mt-1">
-                      Subtotal: $
-                      {(
-                        (item.discountedPrice ?? item.price) * item.quantity
-                      ).toFixed(2)}
+                      Subtotal: ${(item.salePrice * item.quantity).toFixed(2)}
                     </p>
                   )}
 

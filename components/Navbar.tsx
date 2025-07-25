@@ -507,29 +507,25 @@ const Navbar = () => {
                     <p className="text-sm text-[#cfd2d6]">{item.name}</p>
 
                     {/* 💲 Price Display */}
-                    {item.discountedPrice !== undefined &&
-                    item.discountedPrice < item.price ? (
+                    {item.salePrice < item.originalPrice ? (
                       <div className="text-xs">
                         <span className="line-through text-gray-400 mr-1">
-                          ${item.price.toFixed(2)}
+                          ${item.originalPrice.toFixed(2)}
                         </span>
                         <span className="text-green-400 font-semibold">
-                          ${item.discountedPrice.toFixed(2)}
+                          ${item.salePrice.toFixed(2)}
                         </span>
                       </div>
                     ) : (
                       <p className="text-xs text-gray-400">
-                        ${item.price.toFixed(2)}
+                        ${item.originalPrice.toFixed(2)}
                       </p>
                     )}
 
                     {/* 🧮 Subtotal if quantity > 1 */}
                     {item.quantity > 1 && (
                       <p className="text-xs text-gray-400 mt-1">
-                        Subtotal: $
-                        {(
-                          (item.discountedPrice ?? item.price) * item.quantity
-                        ).toFixed(2)}
+                        Subtotal: ${(item.salePrice * item.quantity).toFixed(2)}
                       </p>
                     )}
                   </div>
