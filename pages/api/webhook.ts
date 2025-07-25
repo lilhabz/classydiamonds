@@ -49,7 +49,8 @@ export default async function handler(
     const metadata = session.metadata || {};
     const items = JSON.parse((metadata.items as string) || "[]");
 
-    const shippingDetails = session.shipping_details || {};
+    const shippingDetails = session.shipping || {};
+
     const shipAddr = (shippingDetails as any).address || {};
 
     const shippingAddressObject = {

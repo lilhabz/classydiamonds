@@ -35,8 +35,7 @@ const Navbar = () => {
   const { remaining } = useIdleTimer();
   const { cartItems, increaseQty, decreaseQty, removeFromCart, addedItemName } =
     useCart();
-  const showCountdown =
-    session?.user?.isAdmin && pathname.startsWith("/admin");
+  const showCountdown = session?.user?.isAdmin && pathname.startsWith("/admin");
   const minutes = Math.floor(remaining / 60000);
   const seconds = Math.floor((remaining % 60000) / 1000)
     .toString()
@@ -506,10 +505,35 @@ const Navbar = () => {
                   />
                   <div className="flex-1 flex flex-col">
                     <p className="text-sm text-[#cfd2d6]">{item.name}</p>
-                    <p className="text-xs text-gray-400">
-                      ${(item.price * item.quantity).toLocaleString()}
-                    </p>
+
+                    {/* 💲 Price Display */}
+                    {item.discountedPrice ? (
+                      <div className="text-xs">
+                        <span className="line-through text-gray-400 mr-1">
+                          ${item.price.toFixed(2)}
+                        </span>
+                        <span className="text-red-400 font-semibold">
+                          ${item.discountedPrice.toFixed(2)}
+                        </span>
+                      </div>
+                    ) : (
+                      <p className="text-xs text-gray-400">
+                        ${item.price.toFixed(2)}
+                      </p>
+                    )}
+
+                    {/* 🧮 Subtotal if quantity > 1 */}
+                    {item.quantity > 1 && (
+                      <p className="text-xs text-gray-400 mt-1">
+                        Subtotal: $
+                        {(
+                          (item.discountedPrice ?? item.price) * item.quantity
+                        ).toFixed(2)}
+                      </p>
+                    )}
                   </div>
+
+                  {/* ➖ ➕ 🗑️ Controls – Keep existing */}
                   <div className="flex flex-col items-center space-y-2">
                     <div className="flex items-center gap-2">
                       <button
@@ -535,6 +559,7 @@ const Navbar = () => {
                   </div>
                 </div>
               ))}
+
               <Link
                 href="/cart"
                 onClick={() => setCartOpen(false)}

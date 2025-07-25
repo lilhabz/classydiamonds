@@ -1,4 +1,4 @@
-// 📤 pages/cart.tsx – Cart + Order Summary + Multi-Payment Checkout 💎
+// 📤 pages/cart.tsx – Cart with Discount Display and Enhanced Pricing UX 💎
 
 "use client";
 
@@ -11,18 +11,16 @@ import Breadcrumbs from "@/components/Breadcrumbs";
 export default function CartPage() {
   const { cartItems, removeFromCart, increaseQty, decreaseQty, clearCart } =
     useCart();
-
   const [isLoading, setIsLoading] = useState(false);
 
+  // 🧮 Calculate cart total using discount if available
   const total = cartItems.reduce(
-    (sum, item) =>
-      sum + (item.discountedPrice ?? item.price) * item.quantity,
+    (sum, item) => sum + (item.discountedPrice ?? item.price) * item.quantity,
     0
   );
 
   const handleCheckout = async () => {
     if (cartItems.length === 0) return;
-
     setIsLoading(true);
     try {
       const response = await fetch("/api/checkout", {
@@ -52,7 +50,6 @@ export default function CartPage() {
     }
   };
 
-
   return (
     <div className="min-h-screen flex flex-col bg-[var(--bg-page)] text-[var(--foreground)]">
       <Head>
@@ -69,12 +66,14 @@ export default function CartPage() {
         {/* 🛒 Cart Items */}
         <section className="lg:w-[65%] flex flex-col gap-8">
           <h1 className="text-2xl sm:text-3xl font-bold">Your Shopping Cart</h1>
+
           {cartItems.length > 0 ? (
             cartItems.map((item) => (
               <div
                 key={item.id}
                 className="flex flex-col md:flex-row gap-4 items-center bg-[var(--bg-nav)] rounded-xl p-4 sm:p-6 shadow"
               >
+                {/* 📸 Product Image */}
                 <div className="w-full md:w-1/5 h-28 sm:h-32 overflow-hidden rounded-xl">
                   <img
                     src={item.image}
@@ -82,20 +81,40 @@ export default function CartPage() {
                     className="w-full h-full object-cover"
                   />
                 </div>
+
+                {/* 📝 Product Info */}
                 <div className="flex-1 text-center md:text-left">
                   <h2 className="text-lg sm:text-xl font-semibold text-[#cfd2d6]">
                     {item.name}
                   </h2>
-                  <p className="text-sm text-gray-400">
-                    ${(item.discountedPrice ?? item.price).toLocaleString()}
-                  </p>
-                  {item.quantity > 1 && (
+
+                  {/* 💲 Price Display with Discount if Available */}
+                  {item.discountedPrice ? (
+                    <div className="text-sm sm:text-base mt-1">
+                      <span className="line-through text-gray-400 mr-2">
+                        ${item.price.toFixed(2)}
+                      </span>
+                      <span className="text-red-400 font-semibold">
+                        ${item.discountedPrice.toFixed(2)}
+                      </span>
+                    </div>
+                  ) : (
                     <p className="text-sm text-gray-400 mt-1">
-                      Subtotal: ${(
-                        (item.discountedPrice ?? item.price) * item.quantity
-                      ).toLocaleString()}
+                      ${item.price.toFixed(2)}
                     </p>
                   )}
+
+                  {/* 🧮 Subtotal if Quantity > 1 */}
+                  {item.quantity > 1 && (
+                    <p className="text-sm text-gray-400 mt-1">
+                      Subtotal: $
+                      {(
+                        (item.discountedPrice ?? item.price) * item.quantity
+                      ).toFixed(2)}
+                    </p>
+                  )}
+
+                  {/* 🔢 Quantity Controls */}
                   <div className="mt-3 flex items-center justify-center md:justify-start gap-3">
                     <button
                       onClick={() => decreaseQty(item.id)}
@@ -114,6 +133,8 @@ export default function CartPage() {
                     </button>
                   </div>
                 </div>
+
+                {/* ❌ Remove Button */}
                 <button
                   onClick={() => removeFromCart(item.id)}
                   className="mt-4 md:mt-0 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition"
@@ -135,40 +156,39 @@ export default function CartPage() {
           )}
         </section>
 
-        {/* 📋 Order Summary + Multi-Payment Checkout */}
+        {/* 📋 Order Summary + Checkout */}
         <aside className="lg:w-[35%] bg-[#25304f] rounded-xl p-6 shadow flex flex-col gap-6 sticky top-24 h-fit">
           <h2 className="text-xl font-bold border-b border-[var(--bg-page)] pb-2">
             Order Summary
           </h2>
+
           <p className="text-sm">Items: {cartItems.length}</p>
-          <p className="text-lg font-semibold">
-            Total: ${total.toLocaleString()}
-          </p>
+          <p className="text-lg font-semibold">Total: ${total.toFixed(2)}</p>
 
           {/* 🛒 Continue Shopping */}
-            <Link
-              href="/jewelry"
-              className="text-sm text-white underline hover:text-gray-300"
+          <Link
+            href="/jewelry"
+            className="text-sm text-white underline hover:text-gray-300"
+          >
+            ← Continue Shopping
+          </Link>
+
+          {/* 🔒 Checkout Button */}
+          <div className="mt-4">
+            <button
+              onClick={handleCheckout}
+              disabled={isLoading}
+              className="w-full px-6 py-3 bg-white text-[#1f2a44] rounded-full font-semibold flex items-center justify-center gap-2 hover:bg-gray-100 transition hover:scale-105"
             >
-              ← Continue Shopping
-            </Link>
-
-            <div className="mt-4">
-              <button
-                onClick={handleCheckout}
-                disabled={isLoading}
-                className="w-full px-6 py-3 bg-white text-[#1f2a44] rounded-full font-semibold flex items-center justify-center gap-2 hover:bg-gray-100 transition hover:scale-105"
-              >
-                {isLoading ? (
-                  "Processing..."
-                ) : (
-                  <>
-                    🔒 <span>Secure Checkout</span>
-                  </>
-                )}
-              </button>
-            </div>
-
+              {isLoading ? (
+                "Processing..."
+              ) : (
+                <>
+                  🔒 <span>Secure Checkout</span>
+                </>
+              )}
+            </button>
+          </div>
         </aside>
       </main>
     </div>

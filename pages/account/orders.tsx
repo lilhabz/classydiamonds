@@ -1,4 +1,4 @@
-// 📂 pages/account/orders.tsx – Breadcrumb Added + Fresh Data Upgrade + Short Order Number & Full Address Display 💎
+// 📂 pages/account/orders.tsx – Updated to Show Discounted and Original Prices 💎
 
 import { GetServerSideProps } from "next";
 import { getSession } from "next-auth/react";
@@ -36,7 +36,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
   const orders = await db
     .collection("orders")
     .find(filter)
-    .sort({ createdAt: -1, _id: -1 }) // ← newest first, fallback to _id
+    .sort({ createdAt: -1, _id: -1 })
     .skip(skip)
     .limit(ORDERS_PER_PAGE)
     .toArray();
@@ -100,36 +100,25 @@ export default function OrdersPage({
 
         {/* 🔍 Filters */}
         <div className="flex justify-center gap-4">
-          <button
-            onClick={() => handleFilterChange("")}
-            className={`px-4 py-1 rounded ${
-              !shippedFilter
-                ? "bg-[var(--foreground)] text-[var(--bg-nav)]"
-                : "bg-[var(--bg-nav)] hover:bg-[var(--foreground)] text-[var(--foreground)]"
-            } cursor-pointer`}
-          >
-            All
-          </button>
-          <button
-            onClick={() => handleFilterChange("false")}
-            className={`px-4 py-1 rounded ${
-              shippedFilter === "false"
-                ? "bg-[var(--foreground)] text-[var(--bg-nav)]"
-                : "bg-[var(--bg-nav)] hover:bg-[var(--foreground)] text-[var(--foreground)]"
-            } cursor-pointer`}
-          >
-            Processing
-          </button>
-          <button
-            onClick={() => handleFilterChange("true")}
-            className={`px-4 py-1 rounded ${
-              shippedFilter === "true"
-                ? "bg-[var(--foreground)] text-[var(--bg-nav)]"
-                : "bg-[var(--bg-nav)] hover:bg-[var(--foreground)] text-[var(--foreground)]"
-            } cursor-pointer`}
-          >
-            Shipped
-          </button>
+          {["", "false", "true"].map((val) => {
+            const label =
+              val === "" ? "All" : val === "false" ? "Processing" : "Shipped";
+            const active =
+              shippedFilter === val || (!shippedFilter && val === "");
+            return (
+              <button
+                key={val}
+                onClick={() => handleFilterChange(val)}
+                className={`px-4 py-1 rounded ${
+                  active
+                    ? "bg-[var(--foreground)] text-[var(--bg-nav)]"
+                    : "bg-[var(--bg-nav)] hover:bg-[var(--foreground)] text-[var(--foreground)]"
+                } cursor-pointer`}
+              >
+                {label}
+              </button>
+            );
+          })}
         </div>
 
         {orders.length === 0 ? (
@@ -141,7 +130,7 @@ export default function OrdersPage({
                 key={order._id}
                 className="border border-[var(--bg-nav)] rounded-lg p-4 bg-[var(--bg-nav)]"
               >
-                {/* ─── Order Header: Short Order #, Total, Status ─────────────────── */}
+                {/* ─── Header ─── */}
                 <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-2">
                   <div>
                     <p className="text-sm text-[#cfd2d6]">Order #:</p>
@@ -182,7 +171,7 @@ export default function OrdersPage({
                   </div>
                 </div>
 
-                {/* ─── Shipping Address ─────────────────────────────────────────────── */}
+                {/* ─── Shipping Address ─── */}
                 {order.shipping_address && (
                   <div className="mt-4 text-sm text-[#cfd2d6]">
                     <p className="font-medium text-[var(--foreground)]">
@@ -192,14 +181,16 @@ export default function OrdersPage({
                       {order.shipping_address.street}
                       {order.shipping_address.line2
                         ? `, ${order.shipping_address.line2}`
-                        : ""},{" "}
-                      {order.shipping_address.city}, {order.shipping_address.state}{" "}
-                      {order.shipping_address.zip}, {order.shipping_address.country}
+                        : ""}
+                      , {order.shipping_address.city},{" "}
+                      {order.shipping_address.state}{" "}
+                      {order.shipping_address.zip},{" "}
+                      {order.shipping_address.country}
                     </p>
                   </div>
                 )}
 
-                {/* ─── Itemized List ──────────────────────────────────────────────── */}
+                {/* ─── Items ─── */}
                 <div className="mt-4 text-sm text-[#cfd2d6]">
                   <p className="font-medium text-[var(--foreground)] mb-2">
                     Items:
@@ -218,17 +209,32 @@ export default function OrdersPage({
                           <p className="font-medium text-[var(--foreground)]">
                             {item.name}
                           </p>
-                          <p className="text-sm text-[#cfd2d6]">
-                            x{item.quantity} – $
-                            {(item.price * item.quantity).toFixed(2)}
-                          </p>
+                          {item.discountedPrice ? (
+                            <p className="text-sm text-[#cfd2d6]">
+                              x{item.quantity} –{" "}
+                              <span className="line-through text-gray-400 mr-1">
+                                ${(item.price * item.quantity).toFixed(2)}
+                              </span>
+                              <span className="text-red-400 font-semibold">
+                                $
+                                {(item.discountedPrice * item.quantity).toFixed(
+                                  2
+                                )}
+                              </span>
+                            </p>
+                          ) : (
+                            <p className="text-sm text-[#cfd2d6]">
+                              x{item.quantity} – $
+                              {(item.price * item.quantity).toFixed(2)}
+                            </p>
+                          )}
                         </div>
                       </li>
                     ))}
                   </ul>
                 </div>
 
-                {/* ─── Receipt Download (Placeholder) ───────────────────────────────── */}
+                {/* ─── Receipt Download ─── */}
                 <div className="text-right mt-4">
                   <button className="text-[var(--foreground)] hover:underline text-sm">
                     Download Receipt (PDF)
@@ -237,7 +243,7 @@ export default function OrdersPage({
               </div>
             ))}
 
-            {/* ─── Pagination Controls ──────────────────────────────────────────── */}
+            {/* ─── Pagination ─── */}
             <div className="flex justify-center items-center gap-6 pt-6">
               {currentPage > 1 && (
                 <Link
@@ -266,7 +272,7 @@ export default function OrdersPage({
           </div>
         )}
 
-        {/* ─── Back to Account Dashboard ─────────────────────────────────────── */}
+        {/* ─── Back Link ─── */}
         <div className="text-center mt-10">
           <Link
             href="/account"

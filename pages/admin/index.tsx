@@ -1,4 +1,4 @@
-// ✅ Enhanced pages/admin/index.tsx to show unshipped orders directly, no card nav, unified layout 🔐🛠️
+// ✅ Enhanced pages/admin/index.tsx to show unshipped orders with discounted prices 🔐🛠️
 
 import { useEffect, useState } from "react";
 import Head from "next/head";
@@ -12,7 +12,12 @@ interface Order {
   customerEmail: string;
   customerAddress: string;
   shipping_address_string?: string;
-  items?: { name: string; quantity: number; price: number }[];
+  items?: {
+    name: string;
+    quantity: number;
+    price: number;
+    discountedPrice?: number;
+  }[];
   amount: number;
   createdAt: string;
   stripeSessionId: string;
@@ -49,11 +54,8 @@ export default function AdminOrdersPage() {
   };
 
   const confirmAndShip = async (orderId: string) => {
-    const confirmed = window.confirm(
-      `📦 Mark this order as shipped?\nOrder ID: ${orderId}`
-    );
-    if (!confirmed) return;
-
+    if (!window.confirm(`📦 Mark this order as shipped?\nOrder ID: ${orderId}`))
+      return;
     try {
       const adminName =
         session?.user?.firstName || session?.user?.name?.split(" ")[0];
@@ -71,11 +73,7 @@ export default function AdminOrdersPage() {
   };
 
   const archiveOrder = async (orderId: string) => {
-    const confirmed = window.confirm(
-      `📦 Archive this order?\nOrder ID: ${orderId}`
-    );
-    if (!confirmed) return;
-
+    if (!window.confirm(`📦 Archive this order?\nOrder ID: ${orderId}`)) return;
     try {
       const adminName =
         session?.user?.firstName || session?.user?.name?.split(" ")[0];
@@ -101,10 +99,12 @@ export default function AdminOrdersPage() {
       `$${order.amount.toFixed(2)}`,
       new Date(order.createdAt || "").toLocaleString(),
       (order.items || [])
-        .map(
-          (i) =>
-            `${i.quantity}× ${i.name} - $${(i.quantity * i.price).toFixed(2)}`
-        )
+        .map((i) => {
+          const unit = i.discountedPrice ?? i.price;
+          return `${i.quantity}× ${i.name} - $${(unit * i.quantity).toFixed(
+            2
+          )}`;
+        })
         .join(" | "),
     ]);
 
@@ -133,17 +133,14 @@ export default function AdminOrdersPage() {
 
   const filteredOrders = orders.filter((order) => {
     if (order.archived || order.shipped) return false;
-
     const query = searchQuery.toLowerCase();
     const matchQuery =
       order.customerName?.toLowerCase().includes(query) ||
       order.customerEmail?.toLowerCase().includes(query) ||
       order.stripeSessionId?.toLowerCase().includes(query);
-
     const orderDate = new Date(order.createdAt || "");
     const afterStart = startDate ? orderDate >= new Date(startDate) : true;
     const beforeEnd = endDate ? orderDate <= new Date(endDate) : true;
-
     return matchQuery && afterStart && beforeEnd;
   });
 
@@ -155,12 +152,13 @@ export default function AdminOrdersPage() {
 
   if (status === "loading")
     return <div className="p-6">Checking access...</div>;
-  if (!session?.user?.isAdmin)
+  if (!session?.user?.isAdmin) {
     return (
       <div className="p-6 text-red-300 font-semibold">
         ❌ Unauthorized – Admins only
       </div>
     );
+  }
 
   return (
     <div className="min-h-screen bg-[var(--bg-page)] text-[var(--foreground)] p-6">
@@ -172,7 +170,9 @@ export default function AdminOrdersPage() {
         <Breadcrumbs />
       </div>
 
-      <h1 className="text-3xl font-serif font-bold tracking-wide mb-6">🛠️ Admin Dashboard</h1>
+      <h1 className="text-3xl font-serif font-bold tracking-wide mb-6">
+        🛠️ Admin Dashboard
+      </h1>
 
       <nav className="flex flex-wrap justify-center sm:justify-start gap-2 sm:space-x-6 mb-8 border-b border-[var(--bg-nav)] pb-4 text-[var(--foreground)] text-sm font-semibold">
         <Link href="/admin" className="text-yellow-400">
@@ -198,12 +198,6 @@ export default function AdminOrdersPage() {
         </Link>
       </nav>
 
-      {loading ? (
-        <p>Loading orders...</p>
-      ) : paginatedOrders.length === 0 ? (
-        <p>No orders found.</p>
-      ) : (
-        <>
       <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 mb-6">
         <input
           type="text"
@@ -224,100 +218,117 @@ export default function AdminOrdersPage() {
           onChange={(e) => setEndDate(e.target.value)}
           className="px-2 py-1 rounded bg-[#2e3a58] text-white"
         />
-            <button
-              onClick={downloadCSV}
-              className="bg-green-600 hover:bg-green-700 px-4 py-2 rounded text-sm"
-            >
-              Export CSV 📄
-            </button>
-            <button
-              onClick={printPDF}
-              className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded text-sm"
-            >
-              Print PDF 🖨️
-            </button>
-          </div>
+        <button
+          onClick={downloadCSV}
+          className="bg-green-600 hover:bg-green-700 px-4 py-2 rounded text-sm"
+        >
+          Export CSV 📄
+        </button>
+        <button
+          onClick={printPDF}
+          className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded text-sm"
+        >
+          Print PDF 🖨️
+        </button>
+      </div>
 
-          <div id="print-area" className="space-y-8">
-            {paginatedOrders.map((order) => (
-              <div
-                key={order._id}
-                className="bg-[var(--bg-nav)] p-6 rounded-xl shadow-md transition-all duration-200"
-              >
-                <h2 className="text-xl font-semibold mb-1">
-                  {order.customerName} ({order.customerEmail})
-                </h2>
-                <p className="text-sm mb-2 text-gray-300">
-                  🔢 Order #: {order.orderNumber ?? "N/A"}
-                </p>
-                <p className="text-sm mb-2 text-gray-300">
-                  🆔 Order ID: {order.stripeSessionId.slice(-8)}
-                </p>
-                <p className="mb-2 text-sm">
-                  📍 {order.shipping_address_string || order.customerAddress}
-                </p>
-                <p className="mb-2 text-sm">
-                  🧾 Order Date: {new Date(order.createdAt).toLocaleString()}
-                </p>
-                <ul className="mb-4 pl-4 list-disc text-sm">
-                  {order.items?.map((item, index) => (
-                    <li key={index}>
-                      {item.quantity}× {item.name} – ${" "}
-                      {(item.price * item.quantity).toFixed(2)}
-                    </li>
-                  ))}
-                </ul>
-                <div className="flex justify-between items-center gap-2">
-                  <span className="text-lg font-semibold">
-                    💰 Total: ${order.amount.toFixed(2)}
-                  </span>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => confirmAndShip(order.stripeSessionId)}
-                      className="bg-green-600 hover:bg-green-700 px-4 py-2 rounded text-sm"
-                    >
-                      Mark as Shipped 🚚
-                    </button>
-                    <button
-                      onClick={() => archiveOrder(order.stripeSessionId)}
-                      className="bg-yellow-600 hover:bg-yellow-700 px-4 py-2 rounded text-sm"
-                    >
-                      Archive 🗂
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {totalPages > 1 && (
-            <div className="flex justify-center mt-8 space-x-2">
-              {[...Array(totalPages)].map((_, index) => (
-                <button
-                  key={index}
-                  onClick={() => setCurrentPage(index + 1)}
-                  className={`px-3 py-1 rounded ${
-                    currentPage === index + 1
-                      ? "bg-blue-600"
-                      : "bg-[var(--bg-nav)] hover:bg-blue-500"
-                  }`}
-                >
-                  {index + 1}
-                </button>
-              ))}
-            </div>
-          )}
-
-          <button
-            onClick={() => {
-              window.location.href = "/";
-            }}
-            className="mt-8 text-sm text-red-300 underline"
+      <div id="print-area" className="space-y-8">
+        {paginatedOrders.map((order) => (
+          <div
+            key={order._id}
+            className="bg-[var(--bg-nav)] p-6 rounded-xl shadow-md transition-all duration-200"
           >
-            Exit Admin Panel 🔒
-          </button>
-        </>
+            <h2 className="text-xl font-semibold mb-1">
+              {order.customerName} ({order.customerEmail})
+            </h2>
+            <p className="text-sm mb-2 text-gray-300">
+              🔢 Order #: {order.orderNumber ?? "N/A"}
+            </p>
+            <p className="text-sm mb-2 text-gray-300">
+              🆔 Order ID: {order.stripeSessionId.slice(-8)}
+            </p>
+            <p className="mb-2 text-sm">
+              📍 {order.shipping_address_string || order.customerAddress}
+            </p>
+            <p className="mb-2 text-sm">
+              🧾 Order Date: {new Date(order.createdAt).toLocaleString()}
+            </p>
+
+            <ul className="mb-4 pl-4 list-disc text-sm">
+              {order.items?.map((item, index) => {
+                const unit = item.discountedPrice ?? item.price;
+                const originalTotal = item.price * item.quantity;
+                const finalTotal = unit * item.quantity;
+
+                return (
+                  <li key={index}>
+                    {item.quantity}× {item.name} –{" "}
+                    {item.discountedPrice !== undefined ? (
+                      <>
+                        <span className="line-through text-gray-400 mr-2">
+                          ${originalTotal.toFixed(2)}
+                        </span>
+                        <span className="text-red-400 font-semibold">
+                          ${finalTotal.toFixed(2)}
+                        </span>
+                      </>
+                    ) : (
+                      <span>${originalTotal.toFixed(2)}</span>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+
+            <div className="flex justify-between items-center gap-2">
+              <span className="text-lg font-semibold">
+                💰 Total: ${order.amount.toFixed(2)}
+              </span>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => confirmAndShip(order.stripeSessionId)}
+                  className="bg-green-600 hover:bg-green-700 px-4 py-2 rounded text-sm"
+                >
+                  Mark as Shipped 🚚
+                </button>
+                <button
+                  onClick={() => archiveOrder(order.stripeSessionId)}
+                  className="bg-yellow-600 hover:bg-yellow-700 px-4 py-2 rounded text-sm"
+                >
+                  Archive 🗂
+                </button>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {totalPages > 1 && (
+        <div className="flex justify-center mt-8 space-x-2">
+          {[...Array(totalPages)].map((_, index) => (
+            <button
+              key={index}
+              onClick={() => setCurrentPage(index + 1)}
+              className={`px-3 py-1 rounded ${
+                currentPage === index + 1
+                  ? "bg-blue-600"
+                  : "bg-[var(--bg-nav)] hover:bg-blue-500"
+              }`}
+            >
+              {index + 1}
+            </button>
+          ))}
+        </div>
       )}
+
+      <button
+        onClick={() => {
+          window.location.href = "/";
+        }}
+        className="mt-8 text-sm text-red-300 underline"
+      >
+        Exit Admin Panel 🔒
+      </button>
     </div>
   );
 }
