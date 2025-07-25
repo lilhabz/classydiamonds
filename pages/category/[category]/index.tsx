@@ -210,6 +210,7 @@ export default function CategoryPage({
                     id: product._id,
                     name: product.name,
                     price: product.price,
+                    discountedPrice: product.salePrice ?? undefined,
                     image: product.image,
                     quantity: 1,
                   });
