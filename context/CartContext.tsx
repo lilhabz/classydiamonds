@@ -1,5 +1,3 @@
-// 📦 context/CartContext.tsx – Cart State + LocalStorage Sync (Updated for string ID)
-
 "use client";
 
 import {
@@ -10,11 +8,12 @@ import {
   ReactNode,
 } from "react";
 
-// 🛠️ Use string IDs to align with MongoDB _id
+// 🛠️ Cart item now includes discountedPrice
 interface CartItem {
   id: string;
   name: string;
   price: number;
+  discountedPrice?: number; // ✅ NEW: optional field
   image: string;
   quantity: number;
 }
@@ -62,7 +61,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
       const existing = prev.find((p) => p.id === item.id);
       if (existing) {
         return prev.map((p) =>
-          p.id === item.id ? { ...p, quantity: p.quantity + item.quantity } : p
+          p.id === item.id
+            ? {
+                ...p,
+                quantity: p.quantity + item.quantity,
+              }
+            : p
         );
       }
       return [...prev, item];
@@ -91,7 +95,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setCartItems((prev) =>
       prev.map((item) =>
         item.id === id
-          ? { ...item, quantity: item.quantity > 1 ? item.quantity - 1 : 1 }
+          ? {
+              ...item,
+              quantity: item.quantity > 1 ? item.quantity - 1 : 1,
+            }
           : item
       )
     );

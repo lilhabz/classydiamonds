@@ -1,69 +1,83 @@
-// 🚀 pages/api/checkout.ts – Polished Stripe Checkout with Wallet Support
+// ✅ Fixed: Stripe Checkout with correct discounted pricing and shipping collection
 
 import type { NextApiRequest, NextApiResponse } from "next";
 import Stripe from "stripe";
 
-// 🔐 Initialize Stripe with secret key
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string);
 
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
-  // 🔒 Only allow POST
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method Not Allowed" });
   }
 
   try {
-    const { items, name, email, address = {}, notes, paymentMethod } = req.body;
+    const {
+      items,
+      name,
+      email,
+      address = {},
+      notes,
+      paymentMethod,
+      phone,
+    } = req.body;
 
-    // ✅ Validate items
     if (!items || !Array.isArray(items)) {
       return res.status(400).json({ error: "Invalid items data" });
     }
 
-    // 🛍️ Format cart items for Stripe
     const line_items = items
-      .filter((item: any) => item && item.name && item.price && item.quantity)
+      .filter((item: any) => item && item.name && item.quantity)
       .map((item: any) => {
+        const price = item.discountedPrice ?? item.price;
         const product_data: any = { name: item.name };
-        if (item.image && item.image.startsWith("http")) {
+        if (item.image?.startsWith("http")) {
           product_data.images = [item.image];
         }
         return {
           price_data: {
             currency: "usd",
             product_data,
-            unit_amount: Math.round(
-              ((item.discountedPrice ?? item.price) as number) * 100
-            ),
+            unit_amount: Math.round(price * 100),
           },
           quantity: item.quantity,
         };
       });
 
-    // 📬 Format full address
     const addressString = `${address.street1 || ""}${
       address.street2 ? `, ${address.street2}` : ""
     }, ${address.city || ""}, ${address.state || ""} ${address.zip || ""}, ${
       address.country || ""
     }`;
 
-    // 🧾 Create the Stripe Checkout session
     const session = await stripe.checkout.sessions.create({
-      payment_method_types: ["card"], // Enables Apple Pay + Google Pay automatically
+      payment_method_types: ["card"], // Enables Apple/Google Pay
       mode: "payment",
-      line_items,
+      customer_email: email, // ✅ Prefills customer email
       shipping_address_collection: {
         allowed_countries: ["US"],
       },
+      shipping_options: [
+        {
+          shipping_rate_data: {
+            type: "fixed_amount",
+            fixed_amount: {
+              amount: 0,
+              currency: "usd",
+            },
+            display_name: "Free Shipping",
+          },
+        },
+      ],
       success_url: `${req.headers.origin}/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${req.headers.origin}/cart`,
+      line_items,
       metadata: {
         customer_name: name || "",
         customer_email: email || "",
-        customer_phone: (req.body.phone as string) || "",
+        customer_phone: phone || "",
         address_street1: address.street1 || "",
         address_street2: address.street2 || "",
         address_city: address.city || "",
@@ -78,12 +92,10 @@ export default async function handler(
             name: item.name,
             quantity: item.quantity,
             price: item.discountedPrice ?? item.price,
-            image: item.image,
+            image: item.image || "",
           }))
         ),
       },
-      // 🖼️ Optional visual branding (set in Stripe dashboard)
-      // customer_email: email,  // Optional: prefill email
     });
 
     return res.status(200).json({ url: session.url });
