@@ -46,7 +46,7 @@ export default async function handler(
 
     // 👀 Handle only the “checkout.session.completed” event
     if (event.type === "checkout.session.completed") {
-      const session = event.data.object as Stripe.Checkout.Session;
+      const session = event.data.object as any; // allow access to shipping_details
 
       // 🔍 Pull customer details from session
       const customerName = session.customer_details?.name || "Customer";
