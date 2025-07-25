@@ -46,7 +46,7 @@ export default async function handler(
 
     // 👀 Handle only the “checkout.session.completed” event
     if (event.type === "checkout.session.completed") {
-      const session = event.data.object as Stripe.Checkout.Session;
+      const session = event.data.object as any; // allow access to shipping_details
 
       // 🔍 Pull customer details from session
       const customerName = session.customer_details?.name || "Customer";
@@ -80,46 +80,26 @@ export default async function handler(
         country,
       };
 
-      // 📮 Extract shipping details directly from the session when present
-      const shippingDetails = (session as any).shipping_details as
-        | {
-            name?: string;
-            address?: Stripe.Address;
-          }
-        | null;
+      // 📮 Extract shipping details from the session
+      const shippingDetails = session.shipping_details;
+      const shippingName = shippingDetails?.name || "";
+      const shippingAddr = shippingDetails?.address || {};
+      const shipStreet = (shippingAddr as any).line1 || "";
+      const shipLine2 = (shippingAddr as any).line2 || "";
+      const shipCity = (shippingAddr as any).city || "";
+      const shipState = (shippingAddr as any).state || "";
+      const shipZip = (shippingAddr as any).postal_code || "";
+      const shipCountry = (shippingAddr as any).country || "";
 
-      let shippingName: string | undefined;
-      let shippingAddress: string | undefined;
-      let shippingAddressObject:
-        | {
-            street: string;
-            line2: string;
-            city: string;
-            state: string;
-            zip: string;
-            country: string;
-          }
-        | undefined;
-
-      if (shippingDetails) {
-        const line1 = shippingDetails.address?.line1 || "";
-        const line2 = shippingDetails.address?.line2 || "";
-        const city = shippingDetails.address?.city || "";
-        const state = shippingDetails.address?.state || "";
-        const zip = shippingDetails.address?.postal_code || "";
-        const country = shippingDetails.address?.country || "";
-
-        shippingName = shippingDetails.name;
-        shippingAddress = `${line1}${line2 ? ", " + line2 : ""}, ${city}, ${state} ${zip}, ${country}`;
-        shippingAddressObject = {
-          street: line1,
-          line2,
-          city,
-          state,
-          zip,
-          country,
-        };
-      }
+      const shippingAddress = `${shipStreet}${shipLine2 ? `, ${shipLine2}` : ""}, ${shipCity}, ${shipState} ${shipZip}, ${shipCountry}`;
+      const shippingAddressObject = {
+        street: shipStreet,
+        line2: shipLine2,
+        city: shipCity,
+        state: shipState,
+        zip: shipZip,
+        country: shipCountry,
+      };
 
       // 💲 Calculate total amount in dollars
       const amountTotal = (session.amount_total || 0) / 100;
@@ -194,23 +174,10 @@ export default async function handler(
             shipped: false,
             delivered: false,
             archived: false,
+            shipping_name: shippingName,
+            shipping_address: shippingAddressObject,
+            shipping_address_string: shippingAddress,
           };
-
-          if (shippingDetails) {
-            orderDoc.shippingName = shippingName;
-            orderDoc.shippingAddress = shippingAddress;
-            orderDoc.shipping = shippingAddressObject;
-            orderDoc.shipping_name = shippingDetails.name;
-            orderDoc.shipping_address = {
-              street: shippingAddressObject!.street,
-              line2: shippingAddressObject!.line2,
-              city: shippingAddressObject!.city,
-              state: shippingAddressObject!.state,
-              zip: shippingAddressObject!.zip,
-              country: shippingAddressObject!.country,
-            };
-            orderDoc.shipping_address_string = shippingAddress;
-          }
 
           await ordersCollection.insertOne(orderDoc);
 

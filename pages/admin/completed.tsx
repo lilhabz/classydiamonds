@@ -289,7 +289,7 @@ export default function CompletedOrdersPage() {
             {paginatedOrders.map((order) => (
               <div
                 key={order._id}
-                className="bg-[var(--bg-nav)] rounded-xl p-6 shadow-md hover:shadow-xl hover:scale-105 transition-transform duration-300"
+                className="bg-[var(--bg-nav)] rounded-xl p-6 shadow-md transition-all duration-200"
               >
                 <h2 className="text-xl font-semibold mb-1">
                   {order.customerName} ({order.customerEmail})
