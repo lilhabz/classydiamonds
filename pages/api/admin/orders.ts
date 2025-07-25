@@ -8,7 +8,17 @@ interface RawOrder {
   customerName: string;
   customerEmail: string;
   customerAddress: string;
+  // either a prebuilt string…
   shipping_address_string?: string;
+  // …or a structured address to fall back on:
+  address?: {
+    street?: string;
+    line2?: string;
+    city?: string;
+    state?: string;
+    zip?: string;
+    country?: string;
+  };
   items?: Array<{
     name: string;
     quantity: number;
@@ -37,7 +47,7 @@ interface Order {
   customerName: string;
   customerEmail: string;
   customerAddress: string;
-  shipping_address_string?: string;
+  shipping_address_string: string;
   items: OrderItem[];
   amount: number;
   currency: string;
@@ -51,56 +61,71 @@ interface Order {
 
 type OrdersResponse = {
   orders: Order[];
-} & ({ error?: never } | { error: string });
+  error?: string;
+};
 
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<OrdersResponse>
 ) {
   if (req.method !== "GET") {
-    return res.status(405).json({ error: "Method not allowed", orders: [] });
+    return res.status(405).json({ orders: [], error: "Method not allowed" });
   }
 
   try {
     const client = await clientPromise;
     const db = client.db();
 
-    // Fetch raw orders (you’ll get WithId<Document>[] under the hood)
     const raw = await db
       .collection("orders")
       .find({})
       .sort({ createdAt: -1, _id: -1 })
       .toArray();
 
-    // Cast them to our RawOrder shape
     const rawOrders = raw as unknown as RawOrder[];
 
-    // Map into API-friendly shape
-    const orders: Order[] = rawOrders.map((o) => ({
-      _id: o._id.toHexString(),
-      customerName: o.customerName,
-      customerEmail: o.customerEmail,
-      customerAddress: o.customerAddress,
-      shipping_address_string: o.shipping_address_string,
-      items: (o.items ?? []).map((i) => ({
-        name: i.name,
-        quantity: i.quantity,
-        price: i.originalPrice,
-        discountedPrice: i.salePrice,
-      })),
-      amount: o.amount,
-      currency: o.currency ?? "usd",
-      paymentStatus: o.paymentStatus ?? "",
-      createdAt: o.createdAt.toISOString(),
-      stripeSessionId: o.stripeSessionId,
-      orderNumber: o.orderNumber ?? null,
-      shipped: o.shipped ?? false,
-      archived: o.archived ?? false,
-    }));
+    const orders: Order[] = rawOrders.map((o) => {
+      // build a shipping string if one wasn't stored directly
+      const shipping =
+        o.shipping_address_string ||
+        [
+          o.address?.street,
+          o.address?.line2,
+          o.address?.city,
+          o.address?.state,
+          o.address?.zip,
+          o.address?.country,
+        ]
+          .filter(Boolean)
+          .join(", ") ||
+        "";
+
+      return {
+        _id: o._id.toHexString(),
+        customerName: o.customerName,
+        customerEmail: o.customerEmail,
+        customerAddress: o.customerAddress,
+        shipping_address_string: shipping,
+        items: (o.items ?? []).map((i) => ({
+          name: i.name,
+          quantity: i.quantity,
+          price: i.originalPrice,
+          discountedPrice: i.salePrice,
+        })),
+        amount: o.amount,
+        currency: o.currency ?? "usd",
+        paymentStatus: o.paymentStatus ?? "",
+        createdAt: o.createdAt.toISOString(),
+        stripeSessionId: o.stripeSessionId,
+        orderNumber: o.orderNumber ?? null,
+        shipped: o.shipped ?? false,
+        archived: o.archived ?? false,
+      };
+    });
 
     return res.status(200).json({ orders });
   } catch (err: any) {
     console.error("❌ Failed to fetch all orders:", err);
-    return res.status(500).json({ error: "Server error", orders: [] });
+    return res.status(500).json({ orders: [], error: "Server error" });
   }
 }

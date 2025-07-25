@@ -9,8 +9,8 @@ import Breadcrumbs from "@/components/Breadcrumbs";
 interface OrderItem {
   name: string;
   quantity: number;
-  originalPrice: number; // “before” price
-  salePrice?: number; // “after” price if discounted
+  price: number; // originalPrice → price
+  discountedPrice?: number; // salePrice → discountedPrice
 }
 
 interface Order {
@@ -18,7 +18,7 @@ interface Order {
   customerName: string;
   customerEmail: string;
   customerAddress: string;
-  shipping_address_string?: string;
+  shipping_address_string: string;
   items: OrderItem[];
   amount: number;
   createdAt: string;
@@ -38,16 +38,18 @@ export default function AdminOrdersPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
 
+  // Fetch orders once admin session is confirmed
   useEffect(() => {
     if (session?.user?.isAdmin) fetchOrders();
   }, [session]);
 
   async function fetchOrders() {
+    setLoading(true);
     try {
       const res = await fetch("/api/admin/orders");
       if (!res.ok) throw new Error(`Status ${res.status}`);
-      const { orders: data } = await res.json();
-      setOrders(data || []);
+      const json = await res.json();
+      setOrders(json.orders || []);
     } catch (err) {
       console.error("❌ Failed to fetch orders:", err);
     } finally {
@@ -55,6 +57,7 @@ export default function AdminOrdersPage() {
     }
   }
 
+  // Mark shipped
   async function confirmAndShip(orderId: string) {
     if (!confirm(`📦 Mark order ${orderId} as shipped?`)) return;
     const adminName =
@@ -71,6 +74,7 @@ export default function AdminOrdersPage() {
     }
   }
 
+  // Archive/unarchive
   async function archiveOrder(orderId: string) {
     if (!confirm(`🗂 Archive order ${orderId}?`)) return;
     const adminName =
@@ -87,6 +91,7 @@ export default function AdminOrdersPage() {
     }
   }
 
+  // CSV export
   function downloadCSV() {
     const headers = ["Name", "Email", "Order ID", "Total", "Date", "Items"];
     const rows = orders.map((o) => [
@@ -97,8 +102,8 @@ export default function AdminOrdersPage() {
       new Date(o.createdAt).toLocaleString(),
       o.items
         .map((i) => {
-          const unit = i.salePrice ?? i.originalPrice;
-          return `${i.quantity}× ${i.name} - $${(unit * i.quantity).toFixed(
+          const unit = i.discountedPrice ?? i.price;
+          return `${i.quantity}× ${i.name} – $${(unit * i.quantity).toFixed(
             2
           )}`;
         })
@@ -114,6 +119,7 @@ export default function AdminOrdersPage() {
     URL.revokeObjectURL(url);
   }
 
+  // Print PDF
   function printPDF() {
     const content = document.getElementById("print-area")?.innerHTML;
     const win = window.open("", "_blank", "width=800,height=600");
@@ -126,6 +132,7 @@ export default function AdminOrdersPage() {
     }
   }
 
+  // Filter + paginate
   const filtered = orders.filter((o) => {
     if (o.archived || o.shipped) return false;
     const q = searchQuery.toLowerCase();
@@ -155,13 +162,10 @@ export default function AdminOrdersPage() {
       <Head>
         <title>Admin Orders | Classy Diamonds</title>
       </Head>
+      <Breadcrumbs />
+      <h1 className="text-3xl font-serif font-bold mb-6">🛠 Admin Dashboard</h1>
 
-      <div className="mb-6">
-        <Breadcrumbs />
-      </div>
-
-      <h1 className="text-3xl font-serif font-bold mb-6">🛠️ Admin Dashboard</h1>
-
+      {/* Nav */}
       <nav className="flex flex-wrap gap-4 mb-8 border-b pb-4 text-sm font-semibold">
         <Link href="/admin">
           <a className="text-yellow-400">📦 Orders</a>
@@ -180,10 +184,11 @@ export default function AdminOrdersPage() {
         </Link>
       </nav>
 
+      {/* Filters & actions */}
       <div className="flex flex-col sm:flex-row gap-4 mb-6">
         <input
           type="text"
-          placeholder="Search by name/email/ID…"
+          placeholder="Search…"
           className="px-4 py-2 rounded bg-[var(--bg-nav)] text-white flex-1"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
@@ -214,34 +219,30 @@ export default function AdminOrdersPage() {
         </button>
       </div>
 
+      {/* Orders list */}
       <div id="print-area" className="space-y-8">
-        {pageData.map((order) => (
-          <div
-            key={order._id}
-            className="bg-[var(--bg-nav)] p-6 rounded-xl shadow"
-          >
+        {pageData.map((o) => (
+          <div key={o._id} className="bg-[var(--bg-nav)] p-6 rounded-xl shadow">
             <h2 className="text-xl font-semibold mb-1">
-              {order.customerName} ({order.customerEmail})
+              {o.customerName} ({o.customerEmail})
             </h2>
             <p className="text-sm text-gray-300 mb-2">
-              🔢 Order #: {order.orderNumber ?? "N/A"} | 🆔{" "}
-              {order.stripeSessionId.slice(-8)}
+              🔢 Order #: {o.orderNumber ?? "N/A"} | 🆔{" "}
+              {o.stripeSessionId.slice(-8)}
             </p>
-            <p className="mb-2">
-              📍 {order.shipping_address_string ?? order.customerAddress}
-            </p>
+            <p className="mb-2">📍 {o.shipping_address_string}</p>
             <p className="mb-4">
-              🧾 Date: {new Date(order.createdAt).toLocaleString()}
+              🧾 Date: {new Date(o.createdAt).toLocaleString()}
             </p>
 
             <ul className="mb-4 list-disc pl-4 text-sm">
-              {order.items.map((it, idx) => {
-                const orig = it.originalPrice * it.quantity;
-                const sale = (it.salePrice ?? it.originalPrice) * it.quantity;
+              {o.items.map((i, idx) => {
+                const orig = i.price * i.quantity;
+                const sale = (i.discountedPrice ?? i.price) * i.quantity;
                 return (
                   <li key={idx}>
-                    {it.quantity}× {it.name} —{" "}
-                    {it.salePrice != null ? (
+                    {i.quantity}× {i.name} —{" "}
+                    {i.discountedPrice != null ? (
                       <>
                         <span className="line-through text-gray-400 mr-2">
                           ${orig.toFixed(2)}
@@ -260,17 +261,17 @@ export default function AdminOrdersPage() {
 
             <div className="flex justify-between items-center">
               <span className="text-lg font-semibold">
-                💰 Total: ${order.amount.toFixed(2)}
+                💰 Total: ${o.amount.toFixed(2)}
               </span>
               <div className="space-x-2">
                 <button
-                  onClick={() => confirmAndShip(order.stripeSessionId)}
+                  onClick={() => confirmAndShip(o.stripeSessionId)}
                   className="bg-green-600 px-4 py-2 rounded text-sm"
                 >
                   Mark as Shipped 🚚
                 </button>
                 <button
-                  onClick={() => archiveOrder(order.stripeSessionId)}
+                  onClick={() => archiveOrder(o.stripeSessionId)}
                   className="bg-yellow-600 px-4 py-2 rounded text-sm"
                 >
                   Archive 🗂
@@ -281,6 +282,7 @@ export default function AdminOrdersPage() {
         ))}
       </div>
 
+      {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex justify-center mt-8 space-x-2">
           {Array.from({ length: totalPages }).map((_, i) => (
