@@ -89,12 +89,13 @@ export default function CartPage() {
                   </h2>
 
                   {/* 💲 Price Display with Discount if Available */}
-                  {item.discountedPrice ? (
+                  {item.discountedPrice !== undefined &&
+                  item.discountedPrice < item.price ? (
                     <div className="text-sm sm:text-base mt-1">
                       <span className="line-through text-gray-400 mr-2">
                         ${item.price.toFixed(2)}
                       </span>
-                      <span className="text-red-400 font-semibold">
+                      <span className="text-green-400 font-semibold">
                         ${item.discountedPrice.toFixed(2)}
                       </span>
                     </div>
