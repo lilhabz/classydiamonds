@@ -5,6 +5,7 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import Stripe from "stripe";
 import nodemailer from "nodemailer";
 import clientPromise from "@/lib/mongodb";
+import { ObjectId } from "mongodb";
 
 export const config = {
   api: {
@@ -55,7 +56,28 @@ export default async function handler(
     };
 
     const metadata = session.metadata || {};
-    const items: Array<any> = JSON.parse((metadata.items as string) || "[]");
+    const itemMeta: Array<{ id: string; qty: number }> = JSON.parse(
+      (metadata.items as string) || "[]"
+    );
+
+    const dbClient = await clientPromise;
+    const db = dbClient.db();
+    const productsCollection = db.collection("products");
+    const productIds = itemMeta.map((i) => new ObjectId(i.id));
+    const products = await productsCollection
+      .find({ _id: { $in: productIds } })
+      .toArray();
+    const items = itemMeta.map((meta) => {
+      const prod = products.find((p) => p._id.toString() === meta.id) as any;
+      return {
+        id: meta.id,
+        name: prod?.name || "",
+        quantity: meta.qty,
+        originalPrice: prod?.price ?? 0,
+        salePrice: prod?.salePrice ?? prod?.price ?? 0,
+        image: prod?.imageUrl || prod?.image || "",
+      };
+    });
 
     // ✅ Prefer Stripe shipping_details, then customer_details, then metadata
     const stripeAddr =
@@ -102,8 +124,6 @@ export default async function handler(
     const amountTotal = (session.amount_total || 0) / 100;
     const stripeSessionId = session.id;
 
-    const dbClient = await clientPromise;
-    const db = dbClient.db();
     const ordersCollection = db.collection("orders");
     const countersCollection = db.collection<{
       _id: string;
@@ -153,7 +173,7 @@ export default async function handler(
     try {
       const itemRows = items
         .map((item: any) => {
-          const price = item.discountedPrice ?? item.price ?? 0;
+          const price = item.salePrice ?? item.originalPrice ?? 0;
           return `
           <tr>
             <td style="padding: 8px; border: 1px solid #ddd;">${item.name}</td>
