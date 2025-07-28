@@ -188,9 +188,15 @@ export default function OrdersPage({
                   </p>
                   <ul className="space-y-3">
                     {order.items?.map((item: any, idx: number) => {
-                      const original = item.originalPrice ?? item.price ?? 0;
+                      const displayPrice =
+                        item.salePrice ??
+                        item.discountedPrice ??
+                        item.originalPrice ??
+                        item.price ??
+                        0;
+                      const original = item.originalPrice ?? item.price ?? displayPrice;
                       const sale =
-                        item.salePrice ?? item.discountedPrice ?? null;
+                        item.salePrice ?? item.discountedPrice ?? undefined;
                       return (
                         <li key={idx} className="flex items-center gap-4">
                           <Image
@@ -204,22 +210,22 @@ export default function OrdersPage({
                             <p className="font-medium text-[var(--foreground)]">
                               {item.name}
                             </p>
-                            {sale && sale < original ? (
-                              <p className="text-sm text-[#cfd2d6]">
-                                x{item.quantity} –{" "}
-                                <span className="line-through text-gray-400 mr-1">
-                                  ${(original * item.quantity).toFixed(2)}
-                                </span>
-                                <span className="text-green-400 font-semibold">
-                                  ${(sale * item.quantity).toFixed(2)}
-                                </span>
-                              </p>
-                            ) : (
-                              <p className="text-sm text-[#cfd2d6]">
-                                x{item.quantity} – $
-                                {(original * item.quantity).toFixed(2)}
-                              </p>
-                            )}
+                              {sale !== undefined && sale < original ? (
+                                <p className="text-sm text-[#cfd2d6]">
+                                  x{item.quantity} –{" "}
+                                  <span className="line-through text-gray-400 mr-1">
+                                    {(original * item.quantity).toFixed(2)}
+                                  </span>
+                                  <span className="text-green-400 font-semibold">
+                                    {(sale * item.quantity).toFixed(2)}
+                                  </span>
+                                </p>
+                              ) : (
+                                <p className="text-sm text-[#cfd2d6]">
+                                  x{item.quantity} – $
+                                  {(displayPrice * item.quantity).toFixed(2)}
+                                </p>
+                              )}
                           </div>
                         </li>
                       );

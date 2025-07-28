@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Head from "next/head";
 import Link from "next/link";
+import Image from "next/image";
 import { useSession } from "next-auth/react";
 import Breadcrumbs from "@/components/Breadcrumbs";
 
@@ -11,6 +12,9 @@ interface OrderItem {
   quantity: number;
   price?: number;
   discountedPrice?: number;
+  salePrice?: number;
+  originalPrice?: number;
+  image?: string;
 }
 
 interface Order {
@@ -287,26 +291,40 @@ export default function AdminOrdersPage() {
             <ul className="mb-4 list-disc pl-4 text-sm">
               {o.items.map((i, idx) => {
                 const qty = i.quantity ?? 1;
-                const basePrice = i.price ?? 0;
-                const discountPrice = i.discountedPrice ?? basePrice;
+                const displayPrice =
+                  i.salePrice ??
+                  i.discountedPrice ??
+                  i.originalPrice ??
+                  i.price ??
+                  0;
+                const basePrice = i.originalPrice ?? i.price ?? displayPrice;
                 const orig = basePrice * qty;
-                const sale = discountPrice * qty;
+                const sale = displayPrice * qty;
 
                 return (
-                  <li key={idx}>
-                    {qty}× {i.name} —{" "}
-                    {discountPrice < basePrice ? (
-                      <>
-                        <span className="line-through text-gray-400 mr-2">
-                          ${orig.toFixed(2)}
-                        </span>
-                        <span className="text-green-400 font-semibold">
-                          ${sale.toFixed(2)}
-                        </span>
-                      </>
-                    ) : (
-                      <span>${orig.toFixed(2)}</span>
-                    )}
+                  <li key={idx} className="flex items-center gap-2">
+                    <Image
+                      src={i.image || ""}
+                      alt={i.name}
+                      width={32}
+                      height={32}
+                      className="rounded object-cover"
+                    />
+                    <span>
+                      {qty}× {i.name} —{' '}
+                      {displayPrice < basePrice ? (
+                        <>
+                          <span className="line-through text-gray-400 mr-2">
+                            ${orig.toFixed(2)}
+                          </span>
+                          <span className="text-green-400 font-semibold">
+                            ${sale.toFixed(2)}
+                          </span>
+                        </>
+                      ) : (
+                        <span>${sale.toFixed(2)}</span>
+                      )}
+                    </span>
                   </li>
                 );
               })}
