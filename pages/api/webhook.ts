@@ -5,7 +5,6 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import Stripe from "stripe";
 import nodemailer from "nodemailer";
 import clientPromise from "@/lib/mongodb";
-import { ObjectId } from "mongodb";
 
 export const config = {
   api: {
@@ -56,28 +55,29 @@ export default async function handler(
     };
 
     const metadata = session.metadata || {};
-    const itemMeta: Array<{ id: string; qty: number }> = JSON.parse(
-      (metadata.items as string) || "[]"
-    );
+    const rawItems: Array<{
+      id: string;
+      name?: string;
+      quantity: number | string;
+      originalPrice?: number | string;
+      salePrice?: number | string | null;
+      image?: string;
+    }> = JSON.parse((metadata.items as string) || "[]");
+
+    const items = rawItems.map((i) => ({
+      id: i.id,
+      name: i.name || "",
+      quantity: Number(i.quantity) || 0,
+      originalPrice: i.originalPrice != null ? Number(i.originalPrice) : 0,
+      salePrice:
+        i.salePrice !== undefined && i.salePrice !== null
+          ? Number(i.salePrice)
+          : undefined,
+      image: i.image || "",
+    }));
 
     const dbClient = await clientPromise;
     const db = dbClient.db();
-    const productsCollection = db.collection("products");
-    const productIds = itemMeta.map((i) => new ObjectId(i.id));
-    const products = await productsCollection
-      .find({ _id: { $in: productIds } })
-      .toArray();
-    const items = itemMeta.map((meta) => {
-      const prod = products.find((p) => p._id.toString() === meta.id) as any;
-      return {
-        id: meta.id,
-        name: prod?.name || "",
-        quantity: meta.qty,
-        originalPrice: prod?.price ?? 0,
-        salePrice: prod?.salePrice ?? prod?.price ?? 0,
-        image: prod?.imageUrl || prod?.image || "",
-      };
-    });
 
     // ✅ Prefer Stripe shipping_details, then customer_details, then metadata
     const stripeAddr =
@@ -86,9 +86,9 @@ export default async function handler(
       null;
 
     const stripeName =
+      metadata.customer_name ||
       session.shipping_details?.name ||
       session.customer_details?.name ||
-      metadata.customer_name ||
       "Customer";
 
     const shippingAddressObject = {

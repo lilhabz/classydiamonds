@@ -1,7 +1,13 @@
 export function buildOrderDetailsHtml(order: any): string {
   const itemRows = (order.items || [])
-    .map(
-      (item: any) => `
+    .map((item: any) => {
+      const price =
+        item.salePrice ??
+        item.discountedPrice ??
+        item.originalPrice ??
+        item.price ??
+        0;
+      return `
             <tr>
               <td style="padding: 8px; border: 1px solid #ddd;">
                 <div style="display: flex; align-items: center; gap: 10px;">
@@ -10,9 +16,11 @@ export function buildOrderDetailsHtml(order: any): string {
                 </div>
               </td>
               <td style="padding: 8px; border: 1px solid #ddd;">x${item.quantity}</td>
-              <td style="padding: 8px; border: 1px solid #ddd;">$${(item.price * item.quantity).toFixed(2)}</td>
-            </tr>`
-    )
+              <td style="padding: 8px; border: 1px solid #ddd;">$${(
+                price * item.quantity
+              ).toFixed(2)}</td>
+            </tr>`;
+    })
     .join("");
 
   const orderDate = order.createdAt
