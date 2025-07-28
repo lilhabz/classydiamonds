@@ -1,4 +1,4 @@
-// pages/api/checkout.ts
+// 📦 pages/api/checkout.ts – Fixed URL Return & Debug Logging
 import type { NextApiRequest, NextApiResponse } from "next";
 import Stripe from "stripe";
 
@@ -24,35 +24,13 @@ export default async function handler(
       notes,
       paymentMethod,
       phone,
-    } = req.body as {
-      items: Array<{
-        id: string;
-        name: string;
-        price: number;
-        discountedPrice?: number;
-        image: string;
-        quantity: number;
-      }>;
-      name?: string;
-      email?: string;
-      address?: {
-        street1?: string;
-        street2?: string;
-        city?: string;
-        state?: string;
-        zip?: string;
-        country?: string;
-      };
-      notes?: string;
-      paymentMethod?: string;
-      phone?: string;
-    };
+    } = req.body || {};
 
-    if (!items || !Array.isArray(items) || items.length === 0) {
+    if (!Array.isArray(items) || items.length === 0) {
       return res.status(400).json({ error: "Invalid items data" });
     }
 
-    // 1️⃣ Compute totals
+    // 🛠 Calculate totals
     const originalTotal = items.reduce(
       (sum, i) => sum + i.price * i.quantity,
       0
@@ -61,13 +39,15 @@ export default async function handler(
       (sum, i) => sum + (i.discountedPrice ?? i.price) * i.quantity,
       0
     );
-    const discountAmount = Math.round((originalTotal - saleTotal) * 100); // in cents
+    const discountAmount = Math.round((originalTotal - saleTotal) * 100);
 
-    // 2️⃣ Build line items at ORIGINAL price
+    // 🛠 Build line items
     const line_items: Stripe.Checkout.SessionCreateParams.LineItem[] =
       items.map((i) => {
         const productData: Stripe.Checkout.SessionCreateParams.LineItem.PriceData.ProductData =
-          { name: i.name };
+          {
+            name: i.name,
+          };
         if (i.image?.startsWith("http")) {
           productData.images = [i.image];
         }
@@ -81,25 +61,29 @@ export default async function handler(
         };
       });
 
-    // 3️⃣ One‑time coupon if discounted
+    // 🛠 Optional discount coupon
     let couponId: string | undefined;
     if (discountAmount > 0) {
-      const coupon = await stripe.coupons.create({
-        amount_off: discountAmount,
-        currency: "usd",
-        duration: "once",
-      });
-      couponId = coupon.id;
+      try {
+        const coupon = await stripe.coupons.create({
+          amount_off: discountAmount,
+          currency: "usd",
+          duration: "once",
+        });
+        couponId = coupon.id;
+      } catch (couponError: any) {
+        console.error("❌ Coupon creation failed:", couponError);
+      }
     }
 
-    // 4️⃣ Flatten shipping address
+    // 🛠 Format address
     const addressString = `${address.street1 || ""}${
       address.street2 ? `, ${address.street2}` : ""
     }, ${address.city || ""}, ${address.state || ""} ${address.zip || ""}, ${
       address.country || ""
     }`;
 
-    // 5️⃣ Create session
+    // 🛠 Create checkout session
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
       mode: "payment",
@@ -140,8 +124,14 @@ export default async function handler(
       cancel_url: `${req.headers.origin}/cart`,
     });
 
-    // coerce `null` → `undefined` so it matches `{ url?: string }`
-    return res.status(200).json({ url: session.url ?? undefined });
+    if (!session?.url) {
+      console.error("❌ Stripe returned no URL. Session:", session);
+      return res
+        .status(500)
+        .json({ error: "Stripe did not return checkout URL" });
+    }
+
+    return res.status(200).json({ url: session.url });
   } catch (err: any) {
     console.error("❌ Stripe Checkout Error:", err);
     return res
