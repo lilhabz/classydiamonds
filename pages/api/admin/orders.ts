@@ -8,10 +8,19 @@ interface RawOrder {
   customerName: string;
   customerEmail: string;
   customerAddress: string;
-  // either a prebuilt string…
+  // existing one‑line string
   shipping_address_string?: string;
-  // …or a structured address to fall back on:
+  // fallback structured address (from older code)
   address?: {
+    street?: string;
+    line2?: string;
+    city?: string;
+    state?: string;
+    zip?: string;
+    country?: string;
+  };
+  // ➕ the structured object you insert in your webhook
+  shipping_address?: {
     street?: string;
     line2?: string;
     city?: string;
@@ -47,7 +56,20 @@ interface Order {
   customerName: string;
   customerEmail: string;
   customerAddress: string;
+
+  // ➕ expose the structured address object
+  shipping_address: {
+    street?: string;
+    line2?: string;
+    city?: string;
+    state?: string;
+    zip?: string;
+    country?: string;
+  } | null;
+
+  // existing one‑line string
   shipping_address_string: string;
+
   items: OrderItem[];
   amount: number;
   currency: string;
@@ -85,8 +107,8 @@ export default async function handler(
     const rawOrders = raw as unknown as RawOrder[];
 
     const orders: Order[] = rawOrders.map((o) => {
-      // build a shipping string if one wasn't stored directly
-      const shipping =
+      // build the one-line string if not stored
+      const shippingString =
         o.shipping_address_string ||
         [
           o.address?.street,
@@ -100,12 +122,21 @@ export default async function handler(
           .join(", ") ||
         "";
 
+      // pick the structured object from webhook, fallback to address, else null
+      const shippingObj = o.shipping_address || o.address || null;
+
       return {
         _id: o._id.toHexString(),
         customerName: o.customerName,
         customerEmail: o.customerEmail,
         customerAddress: o.customerAddress,
-        shipping_address_string: shipping,
+
+        // ➕ include the structured address
+        shipping_address: shippingObj,
+
+        // existing one-line
+        shipping_address_string: shippingString,
+
         items: (o.items ?? []).map((i) => ({
           name: i.name,
           quantity: i.quantity,
