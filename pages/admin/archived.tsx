@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Head from "next/head";
 import Link from "next/link";
+import Image from "next/image";
 import { useSession } from "next-auth/react";
 import Breadcrumbs from "@/components/Breadcrumbs";
 
@@ -13,6 +14,7 @@ interface OrderItem {
   discountedPrice?: number;
   salePrice?: number;
   originalPrice?: number;
+  image?: string;
 }
 
 interface Order {
@@ -216,22 +218,35 @@ export default function ArchivedOrdersPage() {
               <ul className="mb-4 pl-4 list-disc text-sm">
                 {order.items?.map((item, index) => {
                   const qty = item.quantity ?? 1;
-                  const basePrice = item.price ?? item.originalPrice ?? 0;
-                  const discountPrice =
-                    item.discountedPrice ?? item.salePrice ?? basePrice;
+                  const displayPrice =
+                    item.salePrice ??
+                    item.discountedPrice ??
+                    item.originalPrice ??
+                    item.price ??
+                    0;
+                  const basePrice = item.originalPrice ?? item.price ?? displayPrice;
                   const orig = basePrice * qty;
-                  const sale = discountPrice * qty;
+                  const sale = displayPrice * qty;
                   return (
-                    <li key={index}>
-                      {qty}× {item.name} –{' '}
-                      {discountPrice < basePrice ? (
-                        <>
-                          <span className="line-through">${orig.toFixed(2)}</span>{' '}
-                          <span className="text-green-400">${sale.toFixed(2)}</span>
-                        </>
-                      ) : (
-                        <span>${orig.toFixed(2)}</span>
-                      )}
+                    <li key={index} className="flex items-center gap-2">
+                      <Image
+                        src={item.image || ""}
+                        alt={item.name}
+                        width={32}
+                        height={32}
+                        className="rounded object-cover"
+                      />
+                      <span>
+                        {qty}× {item.name} –{' '}
+                        {displayPrice < basePrice ? (
+                          <>
+                            <span className="line-through">${orig.toFixed(2)}</span>{' '}
+                            <span className="text-green-400">${sale.toFixed(2)}</span>
+                          </>
+                        ) : (
+                          <span>${sale.toFixed(2)}</span>
+                        )}
+                      </span>
                     </li>
                   );
                 })}

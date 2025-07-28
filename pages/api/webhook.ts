@@ -5,6 +5,7 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import Stripe from "stripe";
 import nodemailer from "nodemailer";
 import clientPromise from "@/lib/mongodb";
+import { ObjectId } from "mongodb";
 
 export const config = {
   api: {
@@ -58,26 +59,53 @@ export default async function handler(
     const rawItems: Array<{
       id: string;
       name?: string;
-      quantity: number | string;
-      originalPrice?: number | string;
+      quantity?: number | string;
+      originalPrice?: number | string | null;
       salePrice?: number | string | null;
+      discountedPrice?: number | string | null;
       image?: string;
     }> = JSON.parse((metadata.items as string) || "[]");
 
-    const items = rawItems.map((i) => ({
-      id: i.id,
-      name: i.name || "",
-      quantity: Number(i.quantity) || 0,
-      originalPrice: i.originalPrice != null ? Number(i.originalPrice) : 0,
-      salePrice:
-        i.salePrice !== undefined && i.salePrice !== null
-          ? Number(i.salePrice)
-          : undefined,
-      image: i.image || "",
-    }));
-
+    const productIds = rawItems.map((i) => i.id);
     const dbClient = await clientPromise;
     const db = dbClient.db();
+    const products = await db
+      .collection("products")
+      .find({ _id: { $in: productIds.map((id) => new ObjectId(id)) } })
+      .toArray();
+    const productMap = new Map(
+      products.map((p: any) => [p._id.toString(), p])
+    );
+
+    const items = rawItems.map((i) => {
+      const product: any = productMap.get(i.id) || {};
+      const original =
+        i.originalPrice != null
+          ? Number(i.originalPrice)
+          : product.price != null
+          ? Number(product.price)
+          : 0;
+      const sale =
+        i.salePrice != null
+          ? Number(i.salePrice)
+          : i.discountedPrice != null
+          ? Number(i.discountedPrice)
+          : product.salePrice != null
+          ? Number(product.salePrice)
+          : undefined;
+
+      const item: any = {
+        name: i.name || product.name || "",
+        image: i.image || product.imageUrl || product.image || "",
+        quantity: Number(i.quantity) || 1,
+        originalPrice: original,
+      };
+      if (sale !== undefined) {
+        item.salePrice = sale;
+        item.discountedPrice = sale;
+      }
+      return item;
+    });
 
     // ✅ Prefer Stripe shipping_details, then customer_details, then metadata
     const stripeAddr =
@@ -174,7 +202,11 @@ export default async function handler(
       const itemRows = items
         .map((item: any) => {
           const price =
-            item.salePrice ?? item.originalPrice ?? item.price ?? 0;
+            item.salePrice ??
+            item.discountedPrice ??
+            item.originalPrice ??
+            item.price ??
+            0;
           return `
           <tr>
             <td style="padding: 8px; border: 1px solid #ddd;">

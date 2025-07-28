@@ -127,7 +127,18 @@ export default async function handler(
           items: JSON.stringify(
             items.map((i) => ({
               id: i.id,
-              qty: i.quantity,
+              name: i.name,
+              quantity: i.quantity,
+              originalPrice: i.price,
+              salePrice:
+                i.discountedPrice !== undefined && i.discountedPrice !== null
+                  ? i.discountedPrice
+                  : undefined,
+              discountedPrice:
+                i.discountedPrice !== undefined && i.discountedPrice !== null
+                  ? i.discountedPrice
+                  : undefined,
+              image: i.image,
             }))
           ),
         },
