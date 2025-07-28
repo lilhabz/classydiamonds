@@ -1,4 +1,4 @@
-// 📦 pages/api/webhook.ts – Stripe + Account Address Fallback 💎
+// 📦 pages/api/webhook.ts – Stripe + Account Address Fallback (Fixed for customer_details.address) 💎
 
 import { buffer } from "micro";
 import type { NextApiRequest, NextApiResponse } from "next";
@@ -57,9 +57,17 @@ export default async function handler(
     const metadata = session.metadata || {};
     const items: Array<any> = JSON.parse((metadata.items as string) || "[]");
 
-    // 📦 Prefer Stripe shipping details, fall back to Account metadata
-    const stripeAddr = session.shipping_details?.address;
-    const stripeName = session.shipping_details?.name;
+    // ✅ Prefer Stripe shipping_details, then customer_details, then metadata
+    const stripeAddr =
+      session.shipping_details?.address ||
+      session.customer_details?.address ||
+      null;
+
+    const stripeName =
+      session.shipping_details?.name ||
+      session.customer_details?.name ||
+      metadata.customer_name ||
+      "Customer";
 
     const shippingAddressObject = {
       street: stripeAddr?.line1 || metadata.address_street1 || "",
@@ -76,20 +84,16 @@ export default async function handler(
       shippingAddressObject.zip
     }, ${shippingAddressObject.country}`;
 
-    const customerName =
-      stripeName ||
-      session.customer_details?.name ||
-      metadata.customer_name ||
-      "Customer";
-
     const customerEmail =
       session.customer_details?.email ||
       metadata.customer_email ||
       process.env.EMAIL_USER;
 
-    // 🛠 Debug: Which source was used
-    if (stripeAddr) {
+    // 🛠 Debug log to verify source
+    if (session.shipping_details?.address) {
       console.log("✅ Address Source: Stripe shipping_details");
+    } else if (session.customer_details?.address) {
+      console.log("✅ Address Source: Stripe customer_details");
     } else {
       console.log("⚠️ Address Source: Account metadata fallback");
     }
@@ -127,7 +131,7 @@ export default async function handler(
     if (!existing) {
       await ordersCollection.insertOne({
         orderNumber,
-        customerName,
+        customerName: stripeName,
         customerEmail,
         customerAddress: shippingAddressString,
         shipping_address: shippingAddressObject,
@@ -164,7 +168,7 @@ export default async function handler(
         .join("");
 
       const htmlContent = `
-        <h2>Thank You for Your Order, ${customerName}!</h2>
+        <h2>Thank You for Your Order, ${stripeName}!</h2>
         <p>Your <strong>Order #${orderNumber}</strong> has been received.</p>
         <p><strong>Shipping to:</strong><br>${shippingAddressString}</p>
         <table style="width: 100%; border-collapse: collapse;">
