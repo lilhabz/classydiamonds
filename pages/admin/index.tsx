@@ -306,15 +306,15 @@ export default function AdminOrdersPage() {
                     <Image
                       src={i.image || ""}
                       alt={i.name}
-                      width={32}
-                      height={32}
+                      width={48}
+                      height={48}
                       className="rounded object-cover"
                     />
                     <span>
-                      {qty}× {i.name} —{' '}
+                      {i.name} – x{qty} –{' '}
                       {displayPrice < basePrice ? (
                         <>
-                          <span className="line-through text-gray-400 mr-2">
+                          <span className="line-through text-gray-400 mr-1">
                             ${orig.toFixed(2)}
                           </span>
                           <span className="text-green-400 font-semibold">

@@ -232,15 +232,15 @@ export default function ArchivedOrdersPage() {
                       <Image
                         src={item.image || ""}
                         alt={item.name}
-                        width={32}
-                        height={32}
+                        width={48}
+                        height={48}
                         className="rounded object-cover"
                       />
                       <span>
-                        {qty}× {item.name} –{' '}
+                        {item.name} – x{qty} –{' '}
                         {displayPrice < basePrice ? (
                           <>
-                            <span className="line-through">${orig.toFixed(2)}</span>{' '}
+                            <span className="line-through mr-1">${orig.toFixed(2)}</span>
                             <span className="text-green-400">${sale.toFixed(2)}</span>
                           </>
                         ) : (
