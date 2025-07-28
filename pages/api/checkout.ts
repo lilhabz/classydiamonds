@@ -21,18 +21,18 @@ export default async function handler(
       items,
       name,
       email,
-      address = {},
+      address = {}, // structured address object
       notes,
       paymentMethod,
       phone,
     } = req.body;
 
-    // 🛑 Validate items
+    // 🛑 Validate cart items
     if (!items || !Array.isArray(items) || items.length === 0) {
       return res.status(400).json({ error: "Invalid items data" });
     }
 
-    // 🧮 Totals
+    // 🧮 Calculate totals
     const originalTotal = items.reduce(
       (sum, i) => sum + i.price * i.quantity,
       0
@@ -60,7 +60,7 @@ export default async function handler(
         quantity: i.quantity,
       }));
 
-    // 🎟️ Coupon if needed
+    // 🎟️ Coupon for discounted price
     let couponId;
     if (discountAmount > 0) {
       try {
@@ -77,7 +77,7 @@ export default async function handler(
       }
     }
 
-    // 📍 Fallback Address from Account Edit Page (req.body.address)
+    // 📍 Address from Account Edit page as fallback (structured)
     const street1 = address.street1 || "";
     const street2 = address.street2 || "";
     const city = address.city || "";
@@ -94,14 +94,14 @@ export default async function handler(
       country,
     });
 
-    // 🚀 Stripe session
+    // 🚀 Create Stripe Checkout Session
     let session;
     try {
       session = await stripe.checkout.sessions.create({
         payment_method_types: ["card"],
         mode: "payment",
         customer_email: email,
-        // 🔑 Allow Stripe to collect live address
+        // 🔑 Allow Stripe to collect live shipping address
         shipping_address_collection: { allowed_countries: ["US"] },
         shipping_options: [
           {
@@ -118,7 +118,7 @@ export default async function handler(
           customer_name: name || "",
           customer_email: email || "",
           customer_phone: phone || "",
-          // 🏷️ Structured address fields from account as fallback
+          // 🏷️ Account address fallback (for webhook if Stripe doesn’t return address)
           address_street1: street1,
           address_street2: street2,
           address_city: city,

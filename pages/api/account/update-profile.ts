@@ -1,4 +1,4 @@
-// 📄 pages/api/account/update-profile.ts – Update Full User Profile Info ✏️ (JWT-safe)
+// 📄 pages/api/account/update-profile.ts – Update Full User Profile with Structured Address ✏️
 
 import type { NextApiRequest, NextApiResponse } from "next";
 import clientPromise from "@/lib/mongodb";
@@ -12,37 +12,44 @@ export default async function handler(
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  // 🔐 Use JWT-safe token instead of getSession()
+  // 🔐 Use JWT-safe token for authentication
   const token = await getToken({ req });
   if (!token?.email) {
     return res.status(401).json({ error: "Unauthorized" });
   }
 
-  // 🧾 Pull data from the POST body
-  const { name, email, phone, address, city, state, zip, country } = req.body;
+  // 🧾 Pull structured data from body
+  const { name, email, phone, address } = req.body;
 
-  // ✅ Validate required fields
+  // ✅ Validate name + email
   if (!name || !email) {
     return res.status(400).json({ error: "Name and email are required." });
   }
+
+  // ✅ Validate address structure (safe default)
+  const safeAddress = {
+    street1: address?.street1 || "",
+    street2: address?.street2 || "",
+    city: address?.city || "",
+    state: address?.state || "",
+    zip: address?.zip || "",
+    country: address?.country || "",
+  };
 
   try {
     const client = await clientPromise;
     const db = client.db();
 
-    // 🛠️ Update user profile using email from JWT token
+    // 🛠️ Update user record
     const result = await db.collection("users").updateOne(
       { email: token.email },
       {
         $set: {
           name,
           email,
-          phone,
-          address,
-          city,
-          state,
-          zip,
-          country,
+          phone: phone || "",
+          address: safeAddress,
+          updatedAt: new Date(),
         },
       }
     );
@@ -51,9 +58,9 @@ export default async function handler(
       return res.status(400).json({ error: "No changes made." });
     }
 
-    res.status(200).json({ message: "Profile updated." });
+    res.status(200).json({ message: "✅ Profile updated successfully." });
   } catch (err) {
-    console.error("Profile update failed:", err);
+    console.error("❌ Profile update failed:", err);
     res.status(500).json({ error: "Something went wrong." });
   }
 }
