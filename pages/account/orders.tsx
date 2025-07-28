@@ -1,4 +1,4 @@
-// 📂 pages/account/orders.tsx – Updated to Show Discounted and Original Prices 💎
+// 📂 pages/account/orders.tsx – Fixed Price Display with Original/Sale Prices 💎
 
 import { GetServerSideProps } from "next";
 import { getSession } from "next-auth/react";
@@ -132,43 +132,34 @@ export default function OrdersPage({
               >
                 {/* ─── Header ─── */}
                 <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-2">
-                  <div>
-                    <p className="text-sm text-[#cfd2d6]">Order #:</p>
-                    <p className="text-sm font-semibold break-all">
-                      #{order.orderNumber}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-[#cfd2d6]">Order ID:</p>
-                    <p className="text-sm font-semibold break-all">
-                      {order.stripeSessionId}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-[#cfd2d6]">Total:</p>
-                    <p className="text-sm font-semibold">
+                  <p className="text-sm text-[#cfd2d6]">
+                    🔢 Order #: {order.orderNumber ?? "N/A"} | 🆔{" "}
+                    {order.stripeSessionId
+                      ? order.stripeSessionId.slice(-8)
+                      : "N/A"}
+                  </p>
+                  <p className="text-sm text-[#cfd2d6]">
+                    Total:{" "}
+                    <span className="font-semibold">
                       ${order.amount?.toFixed(2)}{" "}
                       {order.currency?.toUpperCase()}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-[#cfd2d6]">Status:</p>
-                    <span
-                      className={`text-xs font-bold px-3 py-1 rounded-full inline-block ${
-                        order.delivered
-                          ? "bg-blue-500 text-[var(--bg-page)]"
-                          : order.shipped
-                          ? "bg-green-500 text-[var(--bg-page)]"
-                          : "bg-yellow-500 text-black"
-                      }`}
-                    >
-                      {order.delivered
-                        ? "Delivered"
-                        : order.shipped
-                        ? "Shipped"
-                        : "Processing"}
                     </span>
-                  </div>
+                  </p>
+                  <span
+                    className={`text-xs font-bold px-3 py-1 rounded-full inline-block ${
+                      order.delivered
+                        ? "bg-blue-500 text-[var(--bg-page)]"
+                        : order.shipped
+                        ? "bg-green-500 text-[var(--bg-page)]"
+                        : "bg-yellow-500 text-black"
+                    }`}
+                  >
+                    {order.delivered
+                      ? "Delivered"
+                      : order.shipped
+                      ? "Shipped"
+                      : "Processing"}
+                  </span>
                 </div>
 
                 {/* ─── Shipping Address ─── */}
@@ -196,41 +187,43 @@ export default function OrdersPage({
                     Items:
                   </p>
                   <ul className="space-y-3">
-                    {order.items?.map((item: any, idx: number) => (
-                      <li key={idx} className="flex items-center gap-4">
-                        <Image
-                          src={item.image}
-                          alt={item.name}
-                          width={48}
-                          height={48}
-                          className="rounded object-cover"
-                        />
-                        <div>
-                          <p className="font-medium text-[var(--foreground)]">
-                            {item.name}
-                          </p>
-                          {item.discountedPrice ? (
-                            <p className="text-sm text-[#cfd2d6]">
-                              x{item.quantity} –{" "}
-                              <span className="line-through text-gray-400 mr-1">
-                                ${(item.price * item.quantity).toFixed(2)}
-                              </span>
-                              <span className="text-green-400 font-semibold">
-                                $
-                                {(item.discountedPrice * item.quantity).toFixed(
-                                  2
-                                )}
-                              </span>
+                    {order.items?.map((item: any, idx: number) => {
+                      const original = item.originalPrice ?? item.price ?? 0;
+                      const sale =
+                        item.salePrice ?? item.discountedPrice ?? null;
+                      return (
+                        <li key={idx} className="flex items-center gap-4">
+                          <Image
+                            src={item.image}
+                            alt={item.name}
+                            width={48}
+                            height={48}
+                            className="rounded object-cover"
+                          />
+                          <div>
+                            <p className="font-medium text-[var(--foreground)]">
+                              {item.name}
                             </p>
-                          ) : (
-                            <p className="text-sm text-[#cfd2d6]">
-                              x{item.quantity} – $
-                              {(item.price * item.quantity).toFixed(2)}
-                            </p>
-                          )}
-                        </div>
-                      </li>
-                    ))}
+                            {sale && sale < original ? (
+                              <p className="text-sm text-[#cfd2d6]">
+                                x{item.quantity} –{" "}
+                                <span className="line-through text-gray-400 mr-1">
+                                  ${(original * item.quantity).toFixed(2)}
+                                </span>
+                                <span className="text-green-400 font-semibold">
+                                  ${(sale * item.quantity).toFixed(2)}
+                                </span>
+                              </p>
+                            ) : (
+                              <p className="text-sm text-[#cfd2d6]">
+                                x{item.quantity} – $
+                                {(original * item.quantity).toFixed(2)}
+                              </p>
+                            )}
+                          </div>
+                        </li>
+                      );
+                    })}
                   </ul>
                 </div>
 

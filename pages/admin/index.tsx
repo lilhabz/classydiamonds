@@ -9,7 +9,7 @@ import Breadcrumbs from "@/components/Breadcrumbs";
 interface OrderItem {
   name: string;
   quantity: number;
-  price: number;
+  price?: number;
   discountedPrice?: number;
 }
 
@@ -132,10 +132,10 @@ export default function AdminOrdersPage() {
       new Date(o.createdAt).toLocaleString(),
       o.items
         .map((i) => {
-          const unit = i.discountedPrice ?? i.price;
-          return `${i.quantity}× ${i.name} – $${(unit * i.quantity).toFixed(
-            2
-          )}`;
+          const unit = i.discountedPrice ?? i.price ?? 0;
+          return `${i.quantity}× ${i.name} – $${(
+            unit * (i.quantity ?? 1)
+          ).toFixed(2)}`;
         })
         .join(" | "),
     ]);
@@ -286,12 +286,16 @@ export default function AdminOrdersPage() {
 
             <ul className="mb-4 list-disc pl-4 text-sm">
               {o.items.map((i, idx) => {
-                const orig = i.price * i.quantity;
-                const sale = (i.discountedPrice ?? i.price) * i.quantity;
+                const qty = i.quantity ?? 1;
+                const basePrice = i.price ?? 0;
+                const discountPrice = i.discountedPrice ?? basePrice;
+                const orig = basePrice * qty;
+                const sale = discountPrice * qty;
+
                 return (
                   <li key={idx}>
-                    {i.quantity}× {i.name} —{" "}
-                    {i.discountedPrice != null ? (
+                    {qty}× {i.name} —{" "}
+                    {discountPrice < basePrice ? (
                       <>
                         <span className="line-through text-gray-400 mr-2">
                           ${orig.toFixed(2)}

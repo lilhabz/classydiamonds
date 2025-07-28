@@ -11,7 +11,7 @@ interface Order {
   customerName: string;
   customerEmail: string;
   customerAddress: string;
-  items?: { name: string; quantity: number; price: number }[];
+  items?: { name: string; quantity?: number; price?: number }[];
   amount: number;
   createdAt: string;
   stripeSessionId: string;
@@ -144,10 +144,13 @@ export default function CompletedOrdersPage() {
       `$${order.amount.toFixed(2)}`,
       new Date(order.shippedAt || "").toLocaleString(),
       (order.items || [])
-        .map(
-          (i) =>
-            `${i.quantity}× ${i.name} - $${(i.quantity * i.price).toFixed(2)}`
-        )
+        .map((i) => {
+          const qty = i.quantity ?? 1;
+          const price = i.price ?? 0;
+          return `${qty}× ${i.name || "Unnamed"} - $${(qty * price).toFixed(
+            2
+          )}`;
+        })
         .join(" | "),
     ]);
 
@@ -216,7 +219,9 @@ export default function CompletedOrdersPage() {
       </div>
 
       {/* 🛠️ Admin Dashboard Heading */}
-      <h1 className="text-3xl font-serif font-bold tracking-wide mb-6">🛠️ Admin Dashboard</h1>
+      <h1 className="text-3xl font-serif font-bold tracking-wide mb-6">
+        🛠️ Admin Dashboard
+      </h1>
 
       {/* 🔗 Admin Navigation Tabs */}
       <nav className="flex flex-wrap justify-center sm:justify-start gap-2 sm:space-x-6 mb-8 border-b border-[var(--bg-nav)] pb-4 text-[var(--foreground)] text-sm font-semibold">
@@ -325,7 +330,10 @@ export default function CompletedOrdersPage() {
                         setTrackingInputs((prev) => ({
                           ...prev,
                           [order.stripeSessionId]: {
-                            ...(prev[order.stripeSessionId] || { trackingNumber: "", carrier: "USPS" }),
+                            ...(prev[order.stripeSessionId] || {
+                              trackingNumber: "",
+                              carrier: "USPS",
+                            }),
                             carrier: e.target.value,
                           },
                         }))
@@ -340,13 +348,17 @@ export default function CompletedOrdersPage() {
                       type="text"
                       placeholder="Tracking #"
                       value={
-                        trackingInputs[order.stripeSessionId]?.trackingNumber || ""
+                        trackingInputs[order.stripeSessionId]?.trackingNumber ||
+                        ""
                       }
                       onChange={(e) =>
                         setTrackingInputs((prev) => ({
                           ...prev,
                           [order.stripeSessionId]: {
-                            ...(prev[order.stripeSessionId] || { trackingNumber: "", carrier: "USPS" }),
+                            ...(prev[order.stripeSessionId] || {
+                              trackingNumber: "",
+                              carrier: "USPS",
+                            }),
                             trackingNumber: e.target.value,
                           },
                         }))
@@ -365,14 +377,16 @@ export default function CompletedOrdersPage() {
                   <strong>Items:</strong>
                   {Array.isArray(order.items) && order.items.length > 0 ? (
                     <ul className="list-disc list-inside space-y-1 mt-2">
-                      {order.items.map((item, i) => (
-                        <li key={i}>
-                          {item.name || "Unnamed"} × {item.quantity || 1} — $
-                          {((item.price || 0) * (item.quantity || 1)).toFixed(
-                            2
-                          )}
-                        </li>
-                      ))}
+                      {order.items.map((item, i) => {
+                        const qty = item.quantity ?? 1;
+                        const price = item.price ?? 0;
+                        return (
+                          <li key={i}>
+                            {item.name || "Unnamed"} × {qty} — $
+                            {(price * qty).toFixed(2)}
+                          </li>
+                        );
+                      })}
                     </ul>
                   ) : (
                     <p className="text-sm text-red-300 mt-2">
