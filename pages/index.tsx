@@ -219,7 +219,7 @@ export default function Home({ products }: HomeProps) {
                             <span className="line-through mr-1">
                               ${item.price.toLocaleString()}
                             </span>
-                            <span className="text-red-500">
+                            <span className="text-green-500">
                               ${item.salePrice.toLocaleString()}
                             </span>
                           </>
@@ -288,7 +288,7 @@ export default function Home({ products }: HomeProps) {
                           <span className="line-through mr-1">
                             ${item.price.toLocaleString()}
                           </span>
-                          <span className="text-red-500">
+                          <span className="text-green-500">
                             ${item.salePrice.toLocaleString()}
                           </span>
                         </>

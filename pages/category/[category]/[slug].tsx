@@ -110,7 +110,7 @@ export default function ProductPage({ product }: { product: ProductType }) {
                   <span className="line-through mr-2 text-xl">
                     ${product.price.toLocaleString()}
                   </span>
-                  <span className="text-red-500">
+                  <span className="text-green-500">
                     ${product.salePrice.toLocaleString()}
                   </span>
                 </>

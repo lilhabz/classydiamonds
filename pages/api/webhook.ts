@@ -1,4 +1,4 @@
-// 📦 pages/api/webhook.ts – Final Enhanced Webhook (Shipping Info Fixed) 💎
+// 📦 pages/api/webhook.ts – Final Enhanced Webhook (Shipping Info Fixed + TS Safe) 💎
 
 import { buffer } from "micro";
 import type { NextApiRequest, NextApiResponse } from "next";
@@ -39,25 +39,36 @@ export default async function handler(
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
-  // ✅ Handle completed checkout
   if (event.type === "checkout.session.completed") {
-    const session = event.data.object as Stripe.Checkout.Session;
+    // 🔑 Force-cast so we can access shipping_details without TS error
+    const session = event.data.object as Stripe.Checkout.Session & {
+      shipping_details?: {
+        name?: string;
+        address?: {
+          line1?: string;
+          line2?: string;
+          city?: string;
+          state?: string;
+          postal_code?: string;
+          country?: string;
+        };
+      };
+    };
 
-    // 🛠 Items from metadata
     const metadata = session.metadata || {};
-    const items = JSON.parse((metadata.items as string) || "[]");
+    const items: Array<any> = JSON.parse((metadata.items as string) || "[]");
 
-    // 📦 Shipping details (works for remembered customers too)
-    const shippingDetails = session.shipping_details || session.shipping || {};
-    const shipAddr = shippingDetails.address || {};
+    // 📦 Shipping details (safe)
+    const shippingDetails = session.shipping_details || null;
+    const shipAddr = shippingDetails?.address || null;
 
     const shippingAddressObject = {
-      street: shipAddr.line1 || "",
-      line2: shipAddr.line2 || "",
-      city: shipAddr.city || "",
-      state: shipAddr.state || "",
-      zip: shipAddr.postal_code || "",
-      country: shipAddr.country || "",
+      street: shipAddr?.line1 || metadata.address_street1 || "",
+      line2: shipAddr?.line2 || metadata.address_street2 || "",
+      city: shipAddr?.city || metadata.address_city || "",
+      state: shipAddr?.state || metadata.address_state || "",
+      zip: shipAddr?.postal_code || metadata.address_zip || "",
+      country: shipAddr?.country || metadata.address_country || "",
     };
 
     const shippingAddressString = `${shippingAddressObject.street}${
@@ -67,7 +78,7 @@ export default async function handler(
     }, ${shippingAddressObject.country}`;
 
     const customerName =
-      shippingDetails.name ||
+      shippingDetails?.name ||
       session.customer_details?.name ||
       metadata.customer_name ||
       "Customer";
@@ -80,7 +91,6 @@ export default async function handler(
     const amountTotal = (session.amount_total || 0) / 100;
     const stripeSessionId = session.id;
 
-    // ✅ Save to MongoDB
     const dbClient = await clientPromise;
     const db = dbClient.db();
     const ordersCollection = db.collection("orders");
@@ -106,7 +116,6 @@ export default async function handler(
       orderNumber = Date.now();
     }
 
-    // 🛑 Prevent duplicates
     const existing = await ordersCollection.findOne({ stripeSessionId });
     if (!existing) {
       await ordersCollection.insertOne({
@@ -127,9 +136,9 @@ export default async function handler(
         archived: false,
       });
       console.log(`✅ Order #${orderNumber} saved to MongoDB`);
+      console.log("📦 Shipping Address Saved:", shippingAddressObject);
     }
 
-    // 📧 Send receipt email
     try {
       const itemRows = items
         .map((item: any) => {

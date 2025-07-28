@@ -270,7 +270,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
                         <span className="line-through mr-1">
                           ${product.price.toLocaleString()}
                         </span>
-                        <span className="text-red-500">
+                        <span className="text-green-500">
                           ${product.salePrice.toLocaleString()}
                         </span>
                       </>
