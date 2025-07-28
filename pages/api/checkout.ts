@@ -1,4 +1,4 @@
-// 📦 pages/api/checkout.ts – Stripe Error Pass-Through + Debug Logging 💎
+// 📦 pages/api/checkout.ts – Stripe Checkout with Stripe + Account Fallback Address 💎
 
 import type { NextApiRequest, NextApiResponse } from "next";
 import Stripe from "stripe";
@@ -77,12 +77,22 @@ export default async function handler(
       }
     }
 
-    // 📍 Shipping address
-    const addressString = `${address.street1 || ""}${
-      address.street2 ? `, ${address.street2}` : ""
-    }, ${address.city || ""}, ${address.state || ""} ${address.zip || ""}, ${
-      address.country || ""
-    }`;
+    // 📍 Fallback Address from Account Edit Page (req.body.address)
+    const street1 = address.street1 || "";
+    const street2 = address.street2 || "";
+    const city = address.city || "";
+    const state = address.state || "";
+    const zip = address.zip || "";
+    const country = address.country || "";
+
+    console.log("📍 Account Address Fallback:", {
+      street1,
+      street2,
+      city,
+      state,
+      zip,
+      country,
+    });
 
     // 🚀 Stripe session
     let session;
@@ -91,6 +101,7 @@ export default async function handler(
         payment_method_types: ["card"],
         mode: "payment",
         customer_email: email,
+        // 🔑 Allow Stripe to collect live address
         shipping_address_collection: { allowed_countries: ["US"] },
         shipping_options: [
           {
@@ -107,7 +118,13 @@ export default async function handler(
           customer_name: name || "",
           customer_email: email || "",
           customer_phone: phone || "",
-          customer_address: addressString,
+          // 🏷️ Structured address fields from account as fallback
+          address_street1: street1,
+          address_street2: street2,
+          address_city: city,
+          address_state: state,
+          address_zip: zip,
+          address_country: country,
           notes: notes || "",
           payment_method: paymentMethod || "stripe",
           original_price_total: Math.round(originalTotal * 100).toString(),

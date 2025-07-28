@@ -1,4 +1,4 @@
-// ✅ pages/admin/index.tsx – Admin Orders with Structured Shipping Addresses & Prices 🔐🛠️
+// ✅ pages/admin/index.tsx – Admin Orders with Structured Shipping Addresses, Prices & Address Source 🔐🛠️
 
 import { useEffect, useState } from "react";
 import Head from "next/head";
@@ -9,8 +9,8 @@ import Breadcrumbs from "@/components/Breadcrumbs";
 interface OrderItem {
   name: string;
   quantity: number;
-  price: number; // originalPrice → price
-  discountedPrice?: number; // salePrice → discountedPrice
+  price: number;
+  discountedPrice?: number;
 }
 
 interface Order {
@@ -19,7 +19,6 @@ interface Order {
   customerEmail: string;
   customerAddress: string;
 
-  // ➕ Structured address object returned from the API
   shipping_address?: {
     street?: string;
     line2?: string;
@@ -29,8 +28,9 @@ interface Order {
     country?: string;
   };
 
-  // fallback one-line string
   shipping_address_string: string;
+
+  addressSource?: "Stripe" | "Account" | "Unknown";
 
   items: OrderItem[];
   amount: number;
@@ -111,6 +111,7 @@ export default function AdminOrdersPage() {
       "Email",
       "Order ID",
       "Shipping Address",
+      "Address Source",
       "Total",
       "Date",
       "Items",
@@ -126,6 +127,7 @@ export default function AdminOrdersPage() {
             o.shipping_address.zip
           }, ${o.shipping_address.country}`
         : o.shipping_address_string,
+      o.addressSource || "Unknown",
       `$${o.amount.toFixed(2)}`,
       new Date(o.createdAt).toLocaleString(),
       o.items
@@ -259,7 +261,7 @@ export default function AdminOrdersPage() {
               {o.stripeSessionId.slice(-8)}
             </p>
 
-            {/* ➕ Render structured shipping_address, fallback to the string */}
+            {/* 📍 Render address + source */}
             <p className="mb-2">
               📍{" "}
               {o.shipping_address
@@ -272,6 +274,11 @@ export default function AdminOrdersPage() {
                   }, ${o.shipping_address.country}`
                 : o.shipping_address_string}
             </p>
+            {o.addressSource && (
+              <p className="text-xs text-gray-400 italic">
+                (Address Source: {o.addressSource})
+              </p>
+            )}
 
             <p className="mb-4">
               🧾 Date: {new Date(o.createdAt).toLocaleString()}

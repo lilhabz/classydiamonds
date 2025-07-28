@@ -1,4 +1,4 @@
-// 📦 pages/api/webhook.ts – Final Enhanced Webhook (Shipping Info Fixed + TS Safe) 💎
+// 📦 pages/api/webhook.ts – Stripe + Account Address Fallback 💎
 
 import { buffer } from "micro";
 import type { NextApiRequest, NextApiResponse } from "next";
@@ -40,7 +40,6 @@ export default async function handler(
   }
 
   if (event.type === "checkout.session.completed") {
-    // 🔑 Force-cast so we can access shipping_details without TS error
     const session = event.data.object as Stripe.Checkout.Session & {
       shipping_details?: {
         name?: string;
@@ -58,17 +57,17 @@ export default async function handler(
     const metadata = session.metadata || {};
     const items: Array<any> = JSON.parse((metadata.items as string) || "[]");
 
-    // 📦 Shipping details (safe)
-    const shippingDetails = session.shipping_details || null;
-    const shipAddr = shippingDetails?.address || null;
+    // 📦 Prefer Stripe shipping details, fall back to Account metadata
+    const stripeAddr = session.shipping_details?.address;
+    const stripeName = session.shipping_details?.name;
 
     const shippingAddressObject = {
-      street: shipAddr?.line1 || metadata.address_street1 || "",
-      line2: shipAddr?.line2 || metadata.address_street2 || "",
-      city: shipAddr?.city || metadata.address_city || "",
-      state: shipAddr?.state || metadata.address_state || "",
-      zip: shipAddr?.postal_code || metadata.address_zip || "",
-      country: shipAddr?.country || metadata.address_country || "",
+      street: stripeAddr?.line1 || metadata.address_street1 || "",
+      line2: stripeAddr?.line2 || metadata.address_street2 || "",
+      city: stripeAddr?.city || metadata.address_city || "",
+      state: stripeAddr?.state || metadata.address_state || "",
+      zip: stripeAddr?.postal_code || metadata.address_zip || "",
+      country: stripeAddr?.country || metadata.address_country || "",
     };
 
     const shippingAddressString = `${shippingAddressObject.street}${
@@ -78,7 +77,7 @@ export default async function handler(
     }, ${shippingAddressObject.country}`;
 
     const customerName =
-      shippingDetails?.name ||
+      stripeName ||
       session.customer_details?.name ||
       metadata.customer_name ||
       "Customer";
@@ -87,6 +86,14 @@ export default async function handler(
       session.customer_details?.email ||
       metadata.customer_email ||
       process.env.EMAIL_USER;
+
+    // 🛠 Debug: Which source was used
+    if (stripeAddr) {
+      console.log("✅ Address Source: Stripe shipping_details");
+    } else {
+      console.log("⚠️ Address Source: Account metadata fallback");
+    }
+    console.log("📦 Shipping Address Saved:", shippingAddressObject);
 
     const amountTotal = (session.amount_total || 0) / 100;
     const stripeSessionId = session.id;
@@ -136,18 +143,16 @@ export default async function handler(
         archived: false,
       });
       console.log(`✅ Order #${orderNumber} saved to MongoDB`);
-      console.log("📦 Shipping Address Saved:", shippingAddressObject);
     }
 
+    // 📧 Email receipt
     try {
       const itemRows = items
         .map((item: any) => {
           const price = item.discountedPrice ?? item.price ?? 0;
           return `
           <tr>
-            <td style="padding: 8px; border: 1px solid #ddd;">
-              ${item.name}
-            </td>
+            <td style="padding: 8px; border: 1px solid #ddd;">${item.name}</td>
             <td style="padding: 8px; border: 1px solid #ddd;">x${
               item.quantity
             }</td>
@@ -170,10 +175,7 @@ export default async function handler(
 
       const transporter = nodemailer.createTransport({
         service: "gmail",
-        auth: {
-          user: process.env.EMAIL_USER,
-          pass: process.env.EMAIL_PASS,
-        },
+        auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
       });
 
       await transporter.sendMail({

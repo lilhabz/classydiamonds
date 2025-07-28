@@ -1,4 +1,4 @@
-// 📂 pages/api/admin/orders.ts – Admin Orders API with structured shipping fields
+// 📂 pages/api/admin/orders.ts – Admin Orders API with Address Source Indicator 💎
 import type { NextApiRequest, NextApiResponse } from "next";
 import { ObjectId } from "mongodb";
 import clientPromise from "@/lib/mongodb";
@@ -8,9 +8,11 @@ interface RawOrder {
   customerName: string;
   customerEmail: string;
   customerAddress: string;
-  // One-line shipping string
+
+  // One-line string
   shipping_address_string?: string;
-  // Structured shipping object (from webhook)
+
+  // Structured from Stripe webhook
   shipping_address?: {
     street?: string;
     line2?: string;
@@ -19,7 +21,8 @@ interface RawOrder {
     zip?: string;
     country?: string;
   };
-  // Legacy fallback address object
+
+  // Legacy from Account Edit
   address?: {
     street?: string;
     line2?: string;
@@ -28,6 +31,7 @@ interface RawOrder {
     zip?: string;
     country?: string;
   };
+
   items?: Array<{
     name: string;
     quantity: number;
@@ -57,7 +61,6 @@ interface Order {
   customerEmail: string;
   customerAddress: string;
 
-  // Expose structured shipping object or null
   shipping_address: {
     street?: string;
     line2?: string;
@@ -67,8 +70,9 @@ interface Order {
     country?: string;
   } | null;
 
-  // Expose one-line fallback string
   shipping_address_string: string;
+
+  addressSource: "Stripe" | "Account" | "Unknown";
 
   items: OrderItem[];
   amount: number;
@@ -107,35 +111,42 @@ export default async function handler(
     const rawOrders = raw as unknown as RawOrder[];
 
     const orders: Order[] = rawOrders.map((o) => {
-      // Build one-line string if not stored
+      let addressSource: "Stripe" | "Account" | "Unknown" = "Unknown";
+
+      // Determine address priority
+      const shippingObj = o.shipping_address || o.address || null;
+
+      if (o.shipping_address && o.shipping_address.street) {
+        addressSource = "Stripe";
+      } else if (o.address && o.address.street) {
+        addressSource = "Account";
+      }
+
+      // Build fallback string if missing
       const shippingString =
         o.shipping_address_string ||
-        (o.shipping_address
+        (shippingObj
           ? [
-              o.shipping_address.street,
-              o.shipping_address.line2,
-              o.shipping_address.city,
-              o.shipping_address.state && o.shipping_address.zip
-                ? `${o.shipping_address.state} ${o.shipping_address.zip}`
-                : o.shipping_address.zip,
-              o.shipping_address.country,
+              shippingObj.street,
+              shippingObj.line2,
+              shippingObj.city,
+              shippingObj.state && shippingObj.zip
+                ? `${shippingObj.state} ${shippingObj.zip}`
+                : shippingObj.zip,
+              shippingObj.country,
             ]
               .filter(Boolean)
               .join(", ")
           : "");
-
-      // Pick structured object or fallback to legacy address
-      const shippingObj = o.shipping_address || o.address || null;
 
       return {
         _id: o._id.toHexString(),
         customerName: o.customerName,
         customerEmail: o.customerEmail,
         customerAddress: o.customerAddress,
-
         shipping_address: shippingObj,
         shipping_address_string: shippingString,
-
+        addressSource, // <-- New field
         items: (o.items ?? []).map((i) => ({
           name: i.name,
           quantity: i.quantity,
