@@ -1,4 +1,4 @@
-// ✅ pages/admin/index.tsx – Admin Orders with Original & Sale Prices 🔐🛠️
+// ✅ pages/admin/index.tsx – Admin Orders with Structured Shipping Addresses & Prices 🔐🛠️
 
 import { useEffect, useState } from "react";
 import Head from "next/head";
@@ -18,7 +18,20 @@ interface Order {
   customerName: string;
   customerEmail: string;
   customerAddress: string;
+
+  // ➕ Structured address object returned from the API
+  shipping_address?: {
+    street?: string;
+    line2?: string;
+    city?: string;
+    state?: string;
+    zip?: string;
+    country?: string;
+  };
+
+  // fallback one-line string
   shipping_address_string: string;
+
   items: OrderItem[];
   amount: number;
   createdAt: string;
@@ -48,7 +61,7 @@ export default function AdminOrdersPage() {
     try {
       const res = await fetch("/api/admin/orders");
       if (!res.ok) throw new Error(`Status ${res.status}`);
-      const json = await res.json();
+      const json: { orders: Order[]; error?: string } = await res.json();
       setOrders(json.orders || []);
     } catch (err) {
       console.error("❌ Failed to fetch orders:", err);
@@ -61,7 +74,7 @@ export default function AdminOrdersPage() {
   async function confirmAndShip(orderId: string) {
     if (!confirm(`📦 Mark order ${orderId} as shipped?`)) return;
     const adminName =
-      session?.user?.firstName || session?.user?.name?.split(" ")[0];
+      (session?.user as any)?.firstName || session?.user?.name?.split(" ")[0];
     const res = await fetch("/api/shipped", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -78,7 +91,7 @@ export default function AdminOrdersPage() {
   async function archiveOrder(orderId: string) {
     if (!confirm(`🗂 Archive order ${orderId}?`)) return;
     const adminName =
-      session?.user?.firstName || session?.user?.name?.split(" ")[0];
+      (session?.user as any)?.firstName || session?.user?.name?.split(" ")[0];
     const res = await fetch("/api/admin/archived", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -93,11 +106,26 @@ export default function AdminOrdersPage() {
 
   // CSV export
   function downloadCSV() {
-    const headers = ["Name", "Email", "Order ID", "Total", "Date", "Items"];
+    const headers = [
+      "Name",
+      "Email",
+      "Order ID",
+      "Shipping Address",
+      "Total",
+      "Date",
+      "Items",
+    ];
     const rows = orders.map((o) => [
       o.customerName,
       o.customerEmail,
       o.stripeSessionId,
+      o.shipping_address
+        ? `${o.shipping_address.street}${
+            o.shipping_address.line2 ? `, ${o.shipping_address.line2}` : ""
+          }, ${o.shipping_address.city}, ${o.shipping_address.state} ${
+            o.shipping_address.zip
+          }, ${o.shipping_address.country}`
+        : o.shipping_address_string,
       `$${o.amount.toFixed(2)}`,
       new Date(o.createdAt).toLocaleString(),
       o.items
@@ -230,7 +258,21 @@ export default function AdminOrdersPage() {
               🔢 Order #: {o.orderNumber ?? "N/A"} | 🆔{" "}
               {o.stripeSessionId.slice(-8)}
             </p>
-            <p className="mb-2">📍 {o.shipping_address_string}</p>
+
+            {/* ➕ Render structured shipping_address, fallback to the string */}
+            <p className="mb-2">
+              📍{" "}
+              {o.shipping_address
+                ? `${o.shipping_address.street}${
+                    o.shipping_address.line2
+                      ? `, ${o.shipping_address.line2}`
+                      : ""
+                  }, ${o.shipping_address.city}, ${o.shipping_address.state} ${
+                    o.shipping_address.zip
+                  }, ${o.shipping_address.country}`
+                : o.shipping_address_string}
+            </p>
+
             <p className="mb-4">
               🧾 Date: {new Date(o.createdAt).toLocaleString()}
             </p>
