@@ -215,7 +215,7 @@ export default function OrdersPage({
                               <span className="line-through text-gray-400 mr-1">
                                 ${(item.price * item.quantity).toFixed(2)}
                               </span>
-                              <span className="text-red-400 font-semibold">
+                              <span className="text-green-400 font-semibold">
                                 $
                                 {(item.discountedPrice * item.quantity).toFixed(
                                   2

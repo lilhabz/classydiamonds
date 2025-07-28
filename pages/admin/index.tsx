@@ -289,7 +289,7 @@ export default function AdminOrdersPage() {
                         <span className="line-through text-gray-400 mr-2">
                           ${orig.toFixed(2)}
                         </span>
-                        <span className="text-red-400 font-semibold">
+                        <span className="text-green-400 font-semibold">
                           ${sale.toFixed(2)}
                         </span>
                       </>
