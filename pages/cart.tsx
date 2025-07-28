@@ -1,4 +1,4 @@
-// 📤 pages/cart.tsx – Cart with Discount Display and Enhanced Pricing UX 💎
+// 📤 pages/cart.tsx – Cart with Discount Display, Enhanced Pricing UX, and Address Prefill 💎
 
 "use client";
 
@@ -6,11 +6,13 @@ import Head from "next/head";
 import Link from "next/link";
 import { useCart } from "@/context/CartContext";
 import { useState } from "react";
+import { useSession } from "next-auth/react"; // ← import session hook
 import Breadcrumbs from "@/components/Breadcrumbs";
 
 export default function CartPage() {
   const { cartItems, removeFromCart, increaseQty, decreaseQty, clearCart } =
     useCart();
+  const { data: session } = useSession(); // ← grab session data
   const [isLoading, setIsLoading] = useState(false);
 
   // 🧮 Calculate cart total using salePrice
@@ -22,11 +24,26 @@ export default function CartPage() {
   const handleCheckout = async () => {
     if (cartItems.length === 0) return;
     setIsLoading(true);
+
     try {
       const response = await fetch("/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ items: cartItems }),
+        body: JSON.stringify({
+          items: cartItems,
+          // ← pass user info into checkout metadata
+          name: session?.user?.name || "",
+          email: session?.user?.email || "",
+          phone: (session?.user as any)?.phone || "",
+          address: {
+            street1: (session?.user as any)?.address?.street || "",
+            street2: (session?.user as any)?.address?.line2 || "",
+            city: (session?.user as any)?.address?.city || "",
+            state: (session?.user as any)?.address?.state || "",
+            zip: (session?.user as any)?.address?.zip || "",
+            country: (session?.user as any)?.address?.country || "",
+          },
+        }),
       });
 
       const text = await response.text();
@@ -87,8 +104,7 @@ export default function CartPage() {
                   <h2 className="text-lg sm:text-xl font-semibold text-[#cfd2d6]">
                     {item.name}
                   </h2>
-
-                  {/* 💲 Price Display with Discount if Available */}
+                  {/* 💲 Price Display */}
                   {item.salePrice < item.originalPrice ? (
                     <div className="text-sm sm:text-base mt-1">
                       <span className="line-through text-gray-400 mr-2">
@@ -103,14 +119,12 @@ export default function CartPage() {
                       ${item.originalPrice.toFixed(2)}
                     </p>
                   )}
-
                   {/* 🧮 Subtotal if Quantity > 1 */}
                   {item.quantity > 1 && (
                     <p className="text-sm text-gray-400 mt-1">
                       Subtotal: ${(item.salePrice * item.quantity).toFixed(2)}
                     </p>
                   )}
-
                   {/* 🔢 Quantity Controls */}
                   <div className="mt-3 flex items-center justify-center md:justify-start gap-3">
                     <button
@@ -158,10 +172,8 @@ export default function CartPage() {
           <h2 className="text-xl font-bold border-b border-[var(--bg-page)] pb-2">
             Order Summary
           </h2>
-
           <p className="text-sm">Items: {cartItems.length}</p>
           <p className="text-lg font-semibold">Total: ${total.toFixed(2)}</p>
-
           {/* 🛒 Continue Shopping */}
           <Link
             href="/jewelry"
@@ -169,7 +181,6 @@ export default function CartPage() {
           >
             ← Continue Shopping
           </Link>
-
           {/* 🔒 Checkout Button */}
           <div className="mt-4">
             <button

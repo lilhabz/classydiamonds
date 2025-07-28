@@ -1,4 +1,4 @@
-// 📂 pages/api/admin/orders.ts
+// 📂 pages/api/admin/orders.ts – Admin Orders API with structured shipping fields
 import type { NextApiRequest, NextApiResponse } from "next";
 import { ObjectId } from "mongodb";
 import clientPromise from "@/lib/mongodb";
@@ -8,10 +8,10 @@ interface RawOrder {
   customerName: string;
   customerEmail: string;
   customerAddress: string;
-  // existing one‑line string
+  // One-line shipping string
   shipping_address_string?: string;
-  // fallback structured address (from older code)
-  address?: {
+  // Structured shipping object (from webhook)
+  shipping_address?: {
     street?: string;
     line2?: string;
     city?: string;
@@ -19,8 +19,8 @@ interface RawOrder {
     zip?: string;
     country?: string;
   };
-  // ➕ the structured object you insert in your webhook
-  shipping_address?: {
+  // Legacy fallback address object
+  address?: {
     street?: string;
     line2?: string;
     city?: string;
@@ -57,7 +57,7 @@ interface Order {
   customerEmail: string;
   customerAddress: string;
 
-  // ➕ expose the structured address object
+  // Expose structured shipping object or null
   shipping_address: {
     street?: string;
     line2?: string;
@@ -67,7 +67,7 @@ interface Order {
     country?: string;
   } | null;
 
-  // existing one‑line string
+  // Expose one-line fallback string
   shipping_address_string: string;
 
   items: OrderItem[];
@@ -107,22 +107,24 @@ export default async function handler(
     const rawOrders = raw as unknown as RawOrder[];
 
     const orders: Order[] = rawOrders.map((o) => {
-      // build the one-line string if not stored
+      // Build one-line string if not stored
       const shippingString =
         o.shipping_address_string ||
-        [
-          o.address?.street,
-          o.address?.line2,
-          o.address?.city,
-          o.address?.state,
-          o.address?.zip,
-          o.address?.country,
-        ]
-          .filter(Boolean)
-          .join(", ") ||
-        "";
+        (o.shipping_address
+          ? [
+              o.shipping_address.street,
+              o.shipping_address.line2,
+              o.shipping_address.city,
+              o.shipping_address.state && o.shipping_address.zip
+                ? `${o.shipping_address.state} ${o.shipping_address.zip}`
+                : o.shipping_address.zip,
+              o.shipping_address.country,
+            ]
+              .filter(Boolean)
+              .join(", ")
+          : "");
 
-      // pick the structured object from webhook, fallback to address, else null
+      // Pick structured object or fallback to legacy address
       const shippingObj = o.shipping_address || o.address || null;
 
       return {
@@ -131,10 +133,7 @@ export default async function handler(
         customerEmail: o.customerEmail,
         customerAddress: o.customerAddress,
 
-        // ➕ include the structured address
         shipping_address: shippingObj,
-
-        // existing one-line
         shipping_address_string: shippingString,
 
         items: (o.items ?? []).map((i) => ({
@@ -144,8 +143,8 @@ export default async function handler(
           discountedPrice: i.salePrice,
         })),
         amount: o.amount,
-        currency: o.currency ?? "usd",
-        paymentStatus: o.paymentStatus ?? "",
+        currency: o.currency || "usd",
+        paymentStatus: o.paymentStatus || "",
         createdAt: o.createdAt.toISOString(),
         stripeSessionId: o.stripeSessionId,
         orderNumber: o.orderNumber ?? null,
@@ -156,7 +155,7 @@ export default async function handler(
 
     return res.status(200).json({ orders });
   } catch (err: any) {
-    console.error("❌ Failed to fetch all orders:", err);
+    console.error("❌ Failed to fetch orders:", err);
     return res.status(500).json({ orders: [], error: "Server error" });
   }
 }

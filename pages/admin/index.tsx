@@ -104,7 +104,7 @@ export default function AdminOrdersPage() {
     }
   }
 
-  // CSV export
+  // CSV export including shipping address
   function downloadCSV() {
     const headers = [
       "Name",

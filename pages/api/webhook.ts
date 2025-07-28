@@ -1,4 +1,4 @@
-// ✅ Enhanced Stripe Webhook to safely capture shipping info + price accuracy
+// ✅ pages/api/webhook.ts – Enhanced Stripe Webhook to safely capture shipping info + price accuracy
 import { buffer } from "micro";
 import type { NextApiRequest, NextApiResponse } from "next";
 import Stripe from "stripe";
@@ -14,7 +14,6 @@ export const config = {
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string, {
   apiVersion: "2025-04-30.basil",
 });
-
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET as string;
 
 export default async function handler(
@@ -26,7 +25,7 @@ export default async function handler(
     return res.status(405).end("Method Not Allowed");
   }
 
-  // 1️⃣ Verify signature
+  // 1️⃣ Verify Stripe signature
   const buf = await buffer(req);
   const sig = req.headers["stripe-signature"] as string;
   let event: Stripe.Event;
@@ -38,44 +37,70 @@ export default async function handler(
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
-  // 2️⃣ Only handle completed checkouts
+  // 2️⃣ Only handle checkout completion
   if (event.type === "checkout.session.completed") {
     const session = event.data.object as Stripe.Checkout.Session;
-
-    // Log for debugging
-    console.log("🔍 Stripe metadata:", session.metadata);
-    console.log("📦 Shipping details:", (session as any).shipping_details);
-
-    // 3️⃣ Parse your items array from metadata
     const metadata = session.metadata || {};
+
+    console.log("🔍 METADATA:", metadata);
+    console.log(
+      "📦 SHIPPING_DETAILS:",
+      (session as any).shipping_details,
+      session.collected_information?.shipping_details
+    );
+
+    // 3️⃣ Parse items from metadata
     const items = JSON.parse((metadata.items as string) || "[]");
 
-    // 4️⃣ Pull the real shipping_details
-    const shippingDetails = (session as any).shipping_details || {};
-    const shipAddr = shippingDetails.address || {};
+    // 4️⃣ Pull Stripe’s collected shipping (or fallback)
+    const rawShipping =
+      (session as any).shipping_details ||
+      session.collected_information?.shipping_details ||
+      {};
+    const addr = rawShipping.address || {};
 
-    // 5️⃣ Normalize address
-    const shippingAddressObject = {
-      street: shipAddr.line1 || metadata.address_street1 || "",
-      line2: shipAddr.line2 || metadata.address_street2 || "",
-      city: shipAddr.city || metadata.address_city || "",
-      state: shipAddr.state || metadata.address_state || "",
-      zip: shipAddr.postal_code || metadata.address_zip || "",
-      country: shipAddr.country || metadata.address_country || "",
-    };
-    const shippingAddressString = `${shippingAddressObject.street}${
-      shippingAddressObject.line2 ? `, ${shippingAddressObject.line2}` : ""
-    }, ${shippingAddressObject.city}, ${shippingAddressObject.state} ${
-      shippingAddressObject.zip
-    }, ${shippingAddressObject.country}`;
+    // 5️⃣ Normalize address (Stripe first, then metadata)
+    let shippingAddressObject: {
+      street?: string;
+      line2?: string;
+      city?: string;
+      state?: string;
+      zip?: string;
+      country?: string;
+    } | null = null;
+    let shippingAddressString = metadata.customer_address || "";
+
+    if (addr.line1) {
+      shippingAddressObject = {
+        street: addr.line1,
+        line2: addr.line2 || "",
+        city: addr.city || "",
+        state: addr.state || "",
+        zip: addr.postal_code || "",
+        country: addr.country || "",
+      };
+      shippingAddressString = [
+        addr.line1,
+        addr.line2,
+        addr.city,
+        addr.state && addr.postal_code
+          ? `${addr.state} ${addr.postal_code}`
+          : addr.postal_code,
+        addr.country,
+      ]
+        .filter(Boolean)
+        .join(", ");
+    } else if (metadata.customer_address) {
+      shippingAddressObject = { street: metadata.customer_address };
+      shippingAddressString = metadata.customer_address;
+    }
 
     // 6️⃣ Determine customer name & email
     const shippingName =
-      shippingDetails.name ||
+      rawShipping.name ||
       session.customer_details?.name ||
       metadata.customer_name ||
       "Customer";
-    const customerName = shippingName;
     const customerEmail =
       session.customer_details?.email ||
       metadata.customer_email ||
@@ -86,7 +111,7 @@ export default async function handler(
     const stripeSessionId = session.id;
     const orderDate = new Date();
 
-    // 8️⃣ Connect to Mongo
+    // 8️⃣ Connect to MongoDB
     const dbClient = await clientPromise;
     const db = dbClient.db();
     const ordersCollection = db.collection("orders");
@@ -113,12 +138,12 @@ export default async function handler(
       orderNumber = Date.now();
     }
 
-    //  🔟 Avoid duplicates & insert
+    // 🔟 Avoid duplicates & insert
     const existing = await ordersCollection.findOne({ stripeSessionId });
     if (!existing) {
       const orderDoc = {
         orderNumber,
-        customerName,
+        customerName: shippingName,
         customerEmail,
         customerAddress: shippingAddressString,
         address: shippingAddressObject,
@@ -147,7 +172,6 @@ export default async function handler(
     try {
       const itemRows = items
         .map((item: any) => {
-          // item.price here is the price per unit (original or sale)
           const unitPrice = item.price ?? item.discountedPrice ?? 0;
           const subtotal = (unitPrice * item.quantity).toFixed(2);
           return `
@@ -166,7 +190,7 @@ export default async function handler(
 
       const htmlContent = `
         <div style="font-family:Arial,sans-serif;color:#333;max-width:600px;margin:auto;">
-          <h2 style="color:#1f2a44;">Thank You, ${customerName}!</h2>
+          <h2 style="color:#1f2a44;">Thank You, ${shippingName}!</h2>
           <p>Your <strong>Order #${orderNumber}</strong> has been received.</p>
           <p><strong>Session:</strong> ${stripeSessionId}<br>
           <strong>Date:</strong> ${orderDate.toLocaleString()}</p>
@@ -213,6 +237,6 @@ export default async function handler(
     }
   }
 
-  // Always return 200 to Stripe
+  // Always acknowledge receipt
   res.status(200).json({ received: true });
 }
