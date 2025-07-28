@@ -173,13 +173,17 @@ export default async function handler(
     try {
       const itemRows = items
         .map((item: any) => {
-          const price = item.salePrice ?? item.originalPrice ?? 0;
+          const price =
+            item.salePrice ?? item.originalPrice ?? item.price ?? 0;
           return `
           <tr>
-            <td style="padding: 8px; border: 1px solid #ddd;">${item.name}</td>
-            <td style="padding: 8px; border: 1px solid #ddd;">x${
-              item.quantity
-            }</td>
+            <td style="padding: 8px; border: 1px solid #ddd;">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <img src="${item.image}" alt="${item.name}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px;" />
+                <span>${item.name}</span>
+              </div>
+            </td>
+            <td style="padding: 8px; border: 1px solid #ddd;">x${item.quantity}</td>
             <td style="padding: 8px; border: 1px solid #ddd;">$${(
               price * item.quantity
             ).toFixed(2)}</td>
