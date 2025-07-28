@@ -6,12 +6,21 @@ import Link from "next/link";
 import { useSession } from "next-auth/react";
 import Breadcrumbs from "@/components/Breadcrumbs";
 
+interface OrderItem {
+  name: string;
+  quantity?: number;
+  price?: number;
+  discountedPrice?: number;
+  salePrice?: number;
+  originalPrice?: number;
+}
+
 interface Order {
   _id: string;
   customerName: string;
   customerEmail: string;
   customerAddress: string;
-  items?: { name: string; quantity?: number; price?: number }[];
+  items?: OrderItem[];
   amount: number;
   createdAt: string;
   stripeSessionId: string;
@@ -236,28 +245,17 @@ export default function DeliveredOrdersPage() {
           {/* 🧾 Orders */}
           <div id="print-area" className="space-y-10">
             {paginatedOrders.map((order) => (
-              <div
-                key={order._id}
-                className="bg-[var(--bg-nav)] rounded-xl p-6 shadow-md hover:shadow-xl hover:scale-105 transition-transform duration-300"
-              >
+              <div key={order._id} className="bg-[var(--bg-nav)] p-6 rounded-xl shadow">
                 <h2 className="text-xl font-semibold mb-1">
                   {order.customerName} ({order.customerEmail})
                 </h2>
-                <p className="text-sm mb-2 text-gray-300">
-                  🔢 Order #: {order.orderNumber ?? "N/A"}
+                <p className="text-sm text-gray-300 mb-2">
+                  🔢 Order #: {order.orderNumber ?? "N/A"} | 🆔{' '}
+                  {order.stripeSessionId.slice(-8)}
                 </p>
-                <p className="text-sm mb-2 text-gray-300">
-                  🆔 Order ID: {order.stripeSessionId.slice(-8)}
-                </p>
-                <p>
-                  <strong>Address:</strong> {order.customerAddress}
-                </p>
-                <p>
-                  <strong>Total:</strong> ${order.amount.toFixed(2)}
-                </p>
-                <p>
-                  <strong>Delivered At:</strong>{" "}
-                  {new Date(order.deliveredAt || "").toLocaleString()}
+                <p className="mb-2">📍 {order.customerAddress}</p>
+                <p className="mb-4">
+                  🧾 Delivered: {new Date(order.deliveredAt || "").toLocaleString()}
                 </p>
                 {order.trackingNumber && (
                   <p>
@@ -271,11 +269,22 @@ export default function DeliveredOrdersPage() {
                     <ul className="list-disc list-inside space-y-1 mt-2">
                       {order.items.map((item, i) => {
                         const qty = item.quantity ?? 1;
-                        const price = item.price ?? 0;
+                        const basePrice = item.price ?? item.originalPrice ?? 0;
+                        const discountPrice =
+                          item.discountedPrice ?? item.salePrice ?? basePrice;
+                        const orig = basePrice * qty;
+                        const sale = discountPrice * qty;
                         return (
                           <li key={i}>
-                            {item.name || "Unnamed"} × {qty} — $
-                            {(price * qty).toFixed(2)}
+                            {item.name || "Unnamed"} × {qty} —{' '}
+                            {discountPrice < basePrice ? (
+                              <>
+                                <span className="line-through">${orig.toFixed(2)}</span>{' '}
+                                <span className="text-green-400">${sale.toFixed(2)}</span>
+                              </>
+                            ) : (
+                              <span>${orig.toFixed(2)}</span>
+                            )}
                           </li>
                         );
                       })}
@@ -286,13 +295,17 @@ export default function DeliveredOrdersPage() {
                     </p>
                   )}
                 </div>
-
-                <button
-                  onClick={() => archiveOrder(order.stripeSessionId)}
-                  className="mt-4 bg-yellow-600 hover:bg-yellow-700 px-4 py-2 rounded text-sm"
-                >
-                  Archive 🗂
-                </button>
+                <div className="flex justify-between items-center mt-4">
+                  <span className="text-lg font-semibold">
+                    💰 Total: ${order.amount.toFixed(2)}
+                  </span>
+                  <button
+                    onClick={() => archiveOrder(order.stripeSessionId)}
+                    className="bg-yellow-600 px-4 py-2 rounded text-sm"
+                  >
+                    Archive 🗂
+                  </button>
+                </div>
               </div>
             ))}
           </div>

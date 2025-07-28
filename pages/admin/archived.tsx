@@ -6,12 +6,21 @@ import Link from "next/link";
 import { useSession } from "next-auth/react";
 import Breadcrumbs from "@/components/Breadcrumbs";
 
+interface OrderItem {
+  name: string;
+  quantity: number;
+  price?: number;
+  discountedPrice?: number;
+  salePrice?: number;
+  originalPrice?: number;
+}
+
 interface Order {
   _id: string;
   customerName: string;
   customerEmail: string;
   customerAddress: string;
-  items?: { name: string; quantity: number; price: number }[];
+  items?: OrderItem[];
   amount: number;
   createdAt: string;
   stripeSessionId: string;
@@ -88,10 +97,11 @@ export default function ArchivedOrdersPage() {
       `$${order.amount.toFixed(2)}`,
       new Date(order.createdAt || "").toLocaleString(),
       (order.items || [])
-        .map(
-          (i) =>
-            `${i.quantity}× ${i.name} - $${(i.quantity * i.price).toFixed(2)}`
-        )
+        .map((i) => {
+          const qty = i.quantity ?? 1;
+          const unit = i.price ?? i.originalPrice ?? 0;
+          return `${qty}× ${i.name} - $${(qty * unit).toFixed(2)}`;
+        })
         .join(" | "),
     ]);
 
@@ -191,30 +201,40 @@ export default function ArchivedOrdersPage() {
       ) : (
         <div className="space-y-8">
           {paginatedOrders.map((order) => (
-            <div
-              key={order._id}
-              className="bg-[var(--bg-nav)] p-6 rounded-xl shadow-md hover:shadow-xl hover:scale-105 transition-transform duration-300"
-            >
+            <div key={order._id} className="bg-[var(--bg-nav)] p-6 rounded-xl shadow">
               <h2 className="text-xl font-semibold mb-1">
                 {order.customerName} ({order.customerEmail})
               </h2>
-              <p className="text-sm mb-2 text-gray-300">
-                🔢 Order #: {order.orderNumber ?? "N/A"}
-              </p>
-              <p className="text-sm mb-2 text-gray-300">
-                🆔 Order ID: {order.stripeSessionId.slice(-8)}
+              <p className="text-sm text-gray-300 mb-2">
+                🔢 Order #: {order.orderNumber ?? "N/A"} | 🆔{' '}
+                {order.stripeSessionId.slice(-8)}
               </p>
               <p className="mb-2 text-sm">📍 {order.customerAddress}</p>
-              <p className="mb-2 text-sm">
+              <p className="mb-4 text-sm">
                 🧾 Order Date: {new Date(order.createdAt).toLocaleString()}
               </p>
               <ul className="mb-4 pl-4 list-disc text-sm">
-                {order.items?.map((item, index) => (
-                  <li key={index}>
-                    {item.quantity}× {item.name} – ${" "}
-                    {(item.price * item.quantity).toFixed(2)}
-                  </li>
-                ))}
+                {order.items?.map((item, index) => {
+                  const qty = item.quantity ?? 1;
+                  const basePrice = item.price ?? item.originalPrice ?? 0;
+                  const discountPrice =
+                    item.discountedPrice ?? item.salePrice ?? basePrice;
+                  const orig = basePrice * qty;
+                  const sale = discountPrice * qty;
+                  return (
+                    <li key={index}>
+                      {qty}× {item.name} –{' '}
+                      {discountPrice < basePrice ? (
+                        <>
+                          <span className="line-through">${orig.toFixed(2)}</span>{' '}
+                          <span className="text-green-400">${sale.toFixed(2)}</span>
+                        </>
+                      ) : (
+                        <span>${orig.toFixed(2)}</span>
+                      )}
+                    </li>
+                  );
+                })}
               </ul>
               <div className="flex justify-between items-center">
                 <span className="text-lg font-semibold">
@@ -222,7 +242,7 @@ export default function ArchivedOrdersPage() {
                 </span>
                 <button
                   onClick={() => restoreOrder(order.stripeSessionId)}
-                  className="bg-yellow-600 hover:bg-yellow-700 px-4 py-2 rounded text-sm"
+                  className="bg-yellow-600 px-4 py-2 rounded text-sm"
                 >
                   Restore 🗂️
                 </button>
