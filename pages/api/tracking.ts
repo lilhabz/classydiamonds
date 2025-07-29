@@ -28,6 +28,8 @@ export default async function handler(
       return res.status(404).json({ error: "Order not found" });
     }
 
+    const isFirstTracking = !order.trackingNumber;
+
     await db.collection("orders").updateOne(
       { stripeSessionId: orderId },
       {
@@ -35,6 +37,7 @@ export default async function handler(
           trackingNumber,
           carrier: carrier || "",
           trackingUpdatedAt: new Date(),
+          ...(isFirstTracking ? { trackingEmailSentAt: new Date() } : {}),
         },
       }
     );
@@ -79,15 +82,19 @@ export default async function handler(
         </p>
       </div>`;
 
-    await transporter.sendMail({
-      from: `"Classy Diamonds" <${process.env.EMAIL_USER}>`,
-      to: order.customerEmail,
-      subject: "📦 Your Tracking Number",
-      html,
-    });
+    if (isFirstTracking) {
+      await transporter.sendMail({
+        from: `"Classy Diamonds" <${process.env.EMAIL_USER}>`,
+        to: order.customerEmail,
+        subject: "📦 Your Tracking Number",
+        html,
+      });
+      console.log("📧 Tracking email sent to:", order.customerEmail);
+    } else {
+      console.log("ℹ️ Tracking updated without resending email for:", order.customerEmail);
+    }
 
-    console.log("📧 Tracking email sent to:", order.customerEmail);
-    return res.status(200).json({ success: true });
+    return res.status(200).json({ success: true, emailSent: isFirstTracking });
   } catch (err) {
     console.error("❌ Tracking update error:", err);
     return res.status(500).json({ error: "Server error" });
