@@ -310,11 +310,16 @@ export default function AdminOrdersPage() {
                 return (
                   <li key={idx} className="flex items-center gap-2">
                     <Image
-                      src={i.image || ""}
+                      src={i.image || "/products/placeholder.jpg"}
                       alt={i.name}
                       width={48}
                       height={48}
                       className="rounded object-cover"
+                      onError={(e) => {
+                        const target = e.currentTarget as HTMLImageElement;
+                        target.src = "/products/placeholder.jpg";
+                      }}
+                      unoptimized
                     />
                     <span>
                       {i.name} – x{qty} –{' '}
