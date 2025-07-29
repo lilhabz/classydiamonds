@@ -200,21 +200,27 @@ export default function AdminOrdersPage() {
       <h1 className="text-3xl font-serif font-bold mb-6">🛠 Admin Dashboard</h1>
 
       {/* Nav */}
-      <nav className="flex flex-wrap gap-4 mb-8 border-b pb-4 text-sm font-semibold">
-        <Link href="/admin">
-          <a className="text-yellow-400">📦 Orders</a>
+      <nav className="flex flex-wrap justify-center sm:justify-start gap-2 sm:space-x-6 mb-8 border-b border-[var(--bg-nav)] pb-4 text-[var(--foreground)] text-sm font-semibold">
+        <Link href="/admin" className="text-yellow-400">
+          📦 Orders
         </Link>
-        <Link href="/admin/completed">
-          <a>✅ Shipped</a>
+        <Link href="/admin/completed" className="hover:text-yellow-300">
+          ✅ Shipped
         </Link>
-        <Link href="/admin/delivered">
-          <a>📬 Delivered</a>
+        <Link href="/admin/delivered" className="hover:text-yellow-300">
+          📬 Delivered
         </Link>
-        <Link href="/admin/archived">
-          <a>🗂 Archived</a>
+        <Link href="/admin/archived" className="hover:text-yellow-300">
+          🗂 Archived
         </Link>
-        <Link href="/admin/products">
-          <a>🛠 Products</a>
+        <Link href="/admin/products" className="hover:text-yellow-300">
+          🛠 Products
+        </Link>
+        <Link href="/admin/custom-photos" className="hover:text-yellow-300">
+          🖼 Custom
+        </Link>
+        <Link href="/admin/logs" className="hover:text-yellow-300">
+          📝 Logs
         </Link>
       </nav>
 
