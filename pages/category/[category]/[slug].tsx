@@ -1,18 +1,17 @@
-// 📄 pages/category/[category]/[slug].tsx – Final Product Page with Live MongoDB Data + Breadcrumb Fix ✅
+// 📄 pages/category/[category]/[slug].tsx – Luxury Product Page for All Categories 💎
 
 "use client";
 
-import { GetServerSideProps } from "next"; // added for data fetching
+import { GetServerSideProps } from "next";
 import { useCart } from "@/context/CartContext";
-import clientPromise from "@/lib/mongodb"; // added to connect to MongoDB
+import clientPromise from "@/lib/mongodb";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import Head from "next/head";
 import Image from "next/image";
-import { useRouter } from "next/router"; // keep client-side router if needed
 
 // 🔢 Product type from database
 type ProductType = {
-  id: string; // _id from MongoDB as string
+  id: string;
   skuNumber?: number;
   name: string;
   price: number;
@@ -20,13 +19,11 @@ type ProductType = {
   image: string;
   slug: string;
   category: string;
-  gender?: "unisex" | "him" | "her";
   description?: string;
 };
 
 export default function ProductPage({ product }: { product: ProductType }) {
   const { addToCart } = useCart();
-  // const router = useRouter(); // not needed for server props lookup
 
   const capitalizedCategory = product.category
     .replace(/-/g, " ")
@@ -76,37 +73,44 @@ export default function ProductPage({ product }: { product: ProductType }) {
           />
         </div>
 
-        {/* 📦 Product Details */}
-        <section className="pt-14 pb-20 px-4 md:px-8 max-w-7xl mx-auto flex flex-col md:flex-row items-center gap-16">
+        {/* 📦 Product Details – Luxury Layout */}
+        <section className="max-w-7xl mx-auto px-4 md:px-8 py-16 grid grid-cols-1 lg:grid-cols-2 gap-16">
           {/* 🖼 Product Image */}
-          <div className="w-full md:w-1/2 aspect-square relative overflow-hidden rounded-2xl shadow-lg bg-[var(--bg-nav)]">
+          <div className="relative w-full min-h-[600px] rounded-2xl overflow-hidden shadow-2xl bg-[var(--bg-nav)]">
             <Image
               src={product.image}
               alt={`Photo of ${product.name}`}
               fill
-              sizes="(min-width: 768px) 50vw, 100vw"
+              sizes="(min-width: 1024px) 50vw, 100vw"
               className="object-cover"
               priority
             />
           </div>
 
           {/* 📋 Product Info */}
-          <div className="w-full md:w-1/2 flex flex-col gap-8">
-            <h1 className="text-4xl font-bold text-[var(--foreground)]">
-              {product.name}
-            </h1>
-            {product.skuNumber !== undefined && (
-              <p className="text-sm text-gray-400">
-                SKU # {String(product.skuNumber).padStart(5, "0")}
-              </p>
-            )}
-            <p className="text-lg text-[#cfd2d6]">
-              {product.description || "Beautiful handcrafted piece."}
+          <div className="flex flex-col justify-center space-y-8">
+            {/* Title */}
+            <div>
+              <h1 className="text-5xl font-bold tracking-tight text-[var(--foreground)] mb-4">
+                {product.name}
+              </h1>
+              {product.skuNumber && (
+                <p className="text-sm text-gray-400">
+                  SKU # {String(product.skuNumber).padStart(5, "0")}
+                </p>
+              )}
+            </div>
+
+            {/* Description */}
+            <p className="text-lg leading-relaxed text-gray-300 max-w-prose">
+              {product.description || "A timeless handcrafted piece."}
             </p>
-            <p className="text-2xl font-semibold text-[var(--foreground)]">
+
+            {/* Price */}
+            <div className="text-3xl font-semibold">
               {product.salePrice ? (
                 <>
-                  <span className="line-through mr-2 text-xl">
+                  <span className="line-through mr-3 text-gray-400">
                     ${product.price.toLocaleString()}
                   </span>
                   <span className="text-green-500">
@@ -116,20 +120,21 @@ export default function ProductPage({ product }: { product: ProductType }) {
               ) : (
                 <>${product.price.toLocaleString()}</>
               )}
-            </p>
+            </div>
 
+            {/* Add to Cart */}
             <button
               onClick={() =>
                 addToCart({
                   id: product.id,
                   name: product.name,
-                  price: product.price, // ← original price (e.g. $13)
-                  discountedPrice: product.salePrice, // ← sale price (e.g. $10), or undefined
+                  price: product.price,
+                  discountedPrice: product.salePrice,
                   image: product.image,
                   quantity: 1,
                 })
               }
-              className="mt-4 px-6 py-3 bg-[#e0e0e0] text-[#1f2a44] rounded-xl hover:scale-105 transition"
+              className="px-8 py-4 bg-[#e0e0e0] text-[#1f2a44] text-lg font-medium rounded-xl hover:scale-105 transition duration-300"
             >
               Add to Cart
             </button>
@@ -140,7 +145,7 @@ export default function ProductPage({ product }: { product: ProductType }) {
   );
 }
 
-// 📤 Server-side data fetching for single product
+// 📤 Server-side data fetching
 export const getServerSideProps: GetServerSideProps = async ({ params }) => {
   const slug = params?.slug as string;
   const client = await clientPromise;
@@ -157,7 +162,6 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
     image: p.imageUrl,
     slug: p.slug,
     category: p.category,
-    gender: p.gender || "unisex",
     description: p.description || "",
   };
   return { props: { product } };
