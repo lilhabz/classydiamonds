@@ -7,6 +7,7 @@ import { useCart } from "@/context/CartContext";
 import { GetServerSideProps } from "next";
 import clientPromise from "@/lib/mongodb";
 import Breadcrumbs from "@/components/Breadcrumbs";
+import { jewelryData } from "@/data/jewelryData";
 
 export type ProductType = {
   id: string;
@@ -124,10 +125,19 @@ export default function WatchesPage({ products }: WatchesProps) {
     },
   ];
 
+  const staticWatches: ProductType[] = jewelryData
+    .filter((p) => p.category === "watches")
+    .map((p) => ({
+      id: p.id.toString(),
+      slug: p.slug,
+      name: p.name,
+      price: p.price,
+      image: p.image,
+      category: p.category,
+    }));
+
   const watchProducts =
-    products.length >= 12
-      ? products.slice(0, 12)
-      : [...products, ...placeholders].slice(0, 12);
+    [...staticWatches, ...products, ...placeholders].slice(0, 12);
 
   return (
     <div className="min-h-screen flex flex-col bg-[var(--bg-page)] text-[var(--foreground)]">

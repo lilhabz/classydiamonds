@@ -6,6 +6,7 @@ import Image from "next/image";
 import { useCart } from "@/context/CartContext";
 import clientPromise from "@/lib/mongodb";
 import Breadcrumbs from "@/components/Breadcrumbs";
+import { jewelryData } from "@/data/jewelryData";
 
 export type WatchProduct = {
   id: string;
@@ -88,18 +89,33 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
   const slug = params?.slug as string;
   const client = await clientPromise;
   const p = await client.db().collection("products").findOne({ slug });
-  if (!p) {
-    return { notFound: true };
+  let product: WatchProduct | null = null;
+  if (p) {
+    product = {
+      id: p._id.toString(),
+      skuNumber: p.skuNumber ?? null,
+      name: p.name,
+      price: p.price,
+      salePrice: p.salePrice ?? null,
+      image: p.imageUrl || p.image,
+      slug: p.slug,
+      description: p.description || "",
+    };
+  } else {
+    const fallback = jewelryData.find((item) => item.slug === slug);
+    if (!fallback) {
+      return { notFound: true };
+    }
+    product = {
+      id: fallback.id.toString(),
+      skuNumber: fallback.id,
+      name: fallback.name,
+      price: fallback.price,
+      salePrice: (fallback as any).salePrice ?? null,
+      image: fallback.image,
+      slug: fallback.slug,
+      description: (fallback as any).description ?? "",
+    };
   }
-  const product: WatchProduct = {
-    id: p._id.toString(),
-    skuNumber: p.skuNumber ?? null,
-    name: p.name,
-    price: p.price,
-    salePrice: p.salePrice ?? null,
-    image: p.imageUrl || p.image,
-    slug: p.slug,
-    description: p.description || "",
-  };
   return { props: { product } };
 };
