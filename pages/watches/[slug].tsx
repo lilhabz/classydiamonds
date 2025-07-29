@@ -36,14 +36,13 @@ export default function WatchPage({ product }: { product: WatchProduct }) {
           />
         </div>
         <section className="pt-10 pb-16 px-6 max-w-7xl mx-auto flex flex-col md:flex-row items-center gap-12">
-          <div className="w-full md:w-1/2 overflow-hidden rounded-2xl shadow-lg bg-[var(--bg-nav)]">
+          <div className="w-full md:w-1/2 max-w-[600px] aspect-square relative overflow-hidden rounded-2xl shadow-lg bg-[var(--bg-nav)]">
             <Image
               src={product.image}
               alt={`Photo of ${product.name}`}
-              width={600}
-              height={600}
+              fill
               sizes="(min-width: 768px) 50vw, 100vw"
-              className="object-cover w-full h-full"
+              className="object-cover"
               priority
             />
           </div>
