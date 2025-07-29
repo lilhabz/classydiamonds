@@ -7,7 +7,6 @@ import Link from "next/link";
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/router";
 import { useCart } from "@/context/CartContext";
-import { jewelryData } from "@/data/jewelryData"; // static data
 import Breadcrumbs from "@/components/Breadcrumbs";
 
 interface Product {
@@ -32,7 +31,7 @@ export const getServerSideProps: GetServerSideProps<
 > = async ({ query }) => {
   const cat = query.category as string;
   const res = await fetch(
-    `${process.env.NEXTAUTH_URL}/api/products?category=${cat}`
+    `${process.env.NEXTAUTH_URL}/api/products?category=${cat}`,
   );
   const products: Product[] = await res.json();
   return { props: { products, category: cat } };
@@ -48,26 +47,14 @@ export default function CategoryPage({
   const titleRef = useRef<HTMLHeadingElement>(null);
   const router = useRouter();
 
-  // Normalize static data to Product[]
-  const staticProducts: Product[] = jewelryData
-    .filter((p) => p.category.toLowerCase() === category.toLowerCase())
-    .map((p) => ({
-      _id: p.id.toString(), // convert number to string id
-      name: p.name,
-      price: p.price,
-      image: p.image,
-      category: p.category,
-      slug: p.slug,
-    }));
-
-  // Merge both sets
-  const allProducts: Product[] = [...staticProducts, ...products];
+  // Use only products from the database
+  const allProducts: Product[] = products;
 
   const handleLoadMore = () => {
     setVisibleCount((prev) => prev + 4);
     setTimeout(
       () => productsEndRef.current?.scrollIntoView({ behavior: "smooth" }),
-      300
+      300,
     );
   };
 
@@ -166,63 +153,67 @@ export default function CategoryPage({
         >
           {prettyCategory} Pieces
         </h2>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6 auto-rows-fr">
-          {allProducts.slice(0, visibleCount).map((product) => (
-            <div key={product._id} className="group">
-              <div className="bg-[var(--bg-nav)] rounded-2xl overflow-hidden shadow-lg hover:ring-2 hover:ring-[var(--foreground)] hover:scale-105 transition-transform duration-300 flex flex-col h-full justify-between">
-                {/* 🔗 Product Link & Image */}
-                <Link
-                  href={`/category/${product.category}/${product.slug}`}
-                  className="flex-1 flex flex-col h-full"
-                >
-                <div className="product-card-img">
-                  <Image
-                    src={product.image}
-                    alt={product.name}
-                    fill
-                    className="object-cover group-hover:scale-110 transition h-full w-full"
-                  />
+        {allProducts.length === 0 ? (
+          <div className="text-center text-gray-400">No products found.</div>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6 auto-rows-fr">
+            {allProducts.slice(0, visibleCount).map((product) => (
+              <div key={product._id} className="group">
+                <div className="bg-[var(--bg-nav)] rounded-2xl overflow-hidden shadow-lg hover:ring-2 hover:ring-[var(--foreground)] hover:scale-105 transition-transform duration-300 flex flex-col h-full justify-between">
+                  {/* 🔗 Product Link & Image */}
+                  <Link
+                    href={`/category/${product.category}/${product.slug}`}
+                    className="flex-1 flex flex-col h-full"
+                  >
+                    <div className="product-card-img">
+                      <Image
+                        src={product.image}
+                        alt={product.name}
+                        fill
+                        className="object-cover group-hover:scale-110 transition h-full w-full"
+                      />
+                    </div>
+                    <div className="p-4 text-center flex-1 flex flex-col justify-between">
+                      <h3 className="font-semibold text-[var(--foreground)] truncate text-sm">
+                        {product.name}
+                      </h3>
+                      <p className="text-[#cfd2d6] text-sm">
+                        {product.salePrice ? (
+                          <>
+                            <span className="line-through mr-1">
+                              ${product.price.toLocaleString()}
+                            </span>
+                            <span className="text-red-500">
+                              ${product.salePrice.toLocaleString()}
+                            </span>
+                          </>
+                        ) : (
+                          <>${product.price.toLocaleString()}</>
+                        )}
+                      </p>
+                    </div>
+                  </Link>
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      addToCart({
+                        id: product._id,
+                        name: product.name,
+                        price: product.salePrice ?? product.price,
+                        discountedPrice: product.salePrice ?? undefined,
+                        image: product.image,
+                        quantity: 1,
+                      });
+                    }}
+                    className="m-4 px-6 py-3 bg-[#e0e0e0] text-[#1f2a44] rounded-xl hover:scale-105 transition"
+                  >
+                    Add to Cart
+                  </button>
                 </div>
-                <div className="p-4 text-center flex-1 flex flex-col justify-between">
-                  <h3 className="font-semibold text-[var(--foreground)] truncate text-sm">
-                    {product.name}
-                  </h3>
-                  <p className="text-[#cfd2d6] text-sm">
-                    {product.salePrice ? (
-                      <>
-                        <span className="line-through mr-1">
-                          ${product.price.toLocaleString()}
-                        </span>
-                        <span className="text-red-500">
-                          ${product.salePrice.toLocaleString()}
-                        </span>
-                      </>
-                    ) : (
-                      <>${product.price.toLocaleString()}</>
-                    )}
-                  </p>
-                </div>
-              </Link>
-              <button
-                onClick={(e) => {
-                  e.preventDefault();
-                  addToCart({
-                    id: product._id,
-                    name: product.name,
-                    price: product.salePrice ?? product.price,
-                    discountedPrice: product.salePrice ?? undefined,
-                    image: product.image,
-                    quantity: 1,
-                  });
-                }}
-                className="m-4 px-6 py-3 bg-[#e0e0e0] text-[#1f2a44] rounded-xl hover:scale-105 transition"
-              >
-                Add to Cart
-              </button>
-            </div>
+              </div>
+            ))}
           </div>
-          ))}
-        </div>
+        )}
         {/* 🔽 Load More */}
         <div ref={productsEndRef} />
         {visibleCount < allProducts.length ? (
