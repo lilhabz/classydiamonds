@@ -8,6 +8,7 @@ import { GetServerSideProps } from "next";
 import clientPromise from "@/lib/mongodb";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import { jewelryData } from "@/data/jewelryData";
+import slugify from "slugify";
 
 export type ProductType = {
   id: string;
@@ -26,105 +27,6 @@ interface WatchesProps {
 export default function WatchesPage({ products }: WatchesProps) {
   const { addToCart } = useCart();
 
-  const placeholders: ProductType[] = [
-    {
-      id: "p1",
-      name: "Classic Gold Watch",
-      price: 899,
-      image: "/products/placeholder.jpg",
-      slug: "#",
-      category: "watches",
-    },
-    {
-      id: "p2",
-      name: "Elegant Silver Watch",
-      price: 799,
-      image: "/products/placeholder.jpg",
-      slug: "#",
-      category: "watches",
-    },
-    {
-      id: "p3",
-      name: "Modern Chronograph",
-      price: 999,
-      image: "/products/placeholder.jpg",
-      slug: "#",
-      category: "watches",
-    },
-    {
-      id: "p4",
-      name: "Vintage Leather Watch",
-      price: 650,
-      image: "/products/placeholder.jpg",
-      slug: "#",
-      category: "watches",
-    },
-    {
-      id: "p5",
-      name: "Minimalist Steel Watch",
-      price: 720,
-      image: "/products/placeholder.jpg",
-      slug: "#",
-      category: "watches",
-    },
-    {
-      id: "p6",
-      name: "Luxury Diamond Watch",
-      price: 1500,
-      image: "/products/placeholder.jpg",
-      slug: "#",
-      category: "watches",
-    },
-    {
-      id: "p7",
-      name: "Sporty Digital Watch",
-      price: 550,
-      image: "/products/placeholder.jpg",
-      slug: "#",
-      category: "watches",
-    },
-    {
-      id: "p8",
-      name: "Sleek Ceramic Watch",
-      price: 1100,
-      image: "/products/placeholder.jpg",
-      slug: "#",
-      category: "watches",
-    },
-    {
-      id: "p9",
-      name: "Bold Diver Watch",
-      price: 950,
-      image: "/products/placeholder.jpg",
-      slug: "#",
-      category: "watches",
-    },
-    {
-      id: "p10",
-      name: "Retro Quartz Watch",
-      price: 480,
-      image: "/products/placeholder.jpg",
-      slug: "#",
-      category: "watches",
-    },
-    {
-      id: "p11",
-      name: "Automatic GMT Watch",
-      price: 1300,
-      image: "/products/placeholder.jpg",
-      slug: "#",
-      category: "watches",
-    },
-    {
-      id: "p12",
-      name: "Premium Titanium Watch",
-      price: 1750,
-      image: "/products/placeholder.jpg",
-      slug: "#",
-      category: "watches",
-    },
-  ];
-
   const staticWatches: ProductType[] = jewelryData
     .filter((p) => p.category === "watches")
     .map((p) => ({
@@ -136,8 +38,7 @@ export default function WatchesPage({ products }: WatchesProps) {
       category: p.category,
     }));
 
-  const watchProducts =
-    [...staticWatches, ...products, ...placeholders].slice(0, 12);
+  const watchProducts = [...staticWatches, ...products];
 
   return (
     <div className="min-h-screen flex flex-col bg-[var(--bg-page)] text-[var(--foreground)]">
@@ -244,7 +145,7 @@ export const getServerSideProps: GetServerSideProps<
 
   const products: ProductType[] = productsRaw.map((p: any) => ({
     id: p._id.toString(),
-    slug: p.slug,
+    slug: p.slug || slugify(p.name, { lower: true }),
     name: p.name,
     price: p.price,
     image: p.imageUrl || p.image,
