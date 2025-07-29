@@ -7,7 +7,6 @@ import { useCart } from "@/context/CartContext";
 import { GetServerSideProps } from "next";
 import clientPromise from "@/lib/mongodb";
 import Breadcrumbs from "@/components/Breadcrumbs";
-import { jewelryData } from "@/data/jewelryData";
 
 export type ProductType = {
   id: string;
@@ -26,118 +25,7 @@ interface WatchesProps {
 export default function WatchesPage({ products }: WatchesProps) {
   const { addToCart } = useCart();
 
-  const placeholders: ProductType[] = [
-    {
-      id: "p1",
-      name: "Classic Gold Watch",
-      price: 899,
-      image: "/products/placeholder.jpg",
-      slug: "#",
-      category: "watches",
-    },
-    {
-      id: "p2",
-      name: "Elegant Silver Watch",
-      price: 799,
-      image: "/products/placeholder.jpg",
-      slug: "#",
-      category: "watches",
-    },
-    {
-      id: "p3",
-      name: "Modern Chronograph",
-      price: 999,
-      image: "/products/placeholder.jpg",
-      slug: "#",
-      category: "watches",
-    },
-    {
-      id: "p4",
-      name: "Vintage Leather Watch",
-      price: 650,
-      image: "/products/placeholder.jpg",
-      slug: "#",
-      category: "watches",
-    },
-    {
-      id: "p5",
-      name: "Minimalist Steel Watch",
-      price: 720,
-      image: "/products/placeholder.jpg",
-      slug: "#",
-      category: "watches",
-    },
-    {
-      id: "p6",
-      name: "Luxury Diamond Watch",
-      price: 1500,
-      image: "/products/placeholder.jpg",
-      slug: "#",
-      category: "watches",
-    },
-    {
-      id: "p7",
-      name: "Sporty Digital Watch",
-      price: 550,
-      image: "/products/placeholder.jpg",
-      slug: "#",
-      category: "watches",
-    },
-    {
-      id: "p8",
-      name: "Sleek Ceramic Watch",
-      price: 1100,
-      image: "/products/placeholder.jpg",
-      slug: "#",
-      category: "watches",
-    },
-    {
-      id: "p9",
-      name: "Bold Diver Watch",
-      price: 950,
-      image: "/products/placeholder.jpg",
-      slug: "#",
-      category: "watches",
-    },
-    {
-      id: "p10",
-      name: "Retro Quartz Watch",
-      price: 480,
-      image: "/products/placeholder.jpg",
-      slug: "#",
-      category: "watches",
-    },
-    {
-      id: "p11",
-      name: "Automatic GMT Watch",
-      price: 1300,
-      image: "/products/placeholder.jpg",
-      slug: "#",
-      category: "watches",
-    },
-    {
-      id: "p12",
-      name: "Premium Titanium Watch",
-      price: 1750,
-      image: "/products/placeholder.jpg",
-      slug: "#",
-      category: "watches",
-    },
-  ];
-
-  const staticWatches: ProductType[] = jewelryData
-    .filter((p) => p.category === "watches")
-    .map((p) => ({
-      id: p.id.toString(),
-      slug: p.slug,
-      name: p.name,
-      price: p.price,
-      image: p.image,
-      category: p.category,
-    }));
-
-  const watchProducts =
-    [...staticWatches, ...products, ...placeholders].slice(0, 12);
+  const watchProducts = products;
 
   return (
     <div className="min-h-screen flex flex-col bg-[var(--bg-page)] text-[var(--foreground)]">
@@ -172,61 +60,63 @@ export default function WatchesPage({ products }: WatchesProps) {
         <Breadcrumbs />
       </div>
 
-      <section className="pt-20 pb-12 px-4 sm:px-6 max-w-7xl mx-auto">
+      <section className="pt-20 pb-20 px-4 sm:px-6 max-w-7xl mx-auto">
         <h1 className="text-3xl font-serif font-semibold tracking-wide text-white text-center mb-8">
           Watches
         </h1>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6 auto-rows-fr">
-          {watchProducts.map((product) => (
-            <div
-              key={product.id}
-              className="group bg-[var(--bg-nav)] rounded-2xl overflow-hidden shadow-md hover:shadow-2xl hover:scale-105 transition-transform duration-300 flex flex-col h-full justify-between"
-            >
-              <Link
-                href={
-                  product.slug && product.slug !== "#"
-                    ? `/watches/${product.slug}`
-                    : "#"
-                }
-                className="flex-1 flex flex-col h-full"
-              >
-                <div className="product-card-img">
-                  <Image
-                    src={product.image}
-                    alt={product.name}
-                    fill
-                    className="object-cover group-hover:scale-110 transition h-full w-full"
-                  />
+        {watchProducts.length === 0 ? (
+          <div className="text-center text-gray-400">No watches available.</div>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6 auto-rows-fr">
+            {watchProducts.map((product) => {
+              return (
+                <div
+                  key={product.id}
+                  className="group bg-[var(--bg-nav)] rounded-2xl overflow-hidden shadow-md hover:shadow-2xl hover:scale-105 transition-transform duration-300 flex flex-col h-full justify-between"
+                >
+                  <Link
+                    href={`/watches/${product.slug}`}
+                    className="flex-1 flex flex-col h-full"
+                  >
+                    <div className="product-card-img">
+                      <Image
+                        src={product.image}
+                        alt={product.name}
+                        fill
+                        className="object-cover group-hover:scale-110 transition h-full w-full"
+                      />
+                    </div>
+                    <div className="p-4 text-center flex-1 flex flex-col justify-between">
+                      <h3 className="font-semibold text-[var(--foreground)] truncate text-sm tracking-wide leading-snug">
+                        {product.name}
+                      </h3>
+                      <p className="text-[#cfd2d6] text-sm">
+                        ${product.price.toLocaleString()}
+                      </p>
+                    </div>
+                  </Link>
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      addToCart({
+                        id: product.id,
+                        name: product.name,
+                        price: product.price,
+                        discountedPrice: product.salePrice,
+                        image: product.image,
+                        quantity: 1,
+                      });
+                    }}
+                    className="m-4 px-6 py-3 bg-[#e0e0e0] text-[#1f2a44] rounded-xl hover:scale-105 transition"
+                  >
+                    Add to Cart
+                  </button>
                 </div>
-                <div className="p-4 text-center flex-1 flex flex-col justify-between">
-                  <h3 className="font-semibold text-[var(--foreground)] truncate text-sm tracking-wide leading-snug">
-                    {product.name}
-                  </h3>
-                  <p className="text-[#cfd2d6] text-sm">
-                    ${product.price.toLocaleString()}
-                  </p>
-                </div>
-              </Link>
-              <button
-                onClick={(e) => {
-                  e.preventDefault();
-                  addToCart({
-                    id: product.id,
-                    name: product.name,
-                    price: product.price, // ← original price
-                    discountedPrice: product.salePrice, // ← sale price (or undefined)
-                    image: product.image,
-                    quantity: 1,
-                  });
-                }}
-                className="m-4 px-6 py-3 bg-[#e0e0e0] text-[#1f2a44] rounded-xl hover:scale-105 transition"
-              >
-                Add to Cart
-              </button>
-            </div>
-          ))}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </section>
     </div>
   );
