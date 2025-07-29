@@ -52,6 +52,7 @@ export default async function handler(
           i.salePrice !== undefined // sale price if discounted
             ? i.salePrice
             : undefined,
+        image: i.image,
       })),
     }));
 
