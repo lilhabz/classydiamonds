@@ -176,7 +176,7 @@ export default function WatchesPage({ products }: WatchesProps) {
               <Link
                 href={
                   product.slug && product.slug !== "#"
-                    ? `/category/${product.category}/${product.slug}`
+                    ? `/watches/${product.slug}`
                     : "#"
                 }
                 className="flex-1 flex flex-col h-full"
