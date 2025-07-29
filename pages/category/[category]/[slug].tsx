@@ -77,9 +77,9 @@ export default function ProductPage({ product }: { product: ProductType }) {
         </div>
 
         {/* 📦 Product Details */}
-        <section className="pt-14 pb-20 px-4 md:px-8 max-w-5xl mx-auto flex flex-col md:flex-row items-center gap-16">
+        <section className="pt-14 pb-20 px-4 md:px-8 max-w-7xl mx-auto flex flex-col md:flex-row items-center gap-16">
           {/* 🖼 Product Image */}
-          <div className="w-full md:w-1/2 max-w-[600px] aspect-square relative overflow-hidden rounded-2xl shadow-lg bg-[var(--bg-nav)]">
+          <div className="w-full md:w-1/2 aspect-square relative overflow-hidden rounded-2xl shadow-lg bg-[var(--bg-nav)]">
             <Image
               src={product.image}
               alt={`Photo of ${product.name}`}
