@@ -419,11 +419,16 @@ export default function CompletedOrdersPage() {
                         return (
                           <li key={i} className="flex items-center gap-2">
                             <Image
-                              src={item.image || ""}
+                              src={item.image || "/products/placeholder.jpg"}
                               alt={item.name}
                               width={48}
                               height={48}
                               className="rounded object-cover"
+                              onError={(e) => {
+                                const target = e.currentTarget as HTMLImageElement;
+                                target.src = "/products/placeholder.jpg";
+                              }}
+                              unoptimized
                             />
                             <span>
                               {item.name || 'Unnamed'} – x{qty} –{' '}
