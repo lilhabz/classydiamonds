@@ -30,6 +30,7 @@ interface Order {
   shippedAt?: string;
   trackingNumber?: string;
   carrier?: string;
+  trackingEmailSentAt?: string;
   delivered?: boolean;
   deliveredAt?: string;
   archived?: boolean;
@@ -47,6 +48,7 @@ export default function CompletedOrdersPage() {
     Record<string, { trackingNumber: string; carrier: string }>
   >({});
   const [savedTracking, setSavedTracking] = useState<Record<string, string>>({});
+  const [savingTracking, setSavingTracking] = useState<Record<string, boolean>>({});
   const itemsPerPage = 5;
 
   useEffect(() => {
@@ -102,6 +104,7 @@ export default function CompletedOrdersPage() {
     if (savedTracking[orderId] === input.trackingNumber) return;
 
     try {
+      setSavingTracking((p) => ({ ...p, [orderId]: true }));
       const adminName =
         session?.user?.firstName || session?.user?.name?.split(" ")[0];
       const res = await fetch("/api/tracking", {
@@ -120,12 +123,15 @@ export default function CompletedOrdersPage() {
           ...prev,
           [orderId]: input.trackingNumber,
         }));
+        alert("✅ Tracking saved and email sent.");
         fetchCompletedOrders();
       } else {
         alert("❌ " + result.error);
       }
     } catch (err) {
       console.error("❌ Error updating tracking:", err);
+    } finally {
+      setSavingTracking((p) => ({ ...p, [orderId]: false }));
     }
   };
 
@@ -379,17 +385,17 @@ export default function CompletedOrdersPage() {
                     />
                     {(() => {
                       const inputVal =
-                        trackingInputs[order.stripeSessionId]?.trackingNumber ||
-                        "";
+                        trackingInputs[order.stripeSessionId]?.trackingNumber || "";
                       const isSaved =
                         !!inputVal && savedTracking[order.stripeSessionId] === inputVal;
+                      const isSaving = savingTracking[order.stripeSessionId];
                       return (
                         <button
                           onClick={() => updateTracking(order.stripeSessionId)}
-                          disabled={isSaved}
+                          disabled={isSaved || isSaving}
                           className="bg-green-600 px-3 py-1 rounded text-sm disabled:opacity-50"
                         >
-                          {isSaved ? "✅ Saved" : "Save Tracking"}
+                          {isSaved ? "✅ Saved" : isSaving ? "Saving..." : "Save Tracking"}
                         </button>
                       );
                     })()}

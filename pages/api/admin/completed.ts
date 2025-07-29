@@ -40,6 +40,9 @@ export default async function handler(
       archived: o.archived ?? false,
       orderNumber: o.orderNumber,
       stripeSessionId: o.stripeSessionId,
+      trackingNumber: o.trackingNumber,
+      carrier: o.carrier,
+      trackingEmailSentAt: o.trackingEmailSentAt,
 
       items: (o.items || []).map((i: any) => ({
         name: i.name,

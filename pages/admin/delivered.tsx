@@ -30,6 +30,7 @@ interface Order {
   shippedAt?: string;
   trackingNumber?: string;
   carrier?: string;
+  trackingEmailSentAt?: string;
   delivered?: boolean;
   deliveredAt?: string;
   archived?: boolean;
