@@ -28,7 +28,6 @@ const allCategories: Category[] = [
   "watches",
 ];
 
-
 // 🛠️ AdminProduct type mirrors collection
 interface AdminProduct {
   _id: string; // MongoDB ID
@@ -67,8 +66,9 @@ export default function AdminProductsPage() {
   >({});
 
   // ✏️ Product currently being edited
-  const [editingProduct, setEditingProduct] = useState<AdminProduct | null>(null);
-
+  const [editingProduct, setEditingProduct] = useState<AdminProduct | null>(
+    null
+  );
 
   // 📋 Separate form state for editing
   const [editForm, setEditForm] = useState({
@@ -120,17 +120,17 @@ export default function AdminProductsPage() {
   // 📍 Ref to the edit form for scrolling
   const editFormRef = useRef<HTMLFormElement | null>(null);
 
-// 🚚 When a product is selected for editing, smoothly scroll the form into view
-useEffect(() => {
-  if (editingProduct && editFormRef.current) {
-    const headerOffset = 120; // offset for sticky admin header
-    const formTop =
-      editFormRef.current.getBoundingClientRect().top +
-      window.pageYOffset -
-      headerOffset;
-    window.scrollTo({ top: formTop, behavior: "smooth" });
-  }
-}, [editingProduct]);
+  // 🚚 When a product is selected for editing, smoothly scroll the form into view
+  useEffect(() => {
+    if (editingProduct && editFormRef.current) {
+      const headerOffset = 120; // offset for sticky admin header
+      const formTop =
+        editFormRef.current.getBoundingClientRect().top +
+        window.pageYOffset -
+        headerOffset;
+      window.scrollTo({ top: formTop, behavior: "smooth" });
+    }
+  }, [editingProduct]);
   // 🧮 Count of featured items currently selected
   //    Derive from rowEdits: count how many existing products are marked featured
   const featuredCount = Object.values(rowEdits).filter(
@@ -255,7 +255,7 @@ useEffect(() => {
     } catch (err: any) {
       setStatus({ loading: false, error: err.message, success: "" });
     }
-  }; 
+  };
 
   // ==================== HANDLE EDIT PRODUCT ====================
   const handleEditClick = (product: AdminProduct) => {
@@ -294,7 +294,9 @@ useEffect(() => {
         featured: editForm.featured,
       },
     };
-    const newFeaturedCount = Object.values(updatedEdits).filter((ed) => ed.featured).length;
+    const newFeaturedCount = Object.values(updatedEdits).filter(
+      (ed) => ed.featured
+    ).length;
     if (newFeaturedCount > 4) {
       setStatus({
         loading: false,
@@ -313,7 +315,9 @@ useEffect(() => {
           name: editForm.name,
           description: editForm.description,
           price: parseFloat(editForm.price),
-          ...(editForm.salePrice && { salePrice: parseFloat(editForm.salePrice) }),
+          ...(editForm.salePrice && {
+            salePrice: parseFloat(editForm.salePrice),
+          }),
           category: editForm.category,
           featured: editForm.featured,
           gender: editForm.gender,
@@ -322,7 +326,9 @@ useEffect(() => {
       const data = await res.json();
       if (!res.ok) throw new Error(data.message);
 
-      setProducts((p) => p.map((prod) => (prod._id === editingProduct._id ? data.product : prod)));
+      setProducts((p) =>
+        p.map((prod) => (prod._id === editingProduct._id ? data.product : prod))
+      );
       setRowEdits(updatedEdits);
       cancelEdit();
       setStatus({ loading: false, error: "", success: "Product updated ✅" });
@@ -406,7 +412,9 @@ useEffect(() => {
         <Breadcrumbs />
       </div>
 
-      <h1 className="text-3xl font-serif font-bold tracking-wide mb-6">🛠️ Admin Dashboard</h1>
+      <h1 className="text-3xl font-serif font-bold tracking-wide mb-6">
+        🛠️ Admin Dashboard
+      </h1>
 
       <nav className="flex flex-wrap justify-center sm:justify-start gap-2 sm:space-x-6 mb-8 border-b border-[var(--bg-nav)] pb-4 text-[var(--foreground)] text-sm font-semibold">
         <Link href="/admin" className="hover:text-yellow-300">
@@ -435,31 +443,210 @@ useEffect(() => {
       <div className="max-w-6xl mx-auto space-y-6">
         <h2 className="text-2xl font-bold">🛠️ Manage Products</h2>
 
+        {/* ❗ Status Messages */}
+        {status.error && <p className="text-red-500">❌ {status.error}</p>}
+        {status.success && (
+          <p className="text-green-600">✅ {status.success}</p>
+        )}
 
-      {/* ❗ Status Messages */}
-      {status.error && <p className="text-red-500">❌ {status.error}</p>}
-      {status.success && <p className="text-green-600">✅ {status.success}</p>}
+        {/* ✏️ Edit Product Form */}
+        {editingProduct && (
+          <form
+            ref={editFormRef}
+            onSubmit={handleUpdate}
+            style={{ scrollMarginTop: "120px" }}
+            className="grid grid-cols-1 md:grid-cols-2 gap-4 border p-6 rounded-lg bg-[var(--bg-nav)] shadow-lg"
+          >
+            <h3 className="col-span-full text-xl font-bold text-yellow-400 mb-2">
+              ✏️ Editing: {editingProduct.name} (SKU{" "}
+              {String(editingProduct.skuNumber).padStart(5, "0")})
+            </h3>
 
-      {/* ✏️ Edit Product Form */}
-      {editingProduct && (
+            {/* 🖼 Current Image Preview */}
+            <div className="col-span-full flex flex-col items-center mb-4">
+              {editingProduct.imageUrl ? (
+                <Image
+                  src={editingProduct.imageUrl}
+                  alt={editingProduct.name}
+                  width={150}
+                  height={150}
+                  className="object-cover rounded shadow"
+                />
+              ) : (
+                <div className="w-36 h-36 bg-gray-500 rounded flex items-center justify-center text-white">
+                  No Image
+                </div>
+              )}
+            </div>
+
+            {/* 📂 Replace Image */}
+            <label className="col-span-full">
+              🖼 Replace Image
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) =>
+                  setEditForm((f) => ({
+                    ...f,
+                    imageFile: e.target.files?.[0] || null,
+                    imageRemoved: false,
+                  }))
+                }
+                className="mt-1 w-full border rounded p-2 bg-[var(--bg-page)]"
+              />
+            </label>
+
+            {/* ❌ Remove Image */}
+            <button
+              type="button"
+              onClick={() =>
+                setEditForm((f) => ({
+                  ...f,
+                  imageFile: null,
+                  imageRemoved: true,
+                }))
+              }
+              className="col-span-full mt-2 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+            >
+              🗑 Remove Image
+            </button>
+
+            <label>
+              📦 Name
+              <input
+                type="text"
+                required
+                value={editForm.name}
+                onChange={(e) =>
+                  setEditForm((f) => ({ ...f, name: e.target.value }))
+                }
+                className="mt-1 w-full border rounded p-2"
+              />
+            </label>
+            <label>
+              📝 Description
+              <textarea
+                required
+                value={editForm.description}
+                onChange={(e) =>
+                  setEditForm((f) => ({ ...f, description: e.target.value }))
+                }
+                className="mt-1 w-full border rounded p-2"
+              />
+            </label>
+            <label>
+              💲 Price (USD)
+              <input
+                type="number"
+                required
+                value={editForm.price}
+                onChange={(e) =>
+                  setEditForm((f) => ({ ...f, price: e.target.value }))
+                }
+                className="mt-1 w-full border rounded p-2"
+              />
+            </label>
+            <label>
+              🔖 Sale Price (USD)
+              <input
+                type="number"
+                value={editForm.salePrice}
+                onChange={(e) =>
+                  setEditForm((f) => ({ ...f, salePrice: e.target.value }))
+                }
+                className="mt-1 w-full border rounded p-2"
+              />
+            </label>
+            <label>
+              📂 Category
+              <select
+                value={editForm.category}
+                onChange={(e) =>
+                  setEditForm((f) => ({
+                    ...f,
+                    category: e.target.value as Category,
+                  }))
+                }
+                className="mt-1 w-full border rounded p-2 bg-[var(--bg-page)] text-[var(--foreground)]"
+              >
+                {allCategories.map((cat) => (
+                  <option key={cat} value={cat}>
+                    {cat}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              🏷️ Gender
+              <select
+                value={editForm.gender}
+                onChange={(e) =>
+                  setEditForm((f) => ({
+                    ...f,
+                    gender: e.target.value as "unisex" | "him" | "her",
+                  }))
+                }
+                className="mt-1 w-full border rounded p-2 bg-[var(--bg-page)] text-[var(--foreground)]"
+              >
+                {[
+                  { v: "unisex", label: "Unisex" },
+                  { v: "him", label: "For Him" },
+                  { v: "her", label: "For Her" },
+                ].map((g) => (
+                  <option key={g.v} value={g.v}>
+                    {g.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="flex items-center space-x-2">
+              <span>✨ Featured</span>
+              <input
+                type="checkbox"
+                checked={editForm.featured}
+                disabled={featuredCount >= 4 && !editForm.featured}
+                onChange={(e) =>
+                  setEditForm((f) => ({ ...f, featured: e.target.checked }))
+                }
+                className="mt-2"
+              />
+              {featuredCount >= 4 && !editForm.featured && (
+                <span className="text-yellow-400 text-sm">
+                  ⚠️ Max 4 featured reached
+                </span>
+              )}
+            </label>
+            <div className="col-span-full flex space-x-2">
+              <button
+                type="submit"
+                disabled={status.loading}
+                className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+              >
+                {status.loading ? "Saving..." : "Save Changes"}
+              </button>
+              <button
+                type="button"
+                onClick={cancelEdit}
+                className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        )}
+
+        {/* 🆕 Add New Product Form */}
         <form
-          ref={editFormRef}
-          onSubmit={handleUpdate}
-          style={{ scrollMarginTop: "120px" }}
-          className="grid grid-cols-1 md:grid-cols-2 gap-4 border p-4 rounded"
+          onSubmit={handleSubmit}
+          className="grid grid-cols-1 md:grid-cols-2 gap-4"
         >
-          <h3 className="col-span-full text-lg font-semibold">
-            Editing {editingProduct.name}
-          </h3>
           <label>
             📦 Name
             <input
               type="text"
               required
-              value={editForm.name}
-              onChange={(e) =>
-                setEditForm((f) => ({ ...f, name: e.target.value }))
-              }
+              value={formState.name}
+              onChange={(e) => handleInput("name", e.target.value)}
               className="mt-1 w-full border rounded p-2"
             />
           </label>
@@ -467,10 +654,8 @@ useEffect(() => {
             📝 Description
             <textarea
               required
-              value={editForm.description}
-              onChange={(e) =>
-                setEditForm((f) => ({ ...f, description: e.target.value }))
-              }
+              value={formState.description}
+              onChange={(e) => handleInput("description", e.target.value)}
               className="mt-1 w-full border rounded p-2"
             />
           </label>
@@ -479,10 +664,8 @@ useEffect(() => {
             <input
               type="number"
               required
-              value={editForm.price}
-              onChange={(e) =>
-                setEditForm((f) => ({ ...f, price: e.target.value }))
-              }
+              value={formState.price}
+              onChange={(e) => handleInput("price", e.target.value)}
               className="mt-1 w-full border rounded p-2"
             />
           </label>
@@ -490,20 +673,16 @@ useEffect(() => {
             🔖 Sale Price (USD)
             <input
               type="number"
-              value={editForm.salePrice}
-              onChange={(e) =>
-                setEditForm((f) => ({ ...f, salePrice: e.target.value }))
-              }
+              value={formState.salePrice}
+              onChange={(e) => handleInput("salePrice", e.target.value)}
               className="mt-1 w-full border rounded p-2"
             />
           </label>
           <label>
             📂 Category
             <select
-              value={editForm.category}
-              onChange={(e) =>
-                setEditForm((f) => ({ ...f, category: e.target.value as Category }))
-              }
+              value={formState.category}
+              onChange={(e) => handleInput("category", e.target.value)}
               className="mt-1 w-full border rounded p-2 bg-[var(--bg-nav)] text-[var(--foreground)]"
             >
               {[
@@ -524,10 +703,8 @@ useEffect(() => {
           <label>
             🏷️ Gender
             <select
-              value={editForm.gender}
-              onChange={(e) =>
-                setEditForm((f) => ({ ...f, gender: e.target.value as "unisex" | "him" | "her" }))
-              }
+              value={formState.gender}
+              onChange={(e) => handleInput("gender", e.target.value)}
               className="mt-1 w-full border rounded p-2 bg-[var(--bg-nav)] text-[var(--foreground)]"
             >
               {[
@@ -545,293 +722,187 @@ useEffect(() => {
             <span>✨ Featured</span>
             <input
               type="checkbox"
-              checked={editForm.featured}
-              disabled={featuredCount >= 4 && !editForm.featured}
-              onChange={(e) =>
-                setEditForm((f) => ({ ...f, featured: e.target.checked }))
-              }
+              checked={formState.featured}
+              disabled={featuredCount >= 4} // 🚫 Disable if already 4 featured
+              onChange={(e) => handleInput("featured", e.target.checked)}
               className="mt-2"
             />
-            {featuredCount >= 4 && !editForm.featured && (
+            {featuredCount >= 4 && (
               <span className="text-yellow-400 text-sm">
                 ⚠️ Max 4 featured reached
               </span>
             )}
           </label>
-          <div className="col-span-full flex space-x-2">
-            <button
-              type="submit"
-              disabled={status.loading}
-              className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
-            >
-              {status.loading ? "Saving..." : "Save Changes"}
-            </button>
-            <button
-              type="button"
-              onClick={cancelEdit}
-              className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
-            >
-              Cancel
-            </button>
-          </div>
+          <label>
+            🖼️ Image (optional)
+            <input
+              type="file"
+              accept="image/*"
+              onChange={(e) =>
+                handleInput("imageFile", e.target.files?.[0] ?? null)
+              }
+              className="mt-1 w-full"
+            />
+          </label>
+          <button
+            type="submit"
+            disabled={status.loading}
+            className="col-span-full bg-blue-600 text-white rounded py-2 hover:bg-blue-700"
+          >
+            {status.loading ? "Saving..." : "Add Product"}
+          </button>
         </form>
-      )}
 
-      {/* 🆕 Add New Product Form */}
-      <form
-        onSubmit={handleSubmit}
-        className="grid grid-cols-1 md:grid-cols-2 gap-4"
-      >
-        <label>
-          📦 Name
-          <input
-            type="text"
-            required
-            value={formState.name}
-            onChange={(e) => handleInput("name", e.target.value)}
-            className="mt-1 w-full border rounded p-2"
-          />
-        </label>
-        <label>
-          📝 Description
-          <textarea
-            required
-            value={formState.description}
-            onChange={(e) => handleInput("description", e.target.value)}
-            className="mt-1 w-full border rounded p-2"
-          />
-        </label>
-        <label>
-          💲 Price (USD)
-          <input
-            type="number"
-            required
-            value={formState.price}
-            onChange={(e) => handleInput("price", e.target.value)}
-            className="mt-1 w-full border rounded p-2"
-          />
-        </label>
-        <label>
-          🔖 Sale Price (USD)
-          <input
-            type="number"
-            value={formState.salePrice}
-            onChange={(e) => handleInput("salePrice", e.target.value)}
-            className="mt-1 w-full border rounded p-2"
-          />
-        </label>
-        <label>
-          📂 Category
-          <select
-            value={formState.category}
-            onChange={(e) => handleInput("category", e.target.value)}
-            className="mt-1 w-full border rounded p-2 bg-[var(--bg-nav)] text-[var(--foreground)]"
-          >
-            {[
-              "engagement",
-              "wedding-bands",
-              "rings",
-              "bracelets",
-              "necklaces",
-              "earrings",
-              "watches",
-            ].map((cat) => (
-              <option key={cat} value={cat}>
-                {cat}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
-          🏷️ Gender
-          <select
-            value={formState.gender}
-            onChange={(e) => handleInput("gender", e.target.value)}
-            className="mt-1 w-full border rounded p-2 bg-[var(--bg-nav)] text-[var(--foreground)]"
-          >
-            {[
-              { v: "unisex", label: "Unisex" },
-              { v: "him", label: "For Him" },
-              { v: "her", label: "For Her" },
-            ].map((g) => (
-              <option key={g.v} value={g.v}>
-                {g.label}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="flex items-center space-x-2">
-          <span>✨ Featured</span>
-          <input
-            type="checkbox"
-            checked={formState.featured}
-            disabled={featuredCount >= 4} // 🚫 Disable if already 4 featured
-            onChange={(e) => handleInput("featured", e.target.checked)}
-            className="mt-2"
-          />
-          {featuredCount >= 4 && (
-            <span className="text-yellow-400 text-sm">
-              ⚠️ Max 4 featured reached
-            </span>
-          )}
-        </label>
-        <label>
-          🖼️ Image (optional)
-          <input
-            type="file"
-            accept="image/*"
-            onChange={(e) =>
-              handleInput("imageFile", e.target.files?.[0] ?? null)
-            }
-            className="mt-1 w-full"
-          />
-        </label>
-        <button
-          type="submit"
-          disabled={status.loading}
-          className="col-span-full bg-blue-600 text-white rounded py-2 hover:bg-blue-700"
-        >
-          {status.loading ? "Saving..." : "Add Product"}
-        </button>
-      </form>
+        {/* 🗂️ Existing Products Table */}
+        <h2 className="text-xl font-semibold mt-8">🗂️ Current Products</h2>
 
-      {/* 🗂️ Existing Products Table */}
-      <h2 className="text-xl font-semibold mt-8">🗂️ Current Products</h2>
-
-      {loadingList ? (
-        <p>Loading...</p>
-      ) : (
-        <>
-          {/* ⚠️ Warning if too many featured selected */}
-          {featuredCount > 4 && (
-            <p className="text-yellow-500 mb-2">
-              ⚠️ You have selected more than 4 featured items. Please uncheck
-              extras.
-            </p>
-          )}
-          <table className="w-full table-auto border-collapse">
-            <thead>
-              <tr className="bg-[var(--bg-nav)] text-left align-top">
-                <th className="p-2 cursor-pointer" onClick={() => handleSort("skuNumber")}>SKU</th>
-                <th className="p-2">Image</th>
-                <th className="p-2">Name</th>
-                <th className="p-2">
-                  <div className="flex items-center justify-between">
-                    <span>Category</span>
-                    <button type="button" onClick={() => handleSort("category")}>↕</button>
-                  </div>
-                  <select
-                    value={categoryFilter}
-                    onChange={(e) => setCategoryFilter(e.target.value)}
-                    className="mt-1 w-full border rounded p-1 bg-[var(--bg-nav)] text-[var(--foreground)]"
+        {loadingList ? (
+          <p>Loading...</p>
+        ) : (
+          <>
+            {/* ⚠️ Warning if too many featured selected */}
+            {featuredCount > 4 && (
+              <p className="text-yellow-500 mb-2">
+                ⚠️ You have selected more than 4 featured items. Please uncheck
+                extras.
+              </p>
+            )}
+            <table className="w-full table-auto border-collapse">
+              <thead>
+                <tr className="bg-[var(--bg-nav)] text-left align-top">
+                  <th
+                    className="p-2 cursor-pointer"
+                    onClick={() => handleSort("skuNumber")}
                   >
-                    <option value="all">All</option>
-                    {allCategories.map((c) => (
-                      <option key={c} value={c}>
-                        {c}
-                      </option>
-                    ))}
-                  </select>
-                </th>
-                <th className="p-2">
-                  <div className="flex items-center justify-between">
-                    <span>Gender</span>
-                    <button type="button" onClick={() => handleSort("gender")}>↕</button>
-                  </div>
-                  <select
-                    value={genderFilter}
-                    onChange={(e) => setGenderFilter(e.target.value)}
-                    className="mt-1 w-full border rounded p-1 bg-[var(--bg-nav)] text-[var(--foreground)]"
-                  >
-                    <option value="all">All</option>
-                    <option value="him">For Him</option>
-                    <option value="her">For Her</option>
-                    <option value="unisex">Unisex</option>
-                  </select>
-                </th>
-                <th className="p-2">Featured</th>
-                <th className="p-2">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {sortedProducts.map((p) => {
-                const edit = rowEdits[p._id];
-                return (
-                  <tr key={p._id} className="border-t">
-                    <td className="p-2">
-                      {(p.skuNumber ?? 0).toString().padStart(5, "0")}
-                    </td>
-                    <td className="p-2 w-24 h-24 relative">
-                      <Image
-                        src={p.imageUrl}
-                        alt={p.name}
-                        fill
-                        className="object-cover rounded"
-                      />
-                    </td>
-                    <td className="p-2">
-                      <Link
-                        href={`/category/${p.category}/${p.slug}`}
-                        className="hover:text-yellow-300 underline"
-                      >
-                        {p.name}
-                      </Link>
-                    </td>
-                    <td className="p-2 capitalize">{p.category}</td>
-                    <td className="p-2 capitalize">
-                      {p.gender ?? "unisex"}
-                    </td>
-                    <td className="p-2 text-center">
-                      <input
-                        type="checkbox"
-                        checked={edit.featured}
-                        // 🚫 Disable checking if not already featured and count is at 4
-                        disabled={!edit.featured && featuredCount >= 4}
-                        onChange={(e) =>
-                          setRowEdits((r) => ({
-                            ...r,
-                            [p._id]: {
-                              ...r[p._id],
-                              featured: e.target.checked,
-                            },
-                          }))
-                        }
-                      />
-                    </td>
-                    <td className="p-2 space-x-2">
+                    SKU
+                  </th>
+                  <th className="p-2">Image</th>
+                  <th className="p-2">Name</th>
+                  <th className="p-2">
+                    <div className="flex items-center justify-between">
+                      <span>Category</span>
                       <button
-                        onClick={() => handleEditClick(p)}
-                        className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
+                        type="button"
+                        onClick={() => handleSort("category")}
                       >
-                        ✏️ Edit
+                        ↕
                       </button>
+                    </div>
+                    <select
+                      value={categoryFilter}
+                      onChange={(e) => setCategoryFilter(e.target.value)}
+                      className="mt-1 w-full border rounded p-1 bg-[var(--bg-nav)] text-[var(--foreground)]"
+                    >
+                      <option value="all">All</option>
+                      {allCategories.map((c) => (
+                        <option key={c} value={c}>
+                          {c}
+                        </option>
+                      ))}
+                    </select>
+                  </th>
+                  <th className="p-2">
+                    <div className="flex items-center justify-between">
+                      <span>Gender</span>
                       <button
-                        onClick={() => handleDelete(p._id)}
-                        className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700"
+                        type="button"
+                        onClick={() => handleSort("gender")}
                       >
-                        🗑️ Delete
+                        ↕
                       </button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </>
-      )}
+                    </div>
+                    <select
+                      value={genderFilter}
+                      onChange={(e) => setGenderFilter(e.target.value)}
+                      className="mt-1 w-full border rounded p-1 bg-[var(--bg-nav)] text-[var(--foreground)]"
+                    >
+                      <option value="all">All</option>
+                      <option value="him">For Him</option>
+                      <option value="her">For Her</option>
+                      <option value="unisex">Unisex</option>
+                    </select>
+                  </th>
+                  <th className="p-2">Featured</th>
+                  <th className="p-2">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {sortedProducts.map((p) => {
+                  const edit = rowEdits[p._id];
+                  return (
+                    <tr key={p._id} className="border-t">
+                      <td className="p-2">
+                        {(p.skuNumber ?? 0).toString().padStart(5, "0")}
+                      </td>
+                      <td className="p-2 w-24 h-24 relative">
+                        <Image
+                          src={p.imageUrl}
+                          alt={p.name}
+                          fill
+                          className="object-cover rounded"
+                        />
+                      </td>
+                      <td className="p-2">
+                        <Link
+                          href={`/category/${p.category}/${p.slug}`}
+                          className="hover:text-yellow-300 underline"
+                        >
+                          {p.name}
+                        </Link>
+                      </td>
+                      <td className="p-2 capitalize">{p.category}</td>
+                      <td className="p-2 capitalize">{p.gender ?? "unisex"}</td>
+                      <td className="p-2 text-center">
+                        <input
+                          type="checkbox"
+                          checked={edit.featured}
+                          // 🚫 Disable checking if not already featured and count is at 4
+                          disabled={!edit.featured && featuredCount >= 4}
+                          onChange={(e) =>
+                            setRowEdits((r) => ({
+                              ...r,
+                              [p._id]: {
+                                ...r[p._id],
+                                featured: e.target.checked,
+                              },
+                            }))
+                          }
+                        />
+                      </td>
+                      <td className="p-2 space-x-2">
+                        <button
+                          onClick={() => handleEditClick(p)}
+                          className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
+                        >
+                          ✏️ Edit
+                        </button>
+                        <button
+                          onClick={() => handleDelete(p._id)}
+                          className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700"
+                        >
+                          🗑️ Delete
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </>
+        )}
 
-      {/* 💾 Global Save All Changes Button */}
-      <div className="flex justify-end mt-4">
-        <button
-          onClick={handleSaveAll}
-          disabled={status.loading}
-          className="px-6 py-2 bg-green-600 text-white rounded hover:bg-green-700"
-        >
-          {status.loading ? "Saving..." : "Save All Changes 💾"}
-        </button>
-      </div>
+        {/* 💾 Global Save All Changes Button */}
+        <div className="flex justify-end mt-4">
+          <button
+            onClick={handleSaveAll}
+            disabled={status.loading}
+            className="px-6 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+          >
+            {status.loading ? "Saving..." : "Save All Changes 💾"}
+          </button>
+        </div>
 
-      {/* 🚧 Placeholder for future: pagination, search, CSV export, etc. */}
+        {/* 🚧 Placeholder for future: pagination, search, CSV export, etc. */}
       </div>
     </div>
   );
