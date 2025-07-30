@@ -38,9 +38,10 @@ export default function WatchesPage({ products }: WatchesProps) {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
 
+      {/* 🖼 Hero Section */}
       <section className="-mt-20 relative w-full h-[80vh] flex items-center justify-center overflow-hidden">
         <Image
-          src="/hero-jewelry.jpg"
+          src="/hero-jewelry.jpg" // 🛠 (Optional) Replace with a hero specific to watches
           alt="Watch Hero"
           fill
           className="object-cover"
@@ -56,10 +57,12 @@ export default function WatchesPage({ products }: WatchesProps) {
         </div>
       </section>
 
+      {/* 🧭 Breadcrumb */}
       <div className="pl-4 pr-4 sm:pl-8 sm:pr-8 mt-8 mb-8">
         <Breadcrumbs />
       </div>
 
+      {/* 📦 Product Grid */}
       <section className="pt-20 pb-20 px-4 sm:px-6 max-w-7xl mx-auto">
         <h1 className="text-3xl font-serif font-semibold tracking-wide text-white text-center mb-8">
           Watches
@@ -75,8 +78,9 @@ export default function WatchesPage({ products }: WatchesProps) {
                   key={product.id}
                   className="group bg-[var(--bg-nav)] rounded-2xl overflow-hidden shadow-md hover:shadow-2xl hover:scale-105 transition-transform duration-300 flex flex-col h-full justify-between"
                 >
+                  {/* 🔗 FIXED: Link points to /category/watches/[slug] */}
                   <Link
-                    href={`/watches/${product.slug}`}
+                    href={`/category/watches/${product.slug}`}
                     className="flex-1 flex flex-col h-full"
                   >
                     <div className="product-card-img">
@@ -96,6 +100,8 @@ export default function WatchesPage({ products }: WatchesProps) {
                       </p>
                     </div>
                   </Link>
+
+                  {/* 🛒 Add to Cart */}
                   <button
                     onClick={(e) => {
                       e.preventDefault();
@@ -122,6 +128,7 @@ export default function WatchesPage({ products }: WatchesProps) {
   );
 }
 
+// 📤 Server-side data fetching
 export const getServerSideProps: GetServerSideProps<
   WatchesProps
 > = async () => {

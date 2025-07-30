@@ -73,10 +73,10 @@ export default function ProductPage({ product }: { product: ProductType }) {
           />
         </div>
 
-        {/* 📦 Product Details – Luxury Layout */}
+        {/* 📦 Product Details – Unified Luxury Layout */}
         <section className="max-w-7xl mx-auto px-4 md:px-8 py-16 grid grid-cols-1 lg:grid-cols-2 gap-16">
           {/* 🖼 Product Image */}
-          <div className="relative w-full min-h-[600px] rounded-2xl overflow-hidden shadow-2xl bg-[var(--bg-nav)]">
+          <div className="relative w-full h-[400px] sm:h-[500px] md:h-[600px] rounded-2xl overflow-hidden shadow-2xl bg-[var(--bg-nav)]">
             <Image
               src={product.image}
               alt={`Photo of ${product.name}`}
@@ -89,7 +89,7 @@ export default function ProductPage({ product }: { product: ProductType }) {
 
           {/* 📋 Product Info */}
           <div className="flex flex-col justify-center space-y-8">
-            {/* Title */}
+            {/* 🏷 Title & SKU */}
             <div>
               <h1 className="text-5xl font-bold tracking-tight text-[var(--foreground)] mb-4">
                 {product.name}
@@ -101,12 +101,12 @@ export default function ProductPage({ product }: { product: ProductType }) {
               )}
             </div>
 
-            {/* Description */}
+            {/* 📝 Description */}
             <p className="text-lg leading-relaxed text-gray-300 max-w-prose">
               {product.description || "A timeless handcrafted piece."}
             </p>
 
-            {/* Price */}
+            {/* 💲 Price */}
             <div className="text-3xl font-semibold">
               {product.salePrice ? (
                 <>
@@ -122,7 +122,7 @@ export default function ProductPage({ product }: { product: ProductType }) {
               )}
             </div>
 
-            {/* Add to Cart */}
+            {/* 🛒 Add to Cart */}
             <button
               onClick={() =>
                 addToCart({

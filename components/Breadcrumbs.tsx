@@ -1,4 +1,4 @@
-// 📂 components/Breadcrumbs.tsx – Category crumb now always points at /jewelry
+// 📂 components/Breadcrumbs.tsx – Clean, Watches + Jewelry Fixed + Auto Capitalization
 
 import Link from "next/link";
 import { useRouter } from "next/router";
@@ -11,6 +11,8 @@ export default function Breadcrumbs({
   customPaths?: Record<string, string>;
 }) {
   const router = useRouter();
+
+  // Remove "category" from path for cleaner segments
   const segments = router.asPath
     .split("?")[0]
     .split("/")
@@ -21,41 +23,52 @@ export default function Breadcrumbs({
       ? "for-him"
       : router.query.gender === "her"
       ? "for-her"
-      : router.query.category === "for-him" || router.query.category === "for-her"
+      : router.query.category === "for-him" ||
+        router.query.category === "for-her"
       ? (router.query.category as string)
       : null;
 
   const isProductPage = router.pathname === "/category/[category]/[slug]";
-
   let filteredSegments = [...segments];
 
-  // When browsing gender pages ("For Him"/"For Her") without subcategories,
-  // show only the gender crumb. For product pages with a gender filter,
-  // keep just the product slug.
+  // Gender logic: If browsing gender page without product, only show gender crumb
   if (genderParam) {
     filteredSegments = isProductPage ? segments.slice(-1) : [];
   }
 
   const buildHref = (index: number) => {
     const key = segments[index];
+    const isWatches = key?.toLowerCase() === "watches";
 
-    // 1️⃣ Product page & first crumb: always link into /jewelry
+    // 🏷 Product page first crumb → Watches or Jewelry
     if (isProductPage && index === 0) {
+      if (isWatches) {
+        return `/watches`;
+      }
       return `/jewelry?category=${encodeURIComponent(key)}&scroll=true`;
     }
 
-    // 2️⃣ Then allow customPaths for everything else (e.g. slug crumb)
+    // 🔄 Custom paths (if passed)
     if (customPaths[key]) {
       return customPaths[key];
     }
 
-    // 3️⃣ Fallback to reconstructing the URL
+    // 🔁 Default rebuild URL
     return "/" + segments.slice(0, index + 1).join("/");
+  };
+
+  // 🏷 Auto format segment label
+  const formatLabel = (segment: string) => {
+    return (
+      customLabels[segment] ??
+      segment.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
+    );
   };
 
   return (
     <nav className="text-sm text-gray-400 mb-4 px-2">
       <ol className="flex flex-wrap items-center space-x-2">
+        {/* 🏠 Home */}
         {!(genderParam && !isProductPage) && (
           <li>
             <Link href="/" className="hover:text-white text-white/80">
@@ -63,24 +76,28 @@ export default function Breadcrumbs({
             </Link>
           </li>
         )}
+
+        {/* 👔 Gender crumb */}
         {genderParam && (
           <li className="flex items-center">
             <span className="mx-1">›</span>
             <Link
-              href={`/jewelry?gender=${genderParam === "for-him" ? "him" : "her"}&scroll=true`}
+              href={`/jewelry?gender=${
+                genderParam === "for-him" ? "him" : "her"
+              }&scroll=true`}
               className="hover:text-white text-white/70 capitalize"
             >
               {genderParam === "for-him" ? "For Him" : "For Her"}
             </Link>
           </li>
         )}
+
+        {/* 📍 Category & product crumbs */}
         {filteredSegments.map((seg, i) => {
           const origIndex = segments.indexOf(seg);
           const href = buildHref(origIndex);
           const disableScroll = isProductPage && origIndex === 0;
-          const label =
-            customLabels[seg] ??
-            seg.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+          const label = formatLabel(seg);
 
           return (
             <li key={i} className="flex items-center">
