@@ -28,8 +28,8 @@ export default function ProductPage({ product }: { product: ProductType }) {
     .replace(/-/g, " ")
     .replace(/\b\w/g, (c) => c.toUpperCase());
 
-  const placeholder =
-    "https://res.cloudinary.com/demo/image/upload/c_fill,ar_1:1,w_1200,h_1200/v1234567890/gray-placeholder.jpg";
+  // ← use local placeholder from /public/gray-placeholder.jpg
+  const placeholder = "/gray-placeholder.jpg";
 
   // Cloudinary 1:1 crop with placeholder fallback
   const squareImage =
@@ -54,7 +54,7 @@ export default function ProductPage({ product }: { product: ProductType }) {
       </Head>
 
       <div className="min-h-screen flex flex-col bg-[var(--bg-page)] text-[var(--foreground)]">
-        <div className="pl-4 pr-4 sm:pl-8 sm:pr-8 mt-6 mb-6">
+        <div className="px-4 sm:px-8 mt-6 mb-6">
           <Breadcrumbs
             customLabels={{
               [product.category]: capitalizedCategory,
