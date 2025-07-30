@@ -1,5 +1,7 @@
-/** @type {import('next').NextConfig} */
-const nextConfig = {
+// next.config.ts
+import { NextConfig } from "next";
+
+const nextConfig: NextConfig = {
   reactStrictMode: true,
   experimental: {
     // Disable Critters to avoid missing module errors during build
@@ -8,13 +10,13 @@ const nextConfig = {
   images: {
     domains: [
       "res.cloudinary.com", // allow Cloudinary-hosted images
+      // add any other hosts you need here
     ],
   },
   eslint: {
-    // Allow production builds to successfully complete even if
-    // there are ESLint errors in the project.
+    // Allow production builds to complete even if ESLint errors exist
     ignoreDuringBuilds: true,
   },
 };
 
-module.exports = nextConfig;
+export default nextConfig;
