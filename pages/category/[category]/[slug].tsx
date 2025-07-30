@@ -28,15 +28,15 @@ export default function ProductPage({ product }: { product: ProductType }) {
     .replace(/-/g, " ")
     .replace(/\b\w/g, (c) => c.toUpperCase());
 
-  // your local placeholder in /public/gray-placeholder.jpg
+  // local placeholder
   const placeholder = "/gray-placeholder.jpg";
 
-  // if Cloudinary URL, enforce 1:1 crop, else use raw URL or placeholder
+  // ⚡️ KEEP the version folder by swapping only the "/upload/" segment
   const squareImage =
     product.image && product.image.trim() !== ""
       ? product.image.includes("cloudinary.com")
         ? product.image.replace(
-            /\/upload\/(?:[^/]+\/)*/,
+            "/upload/",
             "/upload/c_fill,ar_1:1,w_1200,h_1200/"
           )
         : product.image
@@ -68,7 +68,7 @@ export default function ProductPage({ product }: { product: ProductType }) {
         </div>
 
         <section className="max-w-7xl mx-auto px-4 md:px-8 py-16 grid grid-cols-1 lg:grid-cols-2 gap-16">
-          {/* True 1:1 box */}
+          {/* 🖼 True 1:1 box */}
           <div
             className="relative w-full max-w-[600px] mx-auto rounded-2xl overflow-hidden shadow-2xl bg-[var(--bg-nav)]"
             style={{ aspectRatio: "1 / 1" }}
@@ -79,7 +79,6 @@ export default function ProductPage({ product }: { product: ProductType }) {
               fill
               className="object-cover"
               priority
-              unoptimized
             />
           </div>
 
