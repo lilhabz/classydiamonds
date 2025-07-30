@@ -28,16 +28,16 @@ export default function ProductPage({ product }: { product: ProductType }) {
     .replace(/-/g, " ")
     .replace(/\b\w/g, (c) => c.toUpperCase());
 
-  // use your local placeholder in /public/gray-placeholder.jpg
+  // local fallback if there’s no Cloudinary URL
   const placeholder = "/gray-placeholder.jpg";
 
-  // If it's a Cloudinary URL, preserve its version (v12345/) and inject our 1:1 crop
+  // ensure a 1:1 Cloudinary crop or fallback
   const squareImage =
     product.image && product.image.trim() !== ""
       ? product.image.includes("cloudinary.com")
         ? product.image.replace(
-            /\/upload\/(v\d+\/)?/,
-            "/upload/c_fill,ar_1:1,w_1200,h_1200/$1"
+            /\/upload\/(?:[^/]+\/)*/,
+            "/upload/c_fill,ar_1:1,w_1200,h_1200/"
           )
         : product.image
       : placeholder;
@@ -68,8 +68,11 @@ export default function ProductPage({ product }: { product: ProductType }) {
         </div>
 
         <section className="max-w-7xl mx-auto px-4 md:px-8 py-16 grid grid-cols-1 lg:grid-cols-2 gap-16">
-          {/* 🖼 Fixed Consistent Image Box */}
-          <div className="relative w-full max-w-[600px] aspect-square mx-auto rounded-2xl overflow-hidden shadow-2xl bg-[var(--bg-nav)]">
+          {/* 🖼 True 1:1 box via native CSS aspect-ratio */}
+          <div
+            className="relative w-full max-w-[600px] mx-auto rounded-2xl overflow-hidden shadow-2xl bg-[var(--bg-nav)]"
+            style={{ aspectRatio: "1 / 1" }}
+          >
             <Image
               src={squareImage}
               alt={`Photo of ${product.name}`}
