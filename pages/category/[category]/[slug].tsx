@@ -1,4 +1,4 @@
-// 📄 pages/category/[category]/[slug].tsx – Luxury Product Page for All Categories 💎
+// 📄 pages/category/[category]/[slug].tsx – Luxury Product Page with Square Images 💎
 
 "use client";
 
@@ -29,6 +29,11 @@ export default function ProductPage({ product }: { product: ProductType }) {
     .replace(/-/g, " ")
     .replace(/\b\w/g, (c) => c.toUpperCase());
 
+  // 🛠 Cloudinary 1:1 crop for slug images
+  const squareImage = product.image.includes("cloudinary.com")
+    ? product.image.replace("/upload/", "/upload/c_fill,ar_1:1,w_1200,h_1200/")
+    : product.image;
+
   return (
     <>
       {/* 🧠 SEO */}
@@ -47,10 +52,7 @@ export default function ProductPage({ product }: { product: ProductType }) {
           property="og:description"
           content={product.description || product.name}
         />
-        <meta
-          property="og:image"
-          content={`https://classydiamonds.vercel.app${product.image}`}
-        />
+        <meta property="og:image" content={squareImage} />
         <meta
           property="og:url"
           content={`https://classydiamonds.vercel.app/category/${product.category}/${product.slug}`}
@@ -75,10 +77,10 @@ export default function ProductPage({ product }: { product: ProductType }) {
 
         {/* 📦 Product Details – Unified Luxury Layout */}
         <section className="max-w-7xl mx-auto px-4 md:px-8 py-16 grid grid-cols-1 lg:grid-cols-2 gap-16">
-          {/* 🖼 Product Image */}
+          {/* 🖼 Product Image - Square format */}
           <div className="relative w-full h-[400px] sm:h-[500px] md:h-[600px] rounded-2xl overflow-hidden shadow-2xl bg-[var(--bg-nav)]">
             <Image
-              src={product.image}
+              src={squareImage}
               alt={`Photo of ${product.name}`}
               fill
               sizes="(min-width: 1024px) 50vw, 100vw"
