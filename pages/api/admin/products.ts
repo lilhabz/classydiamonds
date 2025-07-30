@@ -1,4 +1,4 @@
-// 📄 pages/api/admin/products.ts – Admin product list & creation handler with featured + skuNumber support 🛠️
+// 📄 pages/api/admin/products.ts – Admin product list & creation handler with featured + skuNumber + 1:1 crop 🛠️
 
 import type { NextApiRequest, NextApiResponse } from "next";
 import { v2 as cloudinary } from "cloudinary";
@@ -135,25 +135,34 @@ export default async function handler(
     // 📁 Handle image file
     const rawFile = files.image;
     const imageFile = Array.isArray(rawFile) ? rawFile[0] : rawFile;
-    let imageUrl = "/products/placeholder.jpg";
+    let imageUrl =
+      "https://res.cloudinary.com/demo/image/upload/c_fill,ar_1:1,w_1200,h_1200/v1234567890/gray-placeholder.jpg";
 
     if (imageFile && typeof imageFile !== "string") {
-      // ☁️ Upload to Cloudinary
+      // ☁️ Upload to Cloudinary with enforced 1:1 crop
       const uploadResult = await cloudinary.uploader.upload(
         imageFile.filepath,
         {
           folder: "classy-diamonds/original",
-          transformation: [{ quality: "auto" }, { fetch_format: "auto" }],
+          transformation: [
+            { quality: "auto" },
+            { fetch_format: "auto" },
+            { crop: "fill", aspect_ratio: "1:1", width: 1200, height: 1200 },
+          ],
           eager: [
             {
               folder: "classy-diamonds/compressed",
               quality: "auto",
               fetch_format: "auto",
+              crop: "fill",
+              aspect_ratio: "1:1",
+              width: 1200,
+              height: 1200,
             },
           ],
         }
       );
-      imageUrl = uploadResult.eager?.[0]?.secure_url || uploadResult.secure_url;
+      imageUrl = uploadResult.secure_url;
     }
 
     // 🔢 Determine next skuNumber

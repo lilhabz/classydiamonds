@@ -1,4 +1,4 @@
-// 📄 pages/category/[category]/[slug].tsx – Fixed Placeholder + 1:1 Crop 💎
+// 📄 pages/category/[category]/[slug].tsx – Fixed Consistent Box Size 💎
 
 "use client";
 
@@ -31,7 +31,7 @@ export default function ProductPage({ product }: { product: ProductType }) {
   const placeholder =
     "https://res.cloudinary.com/demo/image/upload/c_fill,ar_1:1,w_1200,h_1200/v1234567890/gray-placeholder.jpg";
 
-  // 🛠 Cloudinary 1:1 crop with neutral gray placeholder fallback
+  // Cloudinary 1:1 crop with placeholder fallback
   const squareImage =
     product.image && product.image.trim() !== ""
       ? product.image.includes("cloudinary.com")
@@ -68,8 +68,8 @@ export default function ProductPage({ product }: { product: ProductType }) {
         </div>
 
         <section className="max-w-7xl mx-auto px-4 md:px-8 py-16 grid grid-cols-1 lg:grid-cols-2 gap-16">
-          {/* 🖼 Product Image */}
-          <div className="relative w-full aspect-square rounded-2xl overflow-hidden shadow-2xl bg-[var(--bg-nav)]">
+          {/* 🖼 Fixed Consistent Image Box */}
+          <div className="relative w-full max-w-[600px] aspect-square mx-auto rounded-2xl overflow-hidden shadow-2xl bg-[var(--bg-nav)]">
             <Image
               src={squareImage}
               alt={`Photo of ${product.name}`}

@@ -1,4 +1,4 @@
-// 📄 pages/api/admin/products/[id].ts – Update & Delete a single product 🛠️
+// 📄 pages/api/admin/products/[id].ts – Update & Delete a single product 🛠️ (Now with Cloudinary 1:1 Enforce)
 
 import type { NextApiRequest, NextApiResponse } from "next";
 import { ObjectId } from "mongodb";
@@ -24,6 +24,10 @@ type Data =
   | { success: true; product?: Product }
   | { success: false; message: string };
 
+// 🌫 Neutral placeholder for missing images
+const PLACEHOLDER =
+  "https://res.cloudinary.com/demo/image/upload/c_fill,ar_1:1,w_1200,h_1200/v1234567890/gray-placeholder.jpg";
+
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<Data>
@@ -48,13 +52,23 @@ export default async function handler(
   switch (method) {
     case "PUT":
       try {
-        // Expect JSON body with updates, e.g. { featured: true } or { category: "rings" }
         const updates: Partial<Product> = body;
-        // Remove _id from updates if present
-        delete (updates as any)._id;
-        // Apply update
+        delete (updates as any)._id; // ensure no _id overwrite
+
+        // 🖼 Force 1:1 Cloudinary crop if image provided
+        if (updates.imageUrl) {
+          if (updates.imageUrl.includes("cloudinary.com")) {
+            updates.imageUrl = updates.imageUrl.replace(
+              /\/upload\/(?:[^/]+\/)*/,
+              "/upload/c_fill,ar_1:1,w_1200,h_1200/"
+            );
+          }
+        } else {
+          // 🛠 Fallback to placeholder
+          updates.imageUrl = PLACEHOLDER;
+        }
+
         await collection.updateOne(filter, { $set: updates });
-        // Return updated document
         const updated = await collection.findOne(filter);
         if (!updated) throw new Error("Product not found after update");
         return res.status(200).json({ success: true, product: updated });
