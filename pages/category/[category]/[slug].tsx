@@ -1,4 +1,4 @@
-// 📄 pages/category/[category]/[slug].tsx – Fixed Consistent Box Size 💎
+// 📄 pages/category/[category]/[slug].tsx
 
 "use client";
 
@@ -28,10 +28,10 @@ export default function ProductPage({ product }: { product: ProductType }) {
     .replace(/-/g, " ")
     .replace(/\b\w/g, (c) => c.toUpperCase());
 
-  // local fallback if there’s no Cloudinary URL
+  // your local placeholder in /public/gray-placeholder.jpg
   const placeholder = "/gray-placeholder.jpg";
 
-  // ensure a 1:1 Cloudinary crop or fallback
+  // if Cloudinary URL, enforce 1:1 crop, else use raw URL or placeholder
   const squareImage =
     product.image && product.image.trim() !== ""
       ? product.image.includes("cloudinary.com")
@@ -68,7 +68,7 @@ export default function ProductPage({ product }: { product: ProductType }) {
         </div>
 
         <section className="max-w-7xl mx-auto px-4 md:px-8 py-16 grid grid-cols-1 lg:grid-cols-2 gap-16">
-          {/* 🖼 True 1:1 box via native CSS aspect-ratio */}
+          {/* True 1:1 box */}
           <div
             className="relative w-full max-w-[600px] mx-auto rounded-2xl overflow-hidden shadow-2xl bg-[var(--bg-nav)]"
             style={{ aspectRatio: "1 / 1" }}
@@ -77,9 +77,9 @@ export default function ProductPage({ product }: { product: ProductType }) {
               src={squareImage}
               alt={`Photo of ${product.name}`}
               fill
-              sizes="(min-width: 1024px) 50vw, 100vw"
               className="object-cover"
               priority
+              unoptimized
             />
           </div>
 
