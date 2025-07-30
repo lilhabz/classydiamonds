@@ -31,7 +31,7 @@ export default function ProductPage({ product }: { product: ProductType }) {
   // local placeholder
   const placeholder = "/gray-placeholder.jpg";
 
-  // ⚡️ KEEP the version folder by swapping only the "/upload/" segment
+  // ✅ Force Cloudinary to 1:1 with consistent size
   const squareImage =
     product.image && product.image.trim() !== ""
       ? product.image.includes("cloudinary.com")
@@ -68,11 +68,8 @@ export default function ProductPage({ product }: { product: ProductType }) {
         </div>
 
         <section className="max-w-7xl mx-auto px-4 md:px-8 py-16 grid grid-cols-1 lg:grid-cols-2 gap-16">
-          {/* 🖼 True 1:1 box */}
-          <div
-            className="relative w-full max-w-[600px] mx-auto rounded-2xl overflow-hidden shadow-2xl bg-[var(--bg-nav)]"
-            style={{ aspectRatio: "1 / 1" }}
-          >
+          {/* 🖼 Locked aspect ratio container */}
+          <div className="relative w-full aspect-square max-w-[600px] mx-auto rounded-2xl overflow-hidden shadow-2xl bg-[var(--bg-nav)]">
             <Image
               src={squareImage}
               alt={`Photo of ${product.name}`}
@@ -82,6 +79,7 @@ export default function ProductPage({ product }: { product: ProductType }) {
             />
           </div>
 
+          {/* 📦 Product Info */}
           <div className="flex flex-col justify-center space-y-8">
             <div>
               <h1 className="text-5xl font-bold mb-4">{product.name}</h1>
