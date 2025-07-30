@@ -1,4 +1,4 @@
-// 📄 pages/category/[category]/[slug].tsx – Luxury Product Page with Square Images 💎
+// 📄 pages/category/[category]/[slug].tsx – Luxury Product Page with 1:1 Images + Gray Placeholder 💎
 
 "use client";
 
@@ -16,7 +16,7 @@ type ProductType = {
   name: string;
   price: number;
   salePrice?: number;
-  image: string;
+  image?: string;
   slug: string;
   category: string;
   description?: string;
@@ -29,10 +29,17 @@ export default function ProductPage({ product }: { product: ProductType }) {
     .replace(/-/g, " ")
     .replace(/\b\w/g, (c) => c.toUpperCase());
 
-  // 🛠 Cloudinary 1:1 crop for slug images
-  const squareImage = product.image.includes("cloudinary.com")
-    ? product.image.replace("/upload/", "/upload/c_fill,ar_1:1,w_1200,h_1200/")
-    : product.image;
+  // 🛠 Cloudinary 1:1 crop with neutral gray placeholder fallback
+  const squareImage =
+    product.image && product.image.trim() !== ""
+      ? product.image.includes("cloudinary.com")
+        ? product.image.replace(
+            "/upload/",
+            "/upload/c_fill,ar_1:1,w_1200,h_1200/"
+          )
+        : product.image
+      : "https://res.cloudinary.com/demo/image/upload/c_fill,ar_1:1,w_1200,h_1200/v1234567890/gray-placeholder.jpg";
+  // 🔹 Replace with your own gray placeholder if desired
 
   return (
     <>
@@ -132,7 +139,10 @@ export default function ProductPage({ product }: { product: ProductType }) {
                   name: product.name,
                   price: product.price,
                   discountedPrice: product.salePrice,
-                  image: product.image,
+                  image:
+                    product.image ??
+                    "https://res.cloudinary.com/demo/image/upload/c_fill,ar_1:1,w_1200,h_1200/v1234567890/gray-placeholder.jpg",
+
                   quantity: 1,
                 })
               }
