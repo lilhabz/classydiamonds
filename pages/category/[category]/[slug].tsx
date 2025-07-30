@@ -28,16 +28,16 @@ export default function ProductPage({ product }: { product: ProductType }) {
     .replace(/-/g, " ")
     .replace(/\b\w/g, (c) => c.toUpperCase());
 
-  // ← use local placeholder from /public/gray-placeholder.jpg
+  // use your local placeholder in /public/gray-placeholder.jpg
   const placeholder = "/gray-placeholder.jpg";
 
-  // Cloudinary 1:1 crop with placeholder fallback
+  // If it's a Cloudinary URL, preserve its version (v12345/) and inject our 1:1 crop
   const squareImage =
     product.image && product.image.trim() !== ""
       ? product.image.includes("cloudinary.com")
         ? product.image.replace(
-            /\/upload\/(?:[^/]+\/)*/,
-            "/upload/c_fill,ar_1:1,w_1200,h_1200/"
+            /\/upload\/(v\d+\/)?/,
+            "/upload/c_fill,ar_1:1,w_1200,h_1200/$1"
           )
         : product.image
       : placeholder;
