@@ -68,7 +68,7 @@ export default async function handler(
           );
         });
 
-        // Extract fields safely
+        // Helper to extract string fields
         const getString = (val: any, fallback = ""): string =>
           Array.isArray(val)
             ? val[0] ?? fallback
@@ -76,6 +76,7 @@ export default async function handler(
             ? val
             : fallback;
 
+        // Build update object
         const updates: Partial<Product> = {
           name: getString(fields.name),
           description: getString(fields.description),
@@ -89,17 +90,15 @@ export default async function handler(
             (getString(fields.gender) as "unisex" | "him" | "her") || "unisex",
         };
 
-        // Handle image upload or removal
-        const rawFile = files.image;
-        const imageFile = Array.isArray(rawFile) ? rawFile[0] : rawFile;
-
-        // If "remove image" flag set
+        // Handle image removal flag
         const imageRemoved = getString(fields.imageRemoved, "false") === "true";
         if (imageRemoved) {
           updates.imageUrl = PLACEHOLDER;
         }
 
-        // If new file uploaded
+        // Handle new file upload
+        const rawFile = files.image;
+        const imageFile = Array.isArray(rawFile) ? rawFile[0] : rawFile;
         if (imageFile && typeof imageFile !== "string" && imageFile.filepath) {
           const uploadResult = await cloudinary.uploader.upload(
             imageFile.filepath,
