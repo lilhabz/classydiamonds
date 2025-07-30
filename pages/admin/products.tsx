@@ -291,32 +291,29 @@ export default function AdminProductsPage() {
 
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
-    // … featured‐count check …
-
     setStatus({ loading: true, error: "", success: "" });
-    try {
-      const formData = new FormData();
-      formData.append("name", editForm.name);
-      formData.append("description", editForm.description);
-      formData.append("price", editForm.price);
-      if (editForm.salePrice) formData.append("salePrice", editForm.salePrice);
-      formData.append("category", editForm.category);
-      formData.append("featured", editForm.featured ? "true" : "false");
-      formData.append("gender", editForm.gender);
-      formData.append("imageRemoved", editForm.imageRemoved ? "true" : "false");
-      if (editForm.imageFile) formData.append("image", editForm.imageFile);
 
-      const res = await fetch(`/api/admin/products/${editingProduct!._id}`, {
-        method: "PUT",
-        body: formData, // ← multipart/form-data
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message);
+    const formData = new FormData();
+    formData.append("name", editForm.name);
+    formData.append("description", editForm.description);
+    formData.append("price", editForm.price);
+    if (editForm.salePrice) formData.append("salePrice", editForm.salePrice);
+    formData.append("category", editForm.category);
+    formData.append("featured", editForm.featured ? "true" : "false");
+    formData.append("gender", editForm.gender);
+    formData.append("imageRemoved", editForm.imageRemoved ? "true" : "false");
+    if (editForm.imageFile) formData.append("image", editForm.imageFile);
 
-      // … update local state, cancelEdit, success …
-    } catch (err: any) {
-      setStatus({ loading: false, error: err.message, success: "" });
-    }
+    const res = await fetch(`/api/admin/products/${editingProduct!._id}`, {
+      method: "PUT",
+      body: formData,
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message);
+
+    // update local state, then:
+    cancelEdit();
+    setStatus({ loading: false, error: "", success: "Product updated ✅" });
   };
 
   // ==================== BATCH SAVE ALL CHANGES ====================
