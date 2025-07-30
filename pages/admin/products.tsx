@@ -767,127 +767,132 @@ export default function AdminProductsPage() {
                 extras.
               </p>
             )}
-            <table className="w-full table-auto border-collapse">
-              <thead>
-                <tr className="bg-[var(--bg-nav)] text-left align-top">
-                  <th
-                    className="p-2 cursor-pointer"
-                    onClick={() => handleSort("skuNumber")}
-                  >
-                    SKU
-                  </th>
-                  <th className="p-2">Image</th>
-                  <th className="p-2">Name</th>
-                  <th className="p-2">
-                    <div className="flex items-center justify-between">
-                      <span>Category</span>
-                      <button
-                        type="button"
-                        onClick={() => handleSort("category")}
-                      >
-                        ↕
-                      </button>
-                    </div>
-                    <select
-                      value={categoryFilter}
-                      onChange={(e) => setCategoryFilter(e.target.value)}
-                      className="mt-1 w-full border rounded p-1 bg-[var(--bg-nav)] text-[var(--foreground)]"
+
+            {/* ⚡ Make this div scrollable on small screens */}
+            <div className="overflow-x-auto w-full">
+              <table className="min-w-max w-full table-auto border-collapse">
+                <thead>
+                  <tr className="bg-[var(--bg-nav)] text-left align-top">
+                    <th
+                      className="p-2 cursor-pointer"
+                      onClick={() => handleSort("skuNumber")}
                     >
-                      <option value="all">All</option>
-                      {allCategories.map((c) => (
-                        <option key={c} value={c}>
-                          {c}
-                        </option>
-                      ))}
-                    </select>
-                  </th>
-                  <th className="p-2">
-                    <div className="flex items-center justify-between">
-                      <span>Gender</span>
-                      <button
-                        type="button"
-                        onClick={() => handleSort("gender")}
+                      SKU
+                    </th>
+                    <th className="p-2">Image</th>
+                    <th className="p-2">Name</th>
+                    <th className="p-2">
+                      <div className="flex items-center justify-between">
+                        <span>Category</span>
+                        <button
+                          type="button"
+                          onClick={() => handleSort("category")}
+                        >
+                          ↕
+                        </button>
+                      </div>
+                      <select
+                        value={categoryFilter}
+                        onChange={(e) => setCategoryFilter(e.target.value)}
+                        className="mt-1 w-full border rounded p-1 bg-[var(--bg-nav)] text-[var(--foreground)]"
                       >
-                        ↕
-                      </button>
-                    </div>
-                    <select
-                      value={genderFilter}
-                      onChange={(e) => setGenderFilter(e.target.value)}
-                      className="mt-1 w-full border rounded p-1 bg-[var(--bg-nav)] text-[var(--foreground)]"
-                    >
-                      <option value="all">All</option>
-                      <option value="him">For Him</option>
-                      <option value="her">For Her</option>
-                      <option value="unisex">Unisex</option>
-                    </select>
-                  </th>
-                  <th className="p-2">Featured</th>
-                  <th className="p-2">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {sortedProducts.map((p) => {
-                  const edit = rowEdits[p._id];
-                  return (
-                    <tr key={p._id} className="border-t">
-                      <td className="p-2">
-                        {(p.skuNumber ?? 0).toString().padStart(5, "0")}
-                      </td>
-                      <td className="p-2 w-24 h-24 relative">
-                        <Image
-                          src={p.imageUrl}
-                          alt={p.name}
-                          fill
-                          className="object-cover rounded"
-                        />
-                      </td>
-                      <td className="p-2">
-                        <Link
-                          href={`/category/${p.category}/${p.slug}`}
-                          className="hover:text-yellow-300 underline"
-                        >
-                          {p.name}
-                        </Link>
-                      </td>
-                      <td className="p-2 capitalize">{p.category}</td>
-                      <td className="p-2 capitalize">{p.gender ?? "unisex"}</td>
-                      <td className="p-2 text-center">
-                        <input
-                          type="checkbox"
-                          checked={edit.featured}
-                          // 🚫 Disable checking if not already featured and count is at 4
-                          disabled={!edit.featured && featuredCount >= 4}
-                          onChange={(e) =>
-                            setRowEdits((r) => ({
-                              ...r,
-                              [p._id]: {
-                                ...r[p._id],
-                                featured: e.target.checked,
-                              },
-                            }))
-                          }
-                        />
-                      </td>
-                      <td className="p-2 space-x-2">
+                        <option value="all">All</option>
+                        {allCategories.map((c) => (
+                          <option key={c} value={c}>
+                            {c}
+                          </option>
+                        ))}
+                      </select>
+                    </th>
+                    <th className="p-2">
+                      <div className="flex items-center justify-between">
+                        <span>Gender</span>
                         <button
-                          onClick={() => handleEditClick(p)}
-                          className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
+                          type="button"
+                          onClick={() => handleSort("gender")}
                         >
-                          ✏️ Edit
+                          ↕
                         </button>
-                        <button
-                          onClick={() => handleDelete(p._id)}
-                          className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700"
-                        >
-                          🗑️ Delete
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                      </div>
+                      <select
+                        value={genderFilter}
+                        onChange={(e) => setGenderFilter(e.target.value)}
+                        className="mt-1 w-full border rounded p-1 bg-[var(--bg-nav)] text-[var(--foreground)]"
+                      >
+                        <option value="all">All</option>
+                        <option value="him">For Him</option>
+                        <option value="her">For Her</option>
+                        <option value="unisex">Unisex</option>
+                      </select>
+                    </th>
+                    <th className="p-2">Featured</th>
+                    <th className="p-2">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sortedProducts.map((p) => {
+                    const edit = rowEdits[p._id];
+                    return (
+                      <tr key={p._id} className="border-t">
+                        <td className="p-2">
+                          {(p.skuNumber ?? 0).toString().padStart(5, "0")}
+                        </td>
+                        <td className="p-2 w-24 h-24 relative">
+                          <Image
+                            src={p.imageUrl}
+                            alt={p.name}
+                            fill
+                            className="object-cover rounded"
+                          />
+                        </td>
+                        <td className="p-2">
+                          <Link
+                            href={`/category/${p.category}/${p.slug}`}
+                            className="hover:text-yellow-300 underline"
+                          >
+                            {p.name}
+                          </Link>
+                        </td>
+                        <td className="p-2 capitalize">{p.category}</td>
+                        <td className="p-2 capitalize">
+                          {p.gender ?? "unisex"}
+                        </td>
+                        <td className="p-2 text-center">
+                          <input
+                            type="checkbox"
+                            checked={edit.featured}
+                            disabled={!edit.featured && featuredCount >= 4}
+                            onChange={(e) =>
+                              setRowEdits((r) => ({
+                                ...r,
+                                [p._id]: {
+                                  ...r[p._id],
+                                  featured: e.target.checked,
+                                },
+                              }))
+                            }
+                          />
+                        </td>
+                        <td className="p-2 space-x-2">
+                          <button
+                            onClick={() => handleEditClick(p)}
+                            className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
+                          >
+                            ✏️ Edit
+                          </button>
+                          <button
+                            onClick={() => handleDelete(p._id)}
+                            className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700"
+                          >
+                            🗑️ Delete
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           </>
         )}
 
