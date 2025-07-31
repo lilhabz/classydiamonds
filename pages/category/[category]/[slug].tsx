@@ -31,7 +31,7 @@ export default function ProductPage({ product }: { product: ProductType }) {
   // Local placeholder
   const placeholder = "/gray-placeholder.jpg";
 
-  // ✅ Force Cloudinary to 1:1 with consistent size
+  // ✅ Safe Cloudinary handling with fallback
   const squareImage =
     product.image && product.image.trim() !== ""
       ? product.image.includes("cloudinary.com")
@@ -152,7 +152,8 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
     name: p.name,
     price: p.price,
     salePrice: p.salePrice ?? null,
-    image: p.imageUrl,
+    // ✅ Pull from imageUrl OR image
+    image: p.imageUrl || p.image || "",
     slug: p.slug,
     category: p.category,
     description: p.description || "",
