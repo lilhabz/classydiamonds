@@ -28,7 +28,7 @@ export default function ProductPage({ product }: { product: ProductType }) {
     .replace(/-/g, " ")
     .replace(/\b\w/g, (c) => c.toUpperCase());
 
-  // local placeholder
+  // Local placeholder
   const placeholder = "/gray-placeholder.jpg";
 
   // ✅ Force Cloudinary to 1:1 with consistent size
@@ -37,7 +37,7 @@ export default function ProductPage({ product }: { product: ProductType }) {
       ? product.image.includes("cloudinary.com")
         ? product.image.replace(
             "/upload/",
-            "/upload/c_fill,ar_1:1,w_1200,h_1200/"
+            "/upload/c_fill,ar_1:1,w_1000,h_1000/"
           )
         : product.image
       : placeholder;
@@ -54,6 +54,7 @@ export default function ProductPage({ product }: { product: ProductType }) {
       </Head>
 
       <div className="min-h-screen flex flex-col bg-[var(--bg-page)] text-[var(--foreground)]">
+        {/* 🔗 Breadcrumbs */}
         <div className="px-4 sm:px-8 mt-6 mb-6">
           <Breadcrumbs
             customLabels={{
@@ -67,9 +68,11 @@ export default function ProductPage({ product }: { product: ProductType }) {
           />
         </div>
 
+        {/* 📦 Main Product Section */}
         <section className="max-w-7xl mx-auto px-4 md:px-8 py-16 grid grid-cols-1 lg:grid-cols-2 gap-16">
-          {/* 🖼 Locked aspect ratio container */}
-          <div className="relative w-full aspect-square max-w-[600px] mx-auto rounded-2xl overflow-hidden shadow-2xl bg-[var(--bg-nav)]">
+          
+          {/* 🖼 Product Image - Fixed desktop size, responsive mobile */}
+          <div className="relative w-full max-w-[500px] aspect-square mx-auto rounded-2xl overflow-hidden shadow-2xl bg-[var(--bg-nav)] sm:w-[400px] md:w-[500px]">
             <Image
               src={squareImage}
               alt={`Photo of ${product.name}`}
@@ -79,10 +82,12 @@ export default function ProductPage({ product }: { product: ProductType }) {
             />
           </div>
 
-          {/* 📦 Product Info */}
+          {/* 📄 Product Info */}
           <div className="flex flex-col justify-center space-y-8">
             <div>
-              <h1 className="text-5xl font-bold mb-4">{product.name}</h1>
+              <h1 className="text-4xl sm:text-5xl font-bold mb-4">
+                {product.name}
+              </h1>
               {product.skuNumber && (
                 <p className="text-sm text-gray-400">
                   SKU # {String(product.skuNumber).padStart(5, "0")}
@@ -90,11 +95,12 @@ export default function ProductPage({ product }: { product: ProductType }) {
               )}
             </div>
 
-            <p className="text-lg text-gray-300 max-w-prose">
+            <p className="text-base sm:text-lg text-gray-300 max-w-prose">
               {product.description || "A timeless handcrafted piece."}
             </p>
 
-            <div className="text-3xl font-semibold">
+            {/* 💰 Price Display */}
+            <div className="text-2xl sm:text-3xl font-semibold">
               {product.salePrice ? (
                 <>
                   <span className="line-through mr-3 text-gray-400">
@@ -109,6 +115,7 @@ export default function ProductPage({ product }: { product: ProductType }) {
               )}
             </div>
 
+            {/* 🛒 Add to Cart */}
             <button
               onClick={() =>
                 addToCart({
