@@ -9,6 +9,10 @@ import Breadcrumbs from "@/components/Breadcrumbs";
 import Head from "next/head";
 import Image from "next/image";
 
+// ✅ Import product data for fallback
+import { jewelryData } from "@/data/jewelryData";
+import { productsData } from "@/data/productsData";
+
 type ProductType = {
   id: string;
   skuNumber?: number;
@@ -28,10 +32,15 @@ export default function ProductPage({ product }: { product: ProductType }) {
     .replace(/-/g, " ")
     .replace(/\b\w/g, (c) => c.toUpperCase());
 
-  // Local placeholder
   const placeholder = "/gray-placeholder.jpg";
 
-  // ✅ Safe Cloudinary handling with fallback
+  // ✅ Fallback: if DB image missing, use matching productData/jewelryData image
+  const fallbackImage =
+    [...jewelryData, ...productsData].find(
+      (item) => item.slug === product.slug
+    )?.image || placeholder;
+
+  // ✅ Safe Cloudinary transform (only if Cloudinary URL is valid)
   const squareImage =
     product.image && product.image.trim() !== ""
       ? product.image.includes("cloudinary.com")
@@ -40,7 +49,7 @@ export default function ProductPage({ product }: { product: ProductType }) {
             "/upload/c_fill,ar_1:1,w_1000,h_1000/"
           )
         : product.image
-      : placeholder;
+      : fallbackImage;
 
   return (
     <>
@@ -74,11 +83,14 @@ export default function ProductPage({ product }: { product: ProductType }) {
           {/* 🖼 Product Image - Fixed desktop size, responsive mobile */}
           <div className="relative w-full max-w-[500px] aspect-square mx-auto rounded-2xl overflow-hidden shadow-2xl bg-[var(--bg-nav)] sm:w-[400px] md:w-[500px]">
             <Image
-              src={squareImage}
+              src={squareImage || placeholder}
               alt={`Photo of ${product.name}`}
               fill
               className="object-cover"
               priority
+              onError={(e) =>
+                ((e.target as HTMLImageElement).src = placeholder)
+              }
             />
           </div>
 
@@ -126,7 +138,7 @@ export default function ProductPage({ product }: { product: ProductType }) {
                   image:
                     product.image && product.image.trim() !== ""
                       ? product.image
-                      : placeholder,
+                      : fallbackImage,
                   quantity: 1,
                 })
               }
@@ -152,7 +164,7 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
     name: p.name,
     price: p.price,
     salePrice: p.salePrice ?? null,
-    // ✅ Pull from imageUrl OR image
+    // ✅ Pull from DB or fallback
     image: p.imageUrl || p.image || "",
     slug: p.slug,
     category: p.category,
