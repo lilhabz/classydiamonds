@@ -6,7 +6,6 @@ import slugify from "slugify";
 import clientPromise from "@/lib/mongodb";
 import { IncomingForm } from "formidable";
 
-// Disable Next.js built-in body parser to handle multipart/form-data
 export const config = { api: { bodyParser: false } };
 
 type Product = {
@@ -30,11 +29,13 @@ type Data =
   | { success: true; product: Product }
   | { success?: false; message: string };
 
+const PLACEHOLDER =
+  "https://res.cloudinary.com/demo/image/upload/c_fill,ar_1:1,w_1200,h_1200/v1234567890/gray-placeholder.jpg";
+
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<Data>
 ) {
-  // 📦 Cloudinary config
   if (
     !process.env.CLOUDINARY_CLOUD_NAME ||
     !process.env.CLOUDINARY_API_KEY ||
@@ -51,7 +52,6 @@ export default async function handler(
     api_secret: process.env.CLOUDINARY_API_SECRET,
   });
 
-  // 🔄 CORS preflight
   if (req.method === "OPTIONS") {
     res.setHeader("Allow", ["GET", "POST", "OPTIONS"]);
     return res.status(200).end();
@@ -61,7 +61,7 @@ export default async function handler(
   const db = client.db();
   const collection = db.collection("products");
 
-  // 📝 GET: list all products
+  // GET: list all products
   if (req.method === "GET") {
     const raw = await collection.find().sort({ skuNumber: 1 }).toArray();
 
@@ -84,7 +84,7 @@ export default async function handler(
     return res.status(200).json({ success: true, products });
   }
 
-  // ✋ Only allow POST beyond this point
+  // POST: create product
   if (req.method !== "POST") {
     res.setHeader("Allow", ["GET", "POST", "OPTIONS"]);
     return res
@@ -93,7 +93,6 @@ export default async function handler(
   }
 
   try {
-    // 🛠️ Parse multipart/form-data
     const form = new IncomingForm();
     const { fields, files } = await new Promise<any>((resolve, reject) => {
       form.parse(req, (err, flds, fls) =>
@@ -101,7 +100,6 @@ export default async function handler(
       );
     });
 
-    // 🔍 Helper to extract a string
     const getString = (val: any, fallback = ""): string =>
       Array.isArray(val)
         ? val[0] ?? fallback
@@ -109,7 +107,6 @@ export default async function handler(
         ? val
         : fallback;
 
-    // 📋 Extract fields
     const name = getString(fields.name);
     const description = getString(fields.description);
     const price = parseFloat(getString(fields.price, "0"));
@@ -132,10 +129,10 @@ export default async function handler(
       ? [getString(tagsRaw)]
       : [];
 
-    // 📁 Handle image upload
+    // 📁 Handle image upload or fallback
     const rawFile = files.image;
     const imageFile = Array.isArray(rawFile) ? rawFile[0] : rawFile;
-    let imageUrl: string;
+    let imageUrl: string = PLACEHOLDER; // default to placeholder if no image
 
     if (imageFile && typeof imageFile !== "string") {
       try {
@@ -158,14 +155,9 @@ export default async function handler(
           message: "Image upload failed. Please try again.",
         });
       }
-    } else {
-      return res.status(400).json({
-        success: false,
-        message: "No image file provided. Please upload an image.",
-      });
     }
 
-    // 🔢 Determine next skuNumber
+    // 🔢 Determine next SKU
     const top = await collection
       .find()
       .sort({ skuNumber: -1 })
@@ -174,7 +166,6 @@ export default async function handler(
     const maxSku = top[0]?.skuNumber ?? 0;
     const skuNumber = maxSku + 1;
 
-    // 📦 Build new product object
     const slug = slugify(name, { lower: true });
     const newProduct: Omit<Product, "_id"> = {
       skuNumber,
@@ -191,7 +182,6 @@ export default async function handler(
       createdAt: new Date(),
     };
 
-    // 💾 Insert into MongoDB
     const result = await collection.insertOne(newProduct as any);
     const product: Product = { _id: result.insertedId, ...newProduct };
 

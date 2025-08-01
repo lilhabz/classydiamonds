@@ -1,4 +1,4 @@
-// 📄 pages/api/admin/products/[id].ts – Update & Delete a single product 🛠️ (With Cloudinary Upload on Edit)
+// 📄 pages/api/admin/products/[id].ts – Update & Delete a single product 🛠️ (Move deleted images to backup)
 
 import type { NextApiRequest, NextApiResponse } from "next";
 import { ObjectId } from "mongodb";
@@ -6,10 +6,9 @@ import { IncomingForm } from "formidable";
 import { v2 as cloudinary } from "cloudinary";
 import clientPromise from "@/lib/mongodb";
 
-// Disable Next.js default body parsing for file uploads
 export const config = { api: { bodyParser: false } };
 
-// Define Product type
+// Product type
 type Product = {
   _id: ObjectId;
   name: string;
@@ -29,16 +28,30 @@ type Data =
   | { success: true; product?: Product }
   | { success: false; message: string };
 
-// Placeholder for missing images
-const PLACEHOLDER =
-  "https://res.cloudinary.com/demo/image/upload/c_fill,ar_1:1,w_1200,h_1200/v1234567890/gray-placeholder.jpg";
-
-// Configure Cloudinary
+// Cloudinary config
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
+
+// Helper: Move an image from original → backup
+async function moveToBackup(imageUrl: string) {
+  try {
+    const parts = imageUrl.split("/");
+    const filename = parts.pop();
+    const publicId = filename?.split(".")[0];
+    if (!publicId) return;
+
+    await cloudinary.uploader.rename(
+      `classy-diamonds/original/${publicId}`,
+      `classy-diamonds/backup/${publicId}`
+    );
+    console.log(`Moved image to backup: ${publicId}`);
+  } catch (err) {
+    console.error("⚠️ Failed to move image to backup:", err);
+  }
+}
 
 export default async function handler(
   req: NextApiRequest,
@@ -58,9 +71,9 @@ export default async function handler(
   const filter = { _id: new ObjectId(id) };
 
   switch (req.method) {
-    case "PUT":
+    case "PUT": {
       try {
-        // Parse form data (fields + optional file)
+        // Parse form data
         const form = new IncomingForm();
         const { fields, files } = await new Promise<any>((resolve, reject) => {
           form.parse(req, (err, flds, fls) =>
@@ -68,7 +81,6 @@ export default async function handler(
           );
         });
 
-        // Helper to extract string fields
         const getString = (val: any, fallback = ""): string =>
           Array.isArray(val)
             ? val[0] ?? fallback
@@ -76,7 +88,6 @@ export default async function handler(
             ? val
             : fallback;
 
-        // Build update object
         const updates: Partial<Product> = {
           name: getString(fields.name),
           description: getString(fields.description),
@@ -90,13 +101,16 @@ export default async function handler(
             (getString(fields.gender) as "unisex" | "him" | "her") || "unisex",
         };
 
-        // Handle image removal flag
+        // Image removal
         const imageRemoved = getString(fields.imageRemoved, "false") === "true";
-        if (imageRemoved) {
-          updates.imageUrl = PLACEHOLDER;
+        const existingProduct = await collection.findOne(filter);
+
+        if (imageRemoved && existingProduct?.imageUrl) {
+          await moveToBackup(existingProduct.imageUrl);
+          updates.imageUrl = ""; // Remove from live product
         }
 
-        // Handle new file upload
+        // New image upload
         const rawFile = files.image;
         const imageFile = Array.isArray(rawFile) ? rawFile[0] : rawFile;
         if (imageFile && typeof imageFile !== "string" && imageFile.filepath) {
@@ -119,25 +133,30 @@ export default async function handler(
           updates.imageUrl = uploadResult.secure_url;
         }
 
-        // Save updates to DB
         await collection.updateOne(filter, { $set: updates });
         const updated = await collection.findOne(filter);
-        if (!updated) throw new Error("Product not found after update");
 
-        return res.status(200).json({ success: true, product: updated });
+        return res.status(200).json({ success: true, product: updated! });
       } catch (err: any) {
         console.error("PUT /api/admin/products/[id] Error:", err);
         return res.status(500).json({ success: false, message: err.message });
       }
+    }
 
-    case "DELETE":
+    case "DELETE": {
       try {
+        const existingProduct = await collection.findOne(filter);
+        if (existingProduct?.imageUrl) {
+          await moveToBackup(existingProduct.imageUrl);
+        }
+
         await collection.deleteOne(filter);
         return res.status(200).json({ success: true });
       } catch (err: any) {
         console.error("DELETE /api/admin/products/[id] Error:", err);
         return res.status(500).json({ success: false, message: err.message });
       }
+    }
 
     default:
       res.setHeader("Allow", ["PUT", "DELETE"]);
