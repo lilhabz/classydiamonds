@@ -198,85 +198,62 @@ export default function AdminProductsPage() {
     load();
   }, []);
 
-  // ==================== HANDLE NEW PRODUCT ====================
-  const handleInput = (field: string, value: any) => {
-    setFormState((s) => ({ ...s, [field]: value }));
-  };
+// ==================== HANDLE NEW PRODUCT ====================
+const handleInput = (field: string, value: any) => {
+  setFormState((s) => ({ ...s, [field]: value }));
+};
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    // 🚨 Prevent adding more than 4 featured items
-    if (formState.featured && featuredCount >= 4) {
-      setStatus({
-        loading: false,
-        error: "⚠️ You can only have up to 4 featured items.",
-        success: "",
-      });
-      return;
-    }
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
 
-    setStatus({ loading: true, error: "", success: "" });
-    try {
-      const formData = new FormData();
-      formData.append("name", formState.name);
-      formData.append("description", formState.description);
-      formData.append("price", formState.price);
-      if (formState.salePrice)
-        formData.append("salePrice", formState.salePrice);
-      formData.append("category", formState.category);
-      formData.append("featured", formState.featured ? "true" : "false");
-      formData.append("gender", formState.gender);
-      if (formState.imageFile) formData.append("image", formState.imageFile);
-
-      const res = await fetch("/api/admin/products", {
-        method: "POST",
-        body: formData,
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message);
-
-      // Success: prepend new product
-      setProducts((p) => [data.product, ...p]);
-      setRowEdits((e) => ({
-        ...e,
-        [data.product._id]: {
-          featured: data.product.featured,
-        },
-      }));
-      setFormState({
-        name: "",
-        description: "",
-        price: "",
-        salePrice: "",
-        category: "engagement",
-        featured: false,
-        gender: "unisex",
-        imageFile: null,
-      });
-      setStatus({ loading: false, error: "", success: "Product added 🎉" });
-    } catch (err: any) {
-      setStatus({ loading: false, error: err.message, success: "" });
-    }
-  };
-
-  const handleEditClick = (product: AdminProduct) => {
-    setEditingProduct(product);
-    setEditForm({
-      name: product.name,
-      description: product.description,
-      price: product.price.toString(),
-      salePrice: product.salePrice ? product.salePrice.toString() : "",
-      category: product.category,
-      featured: product.featured,
-      gender: product.gender ?? "unisex",
-      imageFile: null,
-      imageRemoved: false,
+  // 🚨 Require image for new product
+  if (!formState.imageFile) {
+    setStatus({
+      loading: false,
+      error: "❌ Please select an image file before adding product.",
+      success: "",
     });
-  };
+    return;
+  }
 
-  const cancelEdit = () => {
-    setEditingProduct(null);
-    setEditForm({
+  // 🚨 Prevent adding more than 4 featured items
+  if (formState.featured && featuredCount >= 4) {
+    setStatus({
+      loading: false,
+      error: "⚠️ You can only have up to 4 featured items.",
+      success: "",
+    });
+    return;
+  }
+
+  setStatus({ loading: true, error: "", success: "" });
+
+  try {
+    const formData = new FormData();
+    formData.append("name", formState.name);
+    formData.append("description", formState.description);
+    formData.append("price", formState.price);
+    if (formState.salePrice) formData.append("salePrice", formState.salePrice);
+    formData.append("category", formState.category);
+    formData.append("featured", formState.featured ? "true" : "false");
+    formData.append("gender", formState.gender);
+    formData.append("image", formState.imageFile);
+
+    const res = await fetch("/api/admin/products", {
+      method: "POST",
+      body: formData,
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message);
+
+    setProducts((p) => [data.product, ...p]);
+    setRowEdits((e) => ({
+      ...e,
+      [data.product._id]: { featured: data.product.featured },
+    }));
+
+    setFormState({
       name: "",
       description: "",
       price: "",
@@ -284,15 +261,31 @@ export default function AdminProductsPage() {
       category: "engagement",
       featured: false,
       gender: "unisex",
-      imageFile: null, // ← reset the file
-      imageRemoved: false, // ← reset the “removed” flag
+      imageFile: null,
     });
-  };
+    setStatus({ loading: false, error: "", success: "✅ Product added 🎉" });
+  } catch (err: any) {
+    setStatus({ loading: false, error: err.message, success: "" });
+  }
+};
 
-  const handleUpdate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setStatus({ loading: true, error: "", success: "" });
+// ==================== HANDLE EDIT PRODUCT ====================
+const handleUpdate = async (e: React.FormEvent) => {
+  e.preventDefault();
 
+  // 🚨 Prevent more than 4 featured items on edit
+  if (editForm.featured && featuredCount >= 4 && !editingProduct?.featured) {
+    setStatus({
+      loading: false,
+      error: "⚠️ You can only have up to 4 featured items.",
+      success: "",
+    });
+    return;
+  }
+
+  setStatus({ loading: true, error: "", success: "" });
+
+  try {
     const formData = new FormData();
     formData.append("name", editForm.name);
     formData.append("description", editForm.description);
@@ -308,60 +301,64 @@ export default function AdminProductsPage() {
       method: "PUT",
       body: formData,
     });
+
     const data = await res.json();
     if (!res.ok) throw new Error(data.message);
 
-    // update local state, then:
-    cancelEdit();
-    setStatus({ loading: false, error: "", success: "Product updated ✅" });
-  };
+    // Update local list
+    setProducts((p) =>
+      p.map((prod) => (prod._id === data.product._id ? data.product : prod))
+    );
 
-  // ==================== BATCH SAVE ALL CHANGES ====================
-  const handleSaveAll = async () => {
-    // 🚨 Prevent saving if too many featured items selected
-    if (featuredCount > 4) {
-      setStatus({
-        loading: false,
-        error: "⚠️ You can only have up to 4 featured items. Uncheck extras.",
-        success: "",
-      });
-      return;
-    }
+    setEditingProduct(null);
+    setStatus({ loading: false, error: "", success: "✅ Product updated 🎉" });
+  } catch (err: any) {
+    setStatus({ loading: false, error: err.message, success: "" });
+  }
+};
 
-    setStatus({ loading: true, error: "", success: "" });
-    try {
-      // For each edited row, send PUT only if changed
-      const updates = Object.entries(rowEdits).map(async ([id, edits]) => {
-        // Find original to compare
-        const orig = products.find((p) => p._id === id);
-        if (!orig) return null;
-        if (orig.featured === edits.featured) return null;
-        // If trying to set featured=true on a product, but count >=4, skip
-        if (edits.featured && featuredCount > 4) {
-          throw new Error("Too many featured items selected.");
-        }
-        const res = await fetch(`/api/admin/products/${id}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(edits),
-        });
-        const json = await res.json();
-        if (!res.ok) throw new Error(json.message);
-        return json.product as AdminProduct;
+// ==================== BATCH SAVE ALL CHANGES ====================
+const handleSaveAll = async () => {
+  if (featuredCount > 4) {
+    setStatus({
+      loading: false,
+      error: "⚠️ You can only have up to 4 featured items. Uncheck extras.",
+      success: "",
+    });
+    return;
+  }
+
+  setStatus({ loading: true, error: "", success: "" });
+  try {
+    const updates = Object.entries(rowEdits).map(async ([id, edits]) => {
+      const orig = products.find((p) => p._id === id);
+      if (!orig) return null;
+      if (orig.featured === edits.featured) return null;
+
+      const res = await fetch(`/api/admin/products/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(edits),
       });
-      const results = await Promise.all(updates);
-      // Merge updated back into products
-      setProducts((p) =>
-        p.map((x) => {
-          const updated = results.find((u) => u && u._id === x._id);
-          return updated || x;
-        })
-      );
-      setStatus({ loading: false, error: "", success: "All changes saved 💾" });
-    } catch (err: any) {
-      setStatus({ loading: false, error: err.message, success: "" });
-    }
-  };
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.message);
+      return json.product as AdminProduct;
+    });
+
+    const results = await Promise.all(updates);
+
+    setProducts((p) =>
+      p.map((x) => {
+        const updated = results.find((u) => u && u._id === x._id);
+        return updated || x;
+      })
+    );
+
+    setStatus({ loading: false, error: "", success: "All changes saved 💾" });
+  } catch (err: any) {
+    setStatus({ loading: false, error: err.message, success: "" });
+  }
+};
 
   // ==================== DELETE PRODUCT ====================
   const handleDelete = async (id: string) => {
@@ -380,6 +377,44 @@ export default function AdminProductsPage() {
       setStatus({ loading: false, error: "", success: "Product deleted 🗑️" });
     }
   };
+
+  // ==================== HANDLE EDIT CLICK ====================
+const handleEditClick = (product: AdminProduct) => {
+  setEditingProduct(product);
+  setEditForm({
+    name: product.name,
+    description: product.description,
+    price: product.price.toString(),
+    salePrice: product.salePrice?.toString() || "",
+    category: product.category,
+    featured: product.featured,
+    gender: product.gender ?? "unisex",
+    imageFile: null,
+    imageRemoved: false,
+  });
+
+  // Smooth scroll to edit form
+  setTimeout(() => {
+    editFormRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, 100);
+};
+
+// ==================== CANCEL EDIT ====================
+const cancelEdit = () => {
+  setEditingProduct(null);
+  setEditForm({
+    name: "",
+    description: "",
+    price: "",
+    salePrice: "",
+    category: "engagement",
+    featured: false,
+    gender: "unisex",
+    imageFile: null,
+    imageRemoved: false,
+  });
+};
+
 
   return (
     <div className="min-h-screen bg-[var(--bg-page)] text-[var(--foreground)] p-6">

@@ -1,4 +1,4 @@
-// 📄 pages/api/admin/products.ts – Admin product list & creation handler with featured + skuNumber + 1:1 crop 🛠️
+// 📄 pages/api/admin/products.ts – Admin product list & creation handler with Cloudinary Upload Safety
 
 import type { NextApiRequest, NextApiResponse } from "next";
 import { v2 as cloudinary } from "cloudinary";
@@ -14,8 +14,8 @@ type Product = {
   skuNumber: number;
   name: string;
   description: string;
-  price: number; // original price
-  discountedPrice?: number; // sale price, if any
+  price: number;
+  salePrice?: number;
   category: string;
   slug: string;
   imageUrl: string;
@@ -61,7 +61,7 @@ export default async function handler(
   const db = client.db();
   const collection = db.collection("products");
 
-  // 📝 GET: list all products, sorted by skuNumber
+  // 📝 GET: list all products
   if (req.method === "GET") {
     const raw = await collection.find().sort({ skuNumber: 1 }).toArray();
 
@@ -70,8 +70,8 @@ export default async function handler(
       skuNumber: doc.skuNumber ?? 0,
       name: doc.name,
       description: doc.description,
-      price: doc.price, // original price
-      discountedPrice: doc.salePrice, // sale price if present
+      price: doc.price,
+      salePrice: doc.salePrice,
       category: doc.category,
       slug: doc.slug,
       imageUrl: doc.imageUrl,
@@ -132,37 +132,37 @@ export default async function handler(
       ? [getString(tagsRaw)]
       : [];
 
-    // 📁 Handle image file
+    // 📁 Handle image upload
     const rawFile = files.image;
     const imageFile = Array.isArray(rawFile) ? rawFile[0] : rawFile;
-    let imageUrl =
-      "https://res.cloudinary.com/demo/image/upload/c_fill,ar_1:1,w_1200,h_1200/v1234567890/gray-placeholder.jpg";
+    let imageUrl: string;
 
     if (imageFile && typeof imageFile !== "string") {
-      // ☁️ Upload to Cloudinary with enforced 1:1 crop
-      const uploadResult = await cloudinary.uploader.upload(
-        imageFile.filepath,
-        {
-          folder: "classy-diamonds/original",
-          transformation: [
-            { quality: "auto" },
-            { fetch_format: "auto" },
-            { crop: "fill", aspect_ratio: "1:1", width: 1200, height: 1200 },
-          ],
-          eager: [
-            {
-              folder: "classy-diamonds/compressed",
-              quality: "auto",
-              fetch_format: "auto",
-              crop: "fill",
-              aspect_ratio: "1:1",
-              width: 1200,
-              height: 1200,
-            },
-          ],
-        }
-      );
-      imageUrl = uploadResult.secure_url;
+      try {
+        const uploadResult = await cloudinary.uploader.upload(
+          imageFile.filepath,
+          {
+            folder: "classy-diamonds/original",
+            transformation: [
+              { quality: "auto" },
+              { fetch_format: "auto" },
+              { crop: "fill", aspect_ratio: "1:1", width: 1200, height: 1200 },
+            ],
+          }
+        );
+        imageUrl = uploadResult.secure_url;
+      } catch (err) {
+        console.error("Cloudinary upload failed:", err);
+        return res.status(500).json({
+          success: false,
+          message: "Image upload failed. Please try again.",
+        });
+      }
+    } else {
+      return res.status(400).json({
+        success: false,
+        message: "No image file provided. Please upload an image.",
+      });
     }
 
     // 🔢 Determine next skuNumber
@@ -194,6 +194,7 @@ export default async function handler(
     // 💾 Insert into MongoDB
     const result = await collection.insertOne(newProduct as any);
     const product: Product = { _id: result.insertedId, ...newProduct };
+
     return res.status(201).json({ success: true, product });
   } catch (error: any) {
     console.error("API Error:", error);
