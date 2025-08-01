@@ -1,4 +1,4 @@
-// 📦 pages/api/webhook.ts – Stripe + Account Address Fallback (Fixed for customer_details.address) 💎
+// 📦 pages/api/webhook.ts – Stripe + Account Address Fallback (Fixed for Images in Orders) 💎
 
 import { buffer } from "micro";
 import type { NextApiRequest, NextApiResponse } from "next";
@@ -66,6 +66,7 @@ export default async function handler(
       image?: string;
     }> = JSON.parse((metadata.items as string) || "[]");
 
+    // 🔍 Load products from DB to ensure we have imageUrl + correct prices
     const productIds = rawItems.map((i) => i.id);
     const dbClient = await clientPromise;
     const db = dbClient.db();
@@ -73,18 +74,19 @@ export default async function handler(
       .collection("products")
       .find({ _id: { $in: productIds.map((id) => new ObjectId(id)) } })
       .toArray();
-    const productMap = new Map(
-      products.map((p: any) => [p._id.toString(), p])
-    );
+    const productMap = new Map(products.map((p: any) => [p._id.toString(), p]));
 
+    // 🛠 Map final order items
     const items = rawItems.map((i) => {
       const product: any = productMap.get(i.id) || {};
+
       const original =
         i.originalPrice != null
           ? Number(i.originalPrice)
           : product.price != null
           ? Number(product.price)
           : 0;
+
       const sale =
         i.salePrice != null
           ? Number(i.salePrice)
@@ -94,20 +96,21 @@ export default async function handler(
           ? Number(product.salePrice)
           : undefined;
 
-      const item: any = {
+      return {
         name: i.name || product.name || "",
-        image: i.image || product.imageUrl || product.image || "",
+        // 🔑 Always store the same Cloudinary URL used in the product page
+        image:
+          i.image || // From checkout metadata
+          product.imageUrl || // From DB current field
+          product.image || // Legacy fallback
+          "",
         quantity: Number(i.quantity) || 1,
         originalPrice: original,
+        ...(sale !== undefined && { salePrice: sale, discountedPrice: sale }),
       };
-      if (sale !== undefined) {
-        item.salePrice = sale;
-        item.discountedPrice = sale;
-      }
-      return item;
     });
 
-    // ✅ Prefer Stripe shipping_details, then customer_details, then metadata
+    // ✅ Address preference: Stripe shipping_details → customer_details → metadata
     const stripeAddr =
       session.shipping_details?.address ||
       session.customer_details?.address ||
@@ -139,7 +142,7 @@ export default async function handler(
       metadata.customer_email ||
       process.env.EMAIL_USER;
 
-    // 🛠 Debug log to verify source
+    // 📦 Log address source for debug
     if (session.shipping_details?.address) {
       console.log("✅ Address Source: Stripe shipping_details");
     } else if (session.customer_details?.address) {
@@ -152,6 +155,7 @@ export default async function handler(
     const amountTotal = (session.amount_total || 0) / 100;
     const stripeSessionId = session.id;
 
+    // 🔢 Generate order number
     const ordersCollection = db.collection("orders");
     const countersCollection = db.collection<{
       _id: string;
@@ -175,6 +179,7 @@ export default async function handler(
       orderNumber = Date.now();
     }
 
+    // 💾 Save order if not already saved
     const existing = await ordersCollection.findOne({ stripeSessionId });
     if (!existing) {
       await ordersCollection.insertOne({
@@ -197,7 +202,7 @@ export default async function handler(
       console.log(`✅ Order #${orderNumber} saved to MongoDB`);
     }
 
-    // 📧 Email receipt
+    // 📧 Send receipt email
     try {
       const itemRows = items
         .map((item: any) => {
@@ -211,11 +216,15 @@ export default async function handler(
           <tr>
             <td style="padding: 8px; border: 1px solid #ddd;">
               <div style="display: flex; align-items: center; gap: 10px;">
-                <img src="${item.image}" alt="${item.name}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px;" />
+                <img src="${item.image}" alt="${
+            item.name
+          }" style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px;" />
                 <span>${item.name}</span>
               </div>
             </td>
-            <td style="padding: 8px; border: 1px solid #ddd;">x${item.quantity}</td>
+            <td style="padding: 8px; border: 1px solid #ddd;">x${
+              item.quantity
+            }</td>
             <td style="padding: 8px; border: 1px solid #ddd;">$${(
               price * item.quantity
             ).toFixed(2)}</td>
