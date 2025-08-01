@@ -1,4 +1,4 @@
-// ✅ pages/admin/index.tsx – Admin Orders with Structured Shipping Addresses, Prices & Address Source 🔐🛠️
+// ✅ pages/admin/index.tsx – Admin Orders with Safe Image Fallback 🔐🛠️
 
 import { useEffect, useState } from "react";
 import Head from "next/head";
@@ -22,7 +22,6 @@ interface Order {
   customerName: string;
   customerEmail: string;
   customerAddress: string;
-
   shipping_address?: {
     street?: string;
     line2?: string;
@@ -31,11 +30,8 @@ interface Order {
     zip?: string;
     country?: string;
   };
-
   shipping_address_string: string;
-
   addressSource?: "Stripe" | "Account" | "Unknown";
-
   items: OrderItem[];
   amount: number;
   createdAt: string;
@@ -55,7 +51,7 @@ export default function AdminOrdersPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
 
-  // Fetch orders once admin session is confirmed
+  // 📦 Fetch orders after admin session confirmed
   useEffect(() => {
     if (session?.user?.isAdmin) fetchOrders();
   }, [session]);
@@ -74,7 +70,7 @@ export default function AdminOrdersPage() {
     }
   }
 
-  // Mark shipped
+  // 🚚 Mark as shipped
   async function confirmAndShip(orderId: string) {
     if (!confirm(`📦 Mark order ${orderId} as shipped?`)) return;
     const adminName =
@@ -91,7 +87,7 @@ export default function AdminOrdersPage() {
     }
   }
 
-  // Archive/unarchive
+  // 🗂 Archive order
   async function archiveOrder(orderId: string) {
     if (!confirm(`🗂 Archive order ${orderId}?`)) return;
     const adminName =
@@ -108,7 +104,7 @@ export default function AdminOrdersPage() {
     }
   }
 
-  // CSV export including shipping address
+  // 📤 Export CSV
   function downloadCSV() {
     const headers = [
       "Name",
@@ -153,7 +149,7 @@ export default function AdminOrdersPage() {
     URL.revokeObjectURL(url);
   }
 
-  // Print PDF
+  // 🖨 Print PDF
   function printPDF() {
     const content = document.getElementById("print-area")?.innerHTML;
     const win = window.open("", "_blank", "width=800,height=600");
@@ -166,7 +162,7 @@ export default function AdminOrdersPage() {
     }
   }
 
-  // Filter + paginate
+  // 🔍 Filter & paginate
   const filtered = orders.filter((o) => {
     if (o.archived || o.shipped) return false;
     const q = searchQuery.toLowerCase();
@@ -199,7 +195,7 @@ export default function AdminOrdersPage() {
       <Breadcrumbs />
       <h1 className="text-3xl font-serif font-bold mb-6">🛠 Admin Dashboard</h1>
 
-      {/* Nav */}
+      {/* 📂 Navigation */}
       <nav className="flex flex-wrap justify-center sm:justify-start gap-2 sm:space-x-6 mb-8 border-b border-[var(--bg-nav)] pb-4 text-[var(--foreground)] text-sm font-semibold">
         <Link href="/admin" className="text-yellow-400">
           📦 Orders
@@ -224,7 +220,7 @@ export default function AdminOrdersPage() {
         </Link>
       </nav>
 
-      {/* Filters & actions */}
+      {/* 🔍 Filters */}
       <div className="flex flex-col sm:flex-row gap-4 mb-6">
         <input
           type="text"
@@ -259,7 +255,7 @@ export default function AdminOrdersPage() {
         </button>
       </div>
 
-      {/* Orders list */}
+      {/* 📦 Orders list */}
       <div id="print-area" className="space-y-8">
         {pageData.map((o) => (
           <div key={o._id} className="bg-[var(--bg-nav)] p-6 rounded-xl shadow">
@@ -271,7 +267,6 @@ export default function AdminOrdersPage() {
               {o.stripeSessionId.slice(-8)}
             </p>
 
-            {/* 📍 Render address + source */}
             <p className="mb-2">
               📍{" "}
               {o.shipping_address
@@ -307,22 +302,24 @@ export default function AdminOrdersPage() {
                 const orig = basePrice * qty;
                 const sale = displayPrice * qty;
 
+                // ✅ Safe image handling
+                const safeImage =
+                  i.image && i.image.startsWith("http")
+                    ? i.image
+                    : "/products/placeholder.jpg";
+
                 return (
                   <li key={idx} className="flex items-center gap-2">
                     <Image
-                      src={i.image || "/products/placeholder.jpg"}
+                      src={safeImage}
                       alt={i.name}
                       width={48}
                       height={48}
                       className="rounded object-cover"
-                      onError={(e) => {
-                        const target = e.currentTarget as HTMLImageElement;
-                        target.src = "/products/placeholder.jpg";
-                      }}
                       unoptimized
                     />
                     <span>
-                      {i.name} – x{qty} –{' '}
+                      {i.name} – x{qty} –{" "}
                       {displayPrice < basePrice ? (
                         <>
                           <span className="line-through text-gray-400 mr-1">
@@ -364,7 +361,7 @@ export default function AdminOrdersPage() {
         ))}
       </div>
 
-      {/* Pagination */}
+      {/* 📄 Pagination */}
       {totalPages > 1 && (
         <div className="flex justify-center mt-8 space-x-2">
           {Array.from({ length: totalPages }).map((_, i) => (
