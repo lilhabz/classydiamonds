@@ -104,6 +104,9 @@ export default function AdminProductsPage() {
     success: "",
   });
 
+  // 🔘 Toggle for Add Product form visibility
+  const [showAddForm, setShowAddForm] = useState(false);
+
   // 🔍 Filtering dropdown state
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [genderFilter, setGenderFilter] = useState<string>("all");
@@ -468,6 +471,15 @@ export default function AdminProductsPage() {
 
       <div className="max-w-6xl mx-auto space-y-6">
         <h2 className="text-2xl font-bold">🛠️ Manage Products</h2>
+        {/* ➕ Add Product Toggle Button */}
+        <div className="flex justify-end">
+          <button
+            onClick={() => setShowAddForm(!showAddForm)}
+            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+          >
+            {showAddForm ? "Close Form" : "➕ Add New Product"}
+          </button>
+        </div>
 
         {/* ❗ Status Messages */}
         {status.error && <p className="text-red-500">❌ {status.error}</p>}
@@ -671,123 +683,140 @@ export default function AdminProductsPage() {
           </form>
         )}
 
-        {/* 🆕 Add New Product Form */}
-        <form
-          onSubmit={handleSubmit}
-          className="grid grid-cols-1 md:grid-cols-2 gap-4"
+        {/* 🆕 Add New Product Form (Animated Collapsible) */}
+        <div
+          className={`transition-all duration-500 ease-in-out overflow-hidden ${
+            showAddForm
+              ? "max-h-[1000px] opacity-100 mt-4"
+              : "max-h-0 opacity-0 mt-0"
+          }`}
         >
-          <label>
-            📦 Name
-            <input
-              type="text"
-              required
-              value={formState.name}
-              onChange={(e) => handleInput("name", e.target.value)}
-              className="mt-1 w-full border rounded p-2"
-            />
-          </label>
-          <label>
-            📝 Description
-            <textarea
-              required
-              value={formState.description}
-              onChange={(e) => handleInput("description", e.target.value)}
-              className="mt-1 w-full border rounded p-2"
-            />
-          </label>
-          <label>
-            💲 Price (USD)
-            <input
-              type="number"
-              required
-              value={formState.price}
-              onChange={(e) => handleInput("price", e.target.value)}
-              className="mt-1 w-full border rounded p-2"
-            />
-          </label>
-          <label>
-            🔖 Sale Price (USD)
-            <input
-              type="number"
-              value={formState.salePrice}
-              onChange={(e) => handleInput("salePrice", e.target.value)}
-              className="mt-1 w-full border rounded p-2"
-            />
-          </label>
-          <label>
-            📂 Category
-            <select
-              value={formState.category}
-              onChange={(e) => handleInput("category", e.target.value)}
-              className="mt-1 w-full border rounded p-2 bg-[var(--bg-nav)] text-[var(--foreground)]"
-            >
-              {[
-                "engagement",
-                "wedding-bands",
-                "rings",
-                "bracelets",
-                "necklaces",
-                "earrings",
-                "watches",
-              ].map((cat) => (
-                <option key={cat} value={cat}>
-                  {cat}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            🏷️ Gender
-            <select
-              value={formState.gender}
-              onChange={(e) => handleInput("gender", e.target.value)}
-              className="mt-1 w-full border rounded p-2 bg-[var(--bg-nav)] text-[var(--foreground)]"
-            >
-              {[
-                { v: "unisex", label: "Unisex" },
-                { v: "him", label: "For Him" },
-                { v: "her", label: "For Her" },
-              ].map((g) => (
-                <option key={g.v} value={g.v}>
-                  {g.label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="flex items-center space-x-2">
-            <span>✨ Featured</span>
-            <input
-              type="checkbox"
-              checked={formState.featured}
-              disabled={featuredCount >= 4} // 🚫 Disable if already 4 featured
-              onChange={(e) => handleInput("featured", e.target.checked)}
-              className="mt-2"
-            />
-            {featuredCount >= 4 && (
-              <span className="text-yellow-400 text-sm">
-                ⚠️ Max 4 featured reached
-              </span>
-            )}
-          </label>
-          <label>
-            🖼️ Image (optional)
-            <input
-              type="file"
-              accept="image/*"
-              onChange={(e) =>
-                handleInput("imageFile", e.target.files?.[0] ?? null)
-              }
-              className="mt-1 w-full"
-            />
-          </label>
-          <button
-            type="submit"
-            disabled={status.loading}
-            className="col-span-full bg-blue-600 text-white rounded py-2 hover:bg-blue-700"
+          <form
+            onSubmit={handleSubmit}
+            className="grid grid-cols-1 md:grid-cols-2 gap-4 border rounded-lg p-4 bg-[var(--bg-nav)]"
           >
-            {status.loading ? "Saving..." : "Add Product"}
-          </button>
-        </form>
+            {/* 📦 Name */}
+            <label>
+              📦 Name
+              <input
+                type="text"
+                required
+                value={formState.name}
+                onChange={(e) => handleInput("name", e.target.value)}
+                className="mt-1 w-full border rounded p-2"
+              />
+            </label>
+
+            {/* 📝 Description */}
+            <label>
+              📝 Description
+              <textarea
+                required
+                value={formState.description}
+                onChange={(e) => handleInput("description", e.target.value)}
+                className="mt-1 w-full border rounded p-2"
+              />
+            </label>
+
+            {/* 💲 Price */}
+            <label>
+              💲 Price (USD)
+              <input
+                type="number"
+                required
+                value={formState.price}
+                onChange={(e) => handleInput("price", e.target.value)}
+                className="mt-1 w-full border rounded p-2"
+              />
+            </label>
+
+            {/* 🔖 Sale Price */}
+            <label>
+              🔖 Sale Price (USD)
+              <input
+                type="number"
+                value={formState.salePrice}
+                onChange={(e) => handleInput("salePrice", e.target.value)}
+                className="mt-1 w-full border rounded p-2"
+              />
+            </label>
+
+            {/* 📂 Category */}
+            <label>
+              📂 Category
+              <select
+                value={formState.category}
+                onChange={(e) => handleInput("category", e.target.value)}
+                className="mt-1 w-full border rounded p-2 bg-[var(--bg-nav)] text-[var(--foreground)]"
+              >
+                {allCategories.map((cat) => (
+                  <option key={cat} value={cat}>
+                    {cat}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            {/* 🏷️ Gender */}
+            <label>
+              🏷️ Gender
+              <select
+                value={formState.gender}
+                onChange={(e) => handleInput("gender", e.target.value)}
+                className="mt-1 w-full border rounded p-2 bg-[var(--bg-nav)] text-[var(--foreground)]"
+              >
+                {[
+                  { v: "unisex", label: "Unisex" },
+                  { v: "him", label: "For Him" },
+                  { v: "her", label: "For Her" },
+                ].map((g) => (
+                  <option key={g.v} value={g.v}>
+                    {g.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            {/* ✨ Featured */}
+            <label className="flex items-center space-x-2">
+              <span>✨ Featured</span>
+              <input
+                type="checkbox"
+                checked={formState.featured}
+                disabled={featuredCount >= 4}
+                onChange={(e) => handleInput("featured", e.target.checked)}
+                className="mt-2"
+              />
+              {featuredCount >= 4 && (
+                <span className="text-yellow-400 text-sm">
+                  ⚠️ Max 4 featured reached
+                </span>
+              )}
+            </label>
+
+            {/* 🖼️ Image */}
+            <label>
+              🖼️ Image (optional)
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) =>
+                  handleInput("imageFile", e.target.files?.[0] ?? null)
+                }
+                className="mt-1 w-full"
+              />
+            </label>
+
+            {/* 💾 Submit */}
+            <button
+              type="submit"
+              disabled={status.loading}
+              className="col-span-full bg-blue-600 text-white rounded py-2 hover:bg-blue-700"
+            >
+              {status.loading ? "Saving..." : "Add Product"}
+            </button>
+          </form>
+        </div>
 
         {/* 🗂️ Existing Products Table */}
         <h2 className="text-xl font-semibold mt-8">🗂️ Current Products</h2>
