@@ -65,6 +65,8 @@ export default function AdminProductsPage() {
     Record<string, { featured: boolean }>
   >({});
 
+  // 🖼️ Local preview of current or replaced image
+  const [previewImage, setPreviewImage] = useState<string>("");
   // ✏️ Product currently being edited
   const [editingProduct, setEditingProduct] = useState<AdminProduct | null>(
     null
@@ -398,6 +400,9 @@ export default function AdminProductsPage() {
       imageRemoved: false,
     });
 
+    // 🖼 Show current product image in preview
+    setPreviewImage(product.imageUrl || "");
+
     // Smooth scroll to edit form
     setTimeout(() => {
       editFormRef.current?.scrollIntoView({
@@ -483,12 +488,12 @@ export default function AdminProductsPage() {
               {String(editingProduct.skuNumber).padStart(5, "0")})
             </h3>
 
-            {/* 🖼 Current Image Preview */}
+            {/* 🖼 Current Image Preview (Live) */}
             <div className="col-span-full flex flex-col items-center mb-4">
-              {editingProduct.imageUrl ? (
+              {previewImage ? (
                 <Image
-                  src={editingProduct.imageUrl}
-                  alt={editingProduct.name}
+                  src={previewImage}
+                  alt={editForm.name || "Product Image"}
                   width={150}
                   height={150}
                   className="object-cover rounded shadow"
