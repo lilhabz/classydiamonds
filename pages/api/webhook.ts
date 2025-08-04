@@ -1,4 +1,4 @@
-// 📦 pages/api/webhook.ts – Stripe + Account Address Fallback (Fixed for Images in Orders) 💎
+// 📩 pages/api/webhook.ts – Stripe + Account Address Fallback (Fixed for Images + Matches OrderId Flow) 💎
 
 import { buffer } from "micro";
 import type { NextApiRequest, NextApiResponse } from "next";
@@ -8,9 +8,7 @@ import clientPromise from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
 
 export const config = {
-  api: {
-    bodyParser: false,
-  },
+  api: { bodyParser: false },
 };
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string, {
@@ -56,79 +54,49 @@ export default async function handler(
     };
 
     const metadata = session.metadata || {};
-    const rawItems: Array<{
-      id: string;
-      name?: string;
-      quantity?: number | string;
-      originalPrice?: number | string | null;
-      salePrice?: number | string | null;
-      discountedPrice?: number | string | null;
-      image?: string;
-    }> = JSON.parse((metadata.items as string) || "[]");
+    const orderId = metadata.orderId;
 
-    // 🔍 Load products from DB to ensure we have imageUrl + correct prices
-    const productIds = rawItems.map((i) => i.id);
+    if (!orderId) {
+      console.error("❌ No orderId found in metadata");
+      return res.status(400).json({ error: "Missing orderId" });
+    }
+
+    // 🔍 Load order from DB
     const dbClient = await clientPromise;
     const db = dbClient.db();
-    const products = await db
-      .collection("products")
-      .find({ _id: { $in: productIds.map((id) => new ObjectId(id)) } })
-      .toArray();
-    const productMap = new Map(products.map((p: any) => [p._id.toString(), p]));
+    const ordersCollection = db.collection("orders");
 
-    // 🛠 Map final order items
-    const items = rawItems.map((i) => {
-      const product: any = productMap.get(i.id) || {};
-
-      const original =
-        i.originalPrice != null
-          ? Number(i.originalPrice)
-          : product.price != null
-          ? Number(product.price)
-          : 0;
-
-      const sale =
-        i.salePrice != null
-          ? Number(i.salePrice)
-          : i.discountedPrice != null
-          ? Number(i.discountedPrice)
-          : product.salePrice != null
-          ? Number(product.salePrice)
-          : undefined;
-
-      return {
-        name: i.name || product.name || "",
-        // 🔑 Always store the same Cloudinary URL used in the product page
-        image:
-          i.image || // From checkout metadata
-          product.imageUrl || // From DB current field
-          product.image || // Legacy fallback
-          "",
-        quantity: Number(i.quantity) || 1,
-        originalPrice: original,
-        ...(sale !== undefined && { salePrice: sale, discountedPrice: sale }),
-      };
+    const existingOrder = await ordersCollection.findOne({
+      _id: new ObjectId(orderId),
     });
+    if (!existingOrder) {
+      console.error(`❌ No order found in DB for ID ${orderId}`);
+      return res.status(404).json({ error: "Order not found" });
+    }
 
-    // ✅ Address preference: Stripe shipping_details → customer_details → metadata
+    const items = existingOrder.items || [];
+
+    // ✅ Address preference: Stripe shipping_details → customer_details → DB fallback
     const stripeAddr =
       session.shipping_details?.address ||
       session.customer_details?.address ||
+      existingOrder.address ||
       null;
 
     const stripeName =
       metadata.customer_name ||
       session.shipping_details?.name ||
       session.customer_details?.name ||
+      existingOrder.customerName ||
       "Customer";
 
     const shippingAddressObject = {
-      street: stripeAddr?.line1 || metadata.address_street1 || "",
-      line2: stripeAddr?.line2 || metadata.address_street2 || "",
-      city: stripeAddr?.city || metadata.address_city || "",
-      state: stripeAddr?.state || metadata.address_state || "",
-      zip: stripeAddr?.postal_code || metadata.address_zip || "",
-      country: stripeAddr?.country || metadata.address_country || "",
+      street: stripeAddr?.line1 || existingOrder.address?.street1 || "",
+      line2: stripeAddr?.line2 || existingOrder.address?.street2 || "",
+      city: stripeAddr?.city || existingOrder.address?.city || "",
+      state: stripeAddr?.state || existingOrder.address?.state || "",
+      zip: stripeAddr?.postal_code || existingOrder.address?.zip || "",
+      country: stripeAddr?.country || existingOrder.address?.country || "",
     };
 
     const shippingAddressString = `${shippingAddressObject.street}${
@@ -139,68 +107,58 @@ export default async function handler(
 
     const customerEmail =
       session.customer_details?.email ||
-      metadata.customer_email ||
+      existingOrder.customerEmail ||
       process.env.EMAIL_USER;
 
-    // 📦 Log address source for debug
-    if (session.shipping_details?.address) {
-      console.log("✅ Address Source: Stripe shipping_details");
-    } else if (session.customer_details?.address) {
-      console.log("✅ Address Source: Stripe customer_details");
-    } else {
-      console.log("⚠️ Address Source: Account metadata fallback");
-    }
     console.log("📦 Shipping Address Saved:", shippingAddressObject);
 
     const amountTotal = (session.amount_total || 0) / 100;
     const stripeSessionId = session.id;
 
-    // 🔢 Generate order number
-    const ordersCollection = db.collection("orders");
-    const countersCollection = db.collection<{
-      _id: string;
-      sequence_value: number;
-    }>("counters");
-
-    let orderNumber: number;
-    try {
-      const counterResult = await countersCollection.findOneAndUpdate(
-        { _id: "orderNumber" },
-        { $inc: { sequence_value: 1 } },
-        {
-          returnDocument: "after",
-          upsert: true,
-          projection: { sequence_value: 1 },
-        }
-      );
-      orderNumber = counterResult.value?.sequence_value || 100;
-    } catch (err) {
-      console.error("❌ Order number fallback:", err);
-      orderNumber = Date.now();
+    // 🔢 Generate order number (keep existing or create new)
+    let orderNumber = existingOrder.orderNumber;
+    if (!orderNumber) {
+      const countersCollection = db.collection<{
+        _id: string;
+        sequence_value: number;
+      }>("counters");
+      try {
+        const counterResult = await countersCollection.findOneAndUpdate(
+          { _id: "orderNumber" },
+          { $inc: { sequence_value: 1 } },
+          {
+            returnDocument: "after",
+            upsert: true,
+            projection: { sequence_value: 1 },
+          }
+        );
+        orderNumber = counterResult.value?.sequence_value || 100;
+      } catch {
+        orderNumber = Date.now();
+      }
     }
 
-    // 💾 Save order if not already saved
-    const existing = await ordersCollection.findOne({ stripeSessionId });
-    if (!existing) {
-      await ordersCollection.insertOne({
-        orderNumber,
-        customerName: stripeName,
-        customerEmail,
-        customerAddress: shippingAddressString,
-        shipping_address: shippingAddressObject,
-        shipping_address_string: shippingAddressString,
-        items,
-        amount: amountTotal,
-        currency: session.currency || "usd",
-        paymentStatus: session.payment_status || "unpaid",
-        stripeSessionId,
-        createdAt: new Date(),
-        shipped: false,
-        delivered: false,
-        archived: false,
-      });
-      console.log(`✅ Order #${orderNumber} saved to MongoDB`);
-    }
+    // 💾 Update order status
+    await ordersCollection.updateOne(
+      { _id: new ObjectId(orderId) },
+      {
+        $set: {
+          orderNumber,
+          customerName: stripeName,
+          customerEmail,
+          customerAddress: shippingAddressString,
+          shipping_address: shippingAddressObject,
+          shipping_address_string: shippingAddressString,
+          amount: amountTotal,
+          currency: session.currency || "usd",
+          paymentStatus: session.payment_status || "unpaid",
+          stripeSessionId,
+          paidAt: new Date(),
+        },
+      }
+    );
+
+    console.log(`✅ Order #${orderNumber} marked as paid`);
 
     // 📧 Send receipt email
     try {
