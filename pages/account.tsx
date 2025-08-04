@@ -8,6 +8,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import Breadcrumbs from "@/components/Breadcrumbs";
+import Image from "next/image";
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
   const session = await getSession(context);
@@ -215,13 +216,40 @@ export default function AccountPage({ user, orders }: any) {
                           </span>
                         </div>
                       </div>
+
+                      {/* 🖼 Items List with Images */}
                       <div className="mt-4 text-sm text-gray-300">
                         <p className="font-medium text-white mb-2">Items:</p>
-                        <ul className="list-disc list-inside">
+                        <ul className="space-y-2">
                           {order.items?.map((item: any, idx: number) => (
-                            <li key={idx}>
-                              {item.name} x{item.quantity} – $
-                              {item.price * item.quantity}
+                            <li
+                              key={idx}
+                              className="flex items-center gap-3 border-b border-gray-600 pb-2 last:border-b-0"
+                            >
+                              {/* Product Image */}
+                              {item.image ? (
+                                <div className="w-12 h-12 relative flex-shrink-0">
+                                  <Image
+                                    src={item.image}
+                                    alt={item.name}
+                                    fill
+                                    className="object-cover rounded"
+                                  />
+                                </div>
+                              ) : (
+                                <div className="w-12 h-12 bg-gray-500 flex items-center justify-center text-xs text-white rounded">
+                                  No Img
+                                </div>
+                              )}
+
+                              {/* Product Details */}
+                              <div className="flex flex-col">
+                                <span className="text-white">{item.name}</span>
+                                <span className="text-gray-400">
+                                  x{item.quantity} – $
+                                  {item.price * item.quantity}
+                                </span>
+                              </div>
                             </li>
                           ))}
                         </ul>
