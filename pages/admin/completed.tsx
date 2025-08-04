@@ -47,8 +47,12 @@ export default function CompletedOrdersPage() {
   const [trackingInputs, setTrackingInputs] = useState<
     Record<string, { trackingNumber: string; carrier: string }>
   >({});
-  const [savedTracking, setSavedTracking] = useState<Record<string, string>>({});
-  const [savingTracking, setSavingTracking] = useState<Record<string, boolean>>({});
+  const [savedTracking, setSavedTracking] = useState<Record<string, string>>(
+    {}
+  );
+  const [savingTracking, setSavingTracking] = useState<Record<string, boolean>>(
+    {}
+  );
   const itemsPerPage = 5;
 
   useEffect(() => {
@@ -321,12 +325,15 @@ export default function CompletedOrdersPage() {
           {/* 🧾 Orders */}
           <div id="print-area" className="space-y-10">
             {paginatedOrders.map((order) => (
-              <div key={order._id} className="bg-[var(--bg-nav)] p-6 rounded-xl shadow">
+              <div
+                key={order._id}
+                className="bg-[var(--bg-nav)] p-6 rounded-xl shadow"
+              >
                 <h2 className="text-xl font-semibold mb-1">
                   {order.customerName} ({order.customerEmail})
                 </h2>
                 <p className="text-sm text-gray-300 mb-2">
-                  🔢 Order #: {order.orderNumber ?? "N/A"} | 🆔{' '}
+                  🔢 Order #: {order.orderNumber ?? "N/A"} | 🆔{" "}
                   {order.stripeSessionId.slice(-8)}
                 </p>
                 <p className="mb-2">📍 {order.customerAddress}</p>
@@ -385,9 +392,11 @@ export default function CompletedOrdersPage() {
                     />
                     {(() => {
                       const inputVal =
-                        trackingInputs[order.stripeSessionId]?.trackingNumber || "";
+                        trackingInputs[order.stripeSessionId]?.trackingNumber ||
+                        "";
                       const isSaved =
-                        !!inputVal && savedTracking[order.stripeSessionId] === inputVal;
+                        !!inputVal &&
+                        savedTracking[order.stripeSessionId] === inputVal;
                       const isSaving = savingTracking[order.stripeSessionId];
                       return (
                         <button
@@ -395,7 +404,11 @@ export default function CompletedOrdersPage() {
                           disabled={isSaved || isSaving}
                           className="bg-green-600 px-3 py-1 rounded text-sm disabled:opacity-50"
                         >
-                          {isSaved ? "✅ Saved" : isSaving ? "Saving..." : "Save Tracking"}
+                          {isSaved
+                            ? "✅ Saved"
+                            : isSaving
+                            ? "Saving..."
+                            : "Save Tracking"}
                         </button>
                       );
                     })()}
@@ -413,29 +426,39 @@ export default function CompletedOrdersPage() {
                           item.originalPrice ??
                           item.price ??
                           0;
-                        const basePrice = item.originalPrice ?? item.price ?? displayPrice;
+                        const basePrice =
+                          item.originalPrice ?? item.price ?? displayPrice;
                         const orig = basePrice * qty;
                         const sale = displayPrice * qty;
                         return (
                           <li key={i} className="flex items-center gap-2">
                             <Image
-                              src={item.image || "/products/placeholder.jpg"}
+                              src={
+                                item.image && item.image.trim() !== ""
+                                  ? item.image
+                                  : "/products/placeholder.jpg"
+                              }
                               alt={item.name}
                               width={48}
                               height={48}
                               className="rounded object-cover"
                               onError={(e) => {
-                                const target = e.currentTarget as HTMLImageElement;
+                                const target =
+                                  e.currentTarget as HTMLImageElement;
                                 target.src = "/products/placeholder.jpg";
                               }}
                               unoptimized
                             />
                             <span>
-                              {item.name || 'Unnamed'} – x{qty} –{' '}
+                              {item.name || "Unnamed"} – x{qty} –{" "}
                               {displayPrice < basePrice ? (
                                 <>
-                                  <span className="line-through mr-1">${orig.toFixed(2)}</span>
-                                  <span className="text-green-400">${sale.toFixed(2)}</span>
+                                  <span className="line-through mr-1">
+                                    ${orig.toFixed(2)}
+                                  </span>
+                                  <span className="text-green-400">
+                                    ${sale.toFixed(2)}
+                                  </span>
                                 </>
                               ) : (
                                 <span>${sale.toFixed(2)}</span>

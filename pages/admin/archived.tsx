@@ -68,12 +68,7 @@ export default function ArchivedOrdersPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
 
-        
-
-
         body: JSON.stringify({ orderId, restore: true, adminName }),
-
-
       });
       const result = await res.json();
       if (res.ok) fetchArchivedOrders();
@@ -153,7 +148,9 @@ export default function ArchivedOrdersPage() {
         <Breadcrumbs />
       </div>
 
-      <h1 className="text-3xl font-serif font-bold tracking-wide mb-6">🛠️ Admin Dashboard</h1>
+      <h1 className="text-3xl font-serif font-bold tracking-wide mb-6">
+        🛠️ Admin Dashboard
+      </h1>
 
       {/* 🔗 Admin Navigation Tabs */}
       <nav className="flex flex-wrap justify-center sm:justify-start gap-2 sm:space-x-6 mb-8 border-b border-[var(--bg-nav)] pb-4 text-[var(--foreground)] text-sm font-semibold">
@@ -203,12 +200,15 @@ export default function ArchivedOrdersPage() {
       ) : (
         <div className="space-y-8">
           {paginatedOrders.map((order) => (
-            <div key={order._id} className="bg-[var(--bg-nav)] p-6 rounded-xl shadow">
+            <div
+              key={order._id}
+              className="bg-[var(--bg-nav)] p-6 rounded-xl shadow"
+            >
               <h2 className="text-xl font-semibold mb-1">
                 {order.customerName} ({order.customerEmail})
               </h2>
               <p className="text-sm text-gray-300 mb-2">
-                🔢 Order #: {order.orderNumber ?? "N/A"} | 🆔{' '}
+                🔢 Order #: {order.orderNumber ?? "N/A"} | 🆔{" "}
                 {order.stripeSessionId.slice(-8)}
               </p>
               <p className="mb-2 text-sm">📍 {order.customerAddress}</p>
@@ -224,13 +224,18 @@ export default function ArchivedOrdersPage() {
                     item.originalPrice ??
                     item.price ??
                     0;
-                  const basePrice = item.originalPrice ?? item.price ?? displayPrice;
+                  const basePrice =
+                    item.originalPrice ?? item.price ?? displayPrice;
                   const orig = basePrice * qty;
                   const sale = displayPrice * qty;
                   return (
                     <li key={index} className="flex items-center gap-2">
                       <Image
-                        src={item.image || "/products/placeholder.jpg"}
+                        src={
+                          item.image && item.image.trim() !== ""
+                            ? item.image
+                            : "/products/placeholder.jpg"
+                        }
                         alt={item.name}
                         width={48}
                         height={48}
@@ -242,11 +247,15 @@ export default function ArchivedOrdersPage() {
                         unoptimized
                       />
                       <span>
-                        {item.name} – x{qty} –{' '}
+                        {item.name} – x{qty} –{" "}
                         {displayPrice < basePrice ? (
                           <>
-                            <span className="line-through mr-1">${orig.toFixed(2)}</span>
-                            <span className="text-green-400">${sale.toFixed(2)}</span>
+                            <span className="line-through mr-1">
+                              ${orig.toFixed(2)}
+                            </span>
+                            <span className="text-green-400">
+                              ${sale.toFixed(2)}
+                            </span>
                           </>
                         ) : (
                           <span>${sale.toFixed(2)}</span>

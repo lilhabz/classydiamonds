@@ -302,12 +302,10 @@ export default function AdminOrdersPage() {
                 const orig = basePrice * qty;
                 const sale = displayPrice * qty;
 
-                // ✅ Safe image handling with Cloudinary domain fallback
+                // ✅ Match Account page behavior (no forced Cloudinary transform)
                 const safeImage =
                   i.image && i.image.trim() !== ""
-                    ? i.image.startsWith("http")
-                      ? i.image
-                      : `https://res.cloudinary.com/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload/${i.image}`
+                    ? i.image
                     : "/products/placeholder.jpg";
 
                 return (
