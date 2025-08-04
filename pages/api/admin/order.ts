@@ -1,4 +1,4 @@
-// 📂 pages/api/admin/order.ts – Return single order details by orderId (including discounts)
+// 📂 pages/api/admin/order.ts – Return single order details by orderId (including discounts + image)
 import type { NextApiRequest, NextApiResponse } from "next";
 import { ObjectId } from "mongodb";
 import clientPromise from "@/lib/mongodb";
@@ -14,6 +14,7 @@ interface RawOrder {
     quantity: number;
     originalPrice: number;
     salePrice?: number;
+    image?: string; // ✅ Added image
   }>;
   amount: number;
   currency?: string;
@@ -41,6 +42,7 @@ type OrderResponse =
         quantity: number;
         price: number;
         discountedPrice?: number;
+        image?: string; // ✅ Added image to response type
       }[];
       amount: number;
       currency: string;
@@ -85,6 +87,7 @@ export default async function handler(
         quantity: i.quantity,
         price: i.originalPrice,
         discountedPrice: i.salePrice,
+        image: i.image || "", // ✅ Include image in single order response
       })) || [];
 
     return res.status(200).json({

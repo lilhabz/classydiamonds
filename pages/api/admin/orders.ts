@@ -37,6 +37,7 @@ interface RawOrder {
     quantity: number;
     originalPrice: number;
     salePrice?: number;
+    image?: string;
   }>;
   amount: number;
   currency?: string;
@@ -152,6 +153,7 @@ export default async function handler(
           quantity: i.quantity,
           price: i.originalPrice,
           discountedPrice: i.salePrice,
+          image: i.image || "",
         })),
         amount: o.amount,
         currency: o.currency || "usd",

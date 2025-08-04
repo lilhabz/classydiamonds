@@ -23,7 +23,7 @@ export default async function handler(
       .sort({ shippedAt: -1 })
       .toArray();
 
-    // Remap each order’s items to include both original and sale prices
+    // Remap each order’s items to include both original and sale prices + image
     const orders = rawOrders.map((o: any) => ({
       _id: o._id.toString(),
       customerName: o.customerName,
@@ -48,10 +48,8 @@ export default async function handler(
         name: i.name,
         quantity: i.quantity,
         price: i.originalPrice, // original price
-        discountedPrice:
-          i.salePrice !== undefined // sale price if any
-            ? i.salePrice
-            : undefined,
+        discountedPrice: i.salePrice !== undefined ? i.salePrice : undefined, // sale price if any
+        image: i.image || "", // ✅ include image
       })),
     }));
 
