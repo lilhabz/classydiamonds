@@ -235,11 +235,11 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
 
       {/* 🛒 Product Grid */}
       <section className="mt-8 px-4 sm:px-6 max-w-7xl mx-auto mb-20">
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6 [grid-auto-rows:1fr]">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6 auto-rows-fr">
           {filteredProducts.slice(0, visibleCount).map((product) => (
             <div
               key={product.id}
-              className="group bg-[var(--bg-nav)] rounded-2xl overflow-hidden shadow-md hover:shadow-2xl hover:scale-105 transition-transform duration-300 flex flex-col h-[300px] sm:h-[340px] md:h-[360px] justify-between"
+              className="group bg-[var(--bg-nav)] rounded-2xl overflow-hidden shadow-md hover:shadow-2xl hover:scale-105 transition-transform duration-300 flex flex-col h-full justify-between"
             >
               <Link
                 href={
