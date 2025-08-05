@@ -239,7 +239,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
           {filteredProducts.slice(0, visibleCount).map((product) => (
             <div
               key={product.id}
-              className="group bg-[var(--bg-nav)] rounded-2xl overflow-hidden shadow-md hover:shadow-2xl hover:scale-105 transition-transform duration-300 flex flex-col h-full justify-between"
+              className="group bg-[var(--bg-nav)] rounded-2xl overflow-hidden shadow-md hover:shadow-2xl hover:scale-105 transition-transform duration-300 flex flex-col h-[340px] justify-between"
             >
               <Link
                 href={
@@ -250,7 +250,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
                       }
                     : `/category/${product.category}/${product.slug}`
                 }
-                className="flex-1 flex flex-col h-full"
+                className="flex-1 flex flex-col"
               >
                 <div className="relative w-full aspect-square">
                   <Image
@@ -260,7 +260,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
                     className="object-cover group-hover:scale-110 transition-transform duration-300"
                   />
                 </div>
-                <div className="p-4 text-center flex-1 flex flex-col justify-between">
+                <div className="p-4 text-center flex flex-col justify-between min-h-[100px]">
                   <h3 className="font-semibold text-[var(--foreground)] truncate text-sm tracking-wide leading-snug">
                     {product.name}
                   </h3>
@@ -286,8 +286,8 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
                   addToCart({
                     id: product.id,
                     name: product.name,
-                    price: product.price, // ← original price (e.g. $13)
-                    discountedPrice: product.salePrice, // ← sale price (e.g. $10) or undefined
+                    price: product.price,
+                    discountedPrice: product.salePrice,
                     image: product.image,
                     quantity: 1,
                   });
