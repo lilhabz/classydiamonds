@@ -121,17 +121,91 @@ export default function DeliveredOrdersPage() {
     document.body.removeChild(link);
   };
 
-  const printPDF = () => {
-    const content = document.getElementById("print-area")?.innerHTML;
-    const win = window.open("", "", "width=800,height=600");
-    if (win && content) {
-      win.document.write(`<html><body>${content}</body></html>`);
-      win.document.close();
-      win.focus();
+  function printPDF() {
+    const deliveredOrdersArea = document.getElementById("print-area");
+    if (!deliveredOrdersArea) return;
+
+    // Build clean text-only PDF output
+    const textOrders = Array.from(
+      deliveredOrdersArea.querySelectorAll(".bg-[var(--bg-nav)]")
+    )
+      .map((orderDiv) => {
+        const name = orderDiv.querySelector("h2")?.textContent?.trim() || "";
+        const orderId = orderDiv.querySelector("p")?.textContent?.trim() || "";
+        const address =
+          Array.from(orderDiv.querySelectorAll("p"))
+            .map((p) => p.textContent)
+            .find((txt) => txt?.includes("📍")) || "";
+        const date =
+          Array.from(orderDiv.querySelectorAll("p"))
+            .map((p) => p.textContent)
+            .find((txt) => txt?.includes("🧾 Delivered")) || "";
+        const tracking =
+          Array.from(orderDiv.querySelectorAll("p"))
+            .map((p) => p.textContent)
+            .find((txt) => txt?.includes("Tracking")) || "Tracking: N/A";
+        const items = Array.from(orderDiv.querySelectorAll("ul li"))
+          .map((li) => li.textContent?.trim())
+          .join("\n");
+        const total =
+          Array.from(orderDiv.querySelectorAll("span"))
+            .map((s) => s.textContent)
+            .find((txt) => txt?.includes("💰")) || "";
+
+        return `
+Order: ${name}
+${orderId}
+${address}
+${date}
+${tracking}
+
+Items:
+${items}
+
+${total}
+-----------------------------------------------
+`;
+      })
+      .join("\n");
+
+    // Open print window
+    const win = window.open("", "_blank", "width=1000,height=800");
+    if (!win) return;
+
+    win.document.write(`
+    <html>
+      <head>
+        <title>Delivered Orders PDF</title>
+        <style>
+          body {
+            font-family: Arial, sans-serif;
+            white-space: pre-wrap;
+            line-height: 1.5;
+            font-size: 14px;
+            color: #000;
+            padding: 20px;
+          }
+          h1 {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 20px;
+          }
+        </style>
+      </head>
+      <body>
+        <h1>Classy Diamonds - Delivered Orders</h1>
+        ${textOrders}
+      </body>
+    </html>
+  `);
+
+    win.document.close();
+    win.focus();
+    win.onload = () => {
       win.print();
       win.close();
-    }
-  };
+    };
+  }
 
   const filteredOrders = orders.filter((order) => {
     if (order.archived) return false;
