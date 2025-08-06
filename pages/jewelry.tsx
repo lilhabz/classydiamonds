@@ -117,9 +117,8 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
     : products;
 
   const filteredProducts = filteredByGender.filter((p) =>
-  activeCategory === "All" ? true : p.category === activeCategory
-);
-
+    activeCategory === "All" ? true : p.category === activeCategory
+  );
 
   const pageTitle = "Jewelry Collection | Classy Diamonds";
   const pageDesc =
@@ -235,11 +234,11 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
 
       {/* 🛒 Product Grid */}
       <section className="mt-8 px-4 sm:px-6 max-w-7xl mx-auto mb-20">
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6 auto-rows-fr">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
           {filteredProducts.slice(0, visibleCount).map((product) => (
             <div
               key={product.id}
-              className="group bg-[var(--bg-nav)] rounded-2xl overflow-hidden shadow-md hover:shadow-2xl hover:scale-105 transition-transform duration-300 flex flex-col h-full justify-between"
+              className="group bg-[var(--bg-nav)] rounded-2xl overflow-hidden shadow-md hover:shadow-2xl hover:scale-105 transition-transform duration-300 flex flex-col justify-between min-h-[388px]"
             >
               <Link
                 href={
