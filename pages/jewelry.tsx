@@ -238,7 +238,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
           {filteredProducts.slice(0, visibleCount).map((product) => (
             <div
               key={product.id}
-              className="group bg-[var(--bg-nav)] w-full h-full rounded-2xl overflow-hidden shadow-md hover:shadow-2xl hover:scale-105 transition-transform duration-300 flex flex-col justify-between min-h-[387.61px] md:min-h-[350px]"
+              className="group bg-[var(--bg-nav)] w-full sm:w-[48%] md:w-[31%] lg:w-[233.61px] h-auto lg:h-[387.61px] rounded-2xl overflow-hidden shadow-md hover:shadow-2xl hover:scale-105 transition-transform duration-300 flex flex-col justify-between"
             >
               <Link
                 href={
