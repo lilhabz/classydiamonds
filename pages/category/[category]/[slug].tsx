@@ -1,4 +1,4 @@
-// 📄 pages/category/[category]/[slug].tsx
+// 📄 pages/category/[category]/[slug].tsx – Clean for Live Launch
 
 "use client";
 
@@ -9,8 +9,6 @@ import Breadcrumbs from "@/components/Breadcrumbs";
 import Head from "next/head";
 import Image from "next/image";
 
-// ✅ Import product data for fallback
-import { jewelryData } from "@/data/jewelryData";
 import { productsData } from "@/data/productsData";
 
 type ProductType = {
@@ -34,11 +32,10 @@ export default function ProductPage({ product }: { product: ProductType }) {
 
   const placeholder = "/gray-placeholder.jpg";
 
-  // ✅ Fallback: if DB image missing, use matching productData/jewelryData image
+  // ✅ Fallback: If DB image missing, check productsData (or use placeholder)
   const fallbackImage =
-    [...jewelryData, ...productsData].find(
-      (item) => item.slug === product.slug
-    )?.image || placeholder;
+    productsData.find((item) => item.slug === product.slug)?.image ||
+    placeholder;
 
   // ✅ Safe Cloudinary transform (only if Cloudinary URL is valid)
   const squareImage =
@@ -79,8 +76,7 @@ export default function ProductPage({ product }: { product: ProductType }) {
 
         {/* 📦 Main Product Section */}
         <section className="max-w-7xl mx-auto px-4 md:px-8 py-16 grid grid-cols-1 lg:grid-cols-2 gap-16">
-          
-          {/* 🖼 Product Image - Fixed desktop size, responsive mobile */}
+          {/* 🖼 Product Image */}
           <div className="relative w-full max-w-[500px] aspect-square mx-auto rounded-2xl overflow-hidden shadow-2xl bg-[var(--bg-nav)] sm:w-[400px] md:w-[500px]">
             <Image
               src={squareImage || placeholder}
@@ -164,7 +160,6 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
     name: p.name,
     price: p.price,
     salePrice: p.salePrice ?? null,
-    // ✅ Pull from DB or fallback
     image: p.imageUrl || p.image || "",
     slug: p.slug,
     category: p.category,
