@@ -116,10 +116,10 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
     ? products.filter((p) => p.gender === genderFilter)
     : products;
 
-  const filteredProducts =
-    activeCategory === "All"
-      ? filteredByGender
-      : filteredByGender.filter((p) => p.category === activeCategory);
+  const filteredProducts = filteredByGender.filter((p) =>
+  activeCategory === "All" ? true : p.category === activeCategory
+);
+
 
   const pageTitle = "Jewelry Collection | Classy Diamonds";
   const pageDesc =
