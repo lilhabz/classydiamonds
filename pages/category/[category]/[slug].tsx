@@ -119,7 +119,7 @@ export default function ProductPage({ product }: { product: ProductType }) {
               </h1>
               {product.skuNumber && (
                 <p className="text-sm text-gray-400">
-                  Item Number {String(product.skuNumber).padStart(5, "0")}
+                  Item Number: {String(product.skuNumber).padStart(5, "0")}
                 </p>
               )}
             </div>
