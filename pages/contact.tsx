@@ -182,10 +182,10 @@ export default function ContactPage() {
             <div className="absolute inset-0 bg-black opacity-50 pointer-events-none" />
           </div>
           <div className="relative z-10 px-4">
-            <h1 className="text-3xl sm:text-4xl font-serif font-semibold tracking-wider leading-snug mb-6 text-[var(--foreground)]">
+            <h1 className="text-3xl md:text-6xl font-serif font-bold tracking-wider leading-snug mb-4 text-[var(--foreground)]">
               Contact Classy Diamonds
             </h1>
-            <p className="text-[var(--foreground)] max-w-2xl mx-auto text-base sm:text-lg leading-relaxed">
+            <p className="text-base md:text-xl max-w-2xl mx-auto text-[var(--foreground)] leading-relaxed tracking-wide">
               Turning dreams into reality for nearly 30 years.
             </p>
           </div>

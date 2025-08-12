@@ -14,7 +14,7 @@ export default function CustomPage() {
 
   useEffect(() => {
     async function load() {
-      const res = await fetch('/api/custom-photos');
+      const res = await fetch("/api/custom-photos");
       const data = await res.json();
       setPhotos(data.photos || []);
     }
@@ -49,7 +49,7 @@ export default function CustomPage() {
         </div>
 
         <div className="relative z-10 px-4">
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-serif font-bold tracking-wider leading-snug mb-6 text-[var(--foreground)]">
+          <h1 className="text-3xl md:text-6xl font-serif font-bold tracking-wider leading-snug mb-4 text-[var(--foreground)]">
             Create Your Dream Piece
           </h1>
           <p className="text-base sm:text-lg md:text-xl max-w-2xl mx-auto text-[var(--foreground)]">
@@ -64,9 +64,16 @@ export default function CustomPage() {
           className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50"
           onClick={() => setSelected(null)}
         >
-          <div className="relative w-11/12 max-w-3xl" onClick={(e) => e.stopPropagation()}>
+          <div
+            className="relative w-11/12 max-w-3xl"
+            onClick={(e) => e.stopPropagation()}
+          >
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={selected} alt="Custom enlarged" className="w-full h-auto rounded" />
+            <img
+              src={selected}
+              alt="Custom enlarged"
+              className="w-full h-auto rounded"
+            />
           </div>
         </div>
       )}
