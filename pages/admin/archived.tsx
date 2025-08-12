@@ -315,7 +315,7 @@ ${total}
                         src={
                           item.image && item.image.trim() !== ""
                             ? item.image
-                            : "/products/placeholder.jpg"
+                            : "/products/gray-placeholder.jpg"
                         }
                         alt={item.name || "Product image"}
                         width={48}

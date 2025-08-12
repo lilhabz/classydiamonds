@@ -360,14 +360,15 @@ ${total}
                           item.originalPrice ?? item.price ?? displayPrice;
                         const orig = basePrice * qty;
                         const sale = displayPrice * qty;
+                        const safeImage =
+                          item.image && item.image.trim() !== ""
+                            ? item.image
+                            : "/products/gray-placeholder.jpg";
+
                         return (
                           <li key={i} className="flex items-center gap-2">
                             <Image
-                              src={
-                                item.image && item.image.trim() !== ""
-                                  ? item.image
-                                  : "/products/placeholder.jpg"
-                              }
+                              src={safeImage}
                               alt={item.name || "Product image"}
                               width={48}
                               height={48}

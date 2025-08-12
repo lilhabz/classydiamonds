@@ -507,7 +507,7 @@ ${total}
                         const safeImage =
                           item.image && item.image.trim() !== ""
                             ? item.image
-                            : "/products/placeholder.jpg";
+                            : "/products/gray-placeholder.jpg";
 
                         return (
                           <li key={i} className="flex items-center gap-2">
