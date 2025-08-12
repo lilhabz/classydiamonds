@@ -1,4 +1,4 @@
-// 📄 pages/category/[category]/[slug].tsx – Text Ring Size + Availability Notice + No Description
+// 📄 pages/category/[category]/[slug].tsx – Text Ring Size + Availability Notice + "Item Number" label
 
 "use client";
 
@@ -21,7 +21,6 @@ type ProductType = {
   image?: string;
   slug: string;
   category: string;
-  // description?: string; // ❌ not used in UI anymore
 };
 
 export default function ProductPage({ product }: { product: ProductType }) {
@@ -69,8 +68,7 @@ export default function ProductPage({ product }: { product: ProductType }) {
           ? product.image
           : fallbackImage,
       quantity: 1,
-      // Keep using `size` since your CartContext already accepts it
-      size: isRing ? ringSize.trim() : undefined,
+      size: isRing ? ringSize.trim() : undefined, // keep using `size` in cart item
     });
   };
 
@@ -78,7 +76,6 @@ export default function ProductPage({ product }: { product: ProductType }) {
     <>
       <Head>
         <title>{product.name} | Classy Diamonds</title>
-        {/* No long description — keep this simple */}
         <meta name="description" content={product.name} />
         <meta property="og:image" content={squareImage} />
       </Head>
@@ -122,12 +119,10 @@ export default function ProductPage({ product }: { product: ProductType }) {
               </h1>
               {product.skuNumber && (
                 <p className="text-sm text-gray-400">
-                  SKU # {String(product.skuNumber).padStart(5, "0")}
+                  Item Number {String(product.skuNumber).padStart(5, "0")}
                 </p>
               )}
             </div>
-
-            {/* ❌ Description removed */}
 
             {/* 💰 Price Display */}
             <div className="text-2xl sm:text-3xl font-semibold">
@@ -207,7 +202,6 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
     image: p.imageUrl || p.image || "",
     slug: p.slug,
     category: p.category,
-    // description: p.description || "", // ❌ not used
   };
 
   return { props: { product } };
