@@ -1,4 +1,4 @@
-// 📄 pages/admin/products.tsx – Admin Product Management with Batch Save & Featured Limit 🛠️💾
+// 📄 pages/admin/products.tsx – Admin Product Management with Batch Save, Image Previews, and Featured Limit 🛠️💾
 
 import { useState, useEffect, useRef, useMemo } from "react";
 import { useRouter } from "next/router";
@@ -33,15 +33,15 @@ interface AdminProduct {
   _id: string; // MongoDB ID
   skuNumber?: number; // sequential SKU
   name: string;
-  slug: string; // URL slug for product page
+  slug?: string; // URL slug for product page (can be missing)
   description: string;
   price: number;
   salePrice?: number;
   category: Category;
-  imageUrl: string;
+  imageUrl?: string; // can be empty
   featured: boolean;
   gender?: "unisex" | "him" | "her";
-  tags: string[];
+  tags?: string[];
 }
 
 // 🛡️ Server-side guard: only admins
@@ -65,8 +65,9 @@ export default function AdminProductsPage() {
     Record<string, { featured: boolean }>
   >({});
 
-  // 🖼️ Local preview of current or replaced image
+  // 🖼️ Local preview of current or replaced image (Edit form only)
   const [previewImage, setPreviewImage] = useState<string>("");
+
   // ✏️ Product currently being edited
   const [editingProduct, setEditingProduct] = useState<AdminProduct | null>(
     null
@@ -85,7 +86,7 @@ export default function AdminProductsPage() {
     imageRemoved: false,
   });
 
-  // 📋 Form state for adding a new product
+  // 📋 Form state for adding a new product (with preview)
   const [formState, setFormState] = useState({
     name: "",
     description: "",
@@ -96,6 +97,9 @@ export default function AdminProductsPage() {
     gender: "unisex" as "unisex" | "him" | "her",
     imageFile: null as File | null,
   });
+
+  // 🖼️ Live preview for Add form file selection (uses blob: URL)
+  const [addPreviewUrl, setAddPreviewUrl] = useState<string>("");
 
   // 🎯 Status for operations
   const [status, setStatus] = useState({
@@ -138,8 +142,8 @@ export default function AdminProductsPage() {
       window.scrollTo({ top: formTop, behavior: "smooth" });
     }
   }, [editingProduct]);
-  // 🧮 Count of featured items currently selected
-  //    Derive from rowEdits: count how many existing products are marked featured
+
+  // 🧮 Count of featured items currently selected (from rowEdits)
   const featuredCount = Object.values(rowEdits).filter(
     (edit) => edit.featured
   ).length;
@@ -190,7 +194,7 @@ export default function AdminProductsPage() {
         setProducts(data.products);
         // Initialize rowEdits from fetched data
         const edits: Record<string, { featured: boolean }> = {};
-        data.products.forEach((p: AdminProduct) => {
+        (data.products as AdminProduct[]).forEach((p) => {
           edits[p._id] = { featured: p.featured };
         });
         setRowEdits(edits);
@@ -208,18 +212,21 @@ export default function AdminProductsPage() {
     setFormState((s) => ({ ...s, [field]: value }));
   };
 
+  // Create/destroy blob URL previews for the Add form file input
+  useEffect(() => {
+    if (formState.imageFile) {
+      const url = URL.createObjectURL(formState.imageFile);
+      setAddPreviewUrl(url);
+      return () => {
+        URL.revokeObjectURL(url);
+      };
+    } else {
+      setAddPreviewUrl("");
+    }
+  }, [formState.imageFile]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    // 🚨 Require image for new product
-    if (!formState.imageFile) {
-      setStatus({
-        loading: false,
-        error: "❌ Please select an image file before adding product.",
-        success: "",
-      });
-      return;
-    }
 
     // 🚨 Prevent adding more than 4 featured items
     if (formState.featured && featuredCount >= 4) {
@@ -243,7 +250,7 @@ export default function AdminProductsPage() {
       formData.append("category", formState.category);
       formData.append("featured", formState.featured ? "true" : "false");
       formData.append("gender", formState.gender);
-      formData.append("image", formState.imageFile);
+      if (formState.imageFile) formData.append("image", formState.imageFile); // optional
 
       const res = await fetch("/api/admin/products", {
         method: "POST",
@@ -251,14 +258,18 @@ export default function AdminProductsPage() {
       });
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data.message);
+      if (!res.ok) throw new Error(data.message || "Failed to add product");
 
+      // Update products list
       setProducts((p) => [data.product, ...p]);
+
+      // Keep rowEdits in sync for featured count & toggling
       setRowEdits((e) => ({
         ...e,
         [data.product._id]: { featured: data.product.featured },
       }));
 
+      // Reset Add form
       setFormState({
         name: "",
         description: "",
@@ -269,6 +280,7 @@ export default function AdminProductsPage() {
         gender: "unisex",
         imageFile: null,
       });
+      setAddPreviewUrl(""); // clear preview
       setStatus({ loading: false, error: "", success: "✅ Product added 🎉" });
     } catch (err: any) {
       setStatus({ loading: false, error: err.message, success: "" });
@@ -279,7 +291,7 @@ export default function AdminProductsPage() {
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // 🚨 Prevent more than 4 featured items on edit
+    // 🚨 Prevent more than 4 featured items on edit (when toggling from false -> true)
     if (editForm.featured && featuredCount >= 4 && !editingProduct?.featured) {
       setStatus({
         loading: false,
@@ -309,14 +321,21 @@ export default function AdminProductsPage() {
       });
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data.message);
+      if (!res.ok) throw new Error(data.message || "Failed to update product");
 
       // Update local list
       setProducts((p) =>
         p.map((prod) => (prod._id === data.product._id ? data.product : prod))
       );
 
+      // Keep rowEdits in sync (important for featuredCount)
+      setRowEdits((r) => ({
+        ...r,
+        [data.product._id]: { featured: data.product.featured },
+      }));
+
       setEditingProduct(null);
+      setPreviewImage("");
       setStatus({
         loading: false,
         error: "",
@@ -351,7 +370,7 @@ export default function AdminProductsPage() {
           body: JSON.stringify(edits),
         });
         const json = await res.json();
-        if (!res.ok) throw new Error(json.message);
+        if (!res.ok) throw new Error(json.message || "Failed to save changes");
         return json.product as AdminProduct;
       });
 
@@ -363,6 +382,15 @@ export default function AdminProductsPage() {
           return updated || x;
         })
       );
+
+      // Sync rowEdits with server truth after batch save
+      setRowEdits((prev) => {
+        const next = { ...prev };
+        results.forEach((u) => {
+          if (u) next[u._id] = { featured: u.featured };
+        });
+        return next;
+      });
 
       setStatus({ loading: false, error: "", success: "All changes saved 💾" });
     } catch (err: any) {
@@ -394,7 +422,7 @@ export default function AdminProductsPage() {
     setEditForm({
       name: product.name,
       description: product.description,
-      price: product.price.toString(),
+      price: (product.price ?? 0).toString(),
       salePrice: product.salePrice?.toString() || "",
       category: product.category,
       featured: product.featured,
@@ -429,6 +457,7 @@ export default function AdminProductsPage() {
       imageFile: null,
       imageRemoved: false,
     });
+    setPreviewImage("");
   };
 
   return (
@@ -471,6 +500,7 @@ export default function AdminProductsPage() {
 
       <div className="max-w-6xl mx-auto space-y-6">
         <h2 className="text-2xl font-bold">🛠️ Manage Products</h2>
+
         {/* ➕ Add Product Toggle Button */}
         <div className="flex justify-end">
           <button
@@ -497,11 +527,11 @@ export default function AdminProductsPage() {
           >
             <h3 className="col-span-full text-xl font-bold text-yellow-400 mb-2">
               ✏️ Editing: {editingProduct.name} (SKU{" "}
-              {String(editingProduct.skuNumber).padStart(5, "0")})
+              {String(editingProduct.skuNumber ?? 0).padStart(5, "0")})
             </h3>
 
             {/* 🖼 Current Image Preview (Live) */}
-            <div className="col-span-full flex flex-col items-center mb-4">
+            <div className="col-span-full flex flex-col items-center mb-2">
               {previewImage ? (
                 <Image
                   src={previewImage}
@@ -511,7 +541,7 @@ export default function AdminProductsPage() {
                   className="object-cover rounded shadow"
                 />
               ) : (
-                <div className="w-36 h-36 bg-gray-500 rounded flex items-center justify-center text-white">
+                <div className="w-36 h-36 bg-gray-500/40 rounded flex items-center justify-center text-white text-sm">
                   No Image
                 </div>
               )}
@@ -534,7 +564,7 @@ export default function AdminProductsPage() {
               />
             </label>
 
-            {/* ❌ Remove Image */}
+            {/* ❌ Remove Image (clears preview; no external placeholder) */}
             <button
               type="button"
               onClick={() => {
@@ -543,15 +573,9 @@ export default function AdminProductsPage() {
                   imageFile: null,
                   imageRemoved: true,
                 }));
-                // Instant preview change in the UI
+                setPreviewImage(""); // clear preview
                 setEditingProduct((prev) =>
-                  prev
-                    ? {
-                        ...prev,
-                        imageUrl:
-                          "https://res.cloudinary.com/demo/image/upload/c_fill,ar_1:1,w_1200,h_1200/v1234567890/gray-placeholder.jpg",
-                      }
-                    : prev
+                  prev ? { ...prev, imageUrl: "" } : prev
                 );
               }}
               className="col-span-full mt-2 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
@@ -571,6 +595,7 @@ export default function AdminProductsPage() {
                 className="mt-1 w-full border rounded p-2"
               />
             </label>
+
             <label>
               📝 Description
               <textarea
@@ -582,10 +607,13 @@ export default function AdminProductsPage() {
                 className="mt-1 w-full border rounded p-2"
               />
             </label>
+
             <label>
               💲 Price (USD)
               <input
                 type="number"
+                min="0"
+                step="0.01"
                 required
                 value={editForm.price}
                 onChange={(e) =>
@@ -594,10 +622,13 @@ export default function AdminProductsPage() {
                 className="mt-1 w-full border rounded p-2"
               />
             </label>
+
             <label>
               🔖 Sale Price (USD)
               <input
                 type="number"
+                min="0"
+                step="0.01"
                 value={editForm.salePrice}
                 onChange={(e) =>
                   setEditForm((f) => ({ ...f, salePrice: e.target.value }))
@@ -605,6 +636,7 @@ export default function AdminProductsPage() {
                 className="mt-1 w-full border rounded p-2"
               />
             </label>
+
             <label>
               📂 Category
               <select
@@ -624,6 +656,7 @@ export default function AdminProductsPage() {
                 ))}
               </select>
             </label>
+
             <label>
               🏷️ Gender
               <select
@@ -647,6 +680,7 @@ export default function AdminProductsPage() {
                 ))}
               </select>
             </label>
+
             <label className="flex items-center space-x-2">
               <span>✨ Featured</span>
               <input
@@ -664,6 +698,7 @@ export default function AdminProductsPage() {
                 </span>
               )}
             </label>
+
             <div className="col-span-full flex space-x-2">
               <button
                 type="submit"
@@ -687,7 +722,7 @@ export default function AdminProductsPage() {
         <div
           className={`transition-all duration-500 ease-in-out overflow-hidden ${
             showAddForm
-              ? "max-h-[1000px] opacity-100 mt-4"
+              ? "max-h-[1200px] opacity-100 mt-4"
               : "max-h-0 opacity-0 mt-0"
           }`}
         >
@@ -723,6 +758,8 @@ export default function AdminProductsPage() {
               💲 Price (USD)
               <input
                 type="number"
+                min="0"
+                step="0.01"
                 required
                 value={formState.price}
                 onChange={(e) => handleInput("price", e.target.value)}
@@ -735,6 +772,8 @@ export default function AdminProductsPage() {
               🔖 Sale Price (USD)
               <input
                 type="number"
+                min="0"
+                step="0.01"
                 value={formState.salePrice}
                 onChange={(e) => handleInput("salePrice", e.target.value)}
                 className="mt-1 w-full border rounded p-2"
@@ -794,9 +833,9 @@ export default function AdminProductsPage() {
               )}
             </label>
 
-            {/* 🖼️ Image */}
-            <label>
-              🖼️ Image (optional)
+            {/* 🖼️ Image (optional) + Live Preview */}
+            <label className="col-span-full">
+              🖼 Image (optional)
               <input
                 type="file"
                 accept="image/*"
@@ -806,6 +845,32 @@ export default function AdminProductsPage() {
                 className="mt-1 w-full"
               />
             </label>
+
+            {/* Live preview for Add form (uses <img> so blob: URLs work without config) */}
+            <div className="col-span-full flex items-center gap-4">
+              <div className="w-36 h-36 bg-gray-500/40 rounded flex items-center justify-center overflow-hidden">
+                {addPreviewUrl ? (
+                  <img
+                    src={addPreviewUrl}
+                    alt="Selected preview"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <span className="text-xs text-white/80">
+                    No Image Selected
+                  </span>
+                )}
+              </div>
+              {addPreviewUrl && (
+                <button
+                  type="button"
+                  onClick={() => handleInput("imageFile", null)}
+                  className="px-3 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
+                >
+                  Clear Selected Image
+                </button>
+              )}
+            </div>
 
             {/* 💾 Submit */}
             <button
@@ -902,31 +967,47 @@ export default function AdminProductsPage() {
                         <td className="p-2">
                           {(p.skuNumber ?? 0).toString().padStart(5, "0")}
                         </td>
-                        <td className="p-2 w-24 h-24 relative">
-                          <Image
-                            src={p.imageUrl}
-                            alt={p.name}
-                            fill
-                            className="object-cover rounded"
-                          />
+
+                        <td className="p-2 w-24 h-24">
+                          <div className="relative w-24 h-24">
+                            {p.imageUrl ? (
+                              <Image
+                                src={p.imageUrl}
+                                alt={p.name}
+                                fill
+                                className="object-cover rounded"
+                              />
+                            ) : (
+                              <div className="w-full h-full bg-gray-500/40 rounded flex items-center justify-center text-xs">
+                                No Image
+                              </div>
+                            )}
+                          </div>
                         </td>
+
                         <td className="p-2">
-                          <Link
-                            href={`/category/${p.category}/${p.slug}`}
-                            className="hover:text-yellow-300 underline"
-                          >
-                            {p.name}
-                          </Link>
+                          {p.slug ? (
+                            <Link
+                              href={`/category/${p.category}/${p.slug}`}
+                              className="hover:text-yellow-300 underline"
+                            >
+                              {p.name}
+                            </Link>
+                          ) : (
+                            <span className="opacity-80">{p.name}</span>
+                          )}
                         </td>
+
                         <td className="p-2 capitalize">{p.category}</td>
                         <td className="p-2 capitalize">
                           {p.gender ?? "unisex"}
                         </td>
+
                         <td className="p-2 text-center">
                           <input
                             type="checkbox"
-                            checked={edit.featured}
-                            disabled={!edit.featured && featuredCount >= 4}
+                            checked={edit?.featured ?? false}
+                            disabled={!edit?.featured && featuredCount >= 4}
                             onChange={(e) =>
                               setRowEdits((r) => ({
                                 ...r,
@@ -938,6 +1019,7 @@ export default function AdminProductsPage() {
                             }
                           />
                         </td>
+
                         <td className="p-2 space-x-2">
                           <button
                             onClick={() => handleEditClick(p)}
