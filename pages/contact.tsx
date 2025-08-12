@@ -70,7 +70,6 @@ export default function ContactPage() {
     const phone = ((formData.get("phone") as string) || "").trim();
     const message = (formData.get("message") as string) || "";
     const customMessage = (formData.get("customMessage") as string) || "";
-    const preference = (formData.get("preference") as string) || "";
     const typeSelection = (formData.get("type") as string) || "";
 
     if (!name.trim().includes(" ")) {
@@ -86,11 +85,6 @@ export default function ContactPage() {
     // ✅ Phone is optional; validate only if provided
     if (phone && !phoneRegex.test(phone)) {
       alert("Please enter a valid phone number.");
-      setIsSubmitting(false);
-      return;
-    }
-    if (!preference.trim()) {
-      alert("Please provide a preferred contact method.");
       setIsSubmitting(false);
       return;
     }
@@ -321,18 +315,6 @@ export default function ContactPage() {
                       className="border border-[var(--foreground)] rounded-xl px-4 py-2"
                     />
                     <select
-                      name="preference"
-                      required
-                      className="border border-[var(--foreground)] rounded-xl px-4 py-2 bg-[var(--bg-nav)] text-[var(--foreground)]"
-                    >
-                      <option value="" disabled hidden selected>
-                        Preferred Contact Method
-                      </option>
-                      <option>Call</option>
-                      <option>Text</option>
-                      <option>Email</option>
-                    </select>
-                    <select
                       name="type"
                       required
                       className="border border-[var(--foreground)] rounded-xl px-4 py-2 bg-[var(--bg-nav)] text-[var(--foreground)]"
@@ -452,18 +434,6 @@ export default function ContactPage() {
                       placeholder="Phone Number (optional)"
                       className="border border-[var(--foreground)] rounded-xl px-4 py-2"
                     />
-                    <select
-                      name="preference"
-                      required
-                      className="border border-[var(--foreground)] rounded-xl px-4 py-2 bg-[var(--bg-nav)] text-[var(--foreground)]"
-                    >
-                      <option value="" disabled hidden selected>
-                        Preferred Contact Method
-                      </option>
-                      <option>Call</option>
-                      <option>Text</option>
-                      <option>Email</option>
-                    </select>
                     {/* 🆕 Label change only; keep name="sku" for backend compatibility */}
                     <input
                       name="sku"

@@ -3,8 +3,6 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import nodemailer from "nodemailer";
 import { IncomingForm } from "formidable";
-import fs from "fs";
-import path from "path";
 import { MongoClient } from "mongodb";
 
 export const config = {
@@ -36,15 +34,17 @@ export default async function handler(
     console.log("✅ Form parsed successfully.");
     console.log("📨 Fields received:", fields);
 
+    // Core fields
     const name = fields.name?.[0] || "";
     const email = fields.email?.[0] || "";
-    const phone = fields.phone?.[0] || "";
-    const type = fields.type?.[0];
-    const preference = fields.preference?.[0];
+    const phone = (fields.phone?.[0] || "").trim(); // optional
+    const type = fields.type?.[0];                   // only for custom form
     const message = fields.message?.[0];
     const customMessage = fields.customMessage?.[0];
     const formCategory = fields.formCategory?.[0];
+    const itemNumber = fields.sku?.[0] || "";        // 🆕 capture "Item Number"
 
+    // Basic validation (email + at least one message body)
     if (!name || !email || (!message && !customMessage)) {
       console.warn("⚠️ Missing required fields:", {
         name,
@@ -60,23 +60,20 @@ export default async function handler(
       ? `💍 New Custom Jewelry Inquiry from ${name}`
       : `📩 New Message from ${name}`;
 
+    // Build email body (preference removed, item number added when present)
     const htmlBody = `
       <div style="font-family: Arial, sans-serif; font-size: 16px; color: #333;">
-        <h2 style="color: #1f2a44;">$${
+        <h2 style="color: #1f2a44;">${
           isCustom ? "New Custom Jewelry Inquiry" : "New Contact Message"
         }</h2>
         <p><strong>Name:</strong> ${name}</p>
         <p><strong>Email:</strong> ${email}</p>
-        <p><strong>Phone:</strong> ${phone}</p>
+        ${phone ? `<p><strong>Phone:</strong> ${phone}</p>` : ""}
+        ${itemNumber ? `<p><strong>Item Number:</strong> ${itemNumber}</p>` : ""}
         ${type ? `<p><strong>Jewelry Type:</strong> ${type}</p>` : ""}
-        ${
-          preference
-            ? `<p><strong>Preferred Contact:</strong> ${preference}</p>`
-            : ""
-        }
         <hr style="margin: 20px 0;" />
         <p><strong>Message:</strong></p>
-        <p style="white-space: pre-line;">$${
+        <p style="white-space: pre-line;">${
           (isCustom ? customMessage : message)?.replace(/\n/g, "<br>") ||
           "No message provided."
         }</p>
@@ -96,8 +93,8 @@ export default async function handler(
       const result = await collection.insertOne({
         name,
         email,
-        phone,
-        preference,
+        phone,           // optional
+        itemNumber,      // 🆕 saved for reference
         message,
         customMessage,
         type,
@@ -115,6 +112,7 @@ export default async function handler(
         .json({ error: "Failed to save message to database" });
     }
 
+    // Send email
     const transporter = nodemailer.createTransport({
       service: "gmail",
       auth: {

@@ -526,9 +526,10 @@ export default function AdminProductsPage() {
             className="grid grid-cols-1 md:grid-cols-2 gap-4 border p-6 rounded-lg bg-[var(--bg-nav)] shadow-lg"
           >
             <h3 className="col-span-full text-xl font-bold text-yellow-400 mb-2">
-              ✏️ Editing: {editingProduct.name} (SKU{" "}
+              ✏️ Editing: {editingProduct.name} (Item Number{" "}
               {String(editingProduct.skuNumber ?? 0).padStart(5, "0")})
             </h3>
+
 
             {/* 🖼 Current Image Preview (Live) */}
             <div className="col-span-full flex flex-col items-center mb-2">
@@ -907,7 +908,8 @@ export default function AdminProductsPage() {
                       className="p-2 cursor-pointer"
                       onClick={() => handleSort("skuNumber")}
                     >
-                      SKU
+                        Item Number
+
                     </th>
                     <th className="p-2">Image</th>
                     <th className="p-2">Name</th>
