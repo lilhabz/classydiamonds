@@ -1,4 +1,4 @@
-// 📄 pages/category/[category]/[slug].tsx – With Ring Size Selection ✅
+// 📄 pages/category/[category]/[slug].tsx – Text Ring Size + Availability Notice + No Description
 
 "use client";
 
@@ -14,19 +14,21 @@ import { productsData } from "@/data/productsData";
 
 type ProductType = {
   id: string;
-  skuNumber?: number;
+  skuNumber?: number | null;
   name: string;
   price: number;
-  salePrice?: number;
+  salePrice?: number | null;
   image?: string;
   slug: string;
   category: string;
-  description?: string;
+  // description?: string; // ❌ not used in UI anymore
 };
 
 export default function ProductPage({ product }: { product: ProductType }) {
   const { addToCart } = useCart();
-  const [selectedSize, setSelectedSize] = useState(""); // 🆕 Track ring size
+
+  // 🆕 Free-text ring size (required for rings)
+  const [ringSize, setRingSize] = useState("");
 
   const capitalizedCategory = product.category
     .replace(/-/g, " ")
@@ -52,8 +54,8 @@ export default function ProductPage({ product }: { product: ProductType }) {
 
   const handleAddToCart = () => {
     // 🔒 Require size for rings
-    if (isRing && !selectedSize) {
-      alert("Please select a ring size before adding to cart.");
+    if (isRing && !ringSize.trim()) {
+      alert("Please enter a ring size before adding to cart.");
       return;
     }
 
@@ -61,13 +63,14 @@ export default function ProductPage({ product }: { product: ProductType }) {
       id: product.id,
       name: product.name,
       price: product.price,
-      discountedPrice: product.salePrice,
+      discountedPrice: product.salePrice ?? undefined,
       image:
         product.image && product.image.trim() !== ""
           ? product.image
           : fallbackImage,
       quantity: 1,
-      size: isRing ? selectedSize : undefined, // 🆕 Store size in cart
+      // Keep using `size` since your CartContext already accepts it
+      size: isRing ? ringSize.trim() : undefined,
     });
   };
 
@@ -75,10 +78,8 @@ export default function ProductPage({ product }: { product: ProductType }) {
     <>
       <Head>
         <title>{product.name} | Classy Diamonds</title>
-        <meta
-          name="description"
-          content={product.description || product.name}
-        />
+        {/* No long description — keep this simple */}
+        <meta name="description" content={product.name} />
         <meta property="og:image" content={squareImage} />
       </Head>
 
@@ -126,9 +127,7 @@ export default function ProductPage({ product }: { product: ProductType }) {
               )}
             </div>
 
-            <p className="text-base sm:text-lg text-gray-300 max-w-prose">
-              {product.description || "A timeless handcrafted piece."}
-            </p>
+            {/* ❌ Description removed */}
 
             {/* 💰 Price Display */}
             <div className="text-2xl sm:text-3xl font-semibold">
@@ -146,33 +145,38 @@ export default function ProductPage({ product }: { product: ProductType }) {
               )}
             </div>
 
-            {/* 🆕 Ring Size Selection */}
+            {/* 🆕 Rings: free-text size instead of dropdown */}
             {isRing && (
               <div>
                 <label
                   htmlFor="ringSize"
                   className="block mb-2 font-medium text-gray-200"
                 >
-                  Select Ring Size
+                  Enter Ring Size<span className="text-red-500">*</span>
                 </label>
-                <select
+                <input
                   id="ringSize"
-                  value={selectedSize}
-                  onChange={(e) => setSelectedSize(e.target.value)}
+                  type="text"
+                  value={ringSize}
+                  onChange={(e) => setRingSize(e.target.value)}
+                  placeholder="e.g., 6, 6.5, 7, or custom"
                   className="w-full px-3 py-2 bg-[var(--bg-nav)] border border-gray-500 rounded-lg text-white"
-                >
-                  <option value="">-- Choose a Size --</option>
-                  {[...Array(16)].map((_, i) => {
-                    const size = (i + 4).toString(); // Sizes 4–19
-                    return (
-                      <option key={size} value={size}>
-                        {size}
-                      </option>
-                    );
-                  })}
-                </select>
+                  required
+                />
+                <p className="text-xs opacity-70 mt-1">
+                  Half sizes are OK (e.g., 6.5). If unsure, type “Help me size”
+                  and we’ll reach out.
+                </p>
               </div>
             )}
+
+            {/* ✅ Availability / made-to-order notice above Add to Cart */}
+            <div className="text-sm md:text-base leading-relaxed bg-[var(--bg-nav)]/60 border border-[var(--bg-nav)] rounded-xl p-4">
+              <strong>Items are subject to availability.</strong> Some pieces are
+              made to order &amp; can take up to 8 weeks for production. You will
+              receive an email within 48 hours of placing order with any delivery
+              delays, that are outside of standard processing time.
+            </div>
 
             {/* 🛒 Add to Cart */}
             <button
@@ -193,6 +197,7 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
   const client = await clientPromise;
   const p = await client.db().collection("products").findOne({ slug });
   if (!p) return { notFound: true };
+
   const product: ProductType = {
     id: p._id.toString(),
     skuNumber: p.skuNumber ?? null,
@@ -202,7 +207,8 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
     image: p.imageUrl || p.image || "",
     slug: p.slug,
     category: p.category,
-    description: p.description || "",
+    // description: p.description || "", // ❌ not used
   };
+
   return { props: { product } };
 };

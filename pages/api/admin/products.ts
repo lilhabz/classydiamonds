@@ -1,10 +1,10 @@
-// 📄 pages/api/admin/products.ts – Admin product list & creation handler with Cloudinary Upload Safety
+// 📄 pages/api/admin/products.ts – Admin product list & creation handler (no placeholders, Cloudinary upload)
 
 import type { NextApiRequest, NextApiResponse } from "next";
 import { v2 as cloudinary } from "cloudinary";
 import slugify from "slugify";
 import clientPromise from "@/lib/mongodb";
-import { IncomingForm } from "formidable";
+import { IncomingForm, Files, Fields, File } from "formidable";
 
 export const config = { api: { bodyParser: false } };
 
@@ -17,7 +17,7 @@ type Product = {
   salePrice?: number;
   category: string;
   slug: string;
-  imageUrl: string;
+  imageUrl: string; // empty string if no image
   featured: boolean;
   gender?: "unisex" | "him" | "her";
   tags: string[];
@@ -29,39 +29,66 @@ type Data =
   | { success: true; product: Product }
   | { success?: false; message: string };
 
-const PLACEHOLDER =
-  "https://res.cloudinary.com/demo/image/upload/c_fill,ar_1:1,w_1200,h_1200/v1234567890/gray-placeholder.jpg";
+function getString(val: any, fallback = ""): string {
+  if (Array.isArray(val)) return (val[0] ?? fallback) as string;
+  if (typeof val === "string") return val;
+  return fallback;
+}
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse<Data>
-) {
+async function parseForm(
+  req: NextApiRequest
+): Promise<{ fields: Fields; files: Files }> {
+  const form = new IncomingForm({
+    multiples: false,
+    keepExtensions: true,
+    maxFileSize: 20 * 1024 * 1024, // 20MB
+  });
+  return new Promise((resolve, reject) => {
+    form.parse(req, (err, fields, files) => (err ? reject(err) : resolve({ fields, files })));
+  });
+}
+
+export default async function handler(req: NextApiRequest, res: NextApiResponse<Data>) {
+  // Basic method allowlist / preflight
+  if (req.method === "OPTIONS") {
+    res.setHeader("Allow", ["GET", "POST", "OPTIONS"]);
+    return res.status(200).end();
+  }
+  if (!["GET", "POST"].includes(req.method || "")) {
+    res.setHeader("Allow", ["GET", "POST", "OPTIONS"]);
+    return res
+      .status(405)
+      .json({ success: false, message: `Method ${req.method} Not Allowed` });
+  }
+
+  // Cloudinary config (needed only for POST with image, but safe to init once)
   if (
     !process.env.CLOUDINARY_CLOUD_NAME ||
     !process.env.CLOUDINARY_API_KEY ||
     !process.env.CLOUDINARY_API_SECRET
   ) {
     console.error("Cloudinary config missing");
-    return res
-      .status(500)
-      .json({ success: false, message: "Cloudinary configuration error" });
-  }
-  cloudinary.config({
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-    api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET,
-  });
-
-  if (req.method === "OPTIONS") {
-    res.setHeader("Allow", ["GET", "POST", "OPTIONS"]);
-    return res.status(200).end();
+    // We still allow GET even if Cloudinary envs are missing
+    if (req.method === "POST") {
+      return res
+        .status(500)
+        .json({ success: false, message: "Cloudinary configuration error" });
+    }
+  } else {
+    cloudinary.config({
+      cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+      api_key: process.env.CLOUDINARY_API_KEY,
+      api_secret: process.env.CLOUDINARY_API_SECRET,
+    });
   }
 
   const client = await clientPromise;
   const db = client.db();
   const collection = db.collection("products");
 
+  // =========================
   // GET: list all products
+  // =========================
   if (req.method === "GET") {
     const raw = await collection.find().sort({ skuNumber: 1 }).toArray();
 
@@ -74,99 +101,99 @@ export default async function handler(
       salePrice: doc.salePrice,
       category: doc.category,
       slug: doc.slug,
-      imageUrl: doc.imageUrl,
+      imageUrl: doc.imageUrl || "", // ensure string
       featured: !!doc.featured,
-      gender: doc.gender || "unisex",
-      tags: doc.tags || [],
+      gender: (doc.gender as Product["gender"]) || "unisex",
+      tags: (doc.tags as string[]) || [],
       createdAt: doc.createdAt,
     }));
 
     return res.status(200).json({ success: true, products });
   }
 
+  // =========================
   // POST: create product
-  if (req.method !== "POST") {
-    res.setHeader("Allow", ["GET", "POST", "OPTIONS"]);
-    return res
-      .status(405)
-      .json({ success: false, message: `Method ${req.method} Not Allowed` });
-  }
-
+  // =========================
   try {
-    const form = new IncomingForm();
-    const { fields, files } = await new Promise<any>((resolve, reject) => {
-      form.parse(req, (err, flds, fls) =>
-        err ? reject(err) : resolve({ fields: flds, files: fls })
-      );
-    });
+    const { fields, files } = await parseForm(req);
 
-    const getString = (val: any, fallback = ""): string =>
-      Array.isArray(val)
-        ? val[0] ?? fallback
-        : typeof val === "string"
-        ? val
-        : fallback;
-
-    const name = getString(fields.name);
-    const description = getString(fields.description);
-    const price = parseFloat(getString(fields.price, "0"));
-    const salePriceStr = getString(fields.salePrice);
-    const salePrice = salePriceStr ? parseFloat(salePriceStr) : undefined;
-    const category = getString(fields.category);
+    const name = getString(fields.name).trim();
+    const description = getString(fields.description).trim();
+    const priceStr = getString(fields.price, "0").trim();
+    const salePriceStr = getString(fields.salePrice).trim();
+    const category = getString(fields.category).trim();
     const featured = getString(fields.featured, "false") === "true";
 
+    if (!name || !description || !category) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Missing required fields" });
+    }
+
+    const price = parseFloat(priceStr);
+    if (Number.isNaN(price)) {
+      return res.status(400).json({ success: false, message: "Invalid price" });
+    }
+
+    const salePrice =
+      salePriceStr && !Number.isNaN(parseFloat(salePriceStr))
+        ? parseFloat(salePriceStr)
+        : undefined;
+
     const genderStr = getString(fields.gender, "unisex");
-    const gender: "unisex" | "him" | "her" = ["unisex", "him", "her"].includes(
-      genderStr
-    )
-      ? (genderStr as "unisex" | "him" | "her")
-      : "unisex";
+    const gender: "unisex" | "him" | "her" =
+      genderStr === "him" || genderStr === "her" ? genderStr : "unisex";
 
     const tagsRaw = fields.tags;
-    const tags = Array.isArray(tagsRaw)
-      ? tagsRaw.filter(Boolean)
+    const tags: string[] = Array.isArray(tagsRaw)
+      ? (tagsRaw as string[]).filter(Boolean)
       : tagsRaw
       ? [getString(tagsRaw)]
       : [];
 
-    // 📁 Handle image upload or fallback
-    const rawFile = files.image;
+    // 🖼️ Handle image upload if provided; otherwise keep imageUrl as empty string
+    let imageUrl = "";
+    const rawFile = (files as any).image as File | File[] | undefined;
     const imageFile = Array.isArray(rawFile) ? rawFile[0] : rawFile;
-    let imageUrl: string = PLACEHOLDER; // default to placeholder if no image
 
-    if (imageFile && typeof imageFile !== "string") {
+    if (imageFile && (imageFile as any).filepath) {
       try {
         const uploadResult = await cloudinary.uploader.upload(
-          imageFile.filepath,
+          (imageFile as any).filepath,
           {
             folder: "classy-diamonds/original",
             transformation: [
-              { quality: "auto" },
+              { crop: "fill", width: 1200, height: 1200 },
               { fetch_format: "auto" },
-              { crop: "fill", aspect_ratio: "1:1", width: 1200, height: 1200 },
+              { quality: "auto" },
             ],
+            resource_type: "image",
+            overwrite: false,
           }
         );
         imageUrl = uploadResult.secure_url;
       } catch (err) {
         console.error("Cloudinary upload failed:", err);
-        return res.status(500).json({
-          success: false,
-          message: "Image upload failed. Please try again.",
-        });
+        return res
+          .status(500)
+          .json({ success: false, message: "Image upload failed. Please try again." });
       }
     }
 
     // 🔢 Determine next SKU
-    const top = await collection
-      .find()
-      .sort({ skuNumber: -1 })
-      .limit(1)
-      .toArray();
+    const top = await collection.find().sort({ skuNumber: -1 }).limit(1).toArray();
     const maxSku = top[0]?.skuNumber ?? 0;
     const skuNumber = maxSku + 1;
 
-    const slug = slugify(name, { lower: true });
+    // 🔗 Slug (basic). If you want uniqueness, append -2, -3... when duplicates exist.
+    const baseSlug = slugify(name, { lower: true, strict: true });
+    let slug = baseSlug;
+    const existingSameSlug = await collection.findOne({ slug });
+    if (existingSameSlug) {
+      // simple disambiguation: append sku
+      slug = `${baseSlug}-${skuNumber}`;
+    }
+
     const newProduct: Omit<Product, "_id"> = {
       skuNumber,
       name,
@@ -175,7 +202,7 @@ export default async function handler(
       ...(salePrice !== undefined && { salePrice }),
       category,
       slug,
-      imageUrl,
+      imageUrl, // "" if none
       featured,
       gender,
       tags,
@@ -190,7 +217,7 @@ export default async function handler(
     console.error("API Error:", error);
     return res.status(500).json({
       success: false,
-      message: error.message || "Internal Server Error",
+      message: error?.message || "Internal Server Error",
     });
   }
 }
