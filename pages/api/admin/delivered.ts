@@ -1,4 +1,4 @@
-// 📂 pages/api/admin/delivered.ts – Get delivered orders 📬
+// 📂 pages/api/admin/delivered.ts – Get delivered orders 📬 (size-aware)
 
 import type { NextApiRequest, NextApiResponse } from "next";
 import clientPromise from "@/lib/mongodb";
@@ -23,7 +23,7 @@ export default async function handler(
       .sort({ deliveredAt: -1 })
       .toArray();
 
-    // 🔄 Remap each order’s items to expose both prices + image
+    // 🔄 Remap each order’s items to expose both prices + image + size
     const orders = rawOrders.map((o: any) => ({
       _id: o._id.toString(),
       customerName: o.customerName,
@@ -43,13 +43,13 @@ export default async function handler(
       carrier: o.carrier,
       trackingEmailSentAt: o.trackingEmailSentAt,
 
-      // remapped items with image included
       items: (o.items || []).map((i: any) => ({
         name: i.name,
         quantity: i.quantity,
         price: i.originalPrice, // original price
         discountedPrice: i.salePrice !== undefined ? i.salePrice : undefined, // sale price if discounted
-        image: i.image || "", // ✅ include image for admin
+        image: i.image || "", // ✅ include image
+        size: i.size || undefined, // 🆕 include size
       })),
     }));
 

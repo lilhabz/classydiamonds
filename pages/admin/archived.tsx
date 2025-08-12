@@ -1,4 +1,4 @@
-// ✅ Enhanced pages/admin/archived.tsx with Restore button, unified nav, pagination, and logging 🔐🗂️
+// ✅ Enhanced pages/admin/archived.tsx with Restore button, unified nav, pagination, logging, and size badges 🔐🗂️
 
 import { useEffect, useState } from "react";
 import Head from "next/head";
@@ -15,6 +15,7 @@ interface OrderItem {
   salePrice?: number;
   originalPrice?: number;
   image?: string;
+  size?: string; // 🆕 ring size
 }
 
 interface Order {
@@ -43,7 +44,6 @@ export default function ArchivedOrdersPage() {
     const archivedOrdersArea = document.getElementById("print-area");
     if (!archivedOrdersArea) return;
 
-    // Build text-only archive output
     const textOrders = Array.from(
       archivedOrdersArea.querySelectorAll(".bg-[var(--bg-nav)]")
     )
@@ -81,7 +81,6 @@ ${total}
       })
       .join("\n");
 
-    // Open print window
     const win = window.open("", "_blank", "width=1000,height=800");
     if (!win) return;
 
@@ -90,19 +89,8 @@ ${total}
       <head>
         <title>Archived Orders PDF</title>
         <style>
-          body {
-            font-family: Arial, sans-serif;
-            white-space: pre-wrap;
-            line-height: 1.5;
-            font-size: 14px;
-            color: #000;
-            padding: 20px;
-          }
-          h1 {
-            font-size: 20px;
-            font-weight: bold;
-            margin-bottom: 20px;
-          }
+          body { font-family: Arial, sans-serif; white-space: pre-wrap; line-height: 1.5; font-size: 14px; color: #000; padding: 20px; }
+          h1 { font-size: 20px; font-weight: bold; margin-bottom: 20px; }
         </style>
       </head>
       <body>
@@ -144,11 +132,10 @@ ${total}
 
     try {
       const adminName =
-        session?.user?.firstName || session?.user?.name?.split(" ")[0];
+        (session?.user as any)?.firstName || session?.user?.name?.split(" ")[0];
       const res = await fetch("/api/admin/archived", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-
         body: JSON.stringify({ orderId, restore: true, adminName }),
       });
       const result = await res.json();
@@ -177,8 +164,10 @@ ${total}
       (order.items || [])
         .map((i) => {
           const qty = i.quantity ?? 1;
-          const unit = i.price ?? i.originalPrice ?? 0;
-          return `${qty}× ${i.name} - $${(qty * unit).toFixed(2)}`;
+          const unit =
+            i.price ?? i.discountedPrice ?? i.salePrice ?? i.originalPrice ?? 0;
+          const label = i.size ? `${i.name} (Size ${i.size})` : i.name;
+          return `${qty}× ${label} - $${(qty * unit).toFixed(2)}`;
         })
         .join(" | "),
     ]);
@@ -272,6 +261,12 @@ ${total}
         >
           Export CSV 📄
         </button>
+        <button
+          onClick={printPDF}
+          className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded text-sm"
+        >
+          Print PDF 🖨️
+        </button>
       </div>
 
       {loading ? (
@@ -279,7 +274,7 @@ ${total}
       ) : filteredOrders.length === 0 ? (
         <p>No archived orders found.</p>
       ) : (
-        <div className="space-y-8">
+        <div id="print-area" className="space-y-8">
           {paginatedOrders.map((order) => (
             <div
               key={order._id}
@@ -296,6 +291,7 @@ ${total}
               <p className="mb-4 text-sm">
                 🧾 Order Date: {new Date(order.createdAt).toLocaleString()}
               </p>
+
               <ul className="mb-4 pl-4 list-disc text-sm">
                 {order.items?.map((item, index) => {
                   const qty = item.quantity ?? 1;
@@ -309,6 +305,7 @@ ${total}
                     item.originalPrice ?? item.price ?? displayPrice;
                   const orig = basePrice * qty;
                   const sale = displayPrice * qty;
+
                   return (
                     <li key={index} className="flex items-center gap-2">
                       <Image
@@ -323,9 +320,14 @@ ${total}
                         className="rounded object-cover"
                         unoptimized
                       />
-
                       <span>
-                        {item.name} – x{qty} –{" "}
+                        {item.name}
+                        {item.size && (
+                          <span className="ml-2 text-xs px-2 py-0.5 rounded-full bg-[#364763] text-white align-middle">
+                            Size: {item.size}
+                          </span>
+                        )}{" "}
+                        – x{qty} –{" "}
                         {displayPrice < basePrice ? (
                           <>
                             <span className="line-through mr-1">
@@ -343,6 +345,7 @@ ${total}
                   );
                 })}
               </ul>
+
               <div className="flex justify-between items-center">
                 <span className="text-lg font-semibold">
                   💰 Total: ${order.amount.toFixed(2)}
@@ -388,4 +391,3 @@ ${total}
     </div>
   );
 }
-//111

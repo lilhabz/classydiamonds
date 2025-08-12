@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Head from "next/head";
 import Link from "next/link";
 import { getSession } from "next-auth/react";
@@ -22,7 +22,13 @@ export default function AdminCustomPhotosPage() {
   const [photos, setPhotos] = useState<CustomPhoto[]>([]);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [status, setStatus] = useState({ loading: false, error: "", success: "" });
+  const [status, setStatus] = useState({
+    loading: false,
+    error: "",
+    success: "",
+  });
+  const [dragActive, setDragActive] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     loadPhotos();
@@ -43,6 +49,41 @@ export default function AdminCustomPhotosPage() {
     setPhotos(data.photos || []);
   };
 
+  const onPickFile = () => fileInputRef.current?.click();
+
+  const onFileChange = (file: File | null) => {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      setStatus({
+        loading: false,
+        error: "Please choose an image file.",
+        success: "",
+      });
+      return;
+    }
+    setStatus({ loading: false, error: "", success: "" });
+    setImageFile(file);
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    onFileChange(e.target.files?.[0] || null);
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) onFileChange(file);
+  };
+
+  const handleDrag = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") setDragActive(true);
+    if (e.type === "dragleave") setDragActive(false);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!imageFile) return;
@@ -55,7 +96,7 @@ export default function AdminCustomPhotosPage() {
         body: formData,
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.message);
+      if (!res.ok) throw new Error(data.message || "Upload failed");
       setPhotos((p) => [data.photo, ...p]);
       setImageFile(null);
       setStatus({ loading: false, error: "", success: "Photo added" });
@@ -64,15 +105,38 @@ export default function AdminCustomPhotosPage() {
     }
   };
 
+  const deletePhoto = async (id: string) => {
+    const ok = confirm("Delete this photo?");
+    if (!ok) return;
+    try {
+      const res = await fetch(
+        `/api/admin/custom-photos?id=${encodeURIComponent(id)}`,
+        {
+          method: "DELETE",
+        }
+      );
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Delete failed");
+      setPhotos((p) => p.filter((x) => x._id !== id));
+    } catch (err: any) {
+      alert("❌ " + err.message);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[var(--bg-page)] text-[var(--foreground)] p-6">
       <Head>
         <title>Admin Custom Photos | Classy Diamonds</title>
       </Head>
+
       <div className="pl-2 pr-2 sm:pl-4 sm:pr-4 mb-6 -mt-2">
         <Breadcrumbs />
       </div>
-      <h1 className="text-3xl font-serif font-bold tracking-wide mb-6">🖼 Manage Custom Creations</h1>
+
+      <h1 className="text-3xl font-serif font-bold tracking-wide mb-6">
+        🖼 Manage Custom Creations
+      </h1>
+
       <nav className="flex flex-wrap justify-center sm:justify-start gap-2 sm:space-x-6 mb-8 border-b border-[var(--bg-nav)] pb-4 text-[var(--foreground)] text-sm font-semibold">
         <Link href="/admin" className="hover:text-yellow-300">
           📦 Orders
@@ -96,47 +160,102 @@ export default function AdminCustomPhotosPage() {
           📝 Logs
         </Link>
       </nav>
-      {status.error && <p className="text-red-500">❌ {status.error}</p>}
-      {status.success && <p className="text-green-600">✅ {status.success}</p>}
+
+      {status.error && <p className="text-red-500 mb-4">❌ {status.error}</p>}
+      {status.success && (
+        <p className="text-green-500 mb-4">✅ {status.success}</p>
+      )}
+
+      {/* Upload Form */}
       <form onSubmit={handleSubmit} className="mb-8 space-y-4">
-        <label className="block">
-          <span>🖼 Image</span>
-          <input
-            type="file"
-            accept="image/*"
-            required
-            onChange={(e) => setImageFile(e.target.files?.[0] || null)}
-            className="mt-1 w-full"
-          />
+        {/* Hidden native input */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={handleInputChange}
+        />
+
+        {/* Visible upload button + drag area */}
+        <div
+          onDragEnter={handleDrag}
+          onDragOver={handleDrag}
+          onDragLeave={handleDrag}
+          onDrop={handleDrop}
+          className={`rounded-2xl border-2 ${
+            dragActive ? "border-blue-400 bg-blue-400/10" : "border-[#364763]"
+          } p-6 flex flex-col items-center justify-center gap-3 bg-[var(--bg-nav)]`}
+        >
+          <button
+            type="button"
+            onClick={onPickFile}
+            className="px-5 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow"
+          >
+            ⬆️ Upload Photo
+          </button>
+          <p className="text-sm text-gray-300">or drag & drop an image here</p>
+
+          {imageFile && (
+            <div className="mt-3 text-xs text-gray-300">
+              Selected: <span className="font-medium">{imageFile.name}</span>
+            </div>
+          )}
+
           {previewUrl && (
-
-            <div className="mt-2 w-40 h-40 relative">
-
+            <div className="mt-4 w-40 h-40 rounded-xl overflow-hidden">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={previewUrl}
                 alt="Preview"
-                className="object-cover rounded w-full h-full"
+                className="object-cover w-full h-full"
               />
             </div>
           )}
-        </label>
-        <button
-          type="submit"
-          disabled={status.loading}
-          className="bg-blue-600 text-white rounded py-2 px-4 hover:bg-blue-700"
-        >
-          {status.loading ? "Saving..." : "Add Photo"}
-        </button>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <button
+            type="submit"
+            disabled={status.loading || !imageFile}
+            className="bg-green-600 disabled:opacity-50 text-white rounded-xl py-2 px-5 hover:bg-green-700 transition"
+          >
+            {status.loading ? "Saving..." : "Add Photo"}
+          </button>
+          {imageFile && (
+            <button
+              type="button"
+              onClick={() => setImageFile(null)}
+              className="px-4 py-2 rounded-xl bg-[var(--bg-nav)] border border-[#364763] hover:bg-[#364763] transition"
+            >
+              Clear Selection
+            </button>
+          )}
+        </div>
       </form>
+
+      {/* Photo Grid */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
         {photos.map((p) => (
           <div
             key={p._id}
-            className="relative w-full h-40 rounded-xl overflow-hidden shadow-md hover:shadow-xl transition"
+            className="relative w-full h-40 rounded-xl overflow-hidden shadow-md hover:shadow-xl transition group"
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={p.imageUrl} alt="Custom creation" className="object-cover rounded w-full h-full" />
+            <img
+              src={p.imageUrl}
+              alt="Custom creation"
+              className="object-cover w-full h-full"
+            />
+
+            {/* Delete button overlay */}
+            <button
+              onClick={() => deletePhoto(p._id)}
+              className="absolute top-2 right-2 px-2 py-1 text-xs rounded-lg bg-red-600/90 hover:bg-red-700 text-white shadow opacity-0 group-hover:opacity-100 transition"
+              title="Delete photo"
+            >
+              Delete
+            </button>
           </div>
         ))}
       </div>

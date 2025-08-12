@@ -1,4 +1,4 @@
-// 📂 pages/api/admin/order.ts – Return single order details by orderId (including discounts + image)
+// 📂 pages/api/admin/order.ts – Return single order details by orderId (incl. size + discounts + image)
 import type { NextApiRequest, NextApiResponse } from "next";
 import { ObjectId } from "mongodb";
 import clientPromise from "@/lib/mongodb";
@@ -14,7 +14,8 @@ interface RawOrder {
     quantity: number;
     originalPrice: number;
     salePrice?: number;
-    image?: string; // ✅ Added image
+    image?: string;
+    size?: string; // 🆕 ring size
   }>;
   amount: number;
   currency?: string;
@@ -40,9 +41,10 @@ type OrderResponse =
       items: {
         name: string;
         quantity: number;
-        price: number;
-        discountedPrice?: number;
-        image?: string; // ✅ Added image to response type
+        price: number; // original price
+        discountedPrice?: number; // sale price if discounted
+        image?: string;
+        size?: string; // 🆕 ring size
       }[];
       amount: number;
       currency: string;
@@ -73,6 +75,7 @@ export default async function handler(
     const client = await clientPromise;
     const db = client.db();
 
+    // Note: orderId here is the Stripe session id per your existing code
     const o = await db
       .collection<RawOrder>("orders")
       .findOne({ stripeSessionId: orderId });
@@ -87,7 +90,8 @@ export default async function handler(
         quantity: i.quantity,
         price: i.originalPrice,
         discountedPrice: i.salePrice,
-        image: i.image || "", // ✅ Include image in single order response
+        image: i.image || "",
+        size: i.size, // 🆕 include size in response
       })) || [];
 
     return res.status(200).json({

@@ -1,4 +1,4 @@
-// ✅ pages/admin/index.tsx – Admin Orders with Safe Image Fallback 🔐🛠️
+// ✅ pages/admin/index.tsx – Admin Orders with Size Display & No Placeholder Images 🔐🛠️
 
 import { useEffect, useState } from "react";
 import Head from "next/head";
@@ -15,6 +15,7 @@ interface OrderItem {
   salePrice?: number;
   originalPrice?: number;
   image?: string;
+  size?: string; // 🆕 ring size
 }
 
 interface Order {
@@ -104,7 +105,7 @@ export default function AdminOrdersPage() {
     }
   }
 
-  // 📤 Export CSV
+  // 📤 Export CSV (now includes Size when present)
   function downloadCSV() {
     const headers = [
       "Name",
@@ -132,8 +133,9 @@ export default function AdminOrdersPage() {
       new Date(o.createdAt).toLocaleString(),
       o.items
         .map((i) => {
-          const unit = i.discountedPrice ?? i.price ?? 0;
-          return `${i.quantity}× ${i.name} – $${(
+          const unit = i.discountedPrice ?? i.salePrice ?? i.price ?? 0;
+          const label = i.size ? `${i.name} (Size ${i.size})` : i.name;
+          return `${i.quantity}× ${label} – $${(
             unit * (i.quantity ?? 1)
           ).toFixed(2)}`;
         })
@@ -153,7 +155,7 @@ export default function AdminOrdersPage() {
     const ordersArea = document.getElementById("print-area");
     if (!ordersArea) return;
 
-    // Build a clean text-only version
+    // Build a clean text-only version (will include “Size: X” since it's in the DOM list items)
     const textOrders = Array.from(
       ordersArea.querySelectorAll(".bg-[var(--bg-nav)]")
     )
@@ -191,7 +193,6 @@ ${total}
       })
       .join("\n");
 
-    // Open print window
     const win = window.open("", "_blank", "width=1000,height=800");
     if (!win) return;
 
@@ -200,19 +201,8 @@ ${total}
       <head>
         <title>Admin Orders PDF</title>
         <style>
-          body {
-            font-family: Arial, sans-serif;
-            white-space: pre-wrap;
-            line-height: 1.5;
-            font-size: 14px;
-            color: #000;
-            padding: 20px;
-          }
-          h1 {
-            font-size: 20px;
-            font-weight: bold;
-            margin-bottom: 20px;
-          }
+          body { font-family: Arial, sans-serif; white-space: pre-wrap; line-height: 1.5; font-size: 14px; color: #000; padding: 20px; }
+          h1 { font-size: 20px; font-weight: bold; margin-bottom: 20px; }
         </style>
       </head>
       <body>
@@ -370,24 +360,32 @@ ${total}
                 const orig = basePrice * qty;
                 const sale = displayPrice * qty;
 
-                // ✅ Match Account page behavior (no forced Cloudinary transform)
-                const safeImage =
-                  i.image && i.image.trim() !== ""
-                    ? i.image
-                    : "/products/gray-placeholder.jpg";
-
                 return (
                   <li key={idx} className="flex items-center gap-2">
-                    <Image
-                      src={safeImage}
-                      alt={i.name}
-                      width={48}
-                      height={48}
-                      className="rounded object-cover"
-                      unoptimized
-                    />
+                    {/* No placeholder: show image only if present, otherwise a neutral box */}
+                    {i.image && i.image.trim() !== "" ? (
+                      <Image
+                        src={i.image}
+                        alt={i.name}
+                        width={48}
+                        height={48}
+                        className="rounded object-cover"
+                        unoptimized
+                      />
+                    ) : (
+                      <div className="w-12 h-12 rounded bg-[#1f2a44] border border-[#364763] text-[10px] flex items-center justify-center">
+                        No photo
+                      </div>
+                    )}
+
                     <span>
-                      {i.name} – x{qty} –{" "}
+                      {i.name}
+                      {i.size && (
+                        <span className="ml-2 text-xs px-2 py-0.5 rounded-full bg-[#364763] text-white align-middle">
+                          Size: {i.size}
+                        </span>
+                      )}{" "}
+                      – x{qty} –{" "}
                       {displayPrice < basePrice ? (
                         <>
                           <span className="line-through text-gray-400 mr-1">
@@ -457,4 +455,3 @@ ${total}
     </div>
   );
 }
-////14214

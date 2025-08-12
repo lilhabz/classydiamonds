@@ -1,4 +1,4 @@
-// ✅ Enhanced pages/admin/completed.tsx with fixed total, archive logic, and unified dashboard nav 🔐🛠️
+// ✅ Enhanced pages/admin/completed.tsx with size badges, fixed total, archive logic, and unified dashboard nav 🔐🛠️
 
 import { useEffect, useState } from "react";
 import Head from "next/head";
@@ -15,6 +15,7 @@ interface OrderItem {
   salePrice?: number;
   originalPrice?: number;
   image?: string;
+  size?: string; // 🆕 ring size
 }
 
 interface Order {
@@ -84,7 +85,7 @@ export default function CompletedOrdersPage() {
 
     try {
       const adminName =
-        session?.user?.firstName || session?.user?.name?.split(" ")[0];
+        (session?.user as any)?.firstName || session?.user?.name?.split(" ")[0];
       const res = await fetch("/api/delivered", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -104,13 +105,12 @@ export default function CompletedOrdersPage() {
       alert("❌ Please enter a tracking number.");
       return;
     }
-
     if (savedTracking[orderId] === input.trackingNumber) return;
 
     try {
       setSavingTracking((p) => ({ ...p, [orderId]: true }));
       const adminName =
-        session?.user?.firstName || session?.user?.name?.split(" ")[0];
+        (session?.user as any)?.firstName || session?.user?.name?.split(" ")[0];
       const res = await fetch("/api/tracking", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -147,7 +147,7 @@ export default function CompletedOrdersPage() {
 
     try {
       const adminName =
-        session?.user?.firstName || session?.user?.name?.split(" ")[0];
+        (session?.user as any)?.firstName || session?.user?.name?.split(" ")[0];
       const res = await fetch("/api/admin/archived", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -179,10 +179,11 @@ export default function CompletedOrdersPage() {
       (order.items || [])
         .map((i) => {
           const qty = i.quantity ?? 1;
-          const price = i.price ?? 0;
-          return `${qty}× ${i.name || "Unnamed"} - $${(qty * price).toFixed(
-            2
-          )}`;
+          const price = i.price ?? i.discountedPrice ?? i.salePrice ?? 0;
+          const label = i.size
+            ? `${i.name} (Size ${i.size})`
+            : i.name || "Unnamed";
+          return `${qty}× ${label} - $${(qty * price).toFixed(2)}`;
         })
         .join(" | "),
     ]);
@@ -202,7 +203,6 @@ export default function CompletedOrdersPage() {
     const shippedOrdersArea = document.getElementById("print-area");
     if (!shippedOrdersArea) return;
 
-    // Build a clean text-only version of shipped orders
     const textOrders = Array.from(
       shippedOrdersArea.querySelectorAll(".bg-[var(--bg-nav)]")
     )
@@ -245,7 +245,6 @@ ${total}
       })
       .join("\n");
 
-    // Open print window
     const win = window.open("", "_blank", "width=1000,height=800");
     if (!win) return;
 
@@ -254,19 +253,8 @@ ${total}
       <head>
         <title>Completed (Shipped) Orders PDF</title>
         <style>
-          body {
-            font-family: Arial, sans-serif;
-            white-space: pre-wrap;
-            line-height: 1.5;
-            font-size: 14px;
-            color: #000;
-            padding: 20px;
-          }
-          h1 {
-            font-size: 20px;
-            font-weight: bold;
-            margin-bottom: 20px;
-          }
+          body { font-family: Arial, sans-serif; white-space: pre-wrap; line-height: 1.5; font-size: 14px; color: #000; padding: 20px; }
+          h1 { font-size: 20px; font-weight: bold; margin-bottom: 20px; }
         </style>
       </head>
       <body>
@@ -325,7 +313,6 @@ ${total}
         <Breadcrumbs />
       </div>
 
-      {/* 🛠️ Admin Dashboard Heading */}
       <h1 className="text-3xl font-serif font-bold tracking-wide mb-6">
         🛠️ Admin Dashboard
       </h1>
@@ -414,6 +401,7 @@ ${total}
                 <p className="mb-4">
                   🧾 Shipped: {new Date(order.shippedAt || "").toLocaleString()}
                 </p>
+
                 {order.trackingNumber ? (
                   <p>
                     <strong>Tracking:</strong> {order.trackingNumber}
@@ -488,6 +476,7 @@ ${total}
                     })()}
                   </div>
                 )}
+
                 <div className="mt-4">
                   <strong>Items:</strong>
                   {Array.isArray(order.items) && order.items.length > 0 ? (
@@ -519,9 +508,14 @@ ${total}
                               className="rounded object-cover"
                               unoptimized
                             />
-
                             <span>
-                              {item.name || "Unnamed"} – x{qty} –{" "}
+                              {item.name || "Unnamed"}
+                              {item.size && (
+                                <span className="ml-2 text-xs px-2 py-0.5 rounded-full bg-[#364763] text-white align-middle">
+                                  Size: {item.size}
+                                </span>
+                              )}{" "}
+                              – x{qty} –{" "}
                               {displayPrice < basePrice ? (
                                 <>
                                   <span className="line-through mr-1">
@@ -588,7 +582,6 @@ ${total}
             </div>
           )}
 
-          {/* 🚪 Exit */}
           <button
             onClick={() => {
               window.location.href = "/";

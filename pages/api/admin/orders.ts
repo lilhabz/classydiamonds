@@ -1,4 +1,4 @@
-// 📂 pages/api/admin/orders.ts – Admin Orders API with Address Source Indicator 💎
+// 📂 pages/api/admin/orders.ts – Admin Orders API with Address Source + Size 💎
 import type { NextApiRequest, NextApiResponse } from "next";
 import { ObjectId } from "mongodb";
 import clientPromise from "@/lib/mongodb";
@@ -38,6 +38,7 @@ interface RawOrder {
     originalPrice: number;
     salePrice?: number;
     image?: string;
+    size?: string; // 🆕
   }>;
   amount: number;
   currency?: string;
@@ -54,6 +55,8 @@ interface OrderItem {
   quantity: number;
   price: number;
   discountedPrice?: number;
+  image?: string;
+  size?: string; // 🆕
 }
 
 interface Order {
@@ -147,13 +150,14 @@ export default async function handler(
         customerAddress: o.customerAddress,
         shipping_address: shippingObj,
         shipping_address_string: shippingString,
-        addressSource, // <-- New field
+        addressSource,
         items: (o.items ?? []).map((i) => ({
           name: i.name,
           quantity: i.quantity,
           price: i.originalPrice,
           discountedPrice: i.salePrice,
           image: i.image || "",
+          size: i.size, // 🆕
         })),
         amount: o.amount,
         currency: o.currency || "usd",

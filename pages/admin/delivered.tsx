@@ -1,4 +1,4 @@
-// ✅ pages/admin/delivered.tsx – view delivered orders 🔐📬
+// ✅ pages/admin/delivered.tsx – view delivered orders (size-aware) 🔐📬
 
 import { useEffect, useState } from "react";
 import Head from "next/head";
@@ -15,6 +15,7 @@ interface OrderItem {
   salePrice?: number;
   originalPrice?: number;
   image?: string;
+  size?: string; // 🆕 ring size
 }
 
 interface Order {
@@ -70,7 +71,7 @@ export default function DeliveredOrdersPage() {
 
     try {
       const adminName =
-        session?.user?.firstName || session?.user?.name?.split(" ")[0];
+        (session?.user as any)?.firstName || session?.user?.name?.split(" ")[0];
       const res = await fetch("/api/admin/archived", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -102,10 +103,11 @@ export default function DeliveredOrdersPage() {
       (order.items || [])
         .map((i) => {
           const qty = i.quantity ?? 1;
-          const price = i.price ?? 0;
-          return `${qty}× ${i.name || "Unnamed"} - $${(qty * price).toFixed(
-            2
-          )}`;
+          const price = i.price ?? i.discountedPrice ?? i.salePrice ?? 0;
+          const label = i.size
+            ? `${i.name} (Size ${i.size})`
+            : i.name || "Unnamed";
+          return `${qty}× ${label} - $${(qty * price).toFixed(2)}`;
         })
         .join(" | "),
     ]);
@@ -168,7 +170,6 @@ ${total}
       })
       .join("\n");
 
-    // Open print window
     const win = window.open("", "_blank", "width=1000,height=800");
     if (!win) return;
 
@@ -177,19 +178,8 @@ ${total}
       <head>
         <title>Delivered Orders PDF</title>
         <style>
-          body {
-            font-family: Arial, sans-serif;
-            white-space: pre-wrap;
-            line-height: 1.5;
-            font-size: 14px;
-            color: #000;
-            padding: 20px;
-          }
-          h1 {
-            font-size: 20px;
-            font-weight: bold;
-            margin-bottom: 20px;
-          }
+          body { font-family: Arial, sans-serif; white-space: pre-wrap; line-height: 1.5; font-size: 14px; color: #000; padding: 20px; }
+          h1 { font-size: 20px; font-weight: bold; margin-bottom: 20px; }
         </style>
       </head>
       <body>
@@ -375,9 +365,14 @@ ${total}
                               className="rounded object-cover"
                               unoptimized
                             />
-
                             <span>
-                              {item.name || "Unnamed"} – x{qty} –{" "}
+                              {item.name || "Unnamed"}
+                              {item.size && (
+                                <span className="ml-2 text-xs px-2 py-0.5 rounded-full bg-[#364763] text-white align-middle">
+                                  Size: {item.size}
+                                </span>
+                              )}{" "}
+                              – x{qty} –{" "}
                               {displayPrice < basePrice ? (
                                 <>
                                   <span className="line-through mr-1">
@@ -449,4 +444,3 @@ ${total}
     </div>
   );
 }
-///111

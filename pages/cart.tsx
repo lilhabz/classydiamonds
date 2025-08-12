@@ -30,7 +30,7 @@ export default function CartPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          items: cartItems,
+          items: cartItems, // 🆕 includes size if present
           // ← pass user info into checkout metadata
           name: session?.user?.name || "",
           email: session?.user?.email || "",
@@ -87,7 +87,11 @@ export default function CartPage() {
           {cartItems.length > 0 ? (
             cartItems.map((item) => (
               <div
-                key={item.id}
+                key={
+                  `${item.id}::${
+                    item.size ?? ""
+                  }` /* 🆕 stable key for id+size */
+                }
                 className="flex flex-col md:flex-row gap-4 items-center bg-[var(--bg-nav)] rounded-xl p-4 sm:p-6 shadow"
               >
                 {/* 📸 Product Image */}
@@ -104,9 +108,19 @@ export default function CartPage() {
                   <h2 className="text-lg sm:text-xl font-semibold text-[#cfd2d6]">
                     {item.name}
                   </h2>
+
+                  {/* 🆕 Ring Size Badge */}
+                  {item.size && (
+                    <div className="mt-1">
+                      <span className="inline-block text-xs px-2 py-1 rounded-full bg-[#364763] text-white">
+                        Size: {item.size}
+                      </span>
+                    </div>
+                  )}
+
                   {/* 💲 Price Display */}
                   {item.salePrice < item.originalPrice ? (
-                    <div className="text-sm sm:text-base mt-1">
+                    <div className="text-sm sm:text-base mt-2">
                       <span className="line-through text-gray-400 mr-2">
                         ${item.originalPrice.toFixed(2)}
                       </span>
@@ -115,20 +129,24 @@ export default function CartPage() {
                       </span>
                     </div>
                   ) : (
-                    <p className="text-sm text-gray-400 mt-1">
+                    <p className="text-sm text-gray-400 mt-2">
                       ${item.originalPrice.toFixed(2)}
                     </p>
                   )}
+
                   {/* 🧮 Subtotal if Quantity > 1 */}
                   {item.quantity > 1 && (
                     <p className="text-sm text-gray-400 mt-1">
                       Subtotal: ${(item.salePrice * item.quantity).toFixed(2)}
                     </p>
                   )}
+
                   {/* 🔢 Quantity Controls */}
                   <div className="mt-3 flex items-center justify-center md:justify-start gap-3">
                     <button
-                      onClick={() => decreaseQty(item.id)}
+                      onClick={
+                        () => decreaseQty(item.id, item.size) /* 🆕 pass size */
+                      }
                       className="w-7 h-7 rounded-full bg-gray-700 text-white text-lg hover:bg-gray-600"
                     >
                       −
@@ -137,7 +155,9 @@ export default function CartPage() {
                       {item.quantity}
                     </span>
                     <button
-                      onClick={() => increaseQty(item.id)}
+                      onClick={
+                        () => increaseQty(item.id, item.size) /* 🆕 pass size */
+                      }
                       className="w-7 h-7 rounded-full bg-gray-700 text-white text-lg hover:bg-gray-600"
                     >
                       +
@@ -147,7 +167,9 @@ export default function CartPage() {
 
                 {/* ❌ Remove Button */}
                 <button
-                  onClick={() => removeFromCart(item.id)}
+                  onClick={
+                    () => removeFromCart(item.id, item.size) /* 🆕 pass size */
+                  }
                   className="mt-4 md:mt-0 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition"
                 >
                   Remove

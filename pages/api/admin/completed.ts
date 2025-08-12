@@ -1,5 +1,4 @@
-// 📂 pages/api/admin/completed.ts – Get shipped (but not yet delivered) orders ✅
-
+// 📂 pages/api/admin/completed.ts – Get shipped (but not yet delivered) orders + Size Support ✅
 import type { NextApiRequest, NextApiResponse } from "next";
 import clientPromise from "@/lib/mongodb";
 
@@ -7,7 +6,6 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
-  // Only allow GET
   if (req.method !== "GET") {
     return res.status(405).json({ error: "Method not allowed" });
   }
@@ -16,14 +14,12 @@ export default async function handler(
     const client = await clientPromise;
     const db = client.db();
 
-    // Fetch orders that have been shipped but not delivered
     const rawOrders = await db
       .collection("orders")
       .find({ shipped: true, delivered: { $ne: true } })
       .sort({ shippedAt: -1 })
       .toArray();
 
-    // Remap each order’s items to include both original and sale prices + image
     const orders = rawOrders.map((o: any) => ({
       _id: o._id.toString(),
       customerName: o.customerName,
@@ -47,9 +43,10 @@ export default async function handler(
       items: (o.items || []).map((i: any) => ({
         name: i.name,
         quantity: i.quantity,
-        price: i.originalPrice, // original price
-        discountedPrice: i.salePrice !== undefined ? i.salePrice : undefined, // sale price if any
-        image: i.image || "", // ✅ include image
+        price: i.originalPrice,
+        discountedPrice: i.salePrice !== undefined ? i.salePrice : undefined,
+        image: i.image || "",
+        size: i.size || undefined, // 🆕 include size
       })),
     }));
 

@@ -1,4 +1,4 @@
-// 📩 pages/api/webhook.ts – Stripe + Account Address Fallback (Fixed for Images + Matches OrderId Flow) 💎
+// 📩 pages/api/webhook.ts – Stripe + Account Address Fallback (Size-aware emails) 💎
 
 import { buffer } from "micro";
 import type { NextApiRequest, NextApiResponse } from "next";
@@ -160,7 +160,7 @@ export default async function handler(
 
     console.log(`✅ Order #${orderNumber} marked as paid`);
 
-    // 📧 Send receipt email
+    // 📧 Send receipt email (now shows ring size when present)
     try {
       const itemRows = items
         .map((item: any) => {
@@ -170,6 +170,15 @@ export default async function handler(
             item.originalPrice ??
             item.price ??
             0;
+
+          const sizeBadge = item.size
+            ? `<div style="margin-top:4px;">
+                 <span style="display:inline-block;font-size:12px;padding:2px 8px;border-radius:999px;background:#364763;color:#fff;">
+                   Size: ${item.size}
+                 </span>
+               </div>`
+            : "";
+
           return `
           <tr>
             <td style="padding: 8px; border: 1px solid #ddd;">
@@ -177,7 +186,10 @@ export default async function handler(
                 <img src="${item.image}" alt="${
             item.name
           }" style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px;" />
-                <span>${item.name}</span>
+                <div>
+                  <div>${item.name}</div>
+                  ${sizeBadge}
+                </div>
               </div>
             </td>
             <td style="padding: 8px; border: 1px solid #ddd;">x${

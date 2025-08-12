@@ -33,6 +33,9 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
   const heroRef = useRef<HTMLDivElement>(null);
   const headerRef = useRef<HTMLDivElement>(null);
   const initialMount = useRef(true);
+  const router = useRouter();
+
+  const isRingCategory = (cat: string) => cat?.toLowerCase().includes("ring");
 
   const resetCount = () => setVisibleCount(8);
 
@@ -72,8 +75,6 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
   const scrollToHeader = () => {
     headerRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
-
-  const router = useRouter();
 
   useEffect(() => {
     if (!router.isReady) return;
@@ -279,14 +280,24 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
                   </p>
                 </div>
               </Link>
+
+              {/* 🔁 Quick add for non-rings; redirect for rings */}
               <button
                 onClick={(e) => {
                   e.preventDefault();
+                  if (isRingCategory(product.category)) {
+                    // Rings must choose size first → go to PDP
+                    router.push(
+                      `/category/${product.category}/${product.slug}`
+                    );
+                    return;
+                  }
+                  // Other categories can quick-add
                   addToCart({
                     id: product.id,
                     name: product.name,
-                    price: product.price, // ← original price (e.g. $13)
-                    discountedPrice: product.salePrice, // ← sale price (e.g. $10) or undefined
+                    price: product.price,
+                    discountedPrice: product.salePrice,
                     image: product.image,
                     quantity: 1,
                   });

@@ -1,4 +1,4 @@
-// 📦 pages/api/checkout.ts – Stripe Checkout with Order DB Reference 💎 (Fixed Metadata Limit + Type Fix)
+// 📦 pages/api/checkout.ts – Stripe Checkout with Order DB Reference 💎 (size-aware)
 
 import type { NextApiRequest, NextApiResponse } from "next";
 import Stripe from "stripe";
@@ -14,7 +14,7 @@ export default async function handler(
 ) {
   if (req.method !== "POST") {
     res.setHeader("Allow", "POST");
-    return res.status(405).json({ error: "Method Not Allowed" }); // ✅ Matches type
+    return res.status(405).json({ error: "Method Not Allowed" });
   }
 
   try {
@@ -26,11 +26,27 @@ export default async function handler(
       notes,
       paymentMethod,
       phone,
-    } = req.body;
+    } = req.body as {
+      items: Array<{
+        id: string;
+        name: string;
+        price: number;
+        discountedPrice?: number;
+        image?: string;
+        quantity: number;
+        size?: string; // 🆕 may be present
+      }>;
+      name?: string;
+      email?: string;
+      address?: any;
+      notes?: string;
+      paymentMethod?: string;
+      phone?: string;
+    };
 
     // 🛑 Validate cart
     if (!items || !Array.isArray(items) || items.length === 0) {
-      return res.status(400).json({ error: "Invalid items data" }); // ✅ Matches type
+      return res.status(400).json({ error: "Invalid items data" });
     }
 
     // 🧮 Totals
@@ -44,8 +60,8 @@ export default async function handler(
     );
     const discountAmount = Math.round((originalTotal - saleTotal) * 100);
 
-    // 🎟️ Coupon if needed
-    let couponId;
+    // 🎟️ Coupon if needed (cart-wide discount)
+    let couponId: string | undefined;
     if (discountAmount > 0) {
       const coupon = await stripe.coupons.create({
         amount_off: discountAmount,
@@ -63,23 +79,23 @@ export default async function handler(
     const zip = address.zip || "[No Zip]";
     const country = address.country || "[No Country]";
 
-    // 🗄 Save order to MongoDB before Stripe checkout
+    // 🗄 Save order to MongoDB before Stripe checkout (includes size in items)
     const client = await clientPromise;
     const db = client.db();
     const ordersCollection = db.collection("orders");
 
     const orderDoc = {
-      orderNumber: undefined, // Will be set in webhook
+      orderNumber: undefined, // set in webhook
       customerName: name || "[No Name]",
       customerEmail: email || "[No Email]",
       customerPhone: phone || "[No Phone]",
       address: { street1, street2, city, state, zip, country },
       notes: notes || "",
       paymentMethod: paymentMethod || "stripe",
-      items, // Full details safely stored in DB
+      items, // keep full items incl. size
       originalTotal,
       saleTotal,
-      stripeSessionId: undefined, // Will be updated in webhook
+      stripeSessionId: undefined, // updated in webhook
       createdAt: new Date(),
       shipped: false,
       archived: false,
@@ -87,7 +103,7 @@ export default async function handler(
 
     const orderResult = await ordersCollection.insertOne(orderDoc);
 
-    // 🚀 Stripe Session (only lightweight metadata)
+    // 🚀 Stripe Session (lightweight metadata; add size to product_data)
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
       mode: "payment",
@@ -102,17 +118,25 @@ export default async function handler(
           },
         },
       ],
-      line_items: items.map((i) => ({
-        price_data: {
-          currency: "usd",
-          product_data: {
-            name: i.name,
-            images: i.image?.startsWith("http") ? [i.image] : [],
+      line_items: items.map((i) => {
+        const nameWithSize = i.size ? `${i.name} (Size ${i.size})` : i.name;
+        return {
+          price_data: {
+            currency: "usd",
+            product_data: {
+              name: nameWithSize,
+              images: i.image?.startsWith("http") ? [i.image] : [],
+              // 🆕 Make size visible in Stripe product metadata too
+              metadata: i.size ? { size: String(i.size) } : undefined,
+              // optional: also surface in description
+              description: i.size ? `Ring size: ${i.size}` : undefined,
+            },
+            // Keep unit_amount = original price; discount handled via coupon above
+            unit_amount: Math.round(i.price * 100),
           },
-          unit_amount: Math.round(i.price * 100),
-        },
-        quantity: i.quantity,
-      })),
+          quantity: i.quantity,
+        };
+      }),
       discounts: couponId ? [{ coupon: couponId }] : [],
       metadata: {
         orderId: orderResult.insertedId.toString(),
@@ -127,9 +151,9 @@ export default async function handler(
       { $set: { stripeSessionId: session.id } }
     );
 
-    return res.status(200).json({ url: session.url ?? undefined }); // ✅ Type-safe
+    return res.status(200).json({ url: session.url ?? undefined });
   } catch (err: any) {
     console.error("❌ Checkout Error:", err.message);
-    return res.status(500).json({ error: err.message || "Checkout failed" }); // ✅ Matches type
+    return res.status(500).json({ error: err.message || "Checkout failed" });
   }
 }

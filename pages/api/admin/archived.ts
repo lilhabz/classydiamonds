@@ -1,9 +1,8 @@
-// 📂 pages/api/admin/archived.ts – Get Archived Orders + Archive/Restore with Logging ♻️🗂
+// 📂 pages/api/admin/archived.ts – Get Archived Orders + Archive/Restore with Logging ♻️🗂 (size-aware)
 
 import type { NextApiRequest, NextApiResponse } from "next";
 import clientPromise from "@/lib/mongodb";
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "../auth/[...nextauth]";
+// (getServerSession/authOptions were imported but unused; safe to remove)
 
 export default async function handler(
   req: NextApiRequest,
@@ -21,7 +20,7 @@ export default async function handler(
         .sort({ archivedAt: -1 })
         .toArray();
 
-      // 2️⃣ Remap each order’s items to expose both prices + image
+      // 2️⃣ Remap each order’s items to expose both prices + image + size
       const orders = raw.map((o: any) => ({
         _id: o._id.toString(),
         customerName: o.customerName,
@@ -37,13 +36,13 @@ export default async function handler(
         orderNumber: o.orderNumber,
         stripeSessionId: o.stripeSessionId,
 
-        // remapped items with image included
         items: (o.items || []).map((i: any) => ({
           name: i.name,
           quantity: i.quantity,
           price: i.originalPrice, // original price
           discountedPrice: i.salePrice !== undefined ? i.salePrice : undefined, // sale price if discounted
-          image: i.image || "", // ✅ include image
+          image: i.image || "",
+          size: i.size || undefined, // 🆕 include ring size
         })),
       }));
 
