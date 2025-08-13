@@ -147,18 +147,25 @@ export default function Home({ products }: HomeProps) {
           </div>
         </section>
 
-        {/* 🛍️ Mobile-Only Category Icons */}
+        {/* 🛍️ Mobile-Only Category Photos (Horizontal Scroll) */}
         <section className="sm:hidden px-4 mt-6 mb-8">
+          <h2 className="text-xl font-serif font-semibold tracking-wide text-center mb-4 text-white">
+            Shop by Category
+          </h2>
+
           <div className="overflow-x-auto">
-            <div className="flex space-x-6 w-max py-2">
+            <div className="flex gap-4 w-max py-2">
               {[
-                { name: "Engagement", icon: "/icons/wedding-ring.svg" },
-                { name: "Wedding Bands", icon: "/icons/wedding-bands.svg" },
-                { name: "Rings", icon: "/icons/rings.svg" },
-                { name: "Bracelets", icon: "/icons/bracelets.svg" },
-                { name: "Necklaces", icon: "/icons/necklaces.svg" },
-                { name: "Earrings", icon: "/icons/earrings.svg" },
-              ].map((cat) => (
+                { name: "Engagement", image: "/category/engagement-cat.jpg" },
+                {
+                  name: "Wedding Bands",
+                  image: "/category/wedding-band-cat.jpg",
+                },
+                { name: "Rings", image: "/category/ring-cat.jpg" },
+                { name: "Bracelets", image: "/category/bracelet-cat.jpg" },
+                { name: "Necklaces", image: "/category/necklace-cat.jpg" },
+                { name: "Earrings", image: "/category/earring-cat.jpg" },
+              ].map((cat, i) => (
                 <Link
                   key={cat.name}
                   href={{
@@ -168,13 +175,22 @@ export default function Home({ products }: HomeProps) {
                       scroll: "true",
                     },
                   }}
-                  className="flex-shrink-0 text-center"
+                  className="group relative rounded-xl overflow-hidden shadow-md hover:shadow-2xl hover:scale-105 transition-transform duration-300 flex-shrink-0 w-56"
                   aria-label={cat.name}
                 >
-                  <img src={cat.icon} alt="" className="w-16 h-16 mx-auto" />
-                  <p className="mt-2 text-sm text-white tracking-wide">
-                    {cat.name}
-                  </p>
+                  <div className="relative aspect-[4/3] w-full">
+                    <Image
+                      src={cat.image}
+                      alt={cat.name}
+                      fill
+                      priority={i < 2}
+                      className="object-cover rounded-xl group-hover:scale-110 transition-transform duration-300"
+                    />
+                    <div className="absolute inset-0 bg-black/35" />
+                    <span className="absolute inset-0 flex items-center justify-center text-base font-semibold text-white">
+                      {cat.name}
+                    </span>
+                  </div>
                 </Link>
               ))}
             </div>
