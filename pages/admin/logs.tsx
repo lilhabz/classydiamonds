@@ -1,6 +1,6 @@
 // ✅ pages/admin/logs.tsx – date range + sort + select + full-detail PDF printing 🔐📝
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, Fragment } from "react";
 import Head from "next/head";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
@@ -29,7 +29,7 @@ interface OrderDetails {
   items: OrderItem[];
   amount: number;
   currency?: string; // e.g., "usd"
-  customerAddress: string; // stringified; adjust if your API returns an object
+  customerAddress: any; // supports string or object
   createdAt: string; // ISO string
   orderNumber?: number;
 }
@@ -42,14 +42,14 @@ export default function AdminLogsPage() {
   >([]);
   const [loading, setLoading] = useState(true);
 
-  // Stores fetched order details by orderId (used for expand + printing)
+  // Fetched order details (used for expand + printing)
   const [expandedOrders, setExpandedOrders] = useState<
     Record<string, OrderDetails>
   >({});
 
   const [searchQuery, setSearchQuery] = useState("");
 
-  // NEW: sort / date-range / selection
+  // Sort / date-range / selection
   const [sortBy, setSortBy] = useState<"log" | "order">("log");
   const [startDate, setStartDate] = useState<string>(""); // YYYY-MM-DD
   const [endDate, setEndDate] = useState<string>("");
@@ -78,7 +78,7 @@ export default function AdminLogsPage() {
               new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
           ),
         }))
-        // Default: desc by latest log timestamp; we'll re-sort again at render by sortBy
+        // Default: desc by latest log timestamp; we re-sort at render by sortBy
         .sort(
           (a, b) =>
             new Date(b.logs[0].timestamp).getTime() -
@@ -171,16 +171,33 @@ export default function AdminLogsPage() {
     setSelected(next);
   };
 
+  const formatAddress = (addr: any) => {
+    if (!addr) return "N/A";
+    if (typeof addr === "string") return addr;
+    // handle object shapes like { street, line2, city, state, zip, country }
+    const parts = [
+      addr.street || addr.line1,
+      addr.line2,
+      addr.city,
+      addr.state,
+      addr.zip || addr.postal_code,
+      addr.country,
+    ]
+      .filter(Boolean)
+      .join(", ");
+    return parts || "N/A";
+  };
+
   // ===== Filtering + sorting (computed) =====
   const filteredAndSorted = useMemo(() => {
     // text search
-    const searched = orderLogs.filter(
-      ({ orderId, logs }) =>
-        orderId.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        logs.some((l) =>
-          l.performedBy.toLowerCase().includes(searchQuery.toLowerCase())
-        )
-    );
+    const searched = orderLogs.filter(({ orderId, logs }) => {
+      const q = searchQuery.toLowerCase();
+      return (
+        orderId.toLowerCase().includes(q) ||
+        logs.some((l) => l.performedBy.toLowerCase().includes(q))
+      );
+    });
 
     // date range
     const startMs = startDate
@@ -288,7 +305,7 @@ export default function AdminLogsPage() {
         <div class="two-col">
           <div>
             <h3>Shipping Address</h3>
-            <p>${escapeHtml(details.customerAddress)}</p>
+            <p>${escapeHtml(formatAddress(details.customerAddress))}</p>
           </div>
           <div class="totals">
             <h3>Total</h3>
@@ -383,7 +400,7 @@ export default function AdminLogsPage() {
 </html>
   `;
 
-    // ✅ Print via hidden iframe (no popups, waits for load)
+    // ✅ Print via hidden iframe (reliable)
     const iframe = document.createElement("iframe");
     iframe.style.position = "fixed";
     iframe.style.right = "0";
@@ -393,7 +410,6 @@ export default function AdminLogsPage() {
     iframe.style.border = "0";
     document.body.appendChild(iframe);
 
-    // Use srcdoc so onload reliably fires after the content is parsed
     iframe.onload = () => {
       try {
         const win = iframe.contentWindow;
@@ -401,7 +417,6 @@ export default function AdminLogsPage() {
         win.focus();
         win.print();
       } finally {
-        // give the print dialog a moment; then clean up
         setTimeout(() => {
           document.body.removeChild(iframe);
         }, 1000);
@@ -550,9 +565,8 @@ export default function AdminLogsPage() {
               {filteredAndSorted.map(({ orderId, logs }) => {
                 const latest = logs[0];
                 return (
-                  <>
+                  <Fragment key={orderId}>
                     <tr
-                      key={orderId}
                       className="border-b border-[var(--bg-nav)] cursor-pointer"
                       onClick={() => fetchOrderDetails(orderId)}
                     >
@@ -606,7 +620,9 @@ export default function AdminLogsPage() {
                           </p>
                           <p className="mb-2 text-sm">
                             📍 Address:{" "}
-                            {expandedOrders[orderId].customerAddress}
+                            {formatAddress(
+                              expandedOrders[orderId].customerAddress
+                            )}
                           </p>
                           <p className="mb-2 text-sm">
                             🧾 Order Date:{" "}
@@ -650,7 +666,7 @@ export default function AdminLogsPage() {
                         </td>
                       </tr>
                     )}
-                  </>
+                  </Fragment>
                 );
               })}
             </tbody>
