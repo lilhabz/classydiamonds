@@ -1,4 +1,4 @@
-// 📄 pages/jewelry.tsx – Big, responsive category photo tiles + matching product cards ✅💎
+// 📄 pages/jewelry.tsx – Big, readable category photo tiles + sticky filters + matching product cards ✅💎
 
 "use client";
 
@@ -24,7 +24,7 @@ export type ProductType = {
   description?: string;
 };
 
-// 🔹 Image tile button used for category filters (BIG + readable)
+// 🔹 Big, readable image tile for filters
 function CategoryTile({
   name,
   src,
@@ -41,7 +41,10 @@ function CategoryTile({
       type="button"
       onClick={onClick}
       aria-pressed={active}
-      className="w-full group relative rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-transform duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-indigo-500"
+      className={[
+        "w-full group relative rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-transform duration-150",
+        "focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-indigo-500",
+      ].join(" ")}
     >
       <div className="relative aspect-[4/3] w-full bg-[#25304f]">
         {src ? (
@@ -49,19 +52,20 @@ function CategoryTile({
             src={src}
             alt={name}
             fill
-            sizes="(max-width: 768px) 200px, (max-width: 1024px) 220px, 240px"
+            // Large enough srcSet so images look crisp while still responsive
+            sizes="(max-width: 640px) 200px, (max-width: 1024px) 240px, 280px"
             className="object-cover"
             priority={false}
           />
         ) : null}
 
         {/* stronger overlay for readability */}
-        <div className="absolute inset-0 bg-black/40 group-hover:bg-black/35 transition-colors z-10" />
+        <div className="absolute inset-0 bg-black/40 group-hover:bg-black/30 transition-colors z-10" />
 
-        {/* label — bigger, responsive, with subtle shadow */}
+        {/* label — big & readable with shadow */}
         <span
-          className="absolute inset-0 flex items-center justify-center z-20 font-semibold text-white text-center px-2
-                         text-sm sm:text-base md:text-lg lg:text-xl drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)]"
+          className="absolute inset-0 flex items-center justify-center z-20 font-semibold text-white text-center px-3
+                         text-base sm:text-lg md:text-xl lg:text-[22px] drop-shadow-[0_1px_2px_rgba(0,0,0,0.7)]"
         >
           {name}
         </span>
@@ -79,10 +83,8 @@ function CategoryTile({
   );
 }
 
-// helpers
 const isRingCategory = (cat?: string) =>
   (cat ?? "").toLowerCase().includes("ring");
-
 const formatCategory = (cat: string) =>
   cat.replace(/-/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
 
@@ -128,11 +130,11 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
     new Set(products.map((p) => (p.category || "").trim()))
   ).filter(Boolean);
 
-  // Filters list: "All" + DB categories + Gender tiles
+  // Filters list: "All" + DB categories + Gender tiles (value = machine, label = display)
   type FilterItem = { value: string; label: string; isGender?: boolean };
   const baseFilters: FilterItem[] = allCategories.map((value) => ({
-    value,
-    label: formatCategory(value),
+    value, // compare against p.category
+    label: formatCategory(value), // show pretty label
   }));
   const genderFilters: FilterItem[] = [
     { value: "for-him", label: "For Him", isGender: true },
@@ -144,7 +146,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
     ...genderFilters,
   ];
 
-  // Map labels to the same images you use on the Home page
+  // Map labels to the same images you use on Home
   const categoryImages: Record<string, string | undefined> = {
     All: undefined,
     Engagement: "/category/engagement-cat.jpg",
@@ -157,7 +159,6 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
     "For Him": "/category/his-gift-cat.jpg",
     "For Her": "/category/her-gift-cat.jpg",
   };
-
   const getImageForLabel = (label: string) =>
     categoryImages[label] ??
     `/category/${label.toLowerCase().replace(/\s+/g, "-")}-cat.jpg`;
@@ -168,7 +169,6 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
       window.scrollTo({ top: offset, behavior: "smooth" });
     }
   };
-
   const scrollToHeader = () => {
     headerRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
@@ -176,7 +176,6 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
   // read query params
   useEffect(() => {
     if (!router.isReady) return;
-
     const { category, gender, scroll } = router.query;
 
     if (gender === "him" || category === "for-him") {
@@ -194,6 +193,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
     if (scroll === "true") setTimeout(scrollBelowHero, 0);
   }, [router.isReady]);
 
+  // when filters change, reset and keep the sticky bar in view
   useEffect(() => {
     if (initialMount.current) {
       initialMount.current = false;
@@ -205,10 +205,10 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
 
   const handleLoadMore = () => setVisibleCount((prev) => prev + 4);
 
+  // apply filters
   const filteredByGender = genderFilter
     ? products.filter((p) => p.gender === genderFilter)
     : products;
-
   const filteredProducts = filteredByGender.filter((p) =>
     activeCategory === "All" ? true : p.category === activeCategory
   );
@@ -225,7 +225,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
 
-      {/* 🌟 Hero Section */}
+      {/* 🌟 Hero */}
       <section
         ref={heroRef}
         className="-mt-20 relative w-full h-[80vh] flex items-center justify-center overflow-hidden"
@@ -252,13 +252,14 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
         <Breadcrumbs />
       </div>
 
-      {/* 💎 Category Header (PHOTO tiles) */}
+      {/* 💎 Category Header (sticky) */}
       <section
         ref={headerRef}
-        className="pt-20 pb-12 px-4 sm:px-6 max-w-7xl mx-auto"
+        className="pt-6 pb-6 px-4 sm:px-6 max-w-7xl mx-auto sticky top-14 z-30 
+                   bg-[var(--bg-page)]/85 backdrop-blur supports-[backdrop-filter]:bg-[var(--bg-page)]/70"
         style={{ scrollMarginTop: "40px" }}
       >
-        <div className="text-center mb-6">
+        <div className="text-center mb-4">
           <h2
             ref={titleRef}
             className="text-2xl sm:text-3xl font-serif font-semibold tracking-wider leading-snug"
@@ -271,16 +272,9 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
               ? "Our Jewelry"
               : formatCategory(activeCategory)}
           </h2>
-          {genderFilter && (
-            <p className="text-xl sm:text-2xl mt-2 font-serif tracking-wider leading-snug">
-              {activeCategory === "All"
-                ? "All Jewelry"
-                : formatCategory(activeCategory)}
-            </p>
-          )}
         </div>
 
-        {/* 📱 Mobile: swipe row of image tiles (unchanged logic, bigger display) */}
+        {/* 📱 Mobile: swipe row of BIG photo tiles */}
         <div className="md:hidden flex gap-4 overflow-x-auto pb-2 snap-x snap-mandatory [scrollbar-width:none] [-ms-overflow-style:none]">
           <style jsx>{`
             div::-webkit-scrollbar {
@@ -306,7 +300,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
             return (
               <div
                 key={`m-${f.value}`}
-                className="snap-start flex-shrink-0 w-44"
+                className="snap-start flex-shrink-0 w-48"
               >
                 <CategoryTile
                   name={f.label}
@@ -333,9 +327,15 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
           })}
         </div>
 
-        {/* 🖥️ Desktop/tablet: responsive grid — big tiles, readable, and scale to 10 across on xl */}
-        <div className="hidden md:grid gap-4 grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-10">
-          {filters.slice(0, 10).map((f) => {
+        {/* 🖥️ Desktop/tablet: BIG responsive auto-fit grid (never tiny; wraps to 2 rows if needed) */}
+        <div
+          className="hidden md:grid gap-4"
+          style={{
+            // Each tile gets at least 180px (md), 200px (lg), 220px (xl) — adjust to taste
+            gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+          }}
+        >
+          {filters.map((f) => {
             const active =
               (!!f.isGender &&
                 f.value === "for-him" &&
@@ -379,7 +379,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
         </div>
       </section>
 
-      {/* 🛒 Product Grid (unchanged sizing to match Home) */}
+      {/* 🛒 Product Grid (unchanged size to match Home) */}
       <section className="mt-8 px-4 sm:px-6 max-w-7xl mx-auto mb-20">
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
           {filteredProducts.slice(0, visibleCount).map((product) => (
