@@ -1,4 +1,4 @@
-// 📄 pages/jewelry.tsx – Desktop 1-line (10 tiles, no scroll, gender last) + Mobile swipe + Product cards match index ✅💎
+// 📄 pages/jewelry.tsx – Desktop 1-line (10 tiles, no scroll, gender last) + Mobile swipe (visible scrollbar) + Product cards match index ✅💎
 
 "use client";
 
@@ -167,8 +167,6 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
   );
 
   // Desktop wants 10 total: All + 8 categories + (For Him, For Her)
-  // If you truly always have exactly 8 core categories, great.
-  // If you have more, we take the first 8 alphabetically; adjust here if you want a custom order.
   const desktopEight = coreCategories.slice(0, 8);
 
   // Final sequences:
@@ -272,10 +270,32 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
           </h2>
         </div>
 
-        {/* 📱 Mobile: Home-style swipe row (slightly smaller so more show on screen) */}
+        {/* 📱 Mobile: Home-style swipe row (now with a visible scrollbar) */}
         <div className="sm:hidden px-0 mt-2">
-          <div className="overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none]">
-            <style jsx>{`div::-webkit-scrollbar{display:none}`}</style>
+          <div
+            className="overflow-x-auto show-scrollbar"
+            style={{
+              WebkitOverflowScrolling: "touch", // smooth iOS scroll
+              scrollbarWidth: "thin",           // Firefox thin bar
+            }}
+          >
+            {/* Visible horizontal scrollbar for WebKit */}
+            <style jsx>{`
+              .show-scrollbar::-webkit-scrollbar {
+                height: 8px;
+              }
+              .show-scrollbar::-webkit-scrollbar-track {
+                background: transparent;
+              }
+              .show-scrollbar::-webkit-scrollbar-thumb {
+                background: rgba(255, 255, 255, 0.35);
+                border-radius: 9999px;
+              }
+              .show-scrollbar:hover::-webkit-scrollbar-thumb {
+                background: rgba(255, 255, 255, 0.55);
+              }
+            `}</style>
+
             <div className="flex gap-3 w-max px-4">
               {mobileOrder.map((key, i) => {
                 const isGender = key === "For Him" || key === "For Her";
@@ -326,7 +346,6 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
         </div>
 
         {/* 🖥️ Desktop: ONE line, NO scroll, exactly 10 tiles (All + 8 cats + For Him + For Her) */}
-        {/* Full-bleed wrapper so we aren't limited by page max-w; inner container centered */}
         <div className="hidden sm:block w-screen relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw]">
           {/* Adjust max-w to fine-tune tile size: 1440 → 1520/1600 if you want bigger */}
           <div className="mx-auto max-w-[1440px] px-2">
