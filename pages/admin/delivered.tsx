@@ -1,4 +1,4 @@
-// ✅ pages/admin/delivered.tsx – view delivered orders (size-aware) 🔐📬
+// ✅ pages/admin/delivered.tsx – view delivered orders (size-aware, no CSV/PDF) 🔐📬
 
 import { useEffect, useState } from "react";
 import Head from "next/head";
@@ -15,7 +15,7 @@ interface OrderItem {
   salePrice?: number;
   originalPrice?: number;
   image?: string;
-  size?: string; // 🆕 ring size
+  size?: string;
 }
 
 interface Order {
@@ -85,118 +85,6 @@ export default function DeliveredOrdersPage() {
     }
   };
 
-  const downloadCSV = () => {
-    const headers = [
-      "Name",
-      "Email",
-      "Order ID",
-      "Total",
-      "Delivered At",
-      "Items",
-    ];
-    const rows = orders.map((order) => [
-      order.customerName,
-      order.customerEmail,
-      order.stripeSessionId,
-      `$${order.amount.toFixed(2)}`,
-      new Date(order.deliveredAt || "").toLocaleString(),
-      (order.items || [])
-        .map((i) => {
-          const qty = i.quantity ?? 1;
-          const price = i.price ?? i.discountedPrice ?? i.salePrice ?? 0;
-          const label = i.size
-            ? `${i.name} (Size ${i.size})`
-            : i.name || "Unnamed";
-          return `${qty}× ${label} - $${(qty * price).toFixed(2)}`;
-        })
-        .join(" | "),
-    ]);
-
-    const csvContent = [headers, ...rows].map((r) => r.join(",")).join("\n");
-    const blob = new Blob([csvContent], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "delivered_orders.csv";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  function printPDF() {
-    const deliveredOrdersArea = document.getElementById("print-area");
-    if (!deliveredOrdersArea) return;
-
-    // Build clean text-only PDF output
-    const textOrders = Array.from(
-      deliveredOrdersArea.querySelectorAll(".bg-[var(--bg-nav)]")
-    )
-      .map((orderDiv) => {
-        const name = orderDiv.querySelector("h2")?.textContent?.trim() || "";
-        const orderId = orderDiv.querySelector("p")?.textContent?.trim() || "";
-        const address =
-          Array.from(orderDiv.querySelectorAll("p"))
-            .map((p) => p.textContent)
-            .find((txt) => txt?.includes("📍")) || "";
-        const date =
-          Array.from(orderDiv.querySelectorAll("p"))
-            .map((p) => p.textContent)
-            .find((txt) => txt?.includes("🧾 Delivered")) || "";
-        const tracking =
-          Array.from(orderDiv.querySelectorAll("p"))
-            .map((p) => p.textContent)
-            .find((txt) => txt?.includes("Tracking")) || "Tracking: N/A";
-        const items = Array.from(orderDiv.querySelectorAll("ul li"))
-          .map((li) => li.textContent?.trim())
-          .join("\n");
-        const total =
-          Array.from(orderDiv.querySelectorAll("span"))
-            .map((s) => s.textContent)
-            .find((txt) => txt?.includes("💰")) || "";
-
-        return `
-Order: ${name}
-${orderId}
-${address}
-${date}
-${tracking}
-
-Items:
-${items}
-
-${total}
------------------------------------------------
-`;
-      })
-      .join("\n");
-
-    const win = window.open("", "_blank", "width=1000,height=800");
-    if (!win) return;
-
-    win.document.write(`
-    <html>
-      <head>
-        <title>Delivered Orders PDF</title>
-        <style>
-          body { font-family: Arial, sans-serif; white-space: pre-wrap; line-height: 1.5; font-size: 14px; color: #000; padding: 20px; }
-          h1 { font-size: 20px; font-weight: bold; margin-bottom: 20px; }
-        </style>
-      </head>
-      <body>
-        <h1>Classy Diamonds - Delivered Orders</h1>
-        ${textOrders}
-      </body>
-    </html>
-  `);
-
-    win.document.close();
-    win.focus();
-    win.onload = () => {
-      win.print();
-      win.close();
-    };
-  }
-
   const filteredOrders = orders.filter((order) => {
     if (order.archived) return false;
 
@@ -238,12 +126,10 @@ ${total}
         <Breadcrumbs />
       </div>
 
-      {/* 🛠️ Admin Dashboard Heading */}
       <h1 className="text-3xl font-serif font-bold tracking-wide mb-6">
         🛠️ Admin Dashboard
       </h1>
 
-      {/* 🔗 Admin Navigation Tabs */}
       <nav className="flex flex-wrap justify-center sm:justify-start gap-2 sm:space-x-6 mb-8 border-b border-[var(--bg-nav)] pb-4 text-[var(--foreground)] text-sm font-semibold">
         <Link href="/admin" className="hover:text-yellow-300">
           📦 Orders
@@ -295,22 +181,10 @@ ${total}
               onChange={(e) => setEndDate(e.target.value)}
               className="px-2 py-1 rounded bg-[#2e3a58] text-white"
             />
-            <button
-              onClick={downloadCSV}
-              className="bg-green-600 hover:bg-green-700 px-4 py-2 rounded text-sm"
-            >
-              Export CSV 📄
-            </button>
-            <button
-              onClick={printPDF}
-              className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded text-sm"
-            >
-              Print PDF 🖨️
-            </button>
           </div>
 
           {/* 🧾 Orders */}
-          <div id="print-area" className="space-y-10">
+          <div className="space-y-10">
             {paginatedOrders.map((order) => (
               <div
                 key={order._id}

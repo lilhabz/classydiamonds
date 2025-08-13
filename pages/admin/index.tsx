@@ -1,4 +1,4 @@
-// ✅ pages/admin/index.tsx – Admin Orders with Size Display & No Placeholder Images 🔐🛠️
+// ✅ pages/admin/index.tsx – Admin Orders (no CSV/PDF) 🔐🛠️
 
 import { useEffect, useState } from "react";
 import Head from "next/head";
@@ -105,121 +105,6 @@ export default function AdminOrdersPage() {
     }
   }
 
-  // 📤 Export CSV (now includes Size when present)
-  function downloadCSV() {
-    const headers = [
-      "Name",
-      "Email",
-      "Order ID",
-      "Shipping Address",
-      "Address Source",
-      "Total",
-      "Date",
-      "Items",
-    ];
-    const rows = orders.map((o) => [
-      o.customerName,
-      o.customerEmail,
-      o.stripeSessionId,
-      o.shipping_address
-        ? `${o.shipping_address.street}${
-            o.shipping_address.line2 ? `, ${o.shipping_address.line2}` : ""
-          }, ${o.shipping_address.city}, ${o.shipping_address.state} ${
-            o.shipping_address.zip
-          }, ${o.shipping_address.country}`
-        : o.shipping_address_string,
-      o.addressSource || "Unknown",
-      `$${o.amount.toFixed(2)}`,
-      new Date(o.createdAt).toLocaleString(),
-      o.items
-        .map((i) => {
-          const unit = i.discountedPrice ?? i.salePrice ?? i.price ?? 0;
-          const label = i.size ? `${i.name} (Size ${i.size})` : i.name;
-          return `${i.quantity}× ${label} – $${(
-            unit * (i.quantity ?? 1)
-          ).toFixed(2)}`;
-        })
-        .join(" | "),
-    ]);
-    const csv = [headers, ...rows].map((r) => r.join(",")).join("\n");
-    const blob = new Blob([csv], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "orders.csv";
-    a.click();
-    URL.revokeObjectURL(url);
-  }
-
-  function printPDF() {
-    const ordersArea = document.getElementById("print-area");
-    if (!ordersArea) return;
-
-    // Build a clean text-only version (will include “Size: X” since it's in the DOM list items)
-    const textOrders = Array.from(
-      ordersArea.querySelectorAll(".bg-[var(--bg-nav)]")
-    )
-      .map((orderDiv) => {
-        const name = orderDiv.querySelector("h2")?.textContent?.trim() || "";
-        const orderId = orderDiv.querySelector("p")?.textContent?.trim() || "";
-        const address =
-          Array.from(orderDiv.querySelectorAll("p"))
-            .map((p) => p.textContent)
-            .find((txt) => txt?.includes("📍")) || "";
-        const date =
-          Array.from(orderDiv.querySelectorAll("p"))
-            .map((p) => p.textContent)
-            .find((txt) => txt?.includes("🧾 Date")) || "";
-        const items = Array.from(orderDiv.querySelectorAll("ul li"))
-          .map((li) => li.textContent?.trim())
-          .join("\n");
-        const total =
-          Array.from(orderDiv.querySelectorAll("span"))
-            .map((s) => s.textContent)
-            .find((txt) => txt?.includes("💰")) || "";
-
-        return `
-Order: ${name}
-${orderId}
-${address}
-${date}
-
-Items:
-${items}
-
-${total}
------------------------------------------------
-`;
-      })
-      .join("\n");
-
-    const win = window.open("", "_blank", "width=1000,height=800");
-    if (!win) return;
-
-    win.document.write(`
-    <html>
-      <head>
-        <title>Admin Orders PDF</title>
-        <style>
-          body { font-family: Arial, sans-serif; white-space: pre-wrap; line-height: 1.5; font-size: 14px; color: #000; padding: 20px; }
-          h1 { font-size: 20px; font-weight: bold; margin-bottom: 20px; }
-        </style>
-      </head>
-      <body>
-        <h1>Classy Diamonds - Order Records</h1>
-        ${textOrders}
-      </body>
-    </html>
-  `);
-
-    win.document.close();
-    win.focus();
-    win.onload = () => {
-      win.print();
-      win.close();
-    };
-  }
-
   // 🔍 Filter & paginate
   const filtered = orders.filter((o) => {
     if (o.archived || o.shipped) return false;
@@ -233,6 +118,7 @@ ${total}
     const before = endDate ? date <= new Date(endDate) : true;
     return matchQ && after && before;
   });
+
   const totalPages = Math.ceil(filtered.length / itemsPerPage);
   const pageData = filtered.slice(
     (currentPage - 1) * itemsPerPage,
@@ -299,18 +185,6 @@ ${total}
           value={endDate}
           onChange={(e) => setEndDate(e.target.value)}
         />
-        <button
-          onClick={downloadCSV}
-          className="bg-green-600 px-4 py-2 rounded text-sm"
-        >
-          Export CSV
-        </button>
-        <button
-          onClick={printPDF}
-          className="bg-blue-600 px-4 py-2 rounded text-sm"
-        >
-          Print PDF
-        </button>
       </div>
 
       {/* 📦 Orders list */}
@@ -455,3 +329,4 @@ ${total}
     </div>
   );
 }
+// ✅ pages/admin/index.tsx – Admin Orders (no CSV/PDF) 🔐🛠️

@@ -1,4 +1,4 @@
-// 📄 pages/jewelry.tsx – Fully Fixed and Commented Jewelry Page 💎
+// 📄 pages/jewelry.tsx – Category Filters Styled Like Home ✅💎
 
 "use client";
 
@@ -23,6 +23,52 @@ export type ProductType = {
   gender?: "unisex" | "him" | "her";
   description?: string;
 };
+
+// 🔹 Reusable tile for category filters
+function CategoryTile({
+  name,
+  src,
+  active,
+  onClick,
+}: {
+  name: string;
+  src?: string;
+  active: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className="group relative rounded-xl overflow-hidden shadow-md hover:shadow-2xl hover:scale-105 transition-transform duration-300 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-indigo-500"
+    >
+      <div className="relative aspect-[4/3] w-full">
+        {src ? (
+          <Image
+            src={src}
+            alt={name}
+            fill
+            sizes="(max-width: 768px) 160px, 200px"
+            className="object-cover rounded-xl group-hover:scale-110 transition-transform duration-300"
+          />
+        ) : (
+          <div className="flex items-center justify-center bg-[#25304f] text-white/80 w-full h-full">
+            {name}
+          </div>
+        )}
+        <div
+          className={`absolute inset-0 bg-black/35 z-10 ${
+            active ? "ring-2 ring-indigo-500" : ""
+          }`}
+        />
+        <span className="absolute inset-0 flex items-center justify-center text-sm sm:text-base font-semibold text-white z-20">
+          {name}
+        </span>
+      </div>
+    </button>
+  );
+}
 
 export default function JewelryPage({ products }: { products: ProductType[] }) {
   const { addToCart } = useCart();
@@ -63,7 +109,25 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
   }, []);
 
   const allCategories = Array.from(new Set(products.map((p) => p.category)));
-  const categoryFilters = [...allCategories, "for-him", "for-her"];
+  const categoryFilters = [...allCategories, "For Him", "For Her"];
+
+  // ✅ Image map matches Home page
+  const categoryImages: Record<string, string | undefined> = {
+    All: undefined,
+    Engagement: "/category/engagement-cat.jpg",
+    "Wedding Bands": "/category/wedding-band-cat.jpg",
+    Rings: "/category/ring-cat.jpg",
+    Bracelets: "/category/bracelet-cat.jpg",
+    Necklaces: "/category/necklace-cat.jpg",
+    Earrings: "/category/earring-cat.jpg",
+    Watches: "/category/watches-cat.jpg", // add if exists
+    "For Him": "/category/his-gift-cat.jpg",
+    "For Her": "/category/her-gift-cat.jpg",
+  };
+
+  const getImageForCategory = (label: string) =>
+    categoryImages[label] ??
+    `/category/${label.toLowerCase().replace(/\s+/g, "-")}-cat.jpg`;
 
   const scrollBelowHero = () => {
     if (heroRef.current) {
@@ -78,13 +142,16 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
 
   useEffect(() => {
     if (!router.isReady) return;
-
     const { category, gender, scroll } = router.query;
 
-    if (gender === "him" || category === "for-him") {
+    if (gender === "him" || category === "for-him" || category === "For Him") {
       setGenderFilter("him");
       setActiveCategory("All");
-    } else if (gender === "her" || category === "for-her") {
+    } else if (
+      gender === "her" ||
+      category === "for-her" ||
+      category === "For Her"
+    ) {
       setGenderFilter("her");
       setActiveCategory("All");
     } else if (typeof category === "string" && category) {
@@ -93,10 +160,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
     }
 
     resetCount();
-
-    if (scroll === "true") {
-      setTimeout(scrollBelowHero, 0);
-    }
+    if (scroll === "true") setTimeout(scrollBelowHero, 0);
   }, [router.isReady]);
 
   useEffect(() => {
@@ -109,14 +173,12 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
   }, [activeCategory, genderFilter]);
 
   const handleLoadMore = () => setVisibleCount((prev) => prev + 4);
-
   const formatCategory = (cat: string) =>
     cat.replace(/-/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
 
   const filteredByGender = genderFilter
     ? products.filter((p) => p.gender === genderFilter)
     : products;
-
   const filteredProducts = filteredByGender.filter((p) =>
     activeCategory === "All" ? true : p.category === activeCategory
   );
@@ -130,10 +192,9 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
       <Head>
         <title>{pageTitle}</title>
         <meta name="description" content={pageDesc} />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
 
-      {/* 🌟 Hero Section */}
+      {/* 🌟 Hero */}
       <section
         ref={heroRef}
         className="-mt-20 relative w-full h-[80vh] flex items-center justify-center overflow-hidden"
@@ -144,12 +205,12 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
           fill
           className="object-cover"
         />
-        <div className="absolute inset-0 bg-black/50 pointer-events-none" />
+        <div className="absolute inset-0 bg-black/50" />
         <div className="relative z-10 text-center px-4">
-          <h1 className="text-3xl md:text-6xl font-serif font-bold tracking-wider leading-snug mb-4 text-[var(--foreground)]">
+          <h1 className="text-3xl md:text-6xl font-serif font-bold tracking-wider mb-4">
             Jewelry Collection
           </h1>
-          <p className="text-base md:text-xl max-w-2xl mx-auto text-[var(--foreground)] leading-relaxed tracking-wide">
+          <p className="text-base md:text-xl max-w-2xl mx-auto">
             Discover timeless pieces crafted with passion.
           </p>
         </div>
@@ -160,16 +221,15 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
         <Breadcrumbs />
       </div>
 
-      {/* 💎 Category Header */}
+      {/* 💎 Category Filters */}
       <section
         ref={headerRef}
         className="pt-20 pb-12 px-4 sm:px-6 max-w-7xl mx-auto"
-        style={{ scrollMarginTop: "40px" }}
       >
         <div className="text-center mb-6">
           <h2
             ref={titleRef}
-            className="text-2xl sm:text-3xl font-serif font-semibold tracking-wider leading-snug"
+            className="text-2xl sm:text-3xl font-serif font-semibold"
           >
             {genderFilter === "him"
               ? "For Him"
@@ -179,40 +239,78 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
               ? "Our Jewelry"
               : formatCategory(activeCategory)}
           </h2>
-          {genderFilter && (
-            <p className="text-xl sm:text-2xl mt-2 font-serif tracking-wider leading-snug">
-              {activeCategory === "All"
-                ? "All Jewelry"
-                : formatCategory(activeCategory)}
-            </p>
-          )}
         </div>
 
-        <div className="flex flex-wrap justify-center gap-3 px-4">
+        {/* Mobile: swipe row */}
+        <div className="flex md:hidden gap-4 overflow-x-auto pb-2 snap-x snap-mandatory [-ms-overflow-style:none] [scrollbar-width:none]">
+          <style jsx>{`
+            div::-webkit-scrollbar {
+              display: none;
+            }
+          `}</style>
           {["All", ...categoryFilters].map((cat) => {
-            const label = cat
-              .replace(/-/g, " ")
-              .replace(/\b\w/g, (l) => l.toUpperCase());
+            const label = formatCategory(cat);
             const active =
-              (cat === "for-him" &&
+              (label === "For Him" &&
                 genderFilter === "him" &&
                 activeCategory === "All") ||
-              (cat === "for-her" &&
+              (label === "For Her" &&
                 genderFilter === "her" &&
                 activeCategory === "All") ||
-              (cat !== "for-him" &&
-                cat !== "for-her" &&
+              (label !== "For Him" &&
+                label !== "For Her" &&
                 activeCategory === cat &&
                 !genderFilter);
-
             return (
-              <button
-                key={cat}
+              <div key={label} className="snap-start w-40 flex-shrink-0">
+                <CategoryTile
+                  name={label}
+                  src={getImageForCategory(label)}
+                  active={active}
+                  onClick={() => {
+                    if (label === "For Him") {
+                      setGenderFilter("him");
+                      setActiveCategory("All");
+                    } else if (label === "For Her") {
+                      setGenderFilter("her");
+                      setActiveCategory("All");
+                    } else {
+                      setGenderFilter(null);
+                      setActiveCategory(cat);
+                    }
+                  }}
+                />
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Desktop: grid */}
+        <div className="hidden md:grid grid-cols-4 lg:grid-cols-6 gap-5">
+          {["All", ...categoryFilters].map((cat) => {
+            const label = formatCategory(cat);
+            const active =
+              (label === "For Him" &&
+                genderFilter === "him" &&
+                activeCategory === "All") ||
+              (label === "For Her" &&
+                genderFilter === "her" &&
+                activeCategory === "All") ||
+              (label !== "For Him" &&
+                label !== "For Her" &&
+                activeCategory === cat &&
+                !genderFilter);
+            return (
+              <CategoryTile
+                key={label}
+                name={label}
+                src={getImageForCategory(label)}
+                active={active}
                 onClick={() => {
-                  if (cat === "for-him") {
+                  if (label === "For Him") {
                     setGenderFilter("him");
                     setActiveCategory("All");
-                  } else if (cat === "for-her") {
+                  } else if (label === "For Her") {
                     setGenderFilter("her");
                     setActiveCategory("All");
                   } else {
@@ -220,14 +318,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
                     setActiveCategory(cat);
                   }
                 }}
-                className={`flex-shrink-0 px-4 py-2 rounded-full font-semibold tracking-wide transition-transform hover:scale-105 ${
-                  active
-                    ? "bg-[var(--foreground)] text-[var(--bg-nav)]"
-                    : "bg-[var(--bg-nav)] text-[var(--foreground)] hover:bg-[#364763]"
-                }`}
-              >
-                {label}
-              </button>
+              />
             );
           })}
         </div>
@@ -239,7 +330,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
           {filteredProducts.slice(0, visibleCount).map((product) => (
             <div
               key={product.id}
-              className="group bg-[var(--bg-nav)] w-full sm:w-full md:w-[210px] lg:w-[233.61px] h-auto min-h-[387.61px] rounded-2xl overflow-hidden shadow-md hover:shadow-2xl hover:scale-105 transition-transform duration-300 flex flex-col justify-between"
+              className="group bg-[var(--bg-nav)] rounded-2xl overflow-hidden shadow-md hover:shadow-2xl hover:scale-105 transition-transform flex flex-col"
             >
               <Link
                 href={
@@ -250,21 +341,21 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
                       }
                     : `/category/${product.category}/${product.slug}`
                 }
-                className="flex-1 flex flex-col h-full"
+                className="flex-1 flex flex-col"
               >
                 <div className="relative w-full aspect-square">
                   <Image
                     src={product.image}
                     alt={product.name}
                     fill
-                    className="object-cover group-hover:scale-110 transition-transform duration-300"
+                    className="object-cover group-hover:scale-110 transition-transform"
                   />
                 </div>
-                <div className="p-4 text-center flex-1 flex flex-col justify-between">
-                  <h3 className="font-semibold text-[var(--foreground)] truncate text-sm tracking-wide leading-snug">
+                <div className="p-4 text-center flex flex-col flex-grow justify-between">
+                  <h3 className="font-semibold truncate text-sm">
                     {product.name}
                   </h3>
-                  <p className="text-[#cfd2d6] text-sm leading-relaxed tracking-wide">
+                  <p className="text-[#cfd2d6] text-sm">
                     {product.salePrice ? (
                       <>
                         <span className="line-through mr-1">
@@ -280,19 +371,15 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
                   </p>
                 </div>
               </Link>
-
-              {/* 🔁 Quick add for non-rings; redirect for rings */}
               <button
                 onClick={(e) => {
                   e.preventDefault();
                   if (isRingCategory(product.category)) {
-                    // Rings must choose size first → go to PDP
                     router.push(
                       `/category/${product.category}/${product.slug}`
                     );
                     return;
                   }
-                  // Other categories can quick-add
                   addToCart({
                     id: product.id,
                     name: product.name,
@@ -309,7 +396,6 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
             </div>
           ))}
         </div>
-
         {visibleCount < filteredProducts.length && (
           <div className="flex justify-center mt-10">
             <button
@@ -329,8 +415,10 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
 export const getServerSideProps: GetServerSideProps = async ({ query }) => {
   const client = await clientPromise;
   let genderQuery: "him" | "her" | undefined;
-  if (query.category === "for-him") genderQuery = "him";
-  if (query.category === "for-her") genderQuery = "her";
+  if (query.category === "for-him" || query.category === "For Him")
+    genderQuery = "him";
+  if (query.category === "for-her" || query.category === "For Her")
+    genderQuery = "her";
   const filter = genderQuery ? { gender: genderQuery } : {};
   const productsRaw = await client
     .db()

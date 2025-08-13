@@ -1,4 +1,4 @@
-// ✅ Enhanced pages/admin/completed.tsx with size badges, fixed total, archive logic, and unified dashboard nav 🔐🛠️
+// ✅ pages/admin/completed.tsx – Completed Orders (no CSV/PDF) 🔐🛠️
 
 import { useEffect, useState } from "react";
 import Head from "next/head";
@@ -15,7 +15,7 @@ interface OrderItem {
   salePrice?: number;
   originalPrice?: number;
   image?: string;
-  size?: string; // 🆕 ring size
+  size?: string;
 }
 
 interface Order {
@@ -78,11 +78,8 @@ export default function CompletedOrdersPage() {
   };
 
   const markDelivered = async (orderId: string) => {
-    const confirmed = window.confirm(
-      `📬 Mark this order as delivered?\nOrder ID: ${orderId}`
-    );
-    if (!confirmed) return;
-
+    if (!confirm(`📬 Mark this order as delivered?\nOrder ID: ${orderId}`))
+      return;
     try {
       const adminName =
         (session?.user as any)?.firstName || session?.user?.name?.split(" ")[0];
@@ -106,7 +103,6 @@ export default function CompletedOrdersPage() {
       return;
     }
     if (savedTracking[orderId] === input.trackingNumber) return;
-
     try {
       setSavingTracking((p) => ({ ...p, [orderId]: true }));
       const adminName =
@@ -140,11 +136,7 @@ export default function CompletedOrdersPage() {
   };
 
   const archiveOrder = async (orderId: string) => {
-    const confirmed = window.confirm(
-      `🗂 Archive this order?\nOrder ID: ${orderId}`
-    );
-    if (!confirmed) return;
-
+    if (!confirm(`🗂 Archive this order?\nOrder ID: ${orderId}`)) return;
     try {
       const adminName =
         (session?.user as any)?.firstName || session?.user?.name?.split(" ")[0];
@@ -161,135 +153,21 @@ export default function CompletedOrdersPage() {
     }
   };
 
-  const downloadCSV = () => {
-    const headers = [
-      "Name",
-      "Email",
-      "Order ID",
-      "Total",
-      "Shipped At",
-      "Items",
-    ];
-    const rows = orders.map((order) => [
-      order.customerName,
-      order.customerEmail,
-      order.stripeSessionId,
-      `$${order.amount.toFixed(2)}`,
-      new Date(order.shippedAt || "").toLocaleString(),
-      (order.items || [])
-        .map((i) => {
-          const qty = i.quantity ?? 1;
-          const price = i.price ?? i.discountedPrice ?? i.salePrice ?? 0;
-          const label = i.size
-            ? `${i.name} (Size ${i.size})`
-            : i.name || "Unnamed";
-          return `${qty}× ${label} - $${(qty * price).toFixed(2)}`;
-        })
-        .join(" | "),
-    ]);
-
-    const csvContent = [headers, ...rows].map((r) => r.join(",")).join("\n");
-    const blob = new Blob([csvContent], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "completed_orders.csv";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  function printPDF() {
-    const shippedOrdersArea = document.getElementById("print-area");
-    if (!shippedOrdersArea) return;
-
-    const textOrders = Array.from(
-      shippedOrdersArea.querySelectorAll(".bg-[var(--bg-nav)]")
-    )
-      .map((orderDiv) => {
-        const name = orderDiv.querySelector("h2")?.textContent?.trim() || "";
-        const orderId = orderDiv.querySelector("p")?.textContent?.trim() || "";
-        const address =
-          Array.from(orderDiv.querySelectorAll("p"))
-            .map((p) => p.textContent)
-            .find((txt) => txt?.includes("📍")) || "";
-        const date =
-          Array.from(orderDiv.querySelectorAll("p"))
-            .map((p) => p.textContent)
-            .find((txt) => txt?.includes("🧾 Shipped")) || "";
-        const tracking =
-          Array.from(orderDiv.querySelectorAll("p"))
-            .map((p) => p.textContent)
-            .find((txt) => txt?.includes("Tracking")) || "Tracking: N/A";
-        const items = Array.from(orderDiv.querySelectorAll("ul li"))
-          .map((li) => li.textContent?.trim())
-          .join("\n");
-        const total =
-          Array.from(orderDiv.querySelectorAll("span"))
-            .map((s) => s.textContent)
-            .find((txt) => txt?.includes("💰")) || "";
-
-        return `
-Order: ${name}
-${orderId}
-${address}
-${date}
-${tracking}
-
-Items:
-${items}
-
-${total}
------------------------------------------------
-`;
-      })
-      .join("\n");
-
-    const win = window.open("", "_blank", "width=1000,height=800");
-    if (!win) return;
-
-    win.document.write(`
-    <html>
-      <head>
-        <title>Completed (Shipped) Orders PDF</title>
-        <style>
-          body { font-family: Arial, sans-serif; white-space: pre-wrap; line-height: 1.5; font-size: 14px; color: #000; padding: 20px; }
-          h1 { font-size: 20px; font-weight: bold; margin-bottom: 20px; }
-        </style>
-      </head>
-      <body>
-        <h1>Classy Diamonds - Completed (Shipped) Orders</h1>
-        ${textOrders}
-      </body>
-    </html>
-  `);
-
-    win.document.close();
-    win.focus();
-    win.onload = () => {
-      win.print();
-      win.close();
-    };
-  }
-
   const filteredOrders = orders.filter((order) => {
     if (order.archived || order.delivered) return false;
-
-    const query = searchQuery.toLowerCase();
-    const matchQuery =
-      order.customerName?.toLowerCase().includes(query) ||
-      order.customerEmail?.toLowerCase().includes(query) ||
-      order.stripeSessionId?.toLowerCase().includes(query);
-
-    const orderDate = new Date(order.shippedAt || "");
-    const afterStart = startDate ? orderDate >= new Date(startDate) : true;
-    const beforeEnd = endDate ? orderDate <= new Date(endDate) : true;
-
-    return matchQuery && afterStart && beforeEnd;
+    const q = searchQuery.toLowerCase();
+    const matchQ =
+      order.customerName?.toLowerCase().includes(q) ||
+      order.customerEmail?.toLowerCase().includes(q) ||
+      order.stripeSessionId?.toLowerCase().includes(q);
+    const date = new Date(order.shippedAt || "");
+    const after = startDate ? date >= new Date(startDate) : true;
+    const before = endDate ? date <= new Date(endDate) : true;
+    return matchQ && after && before;
   });
 
   const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
-  const paginatedOrders = filteredOrders.slice(
+  const pageData = filteredOrders.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
@@ -308,16 +186,13 @@ ${total}
       <Head>
         <title>Completed Orders | Classy Diamonds</title>
       </Head>
-
       <div className="pl-2 pr-2 sm:pl-4 sm:pr-4 mb-6 -mt-2">
         <Breadcrumbs />
       </div>
-
       <h1 className="text-3xl font-serif font-bold tracking-wide mb-6">
         🛠️ Admin Dashboard
       </h1>
 
-      {/* 🔗 Admin Navigation Tabs */}
       <nav className="flex flex-wrap justify-center sm:justify-start gap-2 sm:space-x-6 mb-8 border-b border-[var(--bg-nav)] pb-4 text-[var(--foreground)] text-sm font-semibold">
         <Link href="/admin" className="hover:text-yellow-300">
           📦 Orders
@@ -344,7 +219,7 @@ ${total}
 
       {loading ? (
         <p>Loading shipped orders...</p>
-      ) : paginatedOrders.length === 0 ? (
+      ) : pageData.length === 0 ? (
         <p>No matching orders found.</p>
       ) : (
         <>
@@ -369,23 +244,11 @@ ${total}
               onChange={(e) => setEndDate(e.target.value)}
               className="px-2 py-1 rounded bg-[#2e3a58] text-white"
             />
-            <button
-              onClick={downloadCSV}
-              className="bg-green-600 hover:bg-green-700 px-4 py-2 rounded text-sm"
-            >
-              Export CSV 📄
-            </button>
-            <button
-              onClick={printPDF}
-              className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded text-sm"
-            >
-              Print PDF 🖨️
-            </button>
           </div>
 
           {/* 🧾 Orders */}
-          <div id="print-area" className="space-y-10">
-            {paginatedOrders.map((order) => (
+          <div className="space-y-10">
+            {pageData.map((order) => (
               <div
                 key={order._id}
                 className="bg-[var(--bg-nav)] p-6 rounded-xl shadow"
@@ -497,7 +360,6 @@ ${total}
                           item.image && item.image.trim() !== ""
                             ? item.image
                             : "/products/gray-placeholder.jpg";
-
                         return (
                           <li key={i} className="flex items-center gap-2">
                             <Image
@@ -563,20 +425,20 @@ ${total}
             ))}
           </div>
 
-          {/* 🔄 Pagination */}
+          {/* 📄 Pagination */}
           {totalPages > 1 && (
             <div className="flex justify-center mt-8 space-x-2">
-              {[...Array(totalPages)].map((_, index) => (
+              {Array.from({ length: totalPages }).map((_, i) => (
                 <button
-                  key={index}
-                  onClick={() => setCurrentPage(index + 1)}
+                  key={i}
+                  onClick={() => setCurrentPage(i + 1)}
                   className={`px-3 py-1 rounded ${
-                    currentPage === index + 1
+                    currentPage === i + 1
                       ? "bg-blue-600"
                       : "bg-[#2e3a58] hover:bg-blue-500"
                   }`}
                 >
-                  {index + 1}
+                  {i + 1}
                 </button>
               ))}
             </div>

@@ -1,4 +1,4 @@
-// ✅ Enhanced pages/admin/archived.tsx with Restore button, unified nav, pagination, logging, and size badges 🔐🗂️
+// ✅ pages/admin/archived.tsx – Archived Orders (no CSV/PDF) 🔐🗂️
 
 import { useEffect, useState } from "react";
 import Head from "next/head";
@@ -15,7 +15,7 @@ interface OrderItem {
   salePrice?: number;
   originalPrice?: number;
   image?: string;
-  size?: string; // 🆕 ring size
+  size?: string;
 }
 
 interface Order {
@@ -39,74 +39,6 @@ export default function ArchivedOrdersPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
-
-  function printPDF() {
-    const archivedOrdersArea = document.getElementById("print-area");
-    if (!archivedOrdersArea) return;
-
-    const textOrders = Array.from(
-      archivedOrdersArea.querySelectorAll(".bg-[var(--bg-nav)]")
-    )
-      .map((orderDiv) => {
-        const name = orderDiv.querySelector("h2")?.textContent?.trim() || "";
-        const orderId = orderDiv.querySelector("p")?.textContent?.trim() || "";
-        const address =
-          Array.from(orderDiv.querySelectorAll("p"))
-            .map((p) => p.textContent)
-            .find((txt) => txt?.includes("📍")) || "";
-        const date =
-          Array.from(orderDiv.querySelectorAll("p"))
-            .map((p) => p.textContent)
-            .find((txt) => txt?.includes("🧾 Order Date")) || "";
-        const items = Array.from(orderDiv.querySelectorAll("ul li"))
-          .map((li) => li.textContent?.trim())
-          .join("\n");
-        const total =
-          Array.from(orderDiv.querySelectorAll("span"))
-            .map((s) => s.textContent)
-            .find((txt) => txt?.includes("💰")) || "";
-
-        return `
-Order: ${name}
-${orderId}
-${address}
-${date}
-
-Items:
-${items}
-
-${total}
------------------------------------------------
-`;
-      })
-      .join("\n");
-
-    const win = window.open("", "_blank", "width=1000,height=800");
-    if (!win) return;
-
-    win.document.write(`
-    <html>
-      <head>
-        <title>Archived Orders PDF</title>
-        <style>
-          body { font-family: Arial, sans-serif; white-space: pre-wrap; line-height: 1.5; font-size: 14px; color: #000; padding: 20px; }
-          h1 { font-size: 20px; font-weight: bold; margin-bottom: 20px; }
-        </style>
-      </head>
-      <body>
-        <h1>Classy Diamonds - Archived Orders</h1>
-        ${textOrders}
-      </body>
-    </html>
-  `);
-
-    win.document.close();
-    win.focus();
-    win.onload = () => {
-      win.print();
-      win.close();
-    };
-  }
 
   useEffect(() => {
     if (session?.user?.isAdmin) fetchArchivedOrders();
@@ -144,43 +76,6 @@ ${total}
     } catch (err) {
       console.error("❌ Error restoring order:", err);
     }
-  };
-
-  const downloadCSV = () => {
-    const headers = [
-      "Name",
-      "Email",
-      "Order ID",
-      "Total",
-      "Archived At",
-      "Items",
-    ];
-    const rows = orders.map((order) => [
-      order.customerName,
-      order.customerEmail,
-      order.stripeSessionId,
-      `$${order.amount.toFixed(2)}`,
-      new Date(order.createdAt || "").toLocaleString(),
-      (order.items || [])
-        .map((i) => {
-          const qty = i.quantity ?? 1;
-          const unit =
-            i.price ?? i.discountedPrice ?? i.salePrice ?? i.originalPrice ?? 0;
-          const label = i.size ? `${i.name} (Size ${i.size})` : i.name;
-          return `${qty}× ${label} - $${(qty * unit).toFixed(2)}`;
-        })
-        .join(" | "),
-    ]);
-
-    const csvContent = [headers, ...rows].map((r) => r.join(",")).join("\n");
-    const blob = new Blob([csvContent], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "archived_orders.csv";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
   };
 
   const filteredOrders = orders.filter((order) => {
@@ -247,6 +142,7 @@ ${total}
         </Link>
       </nav>
 
+      {/* 🔍 Search */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 mb-6">
         <input
           type="text"
@@ -255,18 +151,6 @@ ${total}
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
         />
-        <button
-          onClick={downloadCSV}
-          className="bg-green-600 hover:bg-green-700 px-4 py-2 rounded text-sm"
-        >
-          Export CSV 📄
-        </button>
-        <button
-          onClick={printPDF}
-          className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded text-sm"
-        >
-          Print PDF 🖨️
-        </button>
       </div>
 
       {loading ? (
@@ -274,7 +158,7 @@ ${total}
       ) : filteredOrders.length === 0 ? (
         <p>No archived orders found.</p>
       ) : (
-        <div id="print-area" className="space-y-8">
+        <div className="space-y-8">
           {paginatedOrders.map((order) => (
             <div
               key={order._id}
