@@ -1,4 +1,4 @@
-// 📄 pages/jewelry.tsx – Category Filters Styled Like Home ✅💎
+// 📄 pages/jewelry.tsx – Category Filters Styled Like Home (one-line, big tiles, safe categories) ✅💎
 
 "use client";
 
@@ -19,7 +19,7 @@ export type ProductType = {
   price: number;
   salePrice?: number;
   image: string;
-  category: string;
+  category: string; // expected non-empty
   gender?: "unisex" | "him" | "her";
   description?: string;
 };
@@ -49,7 +49,7 @@ function CategoryTile({
             src={src}
             alt={name}
             fill
-            sizes="(max-width: 768px) 160px, 200px"
+            sizes="(max-width: 768px) 192px, 256px"
             className="object-cover rounded-xl group-hover:scale-110 transition-transform duration-300"
           />
         ) : (
@@ -57,14 +57,24 @@ function CategoryTile({
             {name}
           </div>
         )}
-        <div
-          className={`absolute inset-0 bg-black/35 z-10 ${
-            active ? "ring-2 ring-indigo-500" : ""
-          }`}
-        />
-        <span className="absolute inset-0 flex items-center justify-center text-sm sm:text-base font-semibold text-white z-20">
+        {/* overlay */}
+        <div className={`absolute inset-0 bg-black/35 z-10`} />
+        <span
+          className={[
+            "absolute inset-0 flex items-center justify-center z-20 font-semibold",
+            "text-sm sm:text-base text-white",
+          ].join(" ")}
+        >
           {name}
         </span>
+        {/* active ring */}
+        <span
+          aria-hidden
+          className={[
+            "pointer-events-none absolute inset-0 rounded-xl",
+            active ? "ring-2 ring-indigo-500" : "",
+          ].join(" ")}
+        />
       </div>
     </button>
   );
@@ -82,13 +92,13 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
   const router = useRouter();
 
   const isRingCategory = (cat: string) => cat?.toLowerCase().includes("ring");
-
   const resetCount = () => setVisibleCount(8);
 
   useEffect(() => {
     resetCount();
   }, []);
 
+  // Handle preselected category from Home
   useEffect(() => {
     const stored = localStorage.getItem("preselectedCategory");
     if (stored) {
@@ -108,10 +118,19 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
     }
   }, []);
 
-  const allCategories = Array.from(new Set(products.map((p) => p.category)));
-  const categoryFilters = [...allCategories, "For Him", "For Her"];
+  // ✅ Build safe, de-duped, sorted category list (no undefined/empty)
+  const allCategories = Array.from(
+    new Set(
+      products
+        .map((p) => (p?.category ?? "").trim())
+        .filter((c): c is string => Boolean(c))
+    )
+  ).sort((a, b) => a.localeCompare(b));
 
-  // ✅ Image map matches Home page
+  // Add gender tiles to the end
+  const categoryFilters: string[] = [...allCategories, "For Him", "For Her"];
+
+  // ✅ Image map matches Home page naming
   const categoryImages: Record<string, string | undefined> = {
     All: undefined,
     Engagement: "/category/engagement-cat.jpg",
@@ -120,7 +139,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
     Bracelets: "/category/bracelet-cat.jpg",
     Necklaces: "/category/necklace-cat.jpg",
     Earrings: "/category/earring-cat.jpg",
-    Watches: "/category/watches-cat.jpg", // add if exists
+    Watches: "/category/watches-cat.jpg", // add this file if you use the tile
     "For Him": "/category/his-gift-cat.jpg",
     "For Her": "/category/her-gift-cat.jpg",
   };
@@ -140,6 +159,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
     headerRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
+  // Read query params from links
   useEffect(() => {
     if (!router.isReady) return;
     const { category, gender, scroll } = router.query;
@@ -163,6 +183,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
     if (scroll === "true") setTimeout(scrollBelowHero, 0);
   }, [router.isReady]);
 
+  // When filters change, reset and scroll to header
   useEffect(() => {
     if (initialMount.current) {
       initialMount.current = false;
@@ -173,12 +194,14 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
   }, [activeCategory, genderFilter]);
 
   const handleLoadMore = () => setVisibleCount((prev) => prev + 4);
+
   const formatCategory = (cat: string) =>
     cat.replace(/-/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
 
   const filteredByGender = genderFilter
     ? products.filter((p) => p.gender === genderFilter)
     : products;
+
   const filteredProducts = filteredByGender.filter((p) =>
     activeCategory === "All" ? true : p.category === activeCategory
   );
@@ -241,7 +264,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
           </h2>
         </div>
 
-        {/* All devices: wide one-line scrollable categories */}
+        {/* All devices: one-line scrollable categories (bigger tiles) */}
         <div className="flex gap-6 overflow-x-auto pb-4 snap-x snap-mandatory [scrollbar-width:none] [-ms-overflow-style:none]">
           <style jsx>{`
             div::-webkit-scrollbar {
@@ -250,6 +273,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
           `}</style>
 
           {["All", ...categoryFilters].map((cat) => {
+            // cat can never be undefined now (sanitized above)
             const label = formatCategory(cat);
             const active =
               (label === "For Him" &&
@@ -266,7 +290,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
             return (
               <div
                 key={label}
-                className="snap-start flex-shrink-0 w-48 md:w-56"
+                className="snap-start flex-shrink-0 w-56 md:w-64"
               >
                 <CategoryTile
                   name={label}
@@ -399,10 +423,9 @@ export const getServerSideProps: GetServerSideProps = async ({ query }) => {
     price: p.price,
     salePrice: p.salePrice ?? null,
     image: p.imageUrl || p.image,
-    category: p.category,
+    category: p.category || "", // keep non-null to avoid client crashes
     gender: p.gender || "unisex",
     description: p.description || "",
   }));
   return { props: { products } };
 };
-//
