@@ -332,13 +332,13 @@ export default function AdminLogsPage() {
       if (det) detailsById[id] = det;
     }
 
-    // Build HTML
+    // Build sections HTML
     const sections = selectedIds
       .map((id) => {
         const details = detailsById[id];
         const logsForOrder =
           orderLogs.find((o) => o.orderId === id)?.logs || [];
-        if (!details) return ""; // skip missing
+        if (!details) return ""; // skip if details missing
         return buildOrderSectionHTML(id, details, logsForOrder);
       })
       .filter(Boolean)
@@ -351,68 +351,63 @@ export default function AdminLogsPage() {
   <meta charset="utf-8" />
   <title>Orders – Print</title>
   <style>
-    @media print {
-      @page { margin: 18mm; }
-    }
-    body {
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
-      color: #111;
-      margin: 0;
-      padding: 18px;
-      line-height: 1.4;
-    }
+    @media print { @page { margin: 18mm; } }
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; color:#111; margin:0; padding:18px; line-height:1.4; }
     h1 { font-size: 20px; margin: 0 0 8px; }
     h2 { font-size: 18px; margin: 0 0 6px; }
     h3 { font-size: 15px; margin: 14px 0 6px; }
-    .muted { color: #666; }
-    .right { text-align: right; }
-    .center { text-align: center; }
-    .strike { text-decoration: line-through; color: #888; margin-right: 6px; }
-    header {
-      display: flex; justify-content: space-between; align-items: baseline;
-      border-bottom: 1px solid #ddd; padding-bottom: 6px; margin-bottom: 10px;
-    }
-    .meta { font-size: 12px; color: #333; display: grid; gap: 2px; }
-    .two-col { display: grid; grid-template-columns: 1fr 220px; gap: 16px; align-items: start; }
-    .totals .grand { font-size: 18px; font-weight: 700; }
-    table.items { width: 100%; border-collapse: collapse; margin-top: 4px; }
-    table.items th, table.items td { border-bottom: 1px solid #eee; padding: 6px; vertical-align: top; }
-    .item-name { font-weight: 600; }
-    ul.logs { margin: 6px 0 0 18px; padding: 0; }
+    .muted { color:#666; }
+    .right { text-align:right; }
+    .center { text-align:center; }
+    .strike { text-decoration: line-through; color:#888; margin-right:6px; }
+    header { display:flex; justify-content:space-between; align-items:baseline; border-bottom:1px solid #ddd; padding-bottom:6px; margin-bottom:10px; }
+    .meta { font-size:12px; color:#333; display:grid; gap:2px; }
+    .two-col { display:grid; grid-template-columns: 1fr 220px; gap:16px; align-items:start; }
+    .totals .grand { font-size:18px; font-weight:700; }
+    table.items { width:100%; border-collapse:collapse; margin-top:4px; }
+    table.items th, table.items td { border-bottom:1px solid #eee; padding:6px; vertical-align:top; }
+    .item-name { font-weight:600; }
+    ul.logs { margin:6px 0 0 18px; padding:0; }
     section.order { page-break-inside: avoid; margin-bottom: 18px; }
-    hr { border: 0; border-top: 1px solid #ddd; margin: 18px 0; page-break-after: always; }
-    /* First HR after last section removed by script below */
+    hr { border:0; border-top:1px solid #ddd; margin:18px 0; page-break-after: always; }
   </style>
 </head>
 <body>
   <h1>Order Package</h1>
-  ${sections || `<p>No printable orders.</p>`}
+  ${sections || `<p class="muted">No printable orders.</p>`}
   <script>
-    // Remove trailing HR if present
     const hrs = document.querySelectorAll('hr');
     if (hrs.length) hrs[hrs.length - 1].remove();
-    window.onload = function() {
-      window.print();
-      setTimeout(() => window.close(), 250);
-    };
   </script>
 </body>
 </html>
-    `;
+  `;
 
-    // Open print window
-    const win = window.open(
-      "",
-      "_blank",
-      "noopener,noreferrer,width=900,height=700"
-    );
-    if (!win) {
-      alert("Please allow pop-ups to print.");
-      return;
-    }
-    win.document.open();
-    win.document.write(docHtml);
-    win.document.close();
+    // ✅ Print via hidden iframe (no popups, waits for load)
+    const iframe = document.createElement("iframe");
+    iframe.style.position = "fixed";
+    iframe.style.right = "0";
+    iframe.style.bottom = "0";
+    iframe.style.width = "0";
+    iframe.style.height = "0";
+    iframe.style.border = "0";
+    document.body.appendChild(iframe);
+
+    // Use srcdoc so onload reliably fires after the content is parsed
+    iframe.onload = () => {
+      try {
+        const win = iframe.contentWindow;
+        if (!win) throw new Error("No iframe contentWindow");
+        win.focus();
+        win.print();
+      } finally {
+        // give the print dialog a moment; then clean up
+        setTimeout(() => {
+          document.body.removeChild(iframe);
+        }, 1000);
+      }
+    };
+    (iframe as any).srcdoc = docHtml;
   };
 
   if (status === "loading") {
