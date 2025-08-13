@@ -1,4 +1,4 @@
-// 📄 pages/jewelry.tsx – Filters use Home category photos ✅💎
+// 📄 pages/jewelry.tsx – Big, responsive category photo tiles + matching product cards ✅💎
 
 "use client";
 
@@ -24,7 +24,7 @@ export type ProductType = {
   description?: string;
 };
 
-// 🔹 Image tile button used for category filters
+// 🔹 Image tile button used for category filters (BIG + readable)
 function CategoryTile({
   name,
   src,
@@ -41,7 +41,7 @@ function CategoryTile({
       type="button"
       onClick={onClick}
       aria-pressed={active}
-      className="w-full group relative rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-transform duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-indigo-500"
+      className="w-full group relative rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-transform duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-indigo-500"
     >
       <div className="relative aspect-[4/3] w-full bg-[#25304f]">
         {src ? (
@@ -49,18 +49,28 @@ function CategoryTile({
             src={src}
             alt={name}
             fill
-            sizes="(max-width: 768px) 160px, 120px"
+            sizes="(max-width: 768px) 200px, (max-width: 1024px) 220px, 240px"
             className="object-cover"
+            priority={false}
           />
         ) : null}
-        <div className="absolute inset-0 bg-black/35 z-10" />
-        <span className="absolute inset-0 flex items-center justify-center z-20 font-semibold text-[11px] md:text-xs lg:text-sm text-white px-1 text-center">
+
+        {/* stronger overlay for readability */}
+        <div className="absolute inset-0 bg-black/40 group-hover:bg-black/35 transition-colors z-10" />
+
+        {/* label — bigger, responsive, with subtle shadow */}
+        <span
+          className="absolute inset-0 flex items-center justify-center z-20 font-semibold text-white text-center px-2
+                         text-sm sm:text-base md:text-lg lg:text-xl drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)]"
+        >
           {name}
         </span>
+
+        {/* active ring */}
         <span
           aria-hidden
           className={[
-            "pointer-events-none absolute inset-0 rounded-xl",
+            "pointer-events-none absolute inset-0 rounded-2xl",
             active ? "ring-2 ring-indigo-500" : "",
           ].join(" ")}
         />
@@ -143,7 +153,6 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
     Bracelets: "/category/bracelet-cat.jpg",
     Necklaces: "/category/necklace-cat.jpg",
     Earrings: "/category/earring-cat.jpg",
-    // add any other specific ones you use on Home:
     Watches: "/category/watches-cat.jpg",
     "For Him": "/category/his-gift-cat.jpg",
     "For Her": "/category/her-gift-cat.jpg",
@@ -243,7 +252,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
         <Breadcrumbs />
       </div>
 
-      {/* 💎 Category Header (with photo tiles) */}
+      {/* 💎 Category Header (PHOTO tiles) */}
       <section
         ref={headerRef}
         className="pt-20 pb-12 px-4 sm:px-6 max-w-7xl mx-auto"
@@ -271,7 +280,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
           )}
         </div>
 
-        {/* 📱 Mobile: swipe row of image tiles */}
+        {/* 📱 Mobile: swipe row of image tiles (unchanged logic, bigger display) */}
         <div className="md:hidden flex gap-4 overflow-x-auto pb-2 snap-x snap-mandatory [scrollbar-width:none] [-ms-overflow-style:none]">
           <style jsx>{`
             div::-webkit-scrollbar {
@@ -297,7 +306,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
             return (
               <div
                 key={`m-${f.value}`}
-                className="snap-start flex-shrink-0 w-40"
+                className="snap-start flex-shrink-0 w-44"
               >
                 <CategoryTile
                   name={f.label}
@@ -324,11 +333,8 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
           })}
         </div>
 
-        {/* 🖥️ Desktop: 10 tiles across, image tiles */}
-        <div
-          className="hidden md:grid gap-3"
-          style={{ gridTemplateColumns: `repeat(10, minmax(0, 1fr))` }}
-        >
+        {/* 🖥️ Desktop/tablet: responsive grid — big tiles, readable, and scale to 10 across on xl */}
+        <div className="hidden md:grid gap-4 grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-10">
           {filters.slice(0, 10).map((f) => {
             const active =
               (!!f.isGender &&
