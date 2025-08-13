@@ -1,4 +1,4 @@
-// 📄 pages/jewelry.tsx – Big, readable category photo tiles + sticky filters + matching product cards ✅💎
+// 📄 pages/jewelry.tsx – Horizontal (one-line) desktop category photo tiles + sticky bar + matching product cards ✅💎
 
 "use client";
 
@@ -41,10 +41,8 @@ function CategoryTile({
       type="button"
       onClick={onClick}
       aria-pressed={active}
-      className={[
-        "w-full group relative rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-transform duration-150",
-        "focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-indigo-500",
-      ].join(" ")}
+      className="w-full group relative rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-transform duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-indigo-500"
+      title={name}
     >
       <div className="relative aspect-[4/3] w-full bg-[#25304f]">
         {src ? (
@@ -52,20 +50,18 @@ function CategoryTile({
             src={src}
             alt={name}
             fill
-            // Large enough srcSet so images look crisp while still responsive
-            sizes="(max-width: 640px) 200px, (max-width: 1024px) 240px, 280px"
+            sizes="(max-width: 640px) 200px, (max-width: 1024px) 220px, 240px"
             className="object-cover"
-            priority={false}
           />
         ) : null}
 
-        {/* stronger overlay for readability */}
+        {/* overlay for readability */}
         <div className="absolute inset-0 bg-black/40 group-hover:bg-black/30 transition-colors z-10" />
 
-        {/* label — big & readable with shadow */}
+        {/* label — big & readable with subtle shadow */}
         <span
           className="absolute inset-0 flex items-center justify-center z-20 font-semibold text-white text-center px-3
-                         text-base sm:text-lg md:text-xl lg:text-[22px] drop-shadow-[0_1px_2px_rgba(0,0,0,0.7)]"
+                         text-sm sm:text-base md:text-lg lg:text-xl drop-shadow-[0_1px_2px_rgba(0,0,0,0.7)]"
         >
           {name}
         </span>
@@ -140,11 +136,16 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
     { value: "for-him", label: "For Him", isGender: true },
     { value: "for-her", label: "For Her", isGender: true },
   ];
+  // Ensure we only show 9 category entries + 1 "All" to make 10 total on desktop
+  const limitedBase = baseFilters.slice(
+    0,
+    Math.max(0, 9 - genderFilters.length)
+  ); // leave room for gender tiles
   const filters: FilterItem[] = [
     { value: "All", label: "All" },
-    ...baseFilters,
+    ...limitedBase,
     ...genderFilters,
-  ];
+  ].slice(0, 10);
 
   // Map labels to the same images you use on Home
   const categoryImages: Record<string, string | undefined> = {
@@ -327,15 +328,9 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
           })}
         </div>
 
-        {/* 🖥️ Desktop/tablet: BIG responsive auto-fit grid (never tiny; wraps to 2 rows if needed) */}
-        <div
-          className="hidden md:grid gap-4"
-          style={{
-            // Each tile gets at least 180px (md), 200px (lg), 220px (xl) — adjust to taste
-            gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
-          }}
-        >
-          {filters.map((f) => {
+        {/* 🖥️ Desktop: one horizontal line (no wrap), 10 evenly-sized tiles */}
+        <div className="hidden md:flex flex-nowrap items-stretch gap-3">
+          {filters.slice(0, 10).map((f) => {
             const active =
               (!!f.isGender &&
                 f.value === "for-him" &&
@@ -352,7 +347,10 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
               f.value === "All" ? undefined : getImageForLabel(f.label);
 
             return (
-              <div key={`d-${f.value}`} className="w-full">
+              <div
+                key={`d-${f.value}`}
+                className="min-w-0 flex-1" // <= makes all 10 share row width evenly
+              >
                 <CategoryTile
                   name={f.label}
                   src={imgSrc}
