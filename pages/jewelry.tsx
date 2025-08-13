@@ -1,4 +1,4 @@
-// 📄 pages/jewelry.tsx – Desktop 1-line (10 tiles, no scroll, gender last) + Mobile swipe (visible scrollbar) + Product cards match index ✅💎
+// 📄 pages/jewelry.tsx – Ordered categories + Desktop 1-line + Mobile swipe (visible scrollbar) + Product cards match index ✅💎
 
 "use client";
 
@@ -29,7 +29,6 @@ const isRingCategory = (cat?: string) => ((cat ?? "").toLowerCase()).includes("r
 const formatCategory = (cat: string) =>
   cat.replace(/-/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
 
-// Image map (same style as Home). Add more if you have more categories.
 const CATEGORY_IMAGES: Record<string, string | undefined> = {
   All: undefined,
   Engagement: "/category/engagement-cat.jpg",
@@ -38,9 +37,8 @@ const CATEGORY_IMAGES: Record<string, string | undefined> = {
   Bracelets: "/category/bracelet-cat.jpg",
   Necklaces: "/category/necklace-cat.jpg",
   Earrings: "/category/earring-cat.jpg",
-  Watches: "/category/watches-cat.jpg",
-  "For Him": "/category/his-gift-cat.jpg",
   "For Her": "/category/her-gift-cat.jpg",
+  "For Him": "/category/his-gift-cat.jpg",
 };
 const imageFor = (label: string) =>
   CATEGORY_IMAGES[label] ?? `/category/${label.toLowerCase().replace(/\s+/g, "-")}-cat.jpg`;
@@ -59,9 +57,9 @@ function CategoryTile({
   img?: string;
   active: boolean;
   onClick: () => void;
-  className: string; // width & spacing classes
-  textSizeClass: string; // text size classes
-  aspect?: string; // aspect ratio class (desktop uses 5/4)
+  className: string;
+  textSizeClass: string;
+  aspect?: string;
 }) {
   return (
     <button
@@ -138,7 +136,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
     }
   }, []);
 
-  // Build de-duped categories from DB (exclude anything empty)
+  // Categories from DB (dedup + clean)
   const allCategoriesRaw = useMemo(
     () =>
       Array.from(
@@ -151,35 +149,54 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
     [products]
   );
 
-  // Ensure "For Him"/"For Her" are NOT in the category list (we add them manually at the end)
+  // Your required order for core product categories
+  const preferredOrder = [
+    "Engagement",
+    "Wedding Bands",
+    "Rings",
+    "Bracelets",
+    "Necklaces",
+    "Earrings",
+  ];
+
+  // Only true product categories (exclude any 'for-him/her' in DB if present)
   const coreCategories = useMemo(
     () =>
-      allCategoriesRaw
-        .filter(
-          (c) =>
-            c.toLowerCase() !== "for-him" &&
-            c.toLowerCase() !== "for her" &&
-            c.toLowerCase() !== "for-her" &&
-            c.toLowerCase() !== "for him"
-        )
-        .sort((a, b) => a.localeCompare(b)),
+      allCategoriesRaw.filter((c) => {
+        const lc = c.toLowerCase();
+        return lc !== "for-him" && lc !== "for her" && lc !== "for-her" && lc !== "for him";
+      }),
     [allCategoriesRaw]
   );
 
-  // Desktop wants 10 total: All + 8 categories + (For Him, For Her)
-  const desktopEight = coreCategories.slice(0, 8);
-
-  // Final sequences:
-  const mobileOrder = useMemo(
-    () => ["All", ...coreCategories, "For Him", "For Her"],
+  // Put preferred ones first (only those that actually exist), then extras alpha
+  const orderedAvailable = useMemo(
+    () => preferredOrder.filter((c) => coreCategories.includes(c)),
     [coreCategories]
   );
-  const desktopOrder = useMemo(
-    () => ["All", ...desktopEight, "For Him", "For Her"],
-    [desktopEight]
+  const extras = useMemo(
+    () => coreCategories.filter((c) => !preferredOrder.includes(c)).sort((a, b) => a.localeCompare(b)),
+    [coreCategories]
   );
 
-  // URL queries
+  // Desktop: All + up to 8 categories + For Her + For Him = 10 tiles
+  const desktopCats = useMemo(() => {
+    const filled = [...orderedAvailable, ...extras];
+    return filled.slice(0, 8);
+  }, [orderedAvailable, extras]);
+
+  const desktopOrder = useMemo(
+    () => ["All", ...desktopCats, "For Her", "For Him"],
+    [desktopCats]
+  );
+
+  // Mobile: show all (preferred → extras), genders last
+  const mobileOrder = useMemo(
+    () => ["All", ...orderedAvailable, ...extras, "For Her", "For Him"],
+    [orderedAvailable, extras]
+  );
+
+  // URL query handling
   useEffect(() => {
     if (!router.isReady) return;
     const { category, gender, scroll } = router.query;
@@ -270,7 +287,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
           </h2>
         </div>
 
-        {/* 📱 Mobile: Home-style swipe row (now with a visible scrollbar) */}
+        {/* 📱 Mobile: Home-style swipe row (visible scrollbar) */}
         <div className="sm:hidden px-0 mt-2">
           <div
             className="overflow-x-auto show-scrollbar"
@@ -298,9 +315,9 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
 
             <div className="flex gap-3 w-max px-4">
               {mobileOrder.map((key, i) => {
-                const isGender = key === "For Him" || key === "For Her";
+                const isGender = key === "For Her" || key === "For Him";
                 const catValue =
-                  key === "All" ? "All" : isGender ? (key === "For Him" ? "for-him" : "for-her") : key;
+                  key === "All" ? "All" : isGender ? (key === "For Her" ? "for-her" : "for-him") : key;
                 const label =
                   key === "All"
                     ? "All"
@@ -345,15 +362,15 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
           </div>
         </div>
 
-        {/* 🖥️ Desktop: ONE line, NO scroll, exactly 10 tiles (All + 8 cats + For Him + For Her) */}
+        {/* 🖥️ Desktop: ONE line, NO scroll, 10 tiles (All + 8 cats + For Her + For Him) */}
         <div className="hidden sm:block w-screen relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw]">
-          {/* Adjust max-w to fine-tune tile size: 1440 → 1520/1600 if you want bigger */}
+          {/* Adjust max-w to fine-tune tile size if needed */}
           <div className="mx-auto max-w-[1440px] px-2">
             <div className="grid grid-cols-10 gap-[6px]">
               {desktopOrder.map((key, i) => {
-                const isGender = key === "For Him" || key === "For Her";
+                const isGender = key === "For Her" || key === "For Him";
                 const catValue =
-                  key === "All" ? "All" : isGender ? (key === "For Him" ? "for-him" : "for-her") : key;
+                  key === "All" ? "All" : isGender ? (key === "For Her" ? "for-her" : "for-him") : key;
                 const label =
                   key === "All"
                     ? "All"
