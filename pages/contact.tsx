@@ -220,11 +220,12 @@ export default function ContactPage() {
           </div>
         </section>
 
-        {/* 📍 Contact Info + Lazy Loaded Map (now even height/space) */}
+        {/* 📍 Contact Info + Lazy Loaded Map (now map is wider) */}
         <section className="px-4 sm:px-6 lg:px-12 xl:px-20 py-16 sm:py-20 max-w-screen-xl mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-stretch w-full">
-            {/* Contact card grows to match map height */}
-            <div className="bg-[var(--bg-nav)] rounded-2xl shadow-lg p-8 sm:p-10 flex flex-col justify-center gap-10 text-center md:text-left hover:shadow-2xl transition-shadow duration-300 h-full">
+          {/* ⬅ CHANGED: was md:grid-cols-2, now md:grid-cols-5 */}
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-12 items-stretch w-full">
+            {/* Contact card: 2/5 width on desktop */}
+            <div className="md:col-span-2 bg-[var(--bg-nav)] rounded-2xl shadow-lg p-8 sm:p-10 flex flex-col justify-center gap-10 text-center md:text-left hover:shadow-2xl transition-shadow duration-300 h-full">
               <div className="flex flex-col items-center md:items-start">
                 <FaPhoneAlt className="text-4xl mb-3 text-[var(--foreground)]" />
                 <p className="text-lg sm:text-xl text-[#cfd2d6] leading-relaxed">
@@ -239,8 +240,8 @@ export default function ContactPage() {
               </div>
             </div>
 
-            {/* Map matches contact card height */}
-            <div className="w-full rounded-2xl overflow-hidden shadow-lg h-full min-h-[16rem] md:min-h-[28rem]">
+            {/* Map: 3/5 width on desktop */}
+            <div className="md:col-span-3 w-full rounded-2xl overflow-hidden shadow-lg h-full min-h-[16rem] md:min-h-[28rem]">
               {showMap && (
                 <iframe
                   src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d6062.453504254061!2d-74.2965584!3d40.558669599999995!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x89c3b5c5e191bbb5%3A0x6ec9ad5e4e09ad39!2sWoodbridge%20Jewelry%20Exchange!5e0!3m2!1sen!2sus!4v1746210843513!5m2!1sen!2sus"

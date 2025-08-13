@@ -1,4 +1,4 @@
-// 📂 pages/account/orders.tsx – Fixed Price Display with Original/Sale Prices 💎
+// 📂 pages/account/orders.tsx – Show Ring Size in Order Items + Safe Thumbnails 💎
 
 import { GetServerSideProps } from "next";
 import { getSession } from "next-auth/react";
@@ -9,6 +9,7 @@ import { useRouter } from "next/router";
 import Breadcrumbs from "@/components/Breadcrumbs";
 
 const ORDERS_PER_PAGE = 5;
+const PLACEHOLDER = "/gray-placeholder.jpg"; // 🆕 ensure this exists in /public
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
   const session = await getSession(context);
@@ -188,19 +189,35 @@ export default function OrdersPage({
                   </p>
                   <ul className="space-y-3">
                     {order.items?.map((item: any, idx: number) => {
+                      // 🆕 show size if present (handles rings & engagement)
+                      const sizeValue =
+                        item?.size ??
+                        item?.ringSize ??
+                        item?.variant?.size ??
+                        null;
+
+                      // 🆕 safe thumbnail fallback
+                      const thumb =
+                        (typeof item.image === "string" && item.image.trim()) ||
+                        PLACEHOLDER;
+
                       const displayPrice =
                         item.salePrice ??
                         item.discountedPrice ??
                         item.originalPrice ??
                         item.price ??
                         0;
-                      const original = item.originalPrice ?? item.price ?? displayPrice;
+
+                      const original =
+                        item.originalPrice ?? item.price ?? displayPrice;
+
                       const sale =
                         item.salePrice ?? item.discountedPrice ?? undefined;
+
                       return (
                         <li key={idx} className="flex items-center gap-4">
                           <Image
-                            src={item.image}
+                            src={thumb}
                             alt={item.name}
                             width={48}
                             height={48}
@@ -210,22 +227,34 @@ export default function OrdersPage({
                             <p className="font-medium text-[var(--foreground)]">
                               {item.name}
                             </p>
-                              {sale !== undefined && sale < original ? (
-                                <p className="text-sm text-[#cfd2d6]">
-                                  x{item.quantity} –{" "}
-                                  <span className="line-through text-gray-400 mr-1">
-                                    {(original * item.quantity).toFixed(2)}
-                                  </span>
-                                  <span className="text-green-400 font-semibold">
-                                    {(sale * item.quantity).toFixed(2)}
-                                  </span>
-                                </p>
-                              ) : (
-                                <p className="text-sm text-[#cfd2d6]">
-                                  x{item.quantity} – $
-                                  {(displayPrice * item.quantity).toFixed(2)}
-                                </p>
-                              )}
+
+                            {/* 🆕 Size line */}
+                            {sizeValue && (
+                              <p className="text-xs text-gray-300">
+                                Size:{" "}
+                                <span className="font-medium">
+                                  {String(sizeValue)}
+                                </span>
+                              </p>
+                            )}
+
+                            {/* price line(s) */}
+                            {sale !== undefined && sale < original ? (
+                              <p className="text-sm text-[#cfd2d6]">
+                                x{item.quantity} –{" "}
+                                <span className="line-through text-gray-400 mr-1">
+                                  ${(original * item.quantity).toFixed(2)}
+                                </span>
+                                <span className="text-green-400 font-semibold">
+                                  ${(sale * item.quantity).toFixed(2)}
+                                </span>
+                              </p>
+                            ) : (
+                              <p className="text-sm text-[#cfd2d6]">
+                                x{item.quantity} – $
+                                {(displayPrice * item.quantity).toFixed(2)}
+                              </p>
+                            )}
                           </div>
                         </li>
                       );
