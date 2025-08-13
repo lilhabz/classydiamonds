@@ -241,13 +241,14 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
           </h2>
         </div>
 
-        {/* Mobile: swipe row */}
-        <div className="flex md:hidden gap-4 overflow-x-auto pb-2 snap-x snap-mandatory [-ms-overflow-style:none] [scrollbar-width:none]">
+        {/* All devices: wide one-line scrollable categories */}
+        <div className="flex gap-6 overflow-x-auto pb-4 snap-x snap-mandatory [scrollbar-width:none] [-ms-overflow-style:none]">
           <style jsx>{`
             div::-webkit-scrollbar {
               display: none;
             }
           `}</style>
+
           {["All", ...categoryFilters].map((cat) => {
             const label = formatCategory(cat);
             const active =
@@ -261,8 +262,12 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
                 label !== "For Her" &&
                 activeCategory === cat &&
                 !genderFilter);
+
             return (
-              <div key={label} className="snap-start w-40 flex-shrink-0">
+              <div
+                key={label}
+                className="snap-start flex-shrink-0 w-48 md:w-56"
+              >
                 <CategoryTile
                   name={label}
                   src={getImageForCategory(label)}
@@ -281,44 +286,6 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
                   }}
                 />
               </div>
-            );
-          })}
-        </div>
-
-        {/* Desktop: grid */}
-        <div className="hidden md:grid grid-cols-4 lg:grid-cols-6 gap-5">
-          {["All", ...categoryFilters].map((cat) => {
-            const label = formatCategory(cat);
-            const active =
-              (label === "For Him" &&
-                genderFilter === "him" &&
-                activeCategory === "All") ||
-              (label === "For Her" &&
-                genderFilter === "her" &&
-                activeCategory === "All") ||
-              (label !== "For Him" &&
-                label !== "For Her" &&
-                activeCategory === cat &&
-                !genderFilter);
-            return (
-              <CategoryTile
-                key={label}
-                name={label}
-                src={getImageForCategory(label)}
-                active={active}
-                onClick={() => {
-                  if (label === "For Him") {
-                    setGenderFilter("him");
-                    setActiveCategory("All");
-                  } else if (label === "For Her") {
-                    setGenderFilter("her");
-                    setActiveCategory("All");
-                  } else {
-                    setGenderFilter(null);
-                    setActiveCategory(cat);
-                  }
-                }}
-              />
             );
           })}
         </div>
