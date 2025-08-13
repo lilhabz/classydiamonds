@@ -1,4 +1,4 @@
-// 📄 pages/category/[category]/[slug].tsx – Text Ring Size + Availability Notice + "Item Number" label
+// 📄 pages/category/[category]/[slug].tsx – Text Ring Size + Availability + Robust Image Src
 
 "use client";
 
@@ -8,8 +8,7 @@ import clientPromise from "@/lib/mongodb";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import Head from "next/head";
 import Image from "next/image";
-import { useState } from "react";
-
+import { useMemo, useState } from "react";
 import { productsData } from "@/data/productsData";
 
 type ProductType = {
@@ -18,42 +17,90 @@ type ProductType = {
   name: string;
   price: number;
   salePrice?: number | null;
-  image?: string;
+  image?: string; // can be local path or remote (Cloudinary)
   slug: string;
   category: string;
 };
 
+const PLACEHOLDER = "/gray-placeholder.jpg"; // must exist in /public
+
+function normalizeLocalPath(src: string) {
+  // Ensure it starts with a leading slash and points into /products
+  // Example DB values like "products/round-brilliant.jpg" or "/products/round-brilliant.jpg"
+  const trimmed = src.trim();
+  if (!trimmed) return PLACEHOLDER;
+
+  if (trimmed.startsWith("http")) return trimmed; // handled elsewhere
+
+  // Guarantee leading slash
+  const withSlash = trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
+
+  // If user stored only filename like "round-brilliant.jpg", force it into /products
+  if (!withSlash.startsWith("/products/")) {
+    return `/products/${withSlash.replace(/^\//, "")}`;
+  }
+  return withSlash;
+}
+
+function squareCloudinary(url: string) {
+  // Inject a square transform only if it's a Cloudinary URL without an existing/compatible transform in that segment.
+  // We’ll add a common, safe preset.
+  // Example: https://res.cloudinary.com/xxx/image/upload/.../file.jpg
+  try {
+    const u = new URL(url);
+    if (!u.hostname.includes("cloudinary.com")) return url;
+
+    // Only modify the /upload/ segment once
+    const replaced = url.replace(
+      "/upload/",
+      "/upload/c_fill,ar_1:1,w_1000,h_1000,f_auto,q_auto/"
+    );
+    return replaced;
+  } catch {
+    return url;
+  }
+}
+
+function resolveImageSrc(product: ProductType) {
+  // Priority: product.image -> productsData fallback (by slug) -> PLACEHOLDER
+  const fromDb = product.image?.trim() || "";
+  const fromStatic =
+    productsData.find((i) => i.slug === product.slug)?.image?.trim() || "";
+
+  const chosen = fromDb || fromStatic || PLACEHOLDER;
+
+  if (chosen.startsWith("http")) {
+    // Likely Cloudinary or other remote; add square transform for Cloudinary
+    return squareCloudinary(chosen);
+  }
+
+  // Local path case
+  return normalizeLocalPath(chosen);
+}
+
 export default function ProductPage({ product }: { product: ProductType }) {
   const { addToCart } = useCart();
-
-  // 🆕 Free-text ring size (required for rings)
   const [ringSize, setRingSize] = useState("");
+  const [imgSrc, setImgSrc] = useState<string>("");
 
-  const capitalizedCategory = product.category
-    .replace(/-/g, " ")
-    .replace(/\b\w/g, (c) => c.toUpperCase());
+  const needsRingSize = /ring|engagement/i.test(product.category);
 
-  const placeholder = "/gray-placeholder.jpg";
+  const capitalizedCategory = useMemo(
+    () =>
+      product.category
+        .replace(/-/g, " ")
+        .replace(/\b\w/g, (c) => c.toUpperCase()),
+    [product.category]
+  );
 
-  const fallbackImage =
-    productsData.find((item) => item.slug === product.slug)?.image ||
-    placeholder;
-
-  const squareImage =
-    product.image && product.image.trim() !== ""
-      ? product.image.includes("cloudinary.com")
-        ? product.image.replace(
-            "/upload/",
-            "/upload/c_fill,ar_1:1,w_1000,h_1000/"
-          )
-        : product.image
-      : fallbackImage;
-
-  const isRing = product.category.toLowerCase().includes("ring");
+  const resolvedSrc = useMemo(() => resolveImageSrc(product), [product]);
+  // Initialize img src once
+  if (!imgSrc && resolvedSrc) {
+    setImgSrc(resolvedSrc);
+  }
 
   const handleAddToCart = () => {
-    // 🔒 Require size for rings
-    if (isRing && !ringSize.trim()) {
+    if (needsRingSize && !ringSize.trim()) {
       alert("Please enter a ring size before adding to cart.");
       return;
     }
@@ -63,12 +110,9 @@ export default function ProductPage({ product }: { product: ProductType }) {
       name: product.name,
       price: product.price,
       discountedPrice: product.salePrice ?? undefined,
-      image:
-        product.image && product.image.trim() !== ""
-          ? product.image
-          : fallbackImage,
+      image: imgSrc || PLACEHOLDER,
       quantity: 1,
-      size: isRing ? ringSize.trim() : undefined, // keep using `size` in cart item
+      size: needsRingSize ? ringSize.trim() : undefined,
     });
   };
 
@@ -77,7 +121,7 @@ export default function ProductPage({ product }: { product: ProductType }) {
       <Head>
         <title>{product.name} | Classy Diamonds</title>
         <meta name="description" content={product.name} />
-        <meta property="og:image" content={squareImage} />
+        <meta property="og:image" content={imgSrc || PLACEHOLDER} />
       </Head>
 
       <div className="min-h-screen flex flex-col bg-[var(--bg-page)] text-[var(--foreground)]">
@@ -99,16 +143,17 @@ export default function ProductPage({ product }: { product: ProductType }) {
         <section className="max-w-7xl mx-auto px-4 md:px-8 py-16 grid grid-cols-1 lg:grid-cols-2 gap-16">
           {/* 🖼 Product Image */}
           <div className="relative w-full max-w-[500px] aspect-square mx-auto rounded-2xl overflow-hidden shadow-2xl bg-[var(--bg-nav)] sm:w-[400px] md:w-[500px]">
-            <Image
-              src={squareImage || placeholder}
-              alt={`Photo of ${product.name}`}
-              fill
-              className="object-cover"
-              priority
-              onError={(e) =>
-                ((e.target as HTMLImageElement).src = placeholder)
-              }
-            />
+            {imgSrc && (
+              <Image
+                src={imgSrc}
+                alt={`Photo of ${product.name}`}
+                fill
+                className="object-cover"
+                priority
+                sizes="(min-width: 1024px) 500px, 90vw"
+                onError={() => setImgSrc(PLACEHOLDER)}
+              />
+            )}
           </div>
 
           {/* 📄 Product Info */}
@@ -141,7 +186,7 @@ export default function ProductPage({ product }: { product: ProductType }) {
             </div>
 
             {/* 🆕 Rings: free-text size instead of dropdown */}
-            {isRing && (
+            {needsRingSize && (
               <div>
                 <label
                   htmlFor="ringSize"
@@ -167,10 +212,10 @@ export default function ProductPage({ product }: { product: ProductType }) {
 
             {/* ✅ Availability / made-to-order notice above Add to Cart */}
             <div className="text-sm md:text-base leading-relaxed bg-[var(--bg-nav)]/60 border border-[var(--bg-nav)] rounded-xl p-4">
-              <strong>Items are subject to availability.</strong> Some pieces are
-              made to order &amp; can take up to 8 weeks for production. You will
-              receive an email within 48 hours of placing order with any delivery
-              delays, that are outside of standard processing time.
+              <strong>Items are subject to availability.</strong> Some pieces
+              are made to order &amp; can take up to 8 weeks for production. You
+              will receive an email within 48 hours of placing order with any
+              delivery delays, that are outside of standard processing time.
             </div>
 
             {/* 🛒 Add to Cart */}
@@ -199,7 +244,7 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
     name: p.name,
     price: p.price,
     salePrice: p.salePrice ?? null,
-    image: p.imageUrl || p.image || "",
+    image: p.imageUrl || p.image || "", // can be local path or remote URL
     slug: p.slug,
     category: p.category,
   };
