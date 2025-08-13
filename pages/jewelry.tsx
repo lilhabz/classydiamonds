@@ -1,4 +1,4 @@
-// 📄 pages/jewelry.tsx – Horizontal (one-line) desktop category photo tiles + sticky bar + matching product cards ✅💎
+// 📄 pages/jewelry.tsx – Horizontal Scroll Category Photos (Desktop) + Mobile Swipe + Matching Product Cards ✅💎
 
 "use client";
 
@@ -17,14 +17,14 @@ export type ProductType = {
   slug: string;
   name: string;
   price: number;
-  salePrice?: number;
+  salePrice?: number | null;
   image: string;
   category: string;
   gender?: "unisex" | "him" | "her";
   description?: string;
 };
 
-// 🔹 Big, readable image tile for filters
+// 🔹 Reusable image tile for category filters (inline component so this file is self-contained)
 function CategoryTile({
   name,
   src,
@@ -50,18 +50,19 @@ function CategoryTile({
             src={src}
             alt={name}
             fill
-            sizes="(max-width: 640px) 200px, (max-width: 1024px) 220px, 240px"
+            sizes="(max-width: 640px) 220px, (max-width: 1024px) 240px, 260px"
             className="object-cover"
+            priority={false}
           />
         ) : null}
 
         {/* overlay for readability */}
         <div className="absolute inset-0 bg-black/40 group-hover:bg-black/30 transition-colors z-10" />
 
-        {/* label — big & readable with subtle shadow */}
+        {/* label — big & readable */}
         <span
           className="absolute inset-0 flex items-center justify-center z-20 font-semibold text-white text-center px-3
-                         text-sm sm:text-base md:text-lg lg:text-xl drop-shadow-[0_1px_2px_rgba(0,0,0,0.7)]"
+                         text-base sm:text-lg md:text-xl lg:text-[22px] drop-shadow-[0_1px_2px_rgba(0,0,0,0.7)]"
         >
           {name}
         </span>
@@ -79,6 +80,7 @@ function CategoryTile({
   );
 }
 
+// helpers
 const isRingCategory = (cat?: string) =>
   (cat ?? "").toLowerCase().includes("ring");
 const formatCategory = (cat: string) =>
@@ -89,7 +91,6 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
   const [visibleCount, setVisibleCount] = useState(8);
   const [activeCategory, setActiveCategory] = useState<string>("All");
   const [genderFilter, setGenderFilter] = useState<"him" | "her" | null>(null);
-  const titleRef = useRef<HTMLHeadingElement>(null);
   const heroRef = useRef<HTMLDivElement>(null);
   const headerRef = useRef<HTMLDivElement>(null);
   const initialMount = useRef(true);
@@ -112,42 +113,43 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
         setGenderFilter("her");
         setActiveCategory("All");
       } else {
-        setActiveCategory(stored);
         setGenderFilter(null);
+        setActiveCategory(stored);
       }
       resetCount();
       localStorage.removeItem("preselectedCategory");
-      setTimeout(scrollBelowHero, 0);
+      setTimeout(() => {
+        if (heroRef.current) {
+          const offset =
+            heroRef.current.offsetTop + heroRef.current.offsetHeight;
+          window.scrollTo({ top: offset, behavior: "smooth" });
+        }
+      }, 0);
     }
   }, []);
 
-  // Build safe, de-duped categories
+  // Build safe, de-duped category list from products
   const allCategories = Array.from(
-    new Set(products.map((p) => (p.category || "").trim()))
-  ).filter(Boolean);
+    new Set(products.map((p) => (p.category || "").trim()).filter(Boolean))
+  );
 
-  // Filters list: "All" + DB categories + Gender tiles (value = machine, label = display)
+  // Filters: "All" + categories + gender tiles
   type FilterItem = { value: string; label: string; isGender?: boolean };
   const baseFilters: FilterItem[] = allCategories.map((value) => ({
-    value, // compare against p.category
-    label: formatCategory(value), // show pretty label
+    value, // value used for comparison with product.category
+    label: formatCategory(value), // pretty label for UI
   }));
   const genderFilters: FilterItem[] = [
     { value: "for-him", label: "For Him", isGender: true },
     { value: "for-her", label: "For Her", isGender: true },
   ];
-  // Ensure we only show 9 category entries + 1 "All" to make 10 total on desktop
-  const limitedBase = baseFilters.slice(
-    0,
-    Math.max(0, 9 - genderFilters.length)
-  ); // leave room for gender tiles
   const filters: FilterItem[] = [
     { value: "All", label: "All" },
-    ...limitedBase,
+    ...baseFilters,
     ...genderFilters,
-  ].slice(0, 10);
+  ];
 
-  // Map labels to the same images you use on Home
+  // Map pretty labels to the same images you use on the Home page
   const categoryImages: Record<string, string | undefined> = {
     All: undefined,
     Engagement: "/category/engagement-cat.jpg",
@@ -164,19 +166,10 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
     categoryImages[label] ??
     `/category/${label.toLowerCase().replace(/\s+/g, "-")}-cat.jpg`;
 
-  const scrollBelowHero = () => {
-    if (heroRef.current) {
-      const offset = heroRef.current.offsetTop + heroRef.current.offsetHeight;
-      window.scrollTo({ top: offset, behavior: "smooth" });
-    }
-  };
-  const scrollToHeader = () => {
-    headerRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-  };
-
   // read query params
   useEffect(() => {
     if (!router.isReady) return;
+
     const { category, gender, scroll } = router.query;
 
     if (gender === "him" || category === "for-him") {
@@ -186,27 +179,28 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
       setGenderFilter("her");
       setActiveCategory("All");
     } else if (typeof category === "string" && category) {
-      setActiveCategory(category);
       setGenderFilter(null);
+      setActiveCategory(category);
     }
 
     resetCount();
-    if (scroll === "true") setTimeout(scrollBelowHero, 0);
+
+    if (scroll === "true" && heroRef.current) {
+      const offset = heroRef.current.offsetTop + heroRef.current.offsetHeight;
+      window.scrollTo({ top: offset, behavior: "smooth" });
+    }
   }, [router.isReady]);
 
-  // when filters change, reset and keep the sticky bar in view
+  // when filters change, reset and keep the header in view
   useEffect(() => {
     if (initialMount.current) {
       initialMount.current = false;
       return;
     }
     resetCount();
-    scrollToHeader();
+    headerRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }, [activeCategory, genderFilter]);
 
-  const handleLoadMore = () => setVisibleCount((prev) => prev + 4);
-
-  // apply filters
   const filteredByGender = genderFilter
     ? products.filter((p) => p.gender === genderFilter)
     : products;
@@ -226,7 +220,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
 
-      {/* 🌟 Hero */}
+      {/* 🌟 Hero Section */}
       <section
         ref={heroRef}
         className="-mt-20 relative w-full h-[80vh] flex items-center justify-center overflow-hidden"
@@ -253,7 +247,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
         <Breadcrumbs />
       </div>
 
-      {/* 💎 Category Header (sticky) */}
+      {/* 💎 Category Filters (sticky header with photo tiles) */}
       <section
         ref={headerRef}
         className="pt-6 pb-6 px-4 sm:px-6 max-w-7xl mx-auto sticky top-14 z-30 
@@ -261,10 +255,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
         style={{ scrollMarginTop: "40px" }}
       >
         <div className="text-center mb-4">
-          <h2
-            ref={titleRef}
-            className="text-2xl sm:text-3xl font-serif font-semibold tracking-wider leading-snug"
-          >
+          <h2 className="text-2xl sm:text-3xl font-serif font-semibold tracking-wider leading-snug">
             {genderFilter === "him"
               ? "For Him"
               : genderFilter === "her"
@@ -275,7 +266,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
           </h2>
         </div>
 
-        {/* 📱 Mobile: swipe row of BIG photo tiles */}
+        {/* 📱 Mobile: swipe row (kept, with category photos) */}
         <div className="md:hidden flex gap-4 overflow-x-auto pb-2 snap-x snap-mandatory [scrollbar-width:none] [-ms-overflow-style:none]">
           <style jsx>{`
             div::-webkit-scrollbar {
@@ -328,56 +319,65 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
           })}
         </div>
 
-        {/* 🖥️ Desktop: one horizontal line (no wrap), 10 evenly-sized tiles */}
-        <div className="hidden md:flex flex-nowrap items-stretch gap-3">
-          {filters.slice(0, 10).map((f) => {
-            const active =
-              (!!f.isGender &&
-                f.value === "for-him" &&
-                genderFilter === "him" &&
-                activeCategory === "All") ||
-              (!!f.isGender &&
-                f.value === "for-her" &&
-                genderFilter === "her" &&
-                activeCategory === "All") ||
-              (!f.isGender && activeCategory === f.value && !genderFilter) ||
-              (f.value === "All" && activeCategory === "All" && !genderFilter);
+        {/* 🖥️ Desktop/tablet: one horizontal line with BIG tiles + horizontal scroll (so they never go tiny) */}
+        <div className="hidden md:block">
+          <div className="flex gap-4 overflow-x-auto pb-2 snap-x snap-mandatory [scrollbar-width:none] [-ms-overflow-style:none]">
+            <style jsx>{`
+              div::-webkit-scrollbar {
+                display: none;
+              }
+            `}</style>
+            {filters.map((f) => {
+              const active =
+                (!!f.isGender &&
+                  f.value === "for-him" &&
+                  genderFilter === "him" &&
+                  activeCategory === "All") ||
+                (!!f.isGender &&
+                  f.value === "for-her" &&
+                  genderFilter === "her" &&
+                  activeCategory === "All") ||
+                (!f.isGender && activeCategory === f.value && !genderFilter) ||
+                (f.value === "All" &&
+                  activeCategory === "All" &&
+                  !genderFilter);
 
-            const imgSrc =
-              f.value === "All" ? undefined : getImageForLabel(f.label);
+              const imgSrc =
+                f.value === "All" ? undefined : getImageForLabel(f.label);
 
-            return (
-              <div
-                key={`d-${f.value}`}
-                className="min-w-0 flex-1" // <= makes all 10 share row width evenly
-              >
-                <CategoryTile
-                  name={f.label}
-                  src={imgSrc}
-                  active={!!active}
-                  onClick={() => {
-                    if (f.value === "for-him") {
-                      setGenderFilter("him");
-                      setActiveCategory("All");
-                    } else if (f.value === "for-her") {
-                      setGenderFilter("her");
-                      setActiveCategory("All");
-                    } else if (f.value === "All") {
-                      setGenderFilter(null);
-                      setActiveCategory("All");
-                    } else {
-                      setGenderFilter(null);
-                      setActiveCategory(f.value);
-                    }
-                  }}
-                />
-              </div>
-            );
-          })}
+              return (
+                <div
+                  key={`d-${f.value}`}
+                  className="snap-start flex-shrink-0 w-[220px] lg:w-[240px] xl:w-[260px]"
+                >
+                  <CategoryTile
+                    name={f.label}
+                    src={imgSrc}
+                    active={!!active}
+                    onClick={() => {
+                      if (f.value === "for-him") {
+                        setGenderFilter("him");
+                        setActiveCategory("All");
+                      } else if (f.value === "for-her") {
+                        setGenderFilter("her");
+                        setActiveCategory("All");
+                      } else if (f.value === "All") {
+                        setGenderFilter(null);
+                        setActiveCategory("All");
+                      } else {
+                        setGenderFilter(null);
+                        setActiveCategory(f.value);
+                      }
+                    }}
+                  />
+                </div>
+              );
+            })}
+          </div>
         </div>
       </section>
 
-      {/* 🛒 Product Grid (unchanged size to match Home) */}
+      {/* 🛒 Product Grid — EXACT sizing to match your index page */}
       <section className="mt-8 px-4 sm:px-6 max-w-7xl mx-auto mb-20">
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
           {filteredProducts.slice(0, visibleCount).map((product) => (
@@ -430,16 +430,18 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
                 onClick={(e) => {
                   e.preventDefault();
                   if (isRingCategory(product.category)) {
+                    // Rings must choose size first → go to PDP
                     router.push(
                       `/category/${product.category}/${product.slug}`
                     );
                     return;
                   }
+                  // Other categories can quick-add
                   addToCart({
                     id: product.id,
                     name: product.name,
                     price: product.price,
-                    discountedPrice: product.salePrice,
+                    discountedPrice: product.salePrice ?? undefined,
                     image: product.image,
                     quantity: 1,
                   });
@@ -455,7 +457,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
         {visibleCount < filteredProducts.length && (
           <div className="flex justify-center mt-10">
             <button
-              onClick={handleLoadMore}
+              onClick={() => setVisibleCount((v) => v + 4)}
               className="px-8 py-4 bg-[var(--foreground)] text-[var(--bg-nav)] rounded-full"
             >
               Load More
@@ -486,7 +488,7 @@ export const getServerSideProps: GetServerSideProps = async ({ query }) => {
     price: p.price,
     salePrice: p.salePrice ?? null,
     image: p.imageUrl || p.image,
-    category: p.category,
+    category: p.category || "",
     gender: p.gender || "unisex",
     description: p.description || "",
   }));
