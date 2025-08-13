@@ -1,4 +1,4 @@
-// 📄 pages/jewelry.tsx – Mobile smaller swipe (all categories) + Desktop big wrapping tiles + matching product card sizes ✅💎
+// 📄 pages/jewelry.tsx – Mobile swipe (smaller, all categories) + Desktop single-line 10 tiles (readable) + product cards match index ✅💎
 
 "use client";
 
@@ -24,68 +24,28 @@ export type ProductType = {
   description?: string;
 };
 
-/* ----------------------------- Category Tile ----------------------------- */
-function CategoryTile({
-  name,
-  src,
-  active,
-  onClick,
-  labelClass = "",
-}: {
-  name: string;
-  src?: string;
-  active: boolean;
-  onClick: () => void;
-  labelClass?: string;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-pressed={active}
-      className="w-full group relative rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-transform duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-indigo-500"
-      title={name}
-    >
-      <div className="relative aspect-[4/3] w-full bg-[#25304f]">
-        {src ? (
-          <Image
-            src={src}
-            alt={name}
-            fill
-            className="object-cover"
-            priority={false}
-          />
-        ) : null}
-        {/* overlay */}
-        <div className="absolute inset-0 bg-black/40 group-hover:bg-black/30 transition-colors z-10" />
-        {/* label */}
-        <span
-          className={[
-            "absolute inset-0 flex items-center justify-center z-20 font-semibold text-white text-center px-3 drop-shadow-[0_1px_2px_rgba(0,0,0,0.7)]",
-            labelClass,
-          ].join(" ")}
-        >
-          {name}
-        </span>
-        {/* active ring */}
-        <span
-          aria-hidden
-          className={[
-            "pointer-events-none absolute inset-0 rounded-2xl",
-            active ? "ring-2 ring-indigo-500" : "",
-          ].join(" ")}
-        />
-      </div>
-    </button>
-  );
-}
-
-/* --------------------------------- Utils -------------------------------- */
+/* ----------------------------- Helpers ----------------------------- */
 const isRingCategory = (cat?: string) => ((cat ?? "").toLowerCase()).includes("ring");
 const formatCategory = (cat: string) =>
   cat.replace(/-/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
 
-/* --------------------------- Main Page Component -------------------------- */
+// Image map like Home. Add more keys if you have more categories.
+const CATEGORY_IMAGES: Record<string, string | undefined> = {
+  All: undefined,
+  Engagement: "/category/engagement-cat.jpg",
+  "Wedding Bands": "/category/wedding-band-cat.jpg",
+  Rings: "/category/ring-cat.jpg",
+  Bracelets: "/category/bracelet-cat.jpg",
+  Necklaces: "/category/necklace-cat.jpg",
+  Earrings: "/category/earring-cat.jpg",
+  Watches: "/category/watches-cat.jpg",
+  "For Him": "/category/his-gift-cat.jpg",
+  "For Her": "/category/her-gift-cat.jpg",
+};
+const getImageForLabel = (label: string) =>
+  CATEGORY_IMAGES[label] ?? `/category/${label.toLowerCase().replace(/\s+/g, "-")}-cat.jpg`;
+
+/* --------------------------- Page --------------------------- */
 export default function JewelryPage({ products }: { products: ProductType[] }) {
   const { addToCart } = useCart();
   const [visibleCount, setVisibleCount] = useState(8);
@@ -99,7 +59,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
   const resetCount = () => setVisibleCount(8);
   useEffect(() => { resetCount(); }, []);
 
-  // Preselected from Home (localStorage)
+  // Preselect from Home via localStorage
   useEffect(() => {
     const stored = localStorage.getItem("preselectedCategory");
     if (stored) {
@@ -124,7 +84,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
     }
   }, []);
 
-  // Build categories from products (de-duped, keep all)
+  // Build categories from DB (de-duped)
   const allCategories = useMemo(
     () =>
       Array.from(
@@ -135,38 +95,9 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
         )
       ),
     [products]
-  ).sort((a, b) => a.localeCompare(b));
+  );
 
-  type FilterItem = { value: string; label: string; isGender?: boolean };
-  const baseFilters: FilterItem[] = allCategories.map((value) => ({
-    value,                 // raw DB value used for filtering
-    label: formatCategory(value), // pretty label
-  }));
-  const genderFilters: FilterItem[] = [
-    { value: "for-him", label: "For Him", isGender: true },
-    { value: "for-her", label: "For Her", isGender: true },
-  ];
-
-  // Show ALL categories everywhere (no slices)
-  const filters: FilterItem[] = [{ value: "All", label: "All" }, ...baseFilters, ...genderFilters];
-
-  // Category images like Home; fallback path is slugified label
-  const categoryImages: Record<string, string | undefined> = {
-    All: undefined,
-    Engagement: "/category/engagement-cat.jpg",
-    "Wedding Bands": "/category/wedding-band-cat.jpg",
-    Rings: "/category/ring-cat.jpg",
-    Bracelets: "/category/bracelet-cat.jpg",
-    Necklaces: "/category/necklace-cat.jpg",
-    Earrings: "/category/earring-cat.jpg",
-    Watches: "/category/watches-cat.jpg",
-    "For Him": "/category/his-gift-cat.jpg",
-    "For Her": "/category/her-gift-cat.jpg",
-  };
-  const getImageForLabel = (label: string) =>
-    categoryImages[label] ?? `/category/${label.toLowerCase().replace(/\s+/g, "-")}-cat.jpg`;
-
-  // Query params from URL
+  // URL query handling (support ?category= & ?gender= & ?scroll=true)
   useEffect(() => {
     if (!router.isReady) return;
     const { category, gender, scroll } = router.query;
@@ -190,7 +121,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
     }
   }, [router.isReady]);
 
-  // Scroll to header when filters change
+  // Scroll back to header when filters change
   useEffect(() => {
     if (initialMount.current) {
       initialMount.current = false;
@@ -200,7 +131,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
     headerRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }, [activeCategory, genderFilter]);
 
-  // Filtering
+  // Apply filters
   const filteredByGender = genderFilter ? products.filter((p) => p.gender === genderFilter) : products;
   const filteredProducts = filteredByGender.filter((p) =>
     activeCategory === "All" ? true : p.category === activeCategory
@@ -257,7 +188,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
           </h2>
         </div>
 
-        {/* 📱 Mobile: same style as Home, just a bit smaller & includes ALL categories */}
+        {/* 📱 Mobile: Home-style swipe, a bit smaller, shows ALL categories */}
         <section className="sm:hidden px-0 mt-4 mb-2">
           <div className="overflow-x-auto">
             <div className="flex gap-3 w-max py-2">
@@ -268,109 +199,148 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
                   setGenderFilter(null);
                   setActiveCategory("All");
                 }}
-                className="group relative rounded-xl overflow-hidden shadow-md hover:shadow-2xl hover:scale-105 transition-transform duration-300 flex-shrink-0 w-40"
+                className="group relative rounded-xl overflow-hidden shadow-md hover:shadow-2xl hover:scale-105 transition-transform duration-300 flex-shrink-0 w-36"
                 aria-label="All"
               >
                 <div className="relative aspect-[4/3] w-full">
                   <div className="absolute inset-0 bg-[#25304f]" />
                   <div className="absolute inset-0 bg-black/35" />
-                  <span className="absolute inset-0 flex items-center justify-center text-sm font-semibold text-white">
+                  <span className="absolute inset-0 flex items-center justify-center text-[13px] font-semibold text-white">
                     All
                   </span>
                 </div>
               </button>
 
-              {filters
-                .filter((f) => f.value !== "All")
-                .map((f, i) => {
-                  const imgSrc = f.isGender ? getImageForLabel(f.label) : getImageForLabel(f.label);
-                  const label = f.label;
+              {["for-him", "for-her", ...allCategories].map((cat, i) => {
+                const label =
+                  cat === "for-him" ? "For Him" : cat === "for-her" ? "For Her" : formatCategory(cat);
+                const img = getImageForLabel(label);
 
-                  return (
-                    <button
-                      key={`m-${f.value}`}
-                      type="button"
-                      onClick={() => {
-                        if (f.isGender) {
-                          setGenderFilter(f.value === "for-him" ? "him" : "her");
-                          setActiveCategory("All");
-                        } else {
-                          setGenderFilter(null);
-                          setActiveCategory(f.value);
-                        }
-                      }}
-                      className="group relative rounded-xl overflow-hidden shadow-md hover:shadow-2xl hover:scale-105 transition-transform duration-300 flex-shrink-0 w-40"
-                      aria-label={label}
-                    >
-                      <div className="relative aspect-[4/3] w-full">
-                        {imgSrc ? (
-                          <Image
-                            src={imgSrc}
-                            alt={label}
-                            fill
-                            priority={i < 2}
-                            className="object-cover rounded-xl group-hover:scale-105 transition-transform duration-300"
-                          />
-                        ) : (
-                          <div className="absolute inset-0 bg-[#25304f]" />
-                        )}
-                        <div className="absolute inset-0 bg-black/35" />
-                        <span className="absolute inset-0 flex items-center justify-center text-sm font-semibold text-white">
-                          {label}
-                        </span>
-                      </div>
-                    </button>
-                  );
-                })}
+                return (
+                  <button
+                    key={`m-${cat}`}
+                    type="button"
+                    onClick={() => {
+                      if (cat === "for-him") {
+                        setGenderFilter("him");
+                        setActiveCategory("All");
+                      } else if (cat === "for-her") {
+                        setGenderFilter("her");
+                        setActiveCategory("All");
+                      } else {
+                        setGenderFilter(null);
+                        setActiveCategory(cat);
+                      }
+                    }}
+                    className="group relative rounded-xl overflow-hidden shadow-md hover:shadow-2xl hover:scale-105 transition-transform duration-300 flex-shrink-0 w-36"
+                    aria-label={label}
+                  >
+                    <div className="relative aspect-[4/3] w-full">
+                      {img ? (
+                        <Image
+                          src={img}
+                          alt={label}
+                          fill
+                          priority={i < 2}
+                          className="object-cover rounded-xl group-hover:scale-105 transition-transform duration-300"
+                        />
+                      ) : (
+                        <div className="absolute inset-0 bg-[#25304f]" />
+                      )}
+                      <div className="absolute inset-0 bg-black/35" />
+                      <span className="absolute inset-0 flex items-center justify-center text-[13px] font-semibold text-white text-center px-2">
+                        {label}
+                      </span>
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           </div>
         </section>
 
-        {/* 🖥️ Desktop: big photo tiles that WRAP (no scroll, no shrinking) */}
-        <div className="hidden sm:flex flex-wrap justify-center gap-4">
-          {filters.map((f) => {
-            const active =
-              (!!f.isGender && f.value === "for-him" && genderFilter === "him" && activeCategory === "All") ||
-              (!!f.isGender && f.value === "for-her" && genderFilter === "her" && activeCategory === "All") ||
-              (!f.isGender && activeCategory === f.value && !genderFilter) ||
-              (f.value === "All" && activeCategory === "All" && !genderFilter);
-
-            const imgSrc = f.value === "All" ? undefined : getImageForLabel(f.label);
-
-            return (
-              <div
-                key={`d-${f.value}`}
-                className="basis-[220px] lg:basis-[240px] xl:basis-[260px] flex-shrink-0"
+        {/* 🖥️ Desktop: ONE LINE of 10 readable tiles (no scroll) */}
+        <div className="hidden md:block">
+          {/* Wider container so 10 columns aren't tiny */}
+          <div className="mx-auto w-full max-w-[1600px] px-2">
+            <div className="grid grid-cols-10 gap-2">
+              {/* All */}
+              <button
+                type="button"
+                onClick={() => {
+                  setGenderFilter(null);
+                  setActiveCategory("All");
+                }}
+                className="group relative rounded-xl overflow-hidden shadow-md hover:shadow-lg transition"
+                title="All"
               >
-                <CategoryTile
-                  name={f.label}
-                  src={imgSrc}
-                  active={!!active}
-                  onClick={() => {
-                    if (f.value === "for-him") {
-                      setGenderFilter("him");
-                      setActiveCategory("All");
-                    } else if (f.value === "for-her") {
-                      setGenderFilter("her");
-                      setActiveCategory("All");
-                    } else if (f.value === "All") {
-                      setGenderFilter(null);
-                      setActiveCategory("All");
-                    } else {
-                      setGenderFilter(null);
-                      setActiveCategory(f.value);
-                    }
-                  }}
-                  // keep desktop labels comfortably large
-                  labelClass="text-base md:text-lg lg:text-[18px]"
-                />
-              </div>
-            );
-          })}
+                <div className="relative aspect-[3/2] w-full bg-[#25304f]">
+                  <div className="absolute inset-0 bg-black/35" />
+                  <span className="absolute inset-0 flex items-center justify-center z-20 font-semibold text-white text-center px-2 text-[12px] sm:text-[13px]">
+                    All
+                  </span>
+                </div>
+              </button>
+
+              {["for-him", "for-her", ...allCategories].map((cat) => {
+                const label =
+                  cat === "for-him" ? "For Him" : cat === "for-her" ? "For Her" : formatCategory(cat);
+                const img = getImageForLabel(label);
+                const active =
+                  (cat === "for-him" && genderFilter === "him" && activeCategory === "All") ||
+                  (cat === "for-her" && genderFilter === "her" && activeCategory === "All") ||
+                  (cat !== "for-him" && cat !== "for-her" && activeCategory === cat && !genderFilter);
+
+                return (
+                  <button
+                    key={`d-${cat}`}
+                    type="button"
+                    onClick={() => {
+                      if (cat === "for-him") {
+                        setGenderFilter("him");
+                        setActiveCategory("All");
+                      } else if (cat === "for-her") {
+                        setGenderFilter("her");
+                        setActiveCategory("All");
+                      } else {
+                        setGenderFilter(null);
+                        setActiveCategory(cat);
+                      }
+                    }}
+                    className="group relative rounded-xl overflow-hidden shadow-md hover:shadow-lg transition"
+                    title={label}
+                    aria-pressed={active}
+                  >
+                    <div className="relative aspect-[3/2] w-full bg-[#25304f]">
+                      {img && (
+                        <Image
+                          src={img}
+                          alt={label}
+                          fill
+                          className="object-cover"
+                        />
+                      )}
+                      <div className="absolute inset-0 bg-black/35" />
+                      <span className="absolute inset-0 flex items-center justify-center z-20 font-semibold text-white text-center px-2 text-[12px] sm:text-[13px]">
+                        {label}
+                      </span>
+                      <span
+                        aria-hidden
+                        className={[
+                          "pointer-events-none absolute inset-0 rounded-xl",
+                          active ? "ring-2 ring-indigo-500" : "",
+                        ].join(" ")}
+                      />
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
         </div>
       </section>
 
-      {/* 🛒 Product Grid — EXACT sizing to match your index page */}
+      {/* 🛒 Product Grid — EXACT index sizing */}
       <section className="mt-8 px-4 sm:px-6 max-w-7xl mx-auto mb-20">
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
           {filteredProducts.slice(0, visibleCount).map((product) => (
