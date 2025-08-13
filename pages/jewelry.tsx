@@ -1,4 +1,4 @@
-// 📄 pages/jewelry.tsx – Category Filters Styled Like Home (one-line, big tiles, safe categories) ✅💎
+// 📄 pages/jewelry.tsx – One-line, smaller category tiles (no duplicate "All") ✅💎
 
 "use client";
 
@@ -24,7 +24,7 @@ export type ProductType = {
   description?: string;
 };
 
-// 🔹 Reusable tile for category filters (inline)
+// 🔹 Category tile (button fills its wrapper! important for sizing)
 function CategoryTile({
   name,
   src,
@@ -41,25 +41,24 @@ function CategoryTile({
       type="button"
       onClick={onClick}
       aria-pressed={active}
-      className="w-full group relative rounded-xl overflow-hidden shadow-md hover:shadow-2xl hover:scale-105 transition-transform duration-300 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-indigo-500"
+      className="w-full group relative rounded-xl overflow-hidden shadow-md hover:shadow-2xl hover:scale-[1.02] transition-transform duration-200 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-indigo-500"
     >
-      {/* Give the wrapper a fallback bg so tiles are visible even if image 404s */}
+      {/* fallback bg so tile is visible even if image 404s */}
       <div className="relative aspect-[4/3] w-full bg-[#25304f]">
         {src ? (
           <Image
             src={src}
             alt={name}
             fill
-            sizes="(max-width: 768px) 224px, 256px"
-            className="object-cover rounded-xl group-hover:scale-110 transition-transform duration-300"
+            sizes="(max-width: 768px) 176px, 128px"
+            className="object-cover rounded-xl"
+            priority={false}
           />
         ) : null}
-        {/* overlay */}
         <div className="absolute inset-0 bg-black/35 z-10" />
-        <span className="absolute inset-0 flex items-center justify-center z-20 font-semibold text-sm sm:text-base text-white">
+        <span className="absolute inset-0 flex items-center justify-center z-20 font-semibold text-xs md:text-xs lg:text-sm text-white text-center px-1">
           {name}
         </span>
-        {/* active ring */}
         <span
           aria-hidden
           className={[
@@ -128,20 +127,25 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
   // Each filter has a machine value (from DB) and a pretty label (for UI)
   type FilterItem = { value: string; label: string; isGender?: boolean };
 
-  const categoryFilters: FilterItem[] = [
-    ...allCategoriesRaw.map((value) => ({
-      value, // e.g., "wedding-bands" or "Wedding Bands"
-      label: formatCategory(value), // display as "Wedding Bands"
-    })),
+  const baseFilters: FilterItem[] = allCategoriesRaw.map((value) => ({
+    value, // e.g., "wedding-bands" or "Wedding Bands"
+    label: formatCategory(value), // display as "Wedding Bands"
+  }));
+
+  // Optional gender tiles (count toward your 10)
+  const genderFilters: FilterItem[] = [
     { value: "for-him", label: "For Him", isGender: true },
     { value: "for-her", label: "For Her", isGender: true },
   ];
 
-  // Build a single typed list that includes "All"
-  const allFilter: FilterItem = { value: "All", label: "All" };
-  const filters: FilterItem[] = [allFilter, ...categoryFilters];
+  // Final list, with a SINGLE "All" up front
+  const filters: FilterItem[] = [
+    { value: "All", label: "All" },
+    ...baseFilters,
+    ...genderFilters,
+  ];
 
-  // ✅ Image map (matches Home page "Shop by Category" filenames)
+  // ✅ Image map (matches your Home naming)
   const categoryImages: Record<string, string | undefined> = {
     All: undefined,
     Engagement: "/category/engagement-cat.jpg",
@@ -150,7 +154,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
     Bracelets: "/category/bracelet-cat.jpg",
     Necklaces: "/category/necklace-cat.jpg",
     Earrings: "/category/earring-cat.jpg",
-    Watches: "/category/watches-cat.jpg", // ensure this exists if you show Watches
+    Watches: "/category/watches-cat.jpg", // ensure this exists if shown
     "For Him": "/category/his-gift-cat.jpg",
     "For Her": "/category/her-gift-cat.jpg",
   };
@@ -256,9 +260,9 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
       {/* 💎 Category Filters */}
       <section
         ref={headerRef}
-        className="pt-20 pb-12 px-4 sm:px-6 max-w-7xl mx-auto"
+        className="pt-20 pb-6 px-4 sm:px-6 max-w-7xl mx-auto"
       >
-        <div className="text-center mb-6">
+        <div className="text-center mb-4">
           <h2
             ref={titleRef}
             className="text-2xl sm:text-3xl font-serif font-semibold"
@@ -273,68 +277,107 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
           </h2>
         </div>
 
-        {/* ✅ All devices: one-line scrollable categories (bigger tiles) */}
-        <div className="flex gap-6 overflow-x-auto pb-4 snap-x snap-mandatory [scrollbar-width:none] [-ms-overflow-style:none]">
+        {/* Mobile: swipe row (bigger for touch) */}
+        <div className="md:hidden flex gap-4 overflow-x-auto pb-2 snap-x snap-mandatory [scrollbar-width:none] [-ms-overflow-style:none]">
           <style jsx>{`
             div::-webkit-scrollbar {
               display: none;
             }
           `}</style>
+          {filters.map((f) => {
+            const active =
+              (!!f.isGender &&
+                f.value === "for-him" &&
+                genderFilter === "him" &&
+                activeCategory === "All") ||
+              (!!f.isGender &&
+                f.value === "for-her" &&
+                genderFilter === "her" &&
+                activeCategory === "All") ||
+              (!f.isGender && activeCategory === f.value && !genderFilter) ||
+              (f.value === "All" && activeCategory === "All" && !genderFilter);
 
-          {([{ value: "All", label: "All" }] as FilterItem[])
-            .concat(filters)
-            .map((f) => {
-              // Determine active state using VALUES, not labels
-              const active =
-                (!!f.isGender &&
-                  f.value === "for-him" &&
-                  genderFilter === "him" &&
-                  activeCategory === "All") ||
-                (!!f.isGender &&
-                  f.value === "for-her" &&
-                  genderFilter === "her" &&
-                  activeCategory === "All") ||
-                (!f.isGender && activeCategory === f.value && !genderFilter) ||
-                (f.value === "All" &&
-                  activeCategory === "All" &&
-                  !genderFilter);
+            const imgSrc =
+              f.value === "All" ? undefined : getImageForLabel(f.label);
 
-              const imgSrc =
-                f.value === "All" ? undefined : getImageForLabel(f.label);
+            return (
+              <div
+                key={`${f.value}:${f.label}`}
+                className="snap-start flex-shrink-0 w-40"
+              >
+                <CategoryTile
+                  name={f.label}
+                  src={imgSrc}
+                  active={!!active}
+                  onClick={() => {
+                    if (f.value === "for-him") {
+                      setGenderFilter("him");
+                      setActiveCategory("All");
+                    } else if (f.value === "for-her") {
+                      setGenderFilter("her");
+                      setActiveCategory("All");
+                    } else if (f.value === "All") {
+                      setGenderFilter(null);
+                      setActiveCategory("All");
+                    } else {
+                      setGenderFilter(null);
+                      setActiveCategory(f.value);
+                    }
+                  }}
+                />
+              </div>
+            );
+          })}
+        </div>
 
-              return (
-                <div
-                  key={`${f.value}:${f.label}`}
-                  className="snap-start flex-shrink-0 w-56 md:w-64"
-                >
-                  <CategoryTile
-                    name={f.label}
-                    src={imgSrc}
-                    active={!!active}
-                    onClick={() => {
-                      if (f.value === "for-him") {
-                        setGenderFilter("him");
-                        setActiveCategory("All");
-                      } else if (f.value === "for-her") {
-                        setGenderFilter("her");
-                        setActiveCategory("All");
-                      } else if (f.value === "All") {
-                        setGenderFilter(null);
-                        setActiveCategory("All");
-                      } else {
-                        setGenderFilter(null);
-                        setActiveCategory(f.value);
-                      }
-                    }}
-                  />
-                </div>
-              );
-            })}
+        {/* Desktop: single visible row, smaller tiles so ~10 fit */}
+        <div className="hidden md:flex gap-3 overflow-x-hidden">
+          {filters.map((f) => {
+            const active =
+              (!!f.isGender &&
+                f.value === "for-him" &&
+                genderFilter === "him" &&
+                activeCategory === "All") ||
+              (!!f.isGender &&
+                f.value === "for-her" &&
+                genderFilter === "her" &&
+                activeCategory === "All") ||
+              (!f.isGender && activeCategory === f.value && !genderFilter) ||
+              (f.value === "All" && activeCategory === "All" && !genderFilter);
+
+            const imgSrc =
+              f.value === "All" ? undefined : getImageForLabel(f.label);
+
+            return (
+              <div key={`${f.value}:${f.label}`} className="flex-shrink-0 w-24">
+                <CategoryTile
+                  name={f.label}
+                  src={imgSrc}
+                  active={!!active}
+                  onClick={() => {
+                    if (f.value === "for-him") {
+                      setGenderFilter("him");
+                      setActiveCategory("All");
+                    } else if (f.value === "for-her") {
+                      setGenderFilter("her");
+                      setActiveCategory("All");
+                    } else if (f.value === "All") {
+                      setGenderFilter(null);
+                      setActiveCategory("All");
+                    } else {
+                      setGenderFilter(null);
+                      setActiveCategory(f.value);
+                    }
+                  }}
+                />
+              </div>
+            );
+          })}
         </div>
       </section>
 
       {/* 🛒 Product Grid */}
-      <section className="mt-8 px-4 sm:px-6 max-w-7xl mx-auto mb-20">
+      <section className="mt-6 px-4 sm:px-6 max-w-7xl mx-auto mb-20">
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
           {filteredProducts.slice(0, visibleCount).map((product) => (
             <div
@@ -357,7 +400,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
                     src={product.image}
                     alt={product.name}
                     fill
-                    className="object-cover group-hover:scale-110 transition-transform"
+                    className="object-cover"
                   />
                 </div>
                 <div className="p-4 text-center flex flex-col flex-grow justify-between">
