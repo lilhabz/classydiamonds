@@ -93,7 +93,7 @@ function CategoryTile({
           aria-hidden
           className={[
             "pointer-events-none absolute inset-0 rounded-xl",
-            active ? "ring-2 ring-indigo-500" : "",
+            active ? "ring-2 ring-white" : "",
           ].join(" ")}
         />
       </div>
