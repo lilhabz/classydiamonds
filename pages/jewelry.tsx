@@ -71,6 +71,7 @@ function CategoryTile({
       title={label}
       className={[
         "group relative rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-transform duration-150 flex-shrink-0 hover:scale-[1.03]",
+        active ? "ring-2 ring-white" : "",
         "focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-indigo-500",
         className,
       ].join(" ")}
