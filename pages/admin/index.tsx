@@ -1,28 +1,42 @@
-// ✅ pages/admin/index.tsx – Admin Orders (no CSV/PDF) 🔐🛠️
+// ✅ pages/admin/index.tsx – Admin Orders (no CSV/PDF) 🔐🛠️ (hardened)
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import Head from "next/head";
 import Link from "next/link";
 import Image from "next/image";
 import { useSession } from "next-auth/react";
 import Breadcrumbs from "@/components/Breadcrumbs";
 
+/* ---------- Safe helpers ---------- */
+const safeStr = (v: unknown, fallback = ""): string =>
+  typeof v === "string" ? v : v == null ? fallback : String(v);
+
+const safeSlice = (v: unknown, start?: number, end?: number): string =>
+  safeStr(v).slice(start, end);
+
+const safeArray = <T,>(v: unknown): T[] => (Array.isArray(v) ? (v as T[]) : []);
+
+const safeNum = (v: unknown, fallback = 0): number =>
+  typeof v === "number" && !Number.isNaN(v) ? v : fallback;
+
+/* ---------- Types (make possibly-undefined fields optional to match API reality) ---------- */
 interface OrderItem {
-  name: string;
-  quantity: number;
+  name?: string;
+  quantity?: number;
   price?: number;
   discountedPrice?: number;
   salePrice?: number;
   originalPrice?: number;
-  image?: string;
-  size?: string; // 🆕 ring size
+  image?: string | null;
+  size?: string; // ring size
+  unitPrice?: number; // new flow
 }
 
 interface Order {
-  _id: string;
-  customerName: string;
-  customerEmail: string;
-  customerAddress: string;
+  _id?: string;
+  customerName?: string;
+  customerEmail?: string;
+  customerAddress?: string;
   shipping_address?: {
     street?: string;
     line2?: string;
@@ -30,16 +44,18 @@ interface Order {
     state?: string;
     zip?: string;
     country?: string;
-  };
-  shipping_address_string: string;
+  } | null;
+  shipping_address_string?: string;
   addressSource?: "Stripe" | "Account" | "Unknown";
-  items: OrderItem[];
-  amount: number;
-  createdAt: string;
-  stripeSessionId: string;
-  orderNumber?: number;
+  items?: OrderItem[];
+  amount?: number;
+  createdAt?: string | Date;
+  stripeSessionId?: string;
+  orderNumber?: number | null;
   shipped?: boolean;
   archived?: boolean;
+  currency?: string;
+  paymentStatus?: string;
 }
 
 export default function AdminOrdersPage() {
@@ -62,24 +78,29 @@ export default function AdminOrdersPage() {
     try {
       const res = await fetch("/api/admin/orders");
       if (!res.ok) throw new Error(`Status ${res.status}`);
-      const json: { orders: Order[]; error?: string } = await res.json();
-      setOrders(json.orders || []);
+      const json = (await res.json()) as { orders?: Order[]; error?: string };
+      setOrders(safeArray<Order>(json.orders));
     } catch (err) {
       console.error("❌ Failed to fetch orders:", err);
+      setOrders([]);
     } finally {
       setLoading(false);
     }
   }
 
   // 🚚 Mark as shipped
-  async function confirmAndShip(orderId: string) {
-    if (!confirm(`📦 Mark order ${orderId} as shipped?`)) return;
+  async function confirmAndShip(orderStripeSessionId?: string) {
+    const id = safeStr(orderStripeSessionId);
+    if (!id) return alert("Missing order id");
+    if (!confirm(`📦 Mark order ${id.slice(-8)} as shipped?`)) return;
     const adminName =
-      (session?.user as any)?.firstName || session?.user?.name?.split(" ")[0];
+      (session?.user as any)?.firstName ||
+      safeStr(session?.user?.name).split(" ")[0] ||
+      "Admin";
     const res = await fetch("/api/shipped", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ orderId, adminName }),
+      body: JSON.stringify({ orderId: id, adminName }),
     });
     if (res.ok) fetchOrders();
     else {
@@ -89,14 +110,18 @@ export default function AdminOrdersPage() {
   }
 
   // 🗂 Archive order
-  async function archiveOrder(orderId: string) {
-    if (!confirm(`🗂 Archive order ${orderId}?`)) return;
+  async function archiveOrder(orderStripeSessionId?: string) {
+    const id = safeStr(orderStripeSessionId);
+    if (!id) return alert("Missing order id");
+    if (!confirm(`🗂 Archive order ${id.slice(-8)}?`)) return;
     const adminName =
-      (session?.user as any)?.firstName || session?.user?.name?.split(" ")[0];
+      (session?.user as any)?.firstName ||
+      safeStr(session?.user?.name).split(" ")[0] ||
+      "Admin";
     const res = await fetch("/api/admin/archived", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ orderId, adminName }),
+      body: JSON.stringify({ orderId: id, adminName }),
     });
     if (res.ok) fetchOrders();
     else {
@@ -105,21 +130,30 @@ export default function AdminOrdersPage() {
     }
   }
 
-  // 🔍 Filter & paginate
-  const filtered = orders.filter((o) => {
-    if (o.archived || o.shipped) return false;
+  // 🔍 Filter & paginate (all guards)
+  const filtered = useMemo(() => {
     const q = searchQuery.toLowerCase();
-    const matchQ =
-      o.customerName.toLowerCase().includes(q) ||
-      o.customerEmail.toLowerCase().includes(q) ||
-      o.stripeSessionId.toLowerCase().includes(q);
-    const date = new Date(o.createdAt);
-    const after = startDate ? date >= new Date(startDate) : true;
-    const before = endDate ? date <= new Date(endDate) : true;
-    return matchQ && after && before;
-  });
+    const start = startDate ? new Date(startDate) : null;
+    const end = endDate ? new Date(endDate) : null;
 
-  const totalPages = Math.ceil(filtered.length / itemsPerPage);
+    return safeArray<Order>(orders).filter((o) => {
+      if (o.archived || o.shipped) return false;
+
+      const name = safeStr(o.customerName).toLowerCase();
+      const email = safeStr(o.customerEmail).toLowerCase();
+      const sess = safeStr(o.stripeSessionId).toLowerCase();
+      const matchQ =
+        !q || name.includes(q) || email.includes(q) || sess.includes(q);
+
+      const created = o.createdAt ? new Date(o.createdAt) : new Date(0);
+      const after = start ? created >= start : true;
+      const before = end ? created <= end : true;
+
+      return matchQ && after && before;
+    });
+  }, [orders, searchQuery, startDate, endDate]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / itemsPerPage));
   const pageData = filtered.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
@@ -189,116 +223,153 @@ export default function AdminOrdersPage() {
 
       {/* 📦 Orders list */}
       <div id="print-area" className="space-y-8">
-        {pageData.map((o) => (
-          <div key={o._id} className="bg-[var(--bg-nav)] p-6 rounded-xl shadow">
-            <h2 className="text-xl font-semibold mb-1">
-              {o.customerName} ({o.customerEmail})
-            </h2>
-            <p className="text-sm text-gray-300 mb-2">
-              🔢 Order #: {o.orderNumber ?? "N/A"} | 🆔{" "}
-              {o.stripeSessionId.slice(-8)}
-            </p>
+        {pageData.map((o) => {
+          const orderId = safeStr(o._id);
+          const customerName = safeStr(o.customerName, "Customer");
+          const customerEmail = safeStr(o.customerEmail, "—");
+          const shortSess = safeSlice(o.stripeSessionId, -8) || "—";
+          const orderNo =
+            typeof o.orderNumber === "number" ? o.orderNumber : null;
 
-            <p className="mb-2">
-              📍{" "}
-              {o.shipping_address
-                ? `${o.shipping_address.street}${
-                    o.shipping_address.line2
-                      ? `, ${o.shipping_address.line2}`
-                      : ""
-                  }, ${o.shipping_address.city}, ${o.shipping_address.state} ${
-                    o.shipping_address.zip
-                  }, ${o.shipping_address.country}`
-                : o.shipping_address_string}
-            </p>
-            {o.addressSource && (
-              <p className="text-xs text-gray-400 italic">
-                (Address Source: {o.addressSource})
+          // Address string
+          const addrStr = o?.shipping_address
+            ? `${safeStr(o.shipping_address.street)}${
+                safeStr(o.shipping_address.line2)
+                  ? `, ${safeStr(o.shipping_address.line2)}`
+                  : ""
+              }, ${safeStr(o.shipping_address.city)}, ${safeStr(
+                o.shipping_address.state
+              )} ${safeStr(o.shipping_address.zip)}, ${safeStr(
+                o.shipping_address.country
+              )}`
+            : safeStr(o.shipping_address_string) || safeStr(o.customerAddress);
+
+          // Created date
+          const created = o.createdAt ? new Date(o.createdAt) : new Date();
+          const createdLabel = isNaN(created as any)
+            ? ""
+            : created.toLocaleString();
+
+          const list = safeArray<OrderItem>(o.items);
+
+          return (
+            <div
+              key={orderId || shortSess}
+              className="bg-[var(--bg-nav)] p-6 rounded-xl shadow"
+            >
+              <h2 className="text-xl font-semibold mb-1">
+                {customerName} ({customerEmail})
+              </h2>
+
+              <p className="text-sm text-gray-300 mb-2">
+                🔢 Order #: {orderNo ?? "N/A"} | 🆔 {shortSess}
               </p>
-            )}
 
-            <p className="mb-4">
-              🧾 Date: {new Date(o.createdAt).toLocaleString()}
-            </p>
+              <p className="mb-2">📍 {addrStr}</p>
+              {o.addressSource && (
+                <p className="text-xs text-gray-400 italic">
+                  (Address Source: {o.addressSource})
+                </p>
+              )}
 
-            <ul className="mb-4 list-disc pl-4 text-sm">
-              {o.items.map((i, idx) => {
-                const qty = i.quantity ?? 1;
-                const displayPrice =
-                  i.salePrice ??
-                  i.discountedPrice ??
-                  i.originalPrice ??
-                  i.price ??
-                  0;
-                const basePrice = i.originalPrice ?? i.price ?? displayPrice;
-                const orig = basePrice * qty;
-                const sale = displayPrice * qty;
+              <p className="mb-4">🧾 Date: {createdLabel}</p>
 
-                return (
-                  <li key={idx} className="flex items-center gap-2">
-                    {/* No placeholder: show image only if present, otherwise a neutral box */}
-                    {i.image && i.image.trim() !== "" ? (
-                      <Image
-                        src={i.image}
-                        alt={i.name}
-                        width={48}
-                        height={48}
-                        className="rounded object-cover"
-                        unoptimized
-                      />
-                    ) : (
-                      <div className="w-12 h-12 rounded bg-[#1f2a44] border border-[#364763] text-[10px] flex items-center justify-center">
-                        No photo
-                      </div>
-                    )}
+              <ul className="mb-4 list-disc pl-4 text-sm">
+                {list.map((i, idx) => {
+                  const qty = safeNum(i?.quantity, 1);
+                  // Prefer unitPrice (new flow), else fallbacks
+                  const displayUnit =
+                    (typeof i?.salePrice === "number"
+                      ? i?.salePrice
+                      : undefined) ??
+                    (typeof i?.discountedPrice === "number"
+                      ? i?.discountedPrice
+                      : undefined) ??
+                    (typeof i?.unitPrice === "number"
+                      ? i?.unitPrice
+                      : undefined) ??
+                    (typeof i?.originalPrice === "number"
+                      ? i?.originalPrice
+                      : undefined) ??
+                    (typeof i?.price === "number" ? i?.price : 0);
 
-                    <span>
-                      {i.name}
-                      {i.size && (
-                        <span className="ml-2 text-xs px-2 py-0.5 rounded-full bg-[#364763] text-white align-middle">
-                          Size: {i.size}
-                        </span>
-                      )}{" "}
-                      – x{qty} –{" "}
-                      {displayPrice < basePrice ? (
-                        <>
-                          <span className="line-through text-gray-400 mr-1">
-                            ${orig.toFixed(2)}
-                          </span>
-                          <span className="text-green-400 font-semibold">
-                            ${sale.toFixed(2)}
-                          </span>
-                        </>
+                  const baseUnit =
+                    (typeof i?.originalPrice === "number"
+                      ? i?.originalPrice
+                      : undefined) ??
+                    (typeof i?.price === "number" ? i?.price : displayUnit);
+
+                  const orig = safeNum(baseUnit) * qty;
+                  const sale = safeNum(displayUnit) * qty;
+
+                  const imgSrc = safeStr(i?.image, "");
+                  const hasImg = imgSrc.trim().length > 0;
+
+                  return (
+                    <li key={idx} className="flex items-center gap-2">
+                      {hasImg ? (
+                        <Image
+                          src={imgSrc}
+                          alt={safeStr(i?.name, "Item")}
+                          width={48}
+                          height={48}
+                          className="rounded object-cover"
+                          unoptimized
+                        />
                       ) : (
-                        <span>${sale.toFixed(2)}</span>
+                        <div className="w-12 h-12 rounded bg-[#1f2a44] border border-[#364763] text-[10px] flex items-center justify-center">
+                          No photo
+                        </div>
                       )}
-                    </span>
-                  </li>
-                );
-              })}
-            </ul>
 
-            <div className="flex justify-between items-center">
-              <span className="text-lg font-semibold">
-                💰 Total: ${o.amount.toFixed(2)}
-              </span>
-              <div className="space-x-2">
-                <button
-                  onClick={() => confirmAndShip(o.stripeSessionId)}
-                  className="bg-green-600 px-4 py-2 rounded text-sm"
-                >
-                  Mark as Shipped 🚚
-                </button>
-                <button
-                  onClick={() => archiveOrder(o.stripeSessionId)}
-                  className="bg-yellow-600 px-4 py-2 rounded text-sm"
-                >
-                  Archive 🗂
-                </button>
+                      <span>
+                        {safeStr(i?.name, "Item")}
+                        {i?.size && (
+                          <span className="ml-2 text-xs px-2 py-0.5 rounded-full bg-[#364763] text-white align-middle">
+                            Size: {i.size}
+                          </span>
+                        )}{" "}
+                        – x{qty} –{" "}
+                        {sale < orig ? (
+                          <>
+                            <span className="line-through text-gray-400 mr-1">
+                              ${orig.toFixed(2)}
+                            </span>
+                            <span className="text-green-400 font-semibold">
+                              ${sale.toFixed(2)}
+                            </span>
+                          </>
+                        ) : (
+                          <span>${sale.toFixed(2)}</span>
+                        )}
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
+
+              <div className="flex justify-between items-center">
+                <span className="text-lg font-semibold">
+                  💰 Total: ${safeNum(o.amount).toFixed(2)}
+                </span>
+                <div className="space-x-2">
+                  <button
+                    onClick={() => confirmAndShip(o.stripeSessionId)}
+                    className="bg-green-600 px-4 py-2 rounded text-sm"
+                  >
+                    Mark as Shipped 🚚
+                  </button>
+                  <button
+                    onClick={() => archiveOrder(o.stripeSessionId)}
+                    className="bg-yellow-600 px-4 py-2 rounded text-sm"
+                  >
+                    Archive 🗂
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* 📄 Pagination */}
@@ -329,4 +400,3 @@ export default function AdminOrdersPage() {
     </div>
   );
 }
-// ✅ pages/admin/index.tsx – Admin Orders (no CSV/PDF) 🔐🛠️
