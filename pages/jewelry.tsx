@@ -82,7 +82,7 @@ function CategoryTile({
         <div className="absolute inset-0 bg-black/40 group-hover:bg-black/30 transition-colors z-10" />
         <span
           className={[
-            "absolute inset-0 flex items-center justify-center z-20 font-semibold text-white text-center px-3",
+            "absolute inset-0 flex items-center justify-center z-30 font-semibold text-white text-center px-3",
             "drop-shadow-[0_1px_2px_rgba(0,0,0,0.7)]",
             textSizeClass,
           ].join(" ")}
@@ -92,7 +92,7 @@ function CategoryTile({
         <span
           aria-hidden
           className={[
-            "pointer-events-none absolute inset-0 rounded-xl",
+            "pointer-events-none absolute inset-0 rounded-xl z-20",
             active ? "ring-2 ring-white" : "",
           ].join(" ")}
         />
