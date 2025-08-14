@@ -1,34 +1,47 @@
 // 📂 pages/api/admin/order.ts – Return single order details by orderId (incl. size + discounts + image)
+// Compatible with both legacy (originalPrice/salePrice) and new (unitPrice) items
+
 import type { NextApiRequest, NextApiResponse } from "next";
-import { ObjectId } from "mongodb";
 import clientPromise from "@/lib/mongodb";
 
+interface RawOrderItem {
+  name: string;
+  quantity: number;
+  // legacy fields
+  originalPrice?: number;
+  salePrice?: number;
+  discountedPrice?: number;
+  price?: number;
+  // new field from checkout.ts
+  unitPrice?: number;
+  image?: string;
+  size?: string | null;
+}
+
 interface RawOrder {
-  _id: ObjectId;
-  customerName: string;
-  customerEmail: string;
-  customerAddress: string;
-  shipping_address_string?: string;
-  items?: Array<{
-    name: string;
-    quantity: number;
-    originalPrice: number;
-    salePrice?: number;
-    image?: string;
-    size?: string; // 🆕 ring size
-  }>;
-  amount: number;
-  currency?: string;
-  paymentStatus?: string;
+  customerName?: string;
+  customerEmail?: string;
+  customerAddress?: string; // string form
+  shipping_address_string?: string; // string form
   address?: {
-    street?: string;
+    // normalized shape (new)
+    line1?: string;
     line2?: string;
     city?: string;
     state?: string;
-    zip?: string;
+    postal_code?: string;
     country?: string;
+    // legacy shape
+    street?: string;
+    zip?: string;
   };
-  createdAt: Date;
+  items?: RawOrderItem[];
+  amount?: number; // set in webhook
+  saleTotal?: number; // set in checkout
+  originalTotal?: number; // set in checkout
+  currency?: string;
+  paymentStatus?: string;
+  createdAt?: Date | string;
   stripeSessionId: string;
   orderNumber?: number;
   shipped?: boolean;
@@ -41,16 +54,16 @@ type OrderResponse =
       items: {
         name: string;
         quantity: number;
-        price: number; // original price
-        discountedPrice?: number; // sale price if discounted
+        price: number; // unit price we display
+        discountedPrice?: number; // sale price if you want to show both
         image?: string;
-        size?: string; // 🆕 ring size
+        size?: string | null;
       }[];
       amount: number;
       currency: string;
       paymentStatus: string;
-      customerAddress: string;
-      address: RawOrder["address"];
+      customerAddress: string; // formatted string
+      address: RawOrder["address"]; // raw object if you need it elsewhere
       createdAt: string;
       shipped: boolean;
       archived: boolean;
@@ -73,9 +86,14 @@ export default async function handler(
 
   try {
     const client = await clientPromise;
+    if (!client) {
+      return res
+        .status(500)
+        .json({ error: "DB not initialized (check MONGODB_URI)" });
+    }
     const db = client.db();
 
-    // Note: orderId here is the Stripe session id per your existing code
+    // Note: orderId here is the Stripe session id per your success.tsx
     const o = await db
       .collection<RawOrder>("orders")
       .findOne({ stripeSessionId: orderId });
@@ -84,31 +102,74 @@ export default async function handler(
       return res.status(404).json({ error: "Order not found" });
     }
 
-    const items =
-      o.items?.map((i) => ({
+    // Amount: prefer finalized `amount` (webhook), else fall back
+    const amount =
+      (typeof o.amount === "number" ? o.amount : undefined) ??
+      (typeof o.saleTotal === "number" ? o.saleTotal : undefined) ??
+      (typeof o.originalTotal === "number" ? o.originalTotal : 0);
+
+    // Build a human-friendly address string with new or legacy keys
+    const addr = o.address || {};
+    const line1 = addr.line1 ?? (addr as any).street ?? "";
+    const line2 = addr.line2 ?? "";
+    const city = addr.city ?? "";
+    const state = addr.state ?? "";
+    const postal = addr.postal_code ?? (addr as any).zip ?? "";
+    const country = addr.country ?? "";
+
+    const formattedAddress =
+      o.customerAddress ||
+      [line1, line2, [city, state].filter(Boolean).join(", "), postal, country]
+        .filter(Boolean)
+        .join(", ");
+
+    // Items: prefer unitPrice (new), fall back to legacy fields (all as numbers)
+    const items = (o.items || []).map((i) => {
+      const unit =
+        (typeof i.unitPrice === "number" ? i.unitPrice : undefined) ??
+        (typeof i.salePrice === "number" ? i.salePrice : undefined) ??
+        (typeof i.discountedPrice === "number"
+          ? i.discountedPrice
+          : undefined) ??
+        (typeof i.originalPrice === "number" ? i.originalPrice : undefined) ??
+        (typeof i.price === "number" ? i.price : 0);
+
+      const discounted =
+        (typeof i.salePrice === "number" ? i.salePrice : undefined) ??
+        (typeof i.discountedPrice === "number" ? i.discountedPrice : undefined);
+
+      return {
         name: i.name,
-        quantity: i.quantity,
-        price: i.originalPrice,
-        discountedPrice: i.salePrice,
+        quantity: typeof i.quantity === "number" ? i.quantity : 1,
+        price: unit, // guaranteed number
+        discountedPrice: discounted, // number | undefined
         image: i.image || "",
-        size: i.size, // 🆕 include size in response
-      })) || [];
+        size: i.size ?? null,
+      };
+    });
+
+    const createdAtIso =
+      typeof o.createdAt === "string"
+        ? new Date(o.createdAt).toISOString()
+        : o.createdAt instanceof Date
+        ? o.createdAt.toISOString()
+        : new Date().toISOString();
 
     return res.status(200).json({
-      orderNumber: o.orderNumber ?? null,
+      orderNumber: typeof o.orderNumber === "number" ? o.orderNumber : null,
       items,
-      amount: o.amount,
+      amount,
       currency: o.currency ?? "usd",
       paymentStatus: o.paymentStatus ?? "",
-      customerAddress: o.customerAddress,
+      customerAddress: formattedAddress,
       address: o.address ?? {},
-      createdAt: o.createdAt.toISOString(),
-      shipped: o.shipped ?? false,
-      archived: o.archived ?? false,
-      shipping_address_string: o.shipping_address_string ?? "",
+      createdAt: createdAtIso,
+      shipped: !!o.shipped,
+      archived: !!o.archived,
+      shipping_address_string: o.shipping_address_string ?? formattedAddress,
     });
   } catch (err: any) {
-    console.error("❌ Failed to fetch order:", err);
+    console.error("❌ Failed to fetch order:", err?.message || err);
     return res.status(500).json({ error: "Server error" });
   }
 }

@@ -25,7 +25,8 @@ export type ProductType = {
 };
 
 /* --------------------------------- Helpers -------------------------------- */
-const isRingCategory = (cat?: string) => ((cat ?? "").toLowerCase()).includes("ring");
+const isRingCategory = (cat?: string) =>
+  (cat ?? "").toLowerCase().includes("ring");
 const formatCategory = (cat: string) =>
   cat.replace(/-/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
 
@@ -41,7 +42,8 @@ const CATEGORY_IMAGES: Record<string, string | undefined> = {
   "For Him": "/category/his-gift-cat.jpg",
 };
 const imageFor = (label: string) =>
-  CATEGORY_IMAGES[label] ?? `/category/${label.toLowerCase().replace(/\s+/g, "-")}-cat.jpg`;
+  CATEGORY_IMAGES[label] ??
+  `/category/${label.toLowerCase().replace(/\s+/g, "-")}-cat.jpg`;
 
 /* ------------------------------ Category Tile ----------------------------- */
 function CategoryTile({
@@ -74,7 +76,9 @@ function CategoryTile({
       ].join(" ")}
     >
       <div className={["relative w-full bg-[#25304f]", aspect].join(" ")}>
-        {img ? <Image src={img} alt={label} fill className="object-cover" /> : null}
+        {img ? (
+          <Image src={img} alt={label} fill className="object-cover" />
+        ) : null}
         <div className="absolute inset-0 bg-black/40 group-hover:bg-black/30 transition-colors z-10" />
         <span
           className={[
@@ -109,7 +113,9 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
   const router = useRouter();
 
   const resetCount = () => setVisibleCount(8);
-  useEffect(() => { resetCount(); }, []);
+  useEffect(() => {
+    resetCount();
+  }, []);
 
   // Preselect from Home via localStorage
   useEffect(() => {
@@ -129,7 +135,8 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
       localStorage.removeItem("preselectedCategory");
       setTimeout(() => {
         if (heroRef.current) {
-          const offset = heroRef.current.offsetTop + heroRef.current.offsetHeight;
+          const offset =
+            heroRef.current.offsetTop + heroRef.current.offsetHeight;
           window.scrollTo({ top: offset, behavior: "smooth" });
         }
       }, 0);
@@ -140,11 +147,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
   const allCategoriesRaw = useMemo(
     () =>
       Array.from(
-        new Set(
-          products
-            .map((p) => (p.category || "").trim())
-            .filter(Boolean)
-        )
+        new Set(products.map((p) => (p.category || "").trim()).filter(Boolean))
       ),
     [products]
   );
@@ -164,7 +167,12 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
     () =>
       allCategoriesRaw.filter((c) => {
         const lc = c.toLowerCase();
-        return lc !== "for-him" && lc !== "for her" && lc !== "for-her" && lc !== "for him";
+        return (
+          lc !== "for-him" &&
+          lc !== "for her" &&
+          lc !== "for-her" &&
+          lc !== "for him"
+        );
       }),
     [allCategoriesRaw]
   );
@@ -175,7 +183,10 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
     [coreCategories]
   );
   const extras = useMemo(
-    () => coreCategories.filter((c) => !preferredOrder.includes(c)).sort((a, b) => a.localeCompare(b)),
+    () =>
+      coreCategories
+        .filter((c) => !preferredOrder.includes(c))
+        .sort((a, b) => a.localeCompare(b)),
     [coreCategories]
   );
 
@@ -231,13 +242,16 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
   }, [activeCategory, genderFilter]);
 
   // Filtering
-  const filteredByGender = genderFilter ? products.filter((p) => p.gender === genderFilter) : products;
+  const filteredByGender = genderFilter
+    ? products.filter((p) => p.gender === genderFilter)
+    : products;
   const filteredProducts = filteredByGender.filter((p) =>
     activeCategory === "All" ? true : p.category === activeCategory
   );
 
   const pageTitle = "Jewelry Collection | Classy Diamonds";
-  const pageDesc = "Explore timeless engagement rings, wedding bands, necklaces, earrings, and more.";
+  const pageDesc =
+    "Explore timeless engagement rings, wedding bands, necklaces, earrings, and more.";
 
   return (
     <div className="min-h-screen flex flex-col bg-[var(--bg-page)] text-[var(--foreground)]">
@@ -252,7 +266,12 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
         ref={heroRef}
         className="-mt-20 relative w-full h-[80vh] flex items-center justify-center overflow-hidden"
       >
-        <Image src="/hero-jewelry.jpg" alt="Jewelry Hero" fill className="object-cover" />
+        <Image
+          src="/hero-jewelry.jpg"
+          alt="Jewelry Hero"
+          fill
+          className="object-cover"
+        />
         <div className="absolute inset-0 bg-black/50 pointer-events-none" />
         <div className="relative z-10 text-center px-4">
           <h1 className="text-3xl md:text-6xl font-serif font-bold tracking-wider leading-snug mb-4 text-[var(--foreground)]">
@@ -293,7 +312,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
             className="overflow-x-auto show-scrollbar"
             style={{
               WebkitOverflowScrolling: "touch", // smooth iOS scroll
-              scrollbarWidth: "thin",           // Firefox thin bar
+              scrollbarWidth: "thin", // Firefox thin bar
             }}
           >
             {/* Visible horizontal scrollbar for WebKit */}
@@ -317,18 +336,26 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
               {mobileOrder.map((key, i) => {
                 const isGender = key === "For Her" || key === "For Him";
                 const catValue =
-                  key === "All" ? "All" : isGender ? (key === "For Her" ? "for-her" : "for-him") : key;
-                const label =
                   key === "All"
                     ? "All"
                     : isGender
-                    ? key
-                    : formatCategory(key);
+                    ? key === "For Her"
+                      ? "for-her"
+                      : "for-him"
+                    : key;
+                const label =
+                  key === "All" ? "All" : isGender ? key : formatCategory(key);
                 const img = key === "All" ? undefined : imageFor(label);
                 const active =
-                  (key === "All" && activeCategory === "All" && !genderFilter) ||
-                  (key === "For Him" && genderFilter === "him" && activeCategory === "All") ||
-                  (key === "For Her" && genderFilter === "her" && activeCategory === "All") ||
+                  (key === "All" &&
+                    activeCategory === "All" &&
+                    !genderFilter) ||
+                  (key === "For Him" &&
+                    genderFilter === "him" &&
+                    activeCategory === "All") ||
+                  (key === "For Her" &&
+                    genderFilter === "her" &&
+                    activeCategory === "All") ||
                   (!isGender && activeCategory === key && !genderFilter);
 
                 return (
@@ -370,18 +397,26 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
               {desktopOrder.map((key, i) => {
                 const isGender = key === "For Her" || key === "For Him";
                 const catValue =
-                  key === "All" ? "All" : isGender ? (key === "For Her" ? "for-her" : "for-him") : key;
-                const label =
                   key === "All"
                     ? "All"
                     : isGender
-                    ? key
-                    : formatCategory(key);
+                    ? key === "For Her"
+                      ? "for-her"
+                      : "for-him"
+                    : key;
+                const label =
+                  key === "All" ? "All" : isGender ? key : formatCategory(key);
                 const img = key === "All" ? undefined : imageFor(label);
                 const active =
-                  (key === "All" && activeCategory === "All" && !genderFilter) ||
-                  (key === "For Him" && genderFilter === "him" && activeCategory === "All") ||
-                  (key === "For Her" && genderFilter === "her" && activeCategory === "All") ||
+                  (key === "All" &&
+                    activeCategory === "All" &&
+                    !genderFilter) ||
+                  (key === "For Him" &&
+                    genderFilter === "him" &&
+                    activeCategory === "All") ||
+                  (key === "For Her" &&
+                    genderFilter === "her" &&
+                    activeCategory === "All") ||
                   (!isGender && activeCategory === key && !genderFilter);
 
                 return (
@@ -427,7 +462,10 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
               <Link
                 href={
                   genderFilter
-                    ? { pathname: `/category/${product.category}/${product.slug}`, query: { gender: genderFilter } }
+                    ? {
+                        pathname: `/category/${product.category}/${product.slug}`,
+                        query: { gender: genderFilter },
+                      }
                     : `/category/${product.category}/${product.slug}`
                 }
                 className="flex-1 flex flex-col h-full"
@@ -466,11 +504,14 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
                 onClick={(e) => {
                   e.preventDefault();
                   if (isRingCategory(product.category)) {
-                    router.push(`/category/${product.category}/${product.slug}`);
+                    router.push(
+                      `/category/${product.category}/${product.slug}`
+                    );
                     return;
                   }
                   addToCart({
                     id: product.id,
+                    slug: product.slug, // ✅ include slug in quick add
                     name: product.name,
                     price: product.price,
                     discountedPrice: product.salePrice ?? undefined,
@@ -508,7 +549,11 @@ export const getServerSideProps: GetServerSideProps = async ({ query }) => {
   if (query.category === "for-him") genderQuery = "him";
   if (query.category === "for-her") genderQuery = "her";
   const filter = genderQuery ? { gender: genderQuery } : {};
-  const productsRaw = await client.db().collection("products").find(filter).toArray();
+  const productsRaw = await client
+    .db()
+    .collection("products")
+    .find(filter)
+    .toArray();
   const products: ProductType[] = productsRaw.map((p: any) => ({
     id: p._id.toString(),
     slug: p.slug,

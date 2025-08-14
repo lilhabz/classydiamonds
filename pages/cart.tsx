@@ -1,18 +1,18 @@
-// 📤 pages/cart.tsx – Cart with Discount Display, Enhanced Pricing UX, and Address Prefill 💎
+// 📤 pages/cart.tsx – Guest Checkout Enabled: Shipping Form + Prefill + Unified Payload 💎
 
 "use client";
 
 import Head from "next/head";
 import Link from "next/link";
 import { useCart } from "@/context/CartContext";
-import { useState } from "react";
-import { useSession } from "next-auth/react"; // ← import session hook
+import { useEffect, useState } from "react";
+import { useSession } from "next-auth/react";
 import Breadcrumbs from "@/components/Breadcrumbs";
 
 export default function CartPage() {
-  const { cartItems, removeFromCart, increaseQty, decreaseQty, clearCart } =
-    useCart();
-  const { data: session } = useSession(); // ← grab session data
+  const { cartItems, removeFromCart, increaseQty, decreaseQty } = useCart();
+  const { data: session } = useSession();
+
   const [isLoading, setIsLoading] = useState(false);
 
   // 🧮 Calculate cart total using salePrice
@@ -21,29 +21,100 @@ export default function CartPage() {
     0
   );
 
+  // 🧾 Shipping / Contact fields (guest-friendly, prefilled if logged in)
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+
+  const [line1, setLine1] = useState("");
+  const [line2, setLine2] = useState("");
+  const [city, setCity] = useState("");
+  const [state, setState] = useState("");
+  const [zip, setZip] = useState("");
+  const [country, setCountry] = useState("US");
+
+  // 📥 Prefill from session (if available) but do not require login
+  useEffect(() => {
+    if (!session?.user) return;
+
+    const u = session.user as any;
+    setName((prev) => prev || u?.name || "");
+    setEmail((prev) => prev || u?.email || "");
+    setPhone((prev) => prev || u?.phone || "");
+
+    const addr = u?.address || {};
+    setLine1((prev) => prev || addr?.street || addr?.line1 || "");
+    setLine2((prev) => prev || addr?.line2 || "");
+    setCity((prev) => prev || addr?.city || "");
+    setState((prev) => prev || addr?.state || "");
+    setZip((prev) => prev || addr?.zip || addr?.postal_code || "");
+    setCountry((prev) => prev || addr?.country || "US");
+  }, [session]);
+
+  const validate = () => {
+    if (cartItems.length === 0) {
+      alert("Your cart is empty.");
+      return false;
+    }
+    if (!name.trim()) {
+      alert("Please enter your full name.");
+      return false;
+    }
+    if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      alert("Please enter a valid email.");
+      return false;
+    }
+    if (
+      !line1.trim() ||
+      !city.trim() ||
+      !state.trim() ||
+      !zip.trim() ||
+      !country.trim()
+    ) {
+      alert(
+        "Please complete your shipping address (street, city, state, ZIP, country)."
+      );
+      return false;
+    }
+    return true;
+  };
+
   const handleCheckout = async () => {
-    if (cartItems.length === 0) return;
+    if (!validate()) return;
     setIsLoading(true);
 
     try {
+      const payload = {
+        items: cartItems.map((i) => ({
+          id: i.id,
+          slug: i.slug,
+          name: i.name,
+          quantity: i.quantity,
+          price: i.salePrice, // charge salePrice
+          image: i.image,
+          size: i.size ?? null,
+        })),
+        customer: {
+          name: name.trim(),
+          email: email.trim(),
+          phone: phone.trim(),
+          address: {
+            line1: line1.trim(),
+            line2: line2.trim(),
+            city: city.trim(),
+            state: state.trim(),
+            postal_code: zip.trim(),
+            country: country.trim(),
+          },
+        },
+        notes: "", // keep for future order notes if needed
+        paymentMethod: "stripe",
+      };
+
       const response = await fetch("/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          items: cartItems, // 🆕 includes size if present
-          // ← pass user info into checkout metadata
-          name: session?.user?.name || "",
-          email: session?.user?.email || "",
-          phone: (session?.user as any)?.phone || "",
-          address: {
-            street1: (session?.user as any)?.address?.street || "",
-            street2: (session?.user as any)?.address?.line2 || "",
-            city: (session?.user as any)?.address?.city || "",
-            state: (session?.user as any)?.address?.state || "",
-            zip: (session?.user as any)?.address?.zip || "",
-            country: (session?.user as any)?.address?.country || "",
-          },
-        }),
+        body: JSON.stringify(payload),
       });
 
       const text = await response.text();
@@ -87,11 +158,7 @@ export default function CartPage() {
           {cartItems.length > 0 ? (
             cartItems.map((item) => (
               <div
-                key={
-                  `${item.id}::${
-                    item.size ?? ""
-                  }` /* 🆕 stable key for id+size */
-                }
+                key={`${item.id}::${item.size ?? ""}`}
                 className="flex flex-col md:flex-row gap-4 items-center bg-[var(--bg-nav)] rounded-xl p-4 sm:p-6 shadow"
               >
                 {/* 📸 Product Image */}
@@ -144,9 +211,7 @@ export default function CartPage() {
                   {/* 🔢 Quantity Controls */}
                   <div className="mt-3 flex items-center justify-center md:justify-start gap-3">
                     <button
-                      onClick={
-                        () => decreaseQty(item.id, item.size) /* 🆕 pass size */
-                      }
+                      onClick={() => decreaseQty(item.id, item.size)}
                       className="w-7 h-7 rounded-full bg-gray-700 text-white text-lg hover:bg-gray-600"
                     >
                       −
@@ -155,9 +220,7 @@ export default function CartPage() {
                       {item.quantity}
                     </span>
                     <button
-                      onClick={
-                        () => increaseQty(item.id, item.size) /* 🆕 pass size */
-                      }
+                      onClick={() => increaseQty(item.id, item.size)}
                       className="w-7 h-7 rounded-full bg-gray-700 text-white text-lg hover:bg-gray-600"
                     >
                       +
@@ -167,9 +230,7 @@ export default function CartPage() {
 
                 {/* ❌ Remove Button */}
                 <button
-                  onClick={
-                    () => removeFromCart(item.id, item.size) /* 🆕 pass size */
-                  }
+                  onClick={() => removeFromCart(item.id, item.size)}
                   className="mt-4 md:mt-0 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition"
                 >
                   Remove
@@ -189,13 +250,15 @@ export default function CartPage() {
           )}
         </section>
 
-        {/* 📋 Order Summary + Checkout */}
+        {/* 📋 Order Summary + Shipping + Checkout */}
         <aside className="lg:w-[35%] bg-[#25304f] rounded-xl p-6 shadow flex flex-col gap-6 sticky top-24 h-fit">
           <h2 className="text-xl font-bold border-b border-[var(--bg-page)] pb-2">
             Order Summary
           </h2>
+
           <p className="text-sm">Items: {cartItems.length}</p>
           <p className="text-lg font-semibold">Total: ${total.toFixed(2)}</p>
+
           {/* 🛒 Continue Shopping */}
           <Link
             href="/jewelry"
@@ -203,12 +266,83 @@ export default function CartPage() {
           >
             ← Continue Shopping
           </Link>
+
+          {/* 🚚 Shipping Details (works for guests & logged-in users) */}
+          <div className="mt-2">
+            <h3 className="text-lg font-semibold mb-3">Shipping Details</h3>
+
+            <div className="grid grid-cols-1 gap-3">
+              <input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Full Name *"
+                className="w-full rounded-lg px-3 py-2 bg-[var(--bg-page)] text-white placeholder-gray-400 border border-transparent focus:outline-none focus:ring-2 focus:ring-white/20"
+              />
+              <input
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Email *"
+                type="email"
+                className="w-full rounded-lg px-3 py-2 bg-[var(--bg-page)] text-white placeholder-gray-400 border border-transparent focus:outline-none focus:ring-2 focus:ring-white/20"
+              />
+              <input
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="Phone (optional)"
+                className="w-full rounded-lg px-3 py-2 bg-[var(--bg-page)] text-white placeholder-gray-400 border border-transparent focus:outline-none focus:ring-2 focus:ring-white/20"
+              />
+
+              <input
+                value={line1}
+                onChange={(e) => setLine1(e.target.value)}
+                placeholder="Street Address *"
+                className="w-full rounded-lg px-3 py-2 bg-[var(--bg-page)] text-white placeholder-gray-400 border border-transparent focus:outline-none focus:ring-2 focus:ring-white/20"
+              />
+              <input
+                value={line2}
+                onChange={(e) => setLine2(e.target.value)}
+                placeholder="Apt, Suite, etc. (optional)"
+                className="w-full rounded-lg px-3 py-2 bg-[var(--bg-page)] text-white placeholder-gray-400 border border-transparent focus:outline-none focus:ring-2 focus:ring-white/20"
+              />
+
+              <div className="grid grid-cols-2 gap-3">
+                <input
+                  value={city}
+                  onChange={(e) => setCity(e.target.value)}
+                  placeholder="City *"
+                  className="w-full rounded-lg px-3 py-2 bg-[var(--bg-page)] text-white placeholder-gray-400 border border-transparent focus:outline-none focus:ring-2 focus:ring-white/20"
+                />
+                <input
+                  value={state}
+                  onChange={(e) => setState(e.target.value)}
+                  placeholder="State *"
+                  className="w-full rounded-lg px-3 py-2 bg-[var(--bg-page)] text-white placeholder-gray-400 border border-transparent focus:outline-none focus:ring-2 focus:ring-white/20"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <input
+                  value={zip}
+                  onChange={(e) => setZip(e.target.value)}
+                  placeholder="ZIP / Postal Code *"
+                  className="w-full rounded-lg px-3 py-2 bg-[var(--bg-page)] text-white placeholder-gray-400 border border-transparent focus:outline-none focus:ring-2 focus:ring-white/20"
+                />
+                <input
+                  value={country}
+                  onChange={(e) => setCountry(e.target.value)}
+                  placeholder="Country *"
+                  className="w-full rounded-lg px-3 py-2 bg-[var(--bg-page)] text-white placeholder-gray-400 border border-transparent focus:outline-none focus:ring-2 focus:ring-white/20"
+                />
+              </div>
+            </div>
+          </div>
+
           {/* 🔒 Checkout Button */}
-          <div className="mt-4">
+          <div className="mt-2">
             <button
               onClick={handleCheckout}
-              disabled={isLoading}
-              className="w-full px-6 py-3 bg-white text-[#1f2a44] rounded-full font-semibold flex items-center justify-center gap-2 hover:bg-gray-100 transition hover:scale-105"
+              disabled={isLoading || cartItems.length === 0}
+              className="w-full px-6 py-3 bg-white text-[#1f2a44] rounded-full font-semibold flex items-center justify-center gap-2 hover:bg-gray-100 transition hover:scale-105 disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {isLoading ? (
                 "Processing..."

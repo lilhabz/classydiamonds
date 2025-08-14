@@ -107,6 +107,7 @@ export default function ProductPage({ product }: { product: ProductType }) {
 
     addToCart({
       id: product.id,
+      slug: product.slug, // ✅ include slug
       name: product.name,
       price: product.price,
       discountedPrice: product.salePrice ?? undefined,

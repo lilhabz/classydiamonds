@@ -1,12 +1,53 @@
-// 📦 pages/api/checkout.ts – Stripe Checkout with Order DB Reference 💎 (size-aware)
+// 📦 pages/api/checkout.ts – Guest-friendly Stripe Checkout (size + slug metadata, flexible payload)
 
 import type { NextApiRequest, NextApiResponse } from "next";
 import Stripe from "stripe";
-import clientPromise from "@/lib/mongodb"; // ✅ MongoDB connection
+import clientPromise from "@/lib/mongodb";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string, {
+const STRIPE_KEY = process.env.STRIPE_SECRET_KEY;
+if (!STRIPE_KEY) {
+  throw new Error("Missing STRIPE_SECRET_KEY in environment.");
+}
+
+// Tip: keep your project’s pinned Stripe API version here
+const stripe = new Stripe(STRIPE_KEY, {
   apiVersion: "2025-04-30.basil",
 });
+
+type IncomingItem = {
+  id: string;
+  slug?: string;
+  name: string;
+  image?: string;
+  quantity: number;
+  size?: string | null;
+
+  // any of these can show up depending on the caller
+  price?: number; // may already be SALE price (new cart.tsx)
+  discountedPrice?: number; // old shape
+  salePrice?: number; // sometimes present
+  originalPrice?: number; // sometimes present
+};
+
+type IncomingAddress =
+  | {
+      // new cart.tsx shape
+      line1?: string;
+      line2?: string;
+      city?: string;
+      state?: string;
+      postal_code?: string;
+      country?: string;
+    }
+  | {
+      // older shape
+      street1?: string;
+      street2?: string;
+      city?: string;
+      state?: string;
+      zip?: string;
+      country?: string;
+    };
 
 export default async function handler(
   req: NextApiRequest,
@@ -18,96 +59,131 @@ export default async function handler(
   }
 
   try {
-    const {
-      items,
-      name,
-      email,
-      address = {},
-      notes,
-      paymentMethod,
-      phone,
-    } = req.body as {
-      items: Array<{
-        id: string;
-        name: string;
-        price: number;
-        discountedPrice?: number;
-        image?: string;
-        quantity: number;
-        size?: string; // 🆕 may be present
-      }>;
-      name?: string;
-      email?: string;
-      address?: any;
-      notes?: string;
-      paymentMethod?: string;
-      phone?: string;
+    // Accept BOTH payload styles:
+    //  - new: { items, customer: { name, email, phone, address: { line1, ... } }, notes, paymentMethod }
+    //  - old: { items, name, email, phone, address: { street1, ... }, notes, paymentMethod }
+    const body = req.body || {};
+
+    const items: IncomingItem[] = Array.isArray(body.items) ? body.items : [];
+    if (!items.length) {
+      return res.status(400).json({ error: "No items to checkout." });
+    }
+
+    // Normalize customer fields
+    const customerBlock = body.customer || {};
+    const name: string | undefined =
+      customerBlock.name ?? body.name ?? undefined;
+    const email: string | undefined =
+      customerBlock.email ?? body.email ?? undefined;
+    const phone: string | undefined =
+      customerBlock.phone ?? body.phone ?? undefined;
+    const addr: IncomingAddress = customerBlock.address ?? body.address ?? {};
+
+    // Normalize address to a single shape
+    const address = {
+      line1: (addr as any).line1 ?? (addr as any).street1 ?? "",
+      line2: (addr as any).line2 ?? (addr as any).street2 ?? "",
+      city: (addr as any).city ?? "",
+      state: (addr as any).state ?? "",
+      postal_code: (addr as any).postal_code ?? (addr as any).zip ?? "",
+      country: (addr as any).country ?? "US",
     };
 
-    // 🛑 Validate cart
-    if (!items || !Array.isArray(items) || items.length === 0) {
-      return res.status(400).json({ error: "Invalid items data" });
-    }
+    const notes: string = body.notes ?? "";
+    const paymentMethod: string = body.paymentMethod ?? "stripe";
 
-    // 🧮 Totals
-    const originalTotal = items.reduce(
-      (sum, i) => sum + i.price * i.quantity,
-      0
-    );
-    const saleTotal = items.reduce(
-      (sum, i) => sum + (i.discountedPrice ?? i.price) * i.quantity,
-      0
-    );
-    const discountAmount = Math.round((originalTotal - saleTotal) * 100);
+    // Compute each line item's unit amount (prefer sale/discounted if provided)
+    // Priority: discountedPrice → salePrice → price → originalPrice
+    const normalized = items.map((i) => {
+      const unit =
+        i.discountedPrice ?? i.salePrice ?? i.price ?? i.originalPrice;
 
-    // 🎟️ Coupon if needed (cart-wide discount)
-    let couponId: string | undefined;
-    if (discountAmount > 0) {
-      const coupon = await stripe.coupons.create({
-        amount_off: discountAmount,
-        currency: "usd",
-        duration: "once",
-      });
-      couponId = coupon.id;
-    }
+      if (unit == null) {
+        throw new Error(`Missing price for item "${i.name}" (${i.id}).`);
+      }
 
-    // 📍 Address fallback
-    const street1 = address.street1 || "[No Street]";
-    const street2 = address.street2 || "";
-    const city = address.city || "[No City]";
-    const state = address.state || "[No State]";
-    const zip = address.zip || "[No Zip]";
-    const country = address.country || "[No Country]";
+      return {
+        ...i,
+        unit_amount_cents: Math.round(unit * 100),
+      };
+    });
 
-    // 🗄 Save order to MongoDB before Stripe checkout (includes size in items)
+    // Create a pre-checkout order stub in MongoDB (guest-safe)
     const client = await clientPromise;
     const db = client.db();
-    const ordersCollection = db.collection("orders");
+    const orders = db.collection("orders");
+
+    const originalTotal = normalized.reduce(
+      (sum, i) =>
+        sum + (i.originalPrice ?? i.price ?? i.salePrice ?? 0) * i.quantity,
+      0
+    );
+    const saleTotal = normalized.reduce(
+      (sum, i) => sum + (i.unit_amount_cents / 100) * i.quantity,
+      0
+    );
 
     const orderDoc = {
-      orderNumber: undefined, // set in webhook
-      customerName: name || "[No Name]",
-      customerEmail: email || "[No Email]",
-      customerPhone: phone || "[No Phone]",
-      address: { street1, street2, city, state, zip, country },
-      notes: notes || "",
-      paymentMethod: paymentMethod || "stripe",
-      items, // keep full items incl. size
+      orderNumber: undefined as string | undefined, // (set in webhook if you generate one)
+      customerName: name ?? "[Guest]",
+      customerEmail: email ?? "",
+      customerPhone: phone ?? "",
+      address,
+      notes,
+      paymentMethod,
+      items: normalized.map((i) => ({
+        id: i.id,
+        slug: i.slug ?? "",
+        name: i.name,
+        image: i.image ?? "",
+        quantity: i.quantity,
+        size: i.size ?? null,
+        unitPrice: i.unit_amount_cents / 100,
+      })),
       originalTotal,
       saleTotal,
-      stripeSessionId: undefined, // updated in webhook
+      stripeSessionId: undefined as string | undefined,
       createdAt: new Date(),
       shipped: false,
       archived: false,
+      isGuest: true,
     };
 
-    const orderResult = await ordersCollection.insertOne(orderDoc);
+    const { insertedId } = await orders.insertOne(orderDoc);
 
-    // 🚀 Stripe Session (lightweight metadata; add size to product_data)
+    // Build Stripe line_items (with metadata: id, slug, size)
+    const line_items: Stripe.Checkout.SessionCreateParams.LineItem[] =
+      normalized.map((i) => ({
+        price_data: {
+          currency: "usd",
+          unit_amount: i.unit_amount_cents,
+          product_data: {
+            name: i.size ? `${i.name} (Size ${i.size})` : i.name,
+            images: i.image && i.image.startsWith("http") ? [i.image] : [],
+            description: i.size ? `Ring size: ${i.size}` : undefined,
+            metadata: {
+              id: i.id,
+              slug: i.slug ?? "",
+              size: i.size ?? "",
+            },
+          },
+        },
+        quantity: i.quantity,
+      }));
+
+    // Create Stripe Checkout Session
+    const origin =
+      req.headers["x-forwarded-proto"] && req.headers["x-forwarded-host"]
+        ? `${req.headers["x-forwarded-proto"]}://${req.headers["x-forwarded-host"]}`
+        : (req.headers.origin as string) ||
+          process.env.NEXT_PUBLIC_SITE_URL ||
+          "http://localhost:3000";
+
     const session = await stripe.checkout.sessions.create({
-      payment_method_types: ["card"],
       mode: "payment",
+      payment_method_types: ["card"],
       customer_email: email,
+      phone_number_collection: { enabled: true },
       shipping_address_collection: { allowed_countries: ["US"] },
       shipping_options: [
         {
@@ -118,42 +194,23 @@ export default async function handler(
           },
         },
       ],
-      line_items: items.map((i) => {
-        const nameWithSize = i.size ? `${i.name} (Size ${i.size})` : i.name;
-        return {
-          price_data: {
-            currency: "usd",
-            product_data: {
-              name: nameWithSize,
-              images: i.image?.startsWith("http") ? [i.image] : [],
-              // 🆕 Make size visible in Stripe product metadata too
-              metadata: i.size ? { size: String(i.size) } : undefined,
-              // optional: also surface in description
-              description: i.size ? `Ring size: ${i.size}` : undefined,
-            },
-            // Keep unit_amount = original price; discount handled via coupon above
-            unit_amount: Math.round(i.price * 100),
-          },
-          quantity: i.quantity,
-        };
-      }),
-      discounts: couponId ? [{ coupon: couponId }] : [],
+      line_items,
       metadata: {
-        orderId: orderResult.insertedId.toString(),
+        orderId: insertedId.toString(),
       },
-      success_url: `${req.headers.origin}/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${req.headers.origin}/cart`,
+      success_url: `${origin}/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${origin}/cart`,
     });
 
-    // 🔄 Update order with Stripe Session ID (helps webhook)
-    await ordersCollection.updateOne(
-      { _id: orderResult.insertedId },
+    // Keep Mongo in sync with the new session id
+    await orders.updateOne(
+      { _id: insertedId },
       { $set: { stripeSessionId: session.id } }
     );
 
     return res.status(200).json({ url: session.url ?? undefined });
   } catch (err: any) {
-    console.error("❌ Checkout Error:", err.message);
-    return res.status(500).json({ error: err.message || "Checkout failed" });
+    console.error("❌ Checkout Error:", err?.message || err);
+    return res.status(500).json({ error: err?.message || "Checkout failed" });
   }
 }

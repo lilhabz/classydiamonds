@@ -133,6 +133,7 @@ export default function WatchesPage({ products }: WatchesProps) {
                       e.preventDefault();
                       addToCart({
                         id: product.id,
+                        slug: product.slug, // ✅ include slug for cart + checkout
                         name: product.name,
                         price: product.price,
                         discountedPrice: product.salePrice || undefined,

@@ -74,7 +74,7 @@ export default async function handler(
       return res.status(404).json({ error: "Order not found" });
     }
 
-    const items = existingOrder.items || [];
+    const items = Array.isArray(existingOrder.items) ? existingOrder.items : [];
 
     // ✅ Address preference: Stripe shipping_details → customer_details → DB fallback
     const stripeAddr =
@@ -90,12 +90,25 @@ export default async function handler(
       existingOrder.customerName ||
       "Customer";
 
+    // 🛠️ FIX: fallback to line1/postal_code keys that checkout.ts saved
     const shippingAddressObject = {
-      street: stripeAddr?.line1 || existingOrder.address?.street1 || "",
-      line2: stripeAddr?.line2 || existingOrder.address?.street2 || "",
+      street:
+        stripeAddr?.line1 ||
+        existingOrder.address?.line1 || // ✅
+        existingOrder.address?.street1 || // legacy
+        "",
+      line2:
+        stripeAddr?.line2 ||
+        existingOrder.address?.line2 ||
+        existingOrder.address?.street2 ||
+        "",
       city: stripeAddr?.city || existingOrder.address?.city || "",
       state: stripeAddr?.state || existingOrder.address?.state || "",
-      zip: stripeAddr?.postal_code || existingOrder.address?.zip || "",
+      zip:
+        stripeAddr?.postal_code ||
+        existingOrder.address?.postal_code || // ✅
+        existingOrder.address?.zip || // legacy
+        "",
       country: stripeAddr?.country || existingOrder.address?.country || "",
     };
 
@@ -160,11 +173,12 @@ export default async function handler(
 
     console.log(`✅ Order #${orderNumber} marked as paid`);
 
-    // 📧 Send receipt email (now shows ring size when present)
+    // 📧 Email receipt (prefer unitPrice saved by checkout.ts; fall back to others)
     try {
       const itemRows = items
         .map((item: any) => {
-          const price =
+          const unit =
+            item.unitPrice ??
             item.salePrice ??
             item.discountedPrice ??
             item.originalPrice ??
@@ -183,20 +197,19 @@ export default async function handler(
           <tr>
             <td style="padding: 8px; border: 1px solid #ddd;">
               <div style="display: flex; align-items: center; gap: 10px;">
-                <img src="${item.image}" alt="${
-            item.name
-          }" style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px;" />
+                <img src="${item.image || ""}" alt="${item.name || "Item"}"
+                     style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px;" />
                 <div>
-                  <div>${item.name}</div>
+                  <div>${item.name || "Item"}</div>
                   ${sizeBadge}
                 </div>
               </div>
             </td>
             <td style="padding: 8px; border: 1px solid #ddd;">x${
-              item.quantity
+              item.quantity || 1
             }</td>
             <td style="padding: 8px; border: 1px solid #ddd;">$${(
-              price * item.quantity
+              unit * (item.quantity || 1)
             ).toFixed(2)}</td>
           </tr>`;
         })
@@ -212,19 +225,28 @@ export default async function handler(
         <p><strong>Total:</strong> $${amountTotal.toFixed(2)}</p>
       `;
 
-      const transporter = nodemailer.createTransport({
-        service: "gmail",
-        auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
-      });
+      const fromEmail = process.env.EMAIL_USER;
+      const pass = process.env.EMAIL_PASS;
 
-      await transporter.sendMail({
-        from: `"Classy Diamonds" <${process.env.EMAIL_USER}>`,
-        to: customerEmail,
-        subject: `💎 Order Receipt – #${orderNumber}`,
-        html: htmlContent,
-      });
+      if (fromEmail && pass && customerEmail) {
+        const transporter = nodemailer.createTransport({
+          service: "gmail",
+          auth: { user: fromEmail, pass },
+        });
 
-      console.log("📧 Receipt sent to:", customerEmail);
+        await transporter.sendMail({
+          from: `"Classy Diamonds" <${fromEmail}>`,
+          to: customerEmail,
+          subject: `💎 Order Receipt – #${orderNumber}`,
+          html: htmlContent,
+        });
+
+        console.log("📧 Receipt sent to:", customerEmail);
+      } else {
+        console.warn(
+          "⚠️ Skipping email: EMAIL_USER/EMAIL_PASS or recipient missing."
+        );
+      }
     } catch (emailErr) {
       console.error("❌ Email error:", emailErr);
     }

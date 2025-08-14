@@ -247,9 +247,10 @@ export default function Home({ products }: HomeProps) {
                         onClick={() =>
                           addToCart({
                             id: item._id,
+                            slug: item.slug, // ✅ added slug
                             name: item.name,
-                            price: item.price, // ← the ORIGINAL price (e.g. $13)
-                            discountedPrice: item.salePrice, // ← the SALE price (e.g. $10), or undefined
+                            price: item.price, // ORIGINAL price
+                            discountedPrice: item.salePrice, // SALE price or undefined
                             image: item.image,
                             quantity: 1,
                           })
@@ -316,9 +317,10 @@ export default function Home({ products }: HomeProps) {
                       onClick={() =>
                         addToCart({
                           id: item._id,
+                          slug: item.slug, // ✅ added slug
                           name: item.name,
-                          price: item.price, // ← the ORIGINAL price (e.g. $13)
-                          discountedPrice: item.salePrice, // ← the SALE price (e.g. $10), or undefined
+                          price: item.price, // ORIGINAL price
+                          discountedPrice: item.salePrice, // SALE price or undefined
                           image: item.image,
                           quantity: 1,
                         })

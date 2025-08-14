@@ -1,3 +1,5 @@
+// 📦 context/CartContext.tsx — Adds slug support (backward-compatible) + size-aware keys + persistence
+
 "use client";
 
 import {
@@ -12,33 +14,35 @@ import {
 // ————————————————————————————————————————————————————————————————
 interface CartItem {
   id: string;
+  slug: string; // ✅ stored on every item
   name: string;
   originalPrice: number; // pre-discount
-  salePrice: number; // post-discount
+  salePrice: number; // post-discount (what you charge)
   price: number; // alias (kept for compatibility)
   discountedPrice?: number; // alias when discounted
   image: string;
   quantity: number;
-  size?: string; // 🆕 ring size (optional)
+  size?: string; // ring size (optional)
 }
 
 // Input shape when you call addToCart(...)
 type CartItemInput = {
   id: string;
+  slug?: string; // ✅ optional for backward-compat; prefer passing it!
   name: string;
   price: number; // original price
   discountedPrice?: number; // optional discounted price
   image: string;
   quantity: number;
-  size?: string; // 🆕 ring size (optional)
+  size?: string; // ring size (optional)
 };
 
 interface CartContextType {
   cartItems: CartItem[];
   addToCart: (item: CartItemInput) => void;
-  removeFromCart: (id: string, size?: string) => void; // 🆕 optional size
-  increaseQty: (id: string, size?: string) => void; // 🆕 optional size
-  decreaseQty: (id: string, size?: string) => void; // 🆕 optional size
+  removeFromCart: (id: string, size?: string) => void; // optional size
+  increaseQty: (id: string, size?: string) => void; // optional size
+  decreaseQty: (id: string, size?: string) => void; // optional size
   clearCart: () => void;
   addedItemName: string | null;
 }
@@ -61,38 +65,41 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   // 🧠 Load from localStorage
   useEffect(() => {
-    const stored = localStorage.getItem("cart");
-    if (stored) {
-      setCartItems(JSON.parse(stored));
-    }
+    try {
+      const stored = localStorage.getItem("cart");
+      if (stored) setCartItems(JSON.parse(stored));
+    } catch {}
   }, []);
 
   // 💾 Persist whenever cart changes
   useEffect(() => {
-    localStorage.setItem("cart", JSON.stringify(cartItems));
+    try {
+      localStorage.setItem("cart", JSON.stringify(cartItems));
+    } catch {}
   }, [cartItems]);
 
   // ➕ Add (or bump quantity) — respects id + size as a unique key
   const addToCart = (item: CartItemInput) => {
     setCartItems((prev) => {
-      // 1️⃣ compute sale price
+      // 1) compute sale price
       const sale = item.discountedPrice ?? item.price;
       const isDiscounted = sale < item.price;
 
-      // 2️⃣ build CartItem with aliases
+      // 2) build CartItem (ensure slug string exists)
       const newItem: CartItem = {
         id: item.id,
+        slug: item.slug ?? "", // ✅ keeps old code working, but please pass slug going forward
         name: item.name,
         originalPrice: item.price,
         salePrice: sale,
-        price: item.price, // keep existing alias behavior
+        price: item.price, // alias for compatibility
         discountedPrice: isDiscounted ? sale : undefined,
         image: item.image,
         quantity: item.quantity,
-        size: item.size, // 🆕 carry size through
+        size: item.size,
       };
 
-      // 3️⃣ add or increment (by id+size)
+      // 3) add or increment (by id+size)
       const idx = prev.findIndex((p) => keyOf(p) === keyOf(newItem));
       if (idx >= 0) {
         const copy = [...prev];
@@ -105,18 +112,18 @@ export function CartProvider({ children }: { children: ReactNode }) {
       return [...prev, newItem];
     });
 
-    // toast logic stays the same
+    // simple toast signal
     setAddedItemName(item.name);
     setTimeout(() => setAddedItemName(null), 2500);
   };
 
-  // ❌ Remove — by id+size (if size omitted, removes first match with that id)
+  // ❌ Remove — by id+size
   const removeFromCart = (id: string, size?: string) =>
     setCartItems((prev) =>
       prev.filter((i) => keyOf(i) !== keyOf({ id, size }))
     );
 
-  // ➕ Qty — by id+size (fallback: first match if size not given)
+  // ➕ Qty — by id+size
   const increaseQty = (id: string, size?: string) =>
     setCartItems((prev) => {
       const idx = prev.findIndex((i) => keyOf(i) === keyOf({ id, size }));
