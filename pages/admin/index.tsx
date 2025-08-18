@@ -353,6 +353,11 @@ export default function AdminOrdersPage() {
                   💰 Total: ${safeNum(o.amount).toFixed(2)}
                 </span>
                 <div className="space-x-2">
+                  <Link href={`/admin/order/${o.stripeSessionId}`}>
+                    <span className="bg-blue-600 px-4 py-2 rounded text-sm cursor-pointer">
+                      View 🔍
+                    </span>
+                  </Link>
                   <button
                     onClick={() => confirmAndShip(o.stripeSessionId)}
                     className="bg-green-600 px-4 py-2 rounded text-sm"

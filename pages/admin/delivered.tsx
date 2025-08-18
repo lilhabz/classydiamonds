@@ -274,12 +274,19 @@ export default function DeliveredOrdersPage() {
                   <span className="text-lg font-semibold">
                     💰 Total: ${order.amount.toFixed(2)}
                   </span>
-                  <button
-                    onClick={() => archiveOrder(order.stripeSessionId)}
-                    className="bg-yellow-600 px-4 py-2 rounded text-sm"
-                  >
-                    Archive 🗂
-                  </button>
+                  <div className="space-x-2">
+                    <Link href={`/admin/order/${order.stripeSessionId}`}>
+                      <span className="bg-blue-600 px-4 py-2 rounded text-sm cursor-pointer">
+                        View 🔍
+                      </span>
+                    </Link>
+                    <button
+                      onClick={() => archiveOrder(order.stripeSessionId)}
+                      className="bg-yellow-600 px-4 py-2 rounded text-sm"
+                    >
+                      Archive 🗂
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}

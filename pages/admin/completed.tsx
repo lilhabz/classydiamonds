@@ -407,6 +407,12 @@ export default function CompletedOrdersPage() {
                     💰 Total: ${order.amount.toFixed(2)}
                   </span>
                   <div className="space-x-2">
+                    {/* ✅ NEW: View button to permanent details/refund page */}
+                    <Link href={`/admin/order/${order.stripeSessionId}`}>
+                      <span className="bg-blue-500 px-4 py-2 rounded text-sm cursor-pointer">
+                        View 🔍
+                      </span>
+                    </Link>
                     <button
                       onClick={() => markDelivered(order.stripeSessionId)}
                       className="bg-blue-600 px-4 py-2 rounded text-sm"

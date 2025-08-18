@@ -1,4 +1,4 @@
-// 📂 pages/api/admin/order.ts – Return single order details by orderId (incl. size + discounts + image)
+// 📂 pages/api/admin/order.ts – Return single order details by orderId (Stripe session id)
 // Compatible with both legacy (originalPrice/salePrice) and new (unitPrice) items
 
 import type { NextApiRequest, NextApiResponse } from "next";
@@ -18,7 +18,19 @@ interface RawOrderItem {
   size?: string | null;
 }
 
+interface RefundEntry {
+  refundId: string;
+  amount: number; // cents
+  reason?: string;
+  note?: string;
+  adminEmail?: string;
+  createdAt: string;
+  provider?: string; // "stripe" | "paypal"
+  status?: string;
+}
+
 interface RawOrder {
+  _id: any;
   customerName?: string;
   customerEmail?: string;
   customerAddress?: string; // string form
@@ -46,10 +58,15 @@ interface RawOrder {
   orderNumber?: number;
   shipped?: boolean;
   archived?: boolean;
+  // refunds
+  refundedTotal?: number;
+  refunds?: RefundEntry[];
 }
 
 type OrderResponse =
   | {
+      _id: string;
+      stripeSessionId: string;
       orderNumber: number | null;
       items: {
         name: string;
@@ -60,6 +77,8 @@ type OrderResponse =
         size?: string | null;
       }[];
       amount: number;
+      refundedTotal: number;
+      refunds: RefundEntry[];
       currency: string;
       paymentStatus: string;
       customerAddress: string; // formatted string
@@ -79,7 +98,7 @@ export default async function handler(
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const { orderId } = req.query;
+  const { orderId } = req.query; // this is Stripe session id in your app
   if (!orderId || typeof orderId !== "string") {
     return res.status(400).json({ error: "Missing or invalid orderId" });
   }
@@ -93,7 +112,6 @@ export default async function handler(
     }
     const db = client.db();
 
-    // Note: orderId here is the Stripe session id per your success.tsx
     const o = await db
       .collection<RawOrder>("orders")
       .findOne({ stripeSessionId: orderId });
@@ -156,9 +174,13 @@ export default async function handler(
         : new Date().toISOString();
 
     return res.status(200).json({
+      _id: String(o._id),
+      stripeSessionId: o.stripeSessionId,
       orderNumber: typeof o.orderNumber === "number" ? o.orderNumber : null,
       items,
       amount,
+      refundedTotal: typeof o.refundedTotal === "number" ? o.refundedTotal : 0,
+      refunds: Array.isArray(o.refunds) ? o.refunds : [],
       currency: o.currency ?? "usd",
       paymentStatus: o.paymentStatus ?? "",
       customerAddress: formattedAddress,

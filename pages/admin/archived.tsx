@@ -234,12 +234,20 @@ export default function ArchivedOrdersPage() {
                 <span className="text-lg font-semibold">
                   💰 Total: ${order.amount.toFixed(2)}
                 </span>
-                <button
-                  onClick={() => restoreOrder(order.stripeSessionId)}
-                  className="bg-yellow-600 px-4 py-2 rounded text-sm"
-                >
-                  Restore 🗂️
-                </button>
+                <div className="space-x-2">
+                  {/* ✅ NEW: View button */}
+                  <Link href={`/admin/order/${order.stripeSessionId}`}>
+                    <span className="bg-blue-500 px-4 py-2 rounded text-sm cursor-pointer">
+                      View 🔍
+                    </span>
+                  </Link>
+                  <button
+                    onClick={() => restoreOrder(order.stripeSessionId)}
+                    className="bg-yellow-600 px-4 py-2 rounded text-sm"
+                  >
+                    Restore 🗂️
+                  </button>
+                </div>
               </div>
             </div>
           ))}
