@@ -425,13 +425,23 @@ export default function CompletedOrdersPage() {
                                 className="rounded object-cover"
                                 unoptimized
                               />
-                              <span>
-                                {item.name || "Unnamed"}
-                                {item.size && (
-                                  <span className="ml-2 text-xs px-2 py-0.5 rounded-full bg-[#364763] text-white align-middle">
-                                    Size: {item.size}
-                                  </span>
-                                )}{" "}
+
+                              {/* 👉 NEW: show unit price next to the picture */}
+                              <div className="flex flex-col">
+                                <div className="font-normal">
+                                  {item.name || "Unnamed"}
+                                  {item.size && (
+                                    <span className="ml-2 text-xs px-2 py-0.5 rounded-full bg-[#364763] text-white align-middle">
+                                      Size: {item.size}
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="text-xs text-gray-300 mt-0.5">
+                                  Unit: ${unit.toFixed(2)}
+                                </div>
+                              </div>
+
+                              <span className="ml-2">
                                 – x{qty} –{" "}
                                 {unit < base ? (
                                   <>

@@ -80,36 +80,57 @@ export default async function handler(
     const stripeAddr =
       session.shipping_details?.address ||
       session.customer_details?.address ||
-      existingOrder.address ||
+      (existingOrder as any).address ||
       null;
 
-    const stripeName =
-      metadata.customer_name ||
-      session.shipping_details?.name ||
-      session.customer_details?.name ||
-      existingOrder.customerName ||
-      "Customer";
+    // ✅ Name preference: customer_details → shipping_details → metadata → existing → "Unknown"
+    let customerName =
+      (session?.customer_details?.name || "").trim() ||
+      (session?.shipping_details?.name || "").trim() ||
+      (
+        (metadata as any).customerName ||
+        (metadata as any).name ||
+        (metadata as any).fullName ||
+        (metadata as any).customer_name ||
+        ""
+      ).trim() ||
+      ((existingOrder as any).customerName || "").trim() ||
+      "Unknown";
+
+    // 🚫 Never show literal "Stripe" as a customer name; fall back if that slipped in.
+    if (customerName.toLowerCase() === "stripe") {
+      customerName =
+        ((existingOrder as any).customerName || "").trim() ||
+        (
+          (metadata as any).customerName ||
+          (metadata as any).name ||
+          (metadata as any).fullName ||
+          ""
+        ).trim() ||
+        "Unknown";
+    }
 
     // 🛠️ FIX: fallback to line1/postal_code keys that checkout.ts saved
     const shippingAddressObject = {
       street:
         stripeAddr?.line1 ||
-        existingOrder.address?.line1 || // ✅
-        existingOrder.address?.street1 || // legacy
+        (existingOrder as any).address?.line1 || // ✅
+        (existingOrder as any).address?.street1 || // legacy
         "",
       line2:
         stripeAddr?.line2 ||
-        existingOrder.address?.line2 ||
-        existingOrder.address?.street2 ||
+        (existingOrder as any).address?.line2 ||
+        (existingOrder as any).address?.street2 ||
         "",
-      city: stripeAddr?.city || existingOrder.address?.city || "",
-      state: stripeAddr?.state || existingOrder.address?.state || "",
+      city: stripeAddr?.city || (existingOrder as any).address?.city || "",
+      state: stripeAddr?.state || (existingOrder as any).address?.state || "",
       zip:
         stripeAddr?.postal_code ||
-        existingOrder.address?.postal_code || // ✅
-        existingOrder.address?.zip || // legacy
+        (existingOrder as any).address?.postal_code || // ✅
+        (existingOrder as any).address?.zip || // legacy
         "",
-      country: stripeAddr?.country || existingOrder.address?.country || "",
+      country:
+        stripeAddr?.country || (existingOrder as any).address?.country || "",
     };
 
     const shippingAddressString = `${shippingAddressObject.street}${
@@ -120,7 +141,7 @@ export default async function handler(
 
     const customerEmail =
       session.customer_details?.email ||
-      existingOrder.customerEmail ||
+      (existingOrder as any).customerEmail ||
       process.env.EMAIL_USER;
 
     console.log("📦 Shipping Address Saved:", shippingAddressObject);
@@ -129,7 +150,7 @@ export default async function handler(
     const stripeSessionId = session.id;
 
     // 🔢 Generate order number (keep existing or create new)
-    let orderNumber = existingOrder.orderNumber;
+    let orderNumber = (existingOrder as any).orderNumber as number | undefined;
     if (!orderNumber) {
       const countersCollection = db.collection<{
         _id: string;
@@ -157,7 +178,7 @@ export default async function handler(
       {
         $set: {
           orderNumber,
-          customerName: stripeName,
+          customerName, // ✅ real name stored
           customerEmail,
           customerAddress: shippingAddressString,
           shipping_address: shippingAddressObject,
@@ -216,7 +237,7 @@ export default async function handler(
         .join("");
 
       const htmlContent = `
-        <h2>Thank You for Your Order, ${stripeName}!</h2>
+        <h2>Thank You for Your Order, ${customerName}!</h2>
         <p>Your <strong>Order #${orderNumber}</strong> has been received.</p>
         <p><strong>Shipping to:</strong><br>${shippingAddressString}</p>
         <table style="width: 100%; border-collapse: collapse;">

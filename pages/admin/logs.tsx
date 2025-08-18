@@ -1,4 +1,4 @@
-// ✅ pages/admin/logs.tsx – date range + sort + select (no CSV/PDF) 🔐📝
+// ✅ pages/admin/logs.tsx – date range + sort + select (unitPrice-safe, better sorting/colors) 🔐📝
 
 import { useEffect, useMemo, useState, Fragment } from "react";
 import Head from "next/head";
@@ -6,33 +6,59 @@ import Link from "next/link";
 import { useSession } from "next-auth/react";
 import Breadcrumbs from "@/components/Breadcrumbs";
 
+type AdminAction =
+  | "archive"
+  | "restore"
+  | "shipped"
+  | "delivered"
+  | "tracking"
+  | "refund"
+  | "delete_order";
+
 interface AdminLog {
   _id: string;
-  orderId: string;
-  action: "archive" | "restore" | "shipped" | "delivered" | "tracking";
+  orderId: string; // may be stripeSessionId OR Mongo _id depending on the writer
+  action: AdminAction;
   timestamp: string;
   performedBy: string;
+  // optional extras when present:
+  amount?: number; // cents
+  refundId?: string;
+  provider?: string;
+  note?: string;
 }
 
 interface OrderItem {
   name: string;
-  quantity: number;
-  price?: number;
-  discountedPrice?: number;
-  salePrice?: number;
-  originalPrice?: number;
+  quantity: number | string;
+  // full price shape (tolerant to legacy)
+  unitPrice?: number | string;
+  salePrice?: number | string;
+  discountedPrice?: number | string;
+  originalPrice?: number | string;
+  price?: number | string;
   size?: string;
   image?: string;
 }
 
 interface OrderDetails {
   items: OrderItem[];
-  amount: number;
+  amount: number | string;
   currency?: string;
   customerAddress: any;
   createdAt: string;
   orderNumber?: number;
 }
+
+const num = (v: unknown, d = 0): number => {
+  if (v == null || v === "") return d;
+  if (typeof v === "number") return Number.isFinite(v) ? v : d;
+  if (typeof v === "string") {
+    const n = parseFloat(v.replace(/[^0-9.\-]/g, ""));
+    return Number.isFinite(n) ? n : d;
+  }
+  return d;
+};
 
 export default function AdminLogsPage() {
   const { data: session, status } = useSession();
@@ -58,11 +84,14 @@ export default function AdminLogsPage() {
     try {
       const res = await fetch("/api/admin/logs");
       const data = await res.json();
+
       const grouped: Record<string, AdminLog[]> = {};
       (data.logs || []).forEach((log: AdminLog) => {
-        if (!grouped[log.orderId]) grouped[log.orderId] = [];
-        grouped[log.orderId].push(log);
+        const key = log.orderId; // may be _id or sessionId; server normalization optional
+        if (!grouped[key]) grouped[key] = [];
+        grouped[key].push(log);
       });
+
       const aggregated = Object.entries(grouped)
         .map(([orderId, logs]) => ({
           orderId,
@@ -71,12 +100,13 @@ export default function AdminLogsPage() {
               new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
           ),
         }))
+        // newest first (removed accidental .reverse())
         .sort(
           (a, b) =>
             new Date(b.logs[0].timestamp).getTime() -
             new Date(a.logs[0].timestamp).getTime()
-        )
-        .reverse();
+        );
+
       setOrderLogs(aggregated);
     } catch (err) {
       console.error("❌ Failed to fetch admin logs:", err);
@@ -86,6 +116,7 @@ export default function AdminLogsPage() {
   };
 
   const fetchOrderDetails = async (orderId: string) => {
+    // collapse if already expanded
     if (expandedOrders[orderId]) {
       const updated = { ...expandedOrders };
       delete updated[orderId];
@@ -93,10 +124,16 @@ export default function AdminLogsPage() {
       return;
     }
     try {
+      // Our /api/admin/order should accept either sessionId OR Mongo _id (see note above)
       const res = await fetch(`/api/admin/order?orderId=${orderId}`);
       const data = await res.json();
       if (res.ok) {
         setExpandedOrders((prev) => ({ ...prev, [orderId]: data }));
+      } else {
+        console.warn(
+          "⚠️ Order details fetch failed:",
+          data?.error || res.status
+        );
       }
     } catch (err) {
       console.error("❌ Failed to fetch order details:", err);
@@ -136,23 +173,27 @@ export default function AdminLogsPage() {
   };
 
   const filteredAndSorted = useMemo(() => {
+    const q = searchQuery.toLowerCase();
+
     const searched = orderLogs.filter(({ orderId, logs }) => {
-      const q = searchQuery.toLowerCase();
       return (
         orderId.toLowerCase().includes(q) ||
-        logs.some((l) => l.performedBy.toLowerCase().includes(q))
+        logs.some((l) => l.performedBy?.toLowerCase().includes(q))
       );
     });
+
     const startMs = startDate
-      ? new Date(startDate + "T00:00:00").getTime()
+      ? new Date(`${startDate}T00:00:00`).getTime()
       : -Infinity;
     const endMs = endDate
-      ? new Date(endDate + "T23:59:59").getTime()
+      ? new Date(`${endDate}T23:59:59`).getTime()
       : Infinity;
+
     const dated = searched.filter(({ orderId, logs }) => {
       const t = getOrderDateForCompare(orderId, logs);
       return t >= startMs && t <= endMs;
     });
+
     return [...dated].sort((a, b) => {
       const ta = getOrderDateForCompare(a.orderId, a.logs);
       const tb = getOrderDateForCompare(b.orderId, b.logs);
@@ -170,6 +211,25 @@ export default function AdminLogsPage() {
       </div>
     );
   }
+
+  const colorFor = (action: AdminAction) => {
+    switch (action) {
+      case "shipped":
+        return "text-green-400";
+      case "delivered":
+        return "text-purple-400";
+      case "restore":
+        return "text-blue-400";
+      case "tracking":
+        return "text-teal-300";
+      case "refund":
+        return "text-red-300";
+      case "delete_order":
+        return "text-red-400";
+      default:
+        return "text-yellow-300"; // archive or unknown
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[var(--bg-page)] text-[var(--foreground)] p-6">
@@ -290,6 +350,7 @@ export default function AdminLogsPage() {
                     <tr
                       className="border-b border-[var(--bg-nav)] cursor-pointer"
                       onClick={() => fetchOrderDetails(orderId)}
+                      title="Click to expand details"
                     >
                       <td
                         className="py-2 px-4"
@@ -305,17 +366,9 @@ export default function AdminLogsPage() {
                         {orderId.slice(-8)}
                       </td>
                       <td
-                        className={`py-2 px-4 capitalize ${
-                          latest.action === "shipped"
-                            ? "text-green-400"
-                            : latest.action === "delivered"
-                            ? "text-purple-400"
-                            : latest.action === "restore"
-                            ? "text-blue-400"
-                            : latest.action === "tracking"
-                            ? "text-teal-300"
-                            : "text-yellow-300"
-                        }`}
+                        className={`py-2 px-4 capitalize ${colorFor(
+                          latest.action
+                        )}`}
                       >
                         {latest.action}
                       </td>
@@ -345,35 +398,82 @@ export default function AdminLogsPage() {
                               expandedOrders[orderId].createdAt
                             ).toLocaleString()}
                           </p>
+
                           <ul className="pl-4 list-disc text-sm mb-2">
                             {expandedOrders[orderId].items.map((item, i) => {
-                              const qty = item.quantity || 1;
-                              const display =
-                                item.salePrice ??
-                                item.discountedPrice ??
-                                item.originalPrice ??
-                                item.price ??
-                                0;
+                              const qty = Math.max(
+                                1,
+                                Math.round(num(item.quantity, 1))
+                              );
+
+                              // Prefer unit price → sale/discount → original/price
+                              const unit =
+                                num(item.unitPrice) ||
+                                num(item.salePrice) ||
+                                num(item.discountedPrice) ||
+                                num(item.originalPrice) ||
+                                num(item.price);
+
+                              const base =
+                                num(item.originalPrice) ||
+                                num(item.price) ||
+                                unit;
+
+                              const lineOrig = base * qty;
+                              const lineSale = unit * qty;
+
                               return (
                                 <li key={i}>
                                   {qty}× {item.name}
-                                  {item.size ? ` (Size ${item.size})` : ""} – $
-                                  {(qty * display).toFixed(2)}
+                                  {item.size
+                                    ? ` (Size ${item.size})`
+                                    : ""} –{" "}
+                                  {unit < base ? (
+                                    <>
+                                      <span className="line-through mr-1">
+                                        ${lineOrig.toFixed(2)}
+                                      </span>
+                                      <span className="text-green-300">
+                                        ${lineSale.toFixed(2)}
+                                      </span>
+                                    </>
+                                  ) : (
+                                    <>${lineSale.toFixed(2)}</>
+                                  )}
                                 </li>
                               );
                             })}
                           </ul>
+
                           <p className="font-semibold mb-2">
                             💰 Total: $
-                            {expandedOrders[orderId].amount.toFixed(2)}
+                            {num(expandedOrders[orderId].amount).toFixed(2)}
                           </p>
+
                           <div className="text-sm mt-4">
                             <p className="font-semibold mb-1">Admin Actions:</p>
                             <ul className="list-disc pl-4 space-y-1">
                               {logs.map((l) => (
                                 <li key={l._id}>
                                   {new Date(l.timestamp).toLocaleString()} –{" "}
-                                  {l.action} by {l.performedBy}
+                                  <span
+                                    className={`capitalize ${colorFor(
+                                      l.action
+                                    )}`}
+                                  >
+                                    {l.action}
+                                  </span>{" "}
+                                  by {l.performedBy}
+                                  {typeof l.amount === "number"
+                                    ? ` • $${(l.amount / 100).toFixed(2)}`
+                                    : ""}
+                                  {l.refundId ? ` • refund ${l.refundId}` : ""}
+                                  {l.provider ? ` • via ${l.provider}` : ""}
+                                  {l.note ? (
+                                    <div className="text-xs text-gray-300">
+                                      Note: {l.note}
+                                    </div>
+                                  ) : null}
                                 </li>
                               ))}
                             </ul>

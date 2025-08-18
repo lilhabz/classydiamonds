@@ -5,9 +5,9 @@ import clientPromise from "@/lib/mongodb";
 
 interface RawOrder {
   _id: ObjectId;
-  customerName: string;
-  customerEmail: string;
-  customerAddress: string;
+  customerName?: string;
+  customerEmail?: string;
+  customerAddress?: string;
 
   // One-line string
   shipping_address_string?: string;
@@ -35,16 +35,19 @@ interface RawOrder {
   items?: Array<{
     name: string;
     quantity: number;
-    originalPrice: number;
-    salePrice?: number;
+    originalPrice?: number; // legacy/base price
+    salePrice?: number; // discounted/sale price
+    unitPrice?: number; // new flow (if present)
+    price?: number; // some legacy docs might have this
     image?: string;
-    size?: string; // 🆕
+    size?: string;
   }>;
-  amount: number;
+
+  amount?: number; // dollars
   currency?: string;
   paymentStatus?: string;
-  createdAt: Date;
-  stripeSessionId: string;
+  createdAt?: Date;
+  stripeSessionId?: string;
   orderNumber?: number;
   shipped?: boolean;
   archived?: boolean;
@@ -53,10 +56,16 @@ interface RawOrder {
 interface OrderItem {
   name: string;
   quantity: number;
-  price: number;
-  discountedPrice?: number;
+
+  // Keep a rich shape so UIs can decide the display logic:
+  price: number; // legacy/base price (alias of originalPrice when available)
+  discountedPrice?: number; // alias of salePrice for older UIs
+  salePrice?: number;
+  unitPrice?: number;
+  originalPrice?: number;
+
   image?: string;
-  size?: string; // 🆕
+  size?: string;
 }
 
 interface Order {
@@ -106,9 +115,15 @@ export default async function handler(
     const client = await clientPromise;
     const db = client.db();
 
+    // 🧹 Exclude "junk" orders that have NEITHER an orderNumber nor a usable stripeSessionId
     const raw = await db
       .collection("orders")
-      .find({})
+      .find({
+        $or: [
+          { orderNumber: { $exists: true, $ne: null } },
+          { stripeSessionId: { $exists: true, $ne: "" } },
+        ],
+      })
       .sort({ createdAt: -1, _id: -1 })
       .toArray();
 
@@ -136,37 +151,75 @@ export default async function handler(
               shippingObj.city,
               shippingObj.state && shippingObj.zip
                 ? `${shippingObj.state} ${shippingObj.zip}`
-                : shippingObj.zip,
+                : shippingObj.state || shippingObj.zip,
               shippingObj.country,
             ]
               .filter(Boolean)
               .join(", ")
           : "");
 
+      // 🧯 Sanitize "Stripe" name if it slipped into older docs
+      const rawName = (o.customerName || "").trim();
+      const cleanName =
+        rawName && rawName.toLowerCase() !== "stripe"
+          ? rawName
+          : (o.customerEmail || "")
+              .split("@")[0]
+              ?.replace(/\./g, " ")
+              ?.trim() || "Customer";
+
+      const items: OrderItem[] = (o.items ?? []).map((i) => {
+        const originalPrice =
+          typeof i.originalPrice === "number"
+            ? i.originalPrice
+            : typeof i.price === "number"
+            ? i.price
+            : 0;
+
+        const salePrice =
+          typeof i.salePrice === "number" ? i.salePrice : undefined;
+
+        const unitPrice =
+          typeof i.unitPrice === "number"
+            ? i.unitPrice
+            : typeof salePrice === "number"
+            ? salePrice
+            : typeof originalPrice === "number"
+            ? originalPrice
+            : undefined;
+
+        return {
+          name: i.name,
+          quantity: i.quantity,
+          price: originalPrice, // legacy/base
+          discountedPrice: salePrice, // keep alias for older UIs
+          salePrice, // and the canonical sale field
+          unitPrice,
+          originalPrice,
+          image: i.image || "",
+          size: i.size,
+        };
+      });
+
       return {
         _id: o._id.toHexString(),
-        customerName: o.customerName,
-        customerEmail: o.customerEmail,
-        customerAddress: o.customerAddress,
+        customerName: cleanName,
+        customerEmail: o.customerEmail || "",
+        customerAddress: o.customerAddress || "",
         shipping_address: shippingObj,
         shipping_address_string: shippingString,
         addressSource,
-        items: (o.items ?? []).map((i) => ({
-          name: i.name,
-          quantity: i.quantity,
-          price: i.originalPrice,
-          discountedPrice: i.salePrice,
-          image: i.image || "",
-          size: i.size, // 🆕
-        })),
-        amount: o.amount,
+        items,
+        amount: typeof o.amount === "number" ? o.amount : 0,
         currency: o.currency || "usd",
         paymentStatus: o.paymentStatus || "",
-        createdAt: o.createdAt.toISOString(),
-        stripeSessionId: o.stripeSessionId,
-        orderNumber: o.orderNumber ?? null,
-        shipped: o.shipped ?? false,
-        archived: o.archived ?? false,
+        createdAt: o.createdAt
+          ? o.createdAt.toISOString()
+          : new Date(0).toISOString(),
+        stripeSessionId: o.stripeSessionId || "",
+        orderNumber: typeof o.orderNumber === "number" ? o.orderNumber : null,
+        shipped: !!o.shipped,
+        archived: !!o.archived,
       };
     });
 

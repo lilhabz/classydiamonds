@@ -161,7 +161,16 @@ export default function AdminOrdersPage() {
     const end = endDate ? new Date(endDate) : null;
 
     return safeArray<Order>(orders).filter((o) => {
+      // Hide shipped/archived here (this page is "Active/Unshipped")
       if (o.archived || o.shipped) return false;
+
+      // Hide junk: missing BOTH orderNumber and stripeSessionId
+      if (
+        (o.orderNumber == null || o.orderNumber === (null as any)) &&
+        !safeStr(o.stripeSessionId)
+      ) {
+        return false;
+      }
 
       const name = safeStr(o.customerName).toLowerCase();
       const email = safeStr(o.customerEmail).toLowerCase();
@@ -340,13 +349,22 @@ export default function AdminOrdersPage() {
                         </div>
                       )}
 
-                      <span>
-                        {safeStr(i?.name, "Item")}
-                        {i?.size && (
-                          <span className="ml-2 text-xs px-2 py-0.5 rounded-full bg-[#364763] text-white align-middle">
-                            Size: {i.size}
-                          </span>
-                        )}{" "}
+                      {/* 👉 Unit price shown NEXT TO the picture */}
+                      <div className="flex flex-col">
+                        <div className="font-normal">
+                          {safeStr(i?.name, "Item")}
+                          {i?.size && (
+                            <span className="ml-2 text-xs px-2 py-0.5 rounded-full bg-[#364763] text-white align-middle">
+                              Size: {i.size}
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-xs text-gray-300 mt-0.5">
+                          Unit: ${unit.toFixed(2)}
+                        </div>
+                      </div>
+
+                      <span className="ml-2">
                         – x{qty} –{" "}
                         {unit < base ? (
                           <>

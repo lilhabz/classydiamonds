@@ -1,4 +1,4 @@
-// ✅ pages/admin/order/[sessionId].tsx – Order details + Refund 🔐
+// ✅ pages/admin/order/[sessionId].tsx – Order details + Refund (unit price + refunded math) 🔐
 
 import { useEffect, useMemo, useState } from "react";
 import Head from "next/head";
@@ -13,39 +13,52 @@ import RefundDialog from "@/components/RefundDialog";
 const safeStr = (v: unknown, fallback = ""): string =>
   typeof v === "string" ? v : v == null ? fallback : String(v);
 
-// Coerce numbers coming as strings ("199.99") or numbers
-const safeNum = (v: unknown, fallback = 0): number => {
-  if (typeof v === "number" && Number.isFinite(v)) return v;
-  if (typeof v === "string" && v.trim() !== "") {
-    const num = Number(v);
-    return Number.isFinite(num) ? num : fallback;
+// Robust number parser: accepts number or "$1,234.56" strings
+const n = (v: unknown, d = 0): number => {
+  if (v == null || v === "") return d;
+  if (typeof v === "number") return Number.isFinite(v) ? v : d;
+  if (typeof v === "string") {
+    const cleaned = v.replace(/[^0-9.\-]/g, "");
+    const num = parseFloat(cleaned);
+    return Number.isFinite(num) ? num : d;
   }
-  return fallback;
+  return d;
 };
 
-const toMoney = (n: number) => `$${n.toFixed(2)}`;
+const toMoney = (v: number) => `$${v.toFixed(2)}`;
 
-/* ---------- Types (mirror /api/admin/order.ts response) ---------- */
+/* ---------- Types (tolerant to API variations) ---------- */
 interface Item {
-  name: string;
-  quantity: number | string;
-  price: number | string; // unit price we display (can be string)
-  discountedPrice?: number | string; // may be string
+  name?: string;
+  quantity?: number | string;
   image?: string;
   size?: string | null;
+
+  // price shape (new + legacy)
+  unitPrice?: number | string;
+  salePrice?: number | string;
+  discountedPrice?: number | string;
+  originalPrice?: number | string;
+  price?: number | string;
 }
+
 interface OrderAPI {
-  orderNumber: number | null;
-  items: Item[];
-  amount: number | string; // dollars (may be string)
-  currency: string;
-  paymentStatus: string;
-  customerAddress: string; // printable
-  address?: Record<string, any>;
-  createdAt: string; // ISO
-  shipped: boolean;
-  archived: boolean;
-  shipping_address_string: string;
+  orderNumber?: number | null;
+  items?: Item[];
+  amount?: number | string; // dollars
+  currency?: string;
+  paymentStatus?: string;
+  customerAddress?: string; // printable
+  shipping_address_string?: string;
+  createdAt?: string; // ISO
+  shipped?: boolean;
+  archived?: boolean;
+
+  // helpful additions
+  refundedTotal?: number | string; // cents
+  stripeSessionId?: string;
+  customerName?: string;
+  customerEmail?: string;
 }
 
 export default function AdminOrderDetailPage() {
@@ -67,12 +80,12 @@ export default function AdminOrderDetailPage() {
     (async () => {
       setLoading(true);
       try {
-        // If your API expects ?sessionId= use that key; if it expects ?orderId= keep it.
+        // Backend accepts either _id or stripeSessionId; here we pass the session id
         const res = await fetch(
           `/api/admin/order?orderId=${encodeURIComponent(sessionId)}`
         );
-        const data = (await res.json()) as OrderAPI | { error: string };
-        if ("error" in data) throw new Error(data.error);
+        const data = (await res.json()) as OrderAPI & { error?: string };
+        if (data?.error) throw new Error(data.error);
         setOrder(data);
       } catch (e) {
         console.error("❌ Failed to fetch order:", e);
@@ -83,13 +96,18 @@ export default function AdminOrderDetailPage() {
     })();
   }, [router.isReady, session?.user?.isAdmin, sessionId]);
 
-  // Refundable balance (in cents). If you later track refunded amounts, subtract them here.
-  const refundableCents = useMemo(() => {
-    const amt = safeNum(order?.amount, 0); // dollars (coerced)
-    return Math.max(0, Math.round(amt * 100));
-  }, [order?.amount]);
+  // Totals (dollars → cents) and refundable math
+  const totalCents = useMemo(
+    () => Math.max(0, Math.round(n(order?.amount, 0) * 100)),
+    [order?.amount]
+  );
+  const refundedCents = useMemo(
+    () => Math.max(0, Math.round(n(order?.refundedTotal, 0))),
+    [order?.refundedTotal]
+  );
+  const refundableCents = Math.max(0, totalCents - refundedCents);
 
-  // Admin actions
+  // Admin name for logs
   const adminName =
     (session?.user as any)?.firstName ||
     safeStr(session?.user?.name).split(" ")[0] ||
@@ -125,6 +143,8 @@ export default function AdminOrderDetailPage() {
       <div className="p-6 text-red-300 font-semibold">❌ Unauthorized</div>
     );
 
+  const shortSess = sessionId ? sessionId.slice(-8) : "—";
+
   return (
     <div className="min-h-screen bg-[var(--bg-page)] text-[var(--foreground)] p-6">
       <Head>
@@ -158,11 +178,13 @@ export default function AdminOrderDetailPage() {
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
               <div>
                 <p className="text-sm text-gray-300">
-                  🔢 Order #: {order.orderNumber ?? "N/A"} | 🆔{" "}
-                  {sessionId.slice(-8)}
+                  🔢 Order #: {order.orderNumber ?? "N/A"} | 🆔 {shortSess}
                 </p>
                 <p className="text-sm">
-                  🧾 Date: {new Date(order.createdAt).toLocaleString()}
+                  🧾 Date:{" "}
+                  {order.createdAt
+                    ? new Date(order.createdAt).toLocaleString()
+                    : "—"}
                 </p>
                 <p className="text-sm">
                   💳 Status: {order.paymentStatus || "—"}
@@ -172,6 +194,12 @@ export default function AdminOrderDetailPage() {
                 <button
                   onClick={() => setShowRefund(true)}
                   className="bg-indigo-600 px-4 py-2 rounded text-sm"
+                  disabled={refundableCents <= 0}
+                  title={
+                    refundableCents > 0
+                      ? `Refund up to $${(refundableCents / 100).toFixed(2)}`
+                      : "Nothing left to refund"
+                  }
                 >
                   Refund 💳
                 </button>
@@ -204,35 +232,45 @@ export default function AdminOrderDetailPage() {
           {/* Items */}
           <div className="bg-[var(--bg-nav)] p-6 rounded-xl shadow">
             <h2 className="text-xl font-semibold mb-4">Items</h2>
-            {order.items.length === 0 ? (
+            {!Array.isArray(order.items) || order.items.length === 0 ? (
               <p className="text-sm text-red-300">⚠️ No items found.</p>
             ) : (
               <ul className="space-y-3">
                 {order.items.map((i, idx) => {
-                  const qty = Math.max(1, Math.round(safeNum(i.quantity, 1)));
-                  const unit = safeNum(i.discountedPrice ?? i.price, 0);
-                  const line = unit * qty;
-                  const img = safeStr(i.image, "");
+                  const qty = Math.max(1, Math.round(n(i?.quantity, 1)));
+
+                  // Prefer unit price → sale/discount → legacy/base
+                  const unit =
+                    n(i?.unitPrice) ||
+                    n(i?.salePrice) ||
+                    n(i?.discountedPrice) ||
+                    n(i?.originalPrice) ||
+                    n(i?.price);
+
+                  const base = n(i?.originalPrice) || n(i?.price) || unit;
+
+                  const lineOrig = base * qty;
+                  const lineSale = unit * qty;
+
+                  const hasImg = !!safeStr(i?.image).trim();
+                  const imgSrc = hasImg
+                    ? safeStr(i?.image)
+                    : "/products/gray-placeholder.jpg";
+
                   return (
                     <li key={idx} className="flex items-center gap-3">
-                      {img ? (
-                        <Image
-                          src={img}
-                          alt={i.name || "Item"}
-                          width={56}
-                          height={56}
-                          className="rounded object-cover"
-                          unoptimized
-                        />
-                      ) : (
-                        <div className="w-14 h-14 rounded bg-[#1f2a44] border border-[#364763] text-[10px] flex items-center justify-center">
-                          No photo
-                        </div>
-                      )}
+                      <Image
+                        src={imgSrc}
+                        alt={safeStr(i?.name, "Item")}
+                        width={56}
+                        height={56}
+                        className="rounded object-cover"
+                        unoptimized
+                      />
                       <div className="flex-1">
                         <div className="font-medium">
-                          {i.name || "Item"}{" "}
-                          {i.size && (
+                          {safeStr(i?.name, "Item")}{" "}
+                          {i?.size && (
                             <span className="ml-2 text-xs px-2 py-0.5 rounded-full bg-[#364763] text-white">
                               Size: {i.size}
                             </span>
@@ -242,7 +280,20 @@ export default function AdminOrderDetailPage() {
                           x{qty} · {toMoney(unit)}
                         </div>
                       </div>
-                      <div className="font-semibold">{toMoney(line)}</div>
+                      <div className="font-semibold">
+                        {unit < base ? (
+                          <>
+                            <span className="line-through text-gray-400 mr-2">
+                              {toMoney(lineOrig)}
+                            </span>
+                            <span className="text-green-400">
+                              {toMoney(lineSale)}
+                            </span>
+                          </>
+                        ) : (
+                          <span>{toMoney(lineSale)}</span>
+                        )}
+                      </div>
                     </li>
                   );
                 })}
@@ -257,8 +308,13 @@ export default function AdminOrderDetailPage() {
               Currency: {order.currency?.toUpperCase() || "USD"}
             </p>
             <p className="text-sm">
-              Total: <strong>{toMoney(safeNum(order.amount, 0))}</strong>
+              Total: <strong>{toMoney(n(order.amount, 0))}</strong>
             </p>
+            {refundedCents > 0 && (
+              <p className="text-sm">
+                Refunded: <strong>{toMoney(refundedCents / 100)}</strong>
+              </p>
+            )}
             <p className="text-sm">
               Refundable balance:{" "}
               <strong>{toMoney(refundableCents / 100)}</strong>
@@ -270,7 +326,7 @@ export default function AdminOrderDetailPage() {
       {/* Refund modal */}
       {showRefund && order && (
         <RefundDialog
-          // Pass your Stripe session id to BOTH props so the API can match by stripeSessionId
+          // Pass Stripe session id so the API can match by stripeSessionId
           orderId={sessionId}
           sessionId={sessionId}
           maxCents={refundableCents}

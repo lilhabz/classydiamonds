@@ -1,4 +1,4 @@
-// ✅ pages/admin/archived.tsx – Archived Orders (robust prices + unitPrice) 🔐🗂️
+// ✅ pages/admin/archived.tsx – Archived Orders (robust prices + unitPrice + show per-item unit) 🔐🗂️
 
 import { useEffect, useState } from "react";
 import Head from "next/head";
@@ -226,13 +226,23 @@ export default function ArchivedOrdersPage() {
                         className="rounded object-cover"
                         unoptimized
                       />
-                      <span>
-                        {item.name || "Item"}
-                        {item.size && (
-                          <span className="ml-2 text-xs px-2 py-0.5 rounded-full bg-[#364763] text-white align-middle">
-                            Size: {item.size}
-                          </span>
-                        )}{" "}
+
+                      {/* 👉 NEW: show unit price line under name/size */}
+                      <div className="flex flex-col">
+                        <div>
+                          {item.name || "Item"}
+                          {item.size && (
+                            <span className="ml-2 text-xs px-2 py-0.5 rounded-full bg-[#364763] text-white align-middle">
+                              Size: {item.size}
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-xs text-gray-300 mt-0.5">
+                          Unit: ${unit.toFixed(2)}
+                        </div>
+                      </div>
+
+                      <span className="ml-2">
                         – x{qty} –{" "}
                         {unit < base ? (
                           <>
@@ -257,7 +267,6 @@ export default function ArchivedOrdersPage() {
                   💰 Total: ${n(order.amount).toFixed(2)}
                 </span>
                 <div className="space-x-2">
-                  {/* View details/refund page */}
                   <Link href={`/admin/order/${order.stripeSessionId}`}>
                     <span className="bg-blue-500 px-4 py-2 rounded text-sm cursor-pointer">
                       View 🔍
