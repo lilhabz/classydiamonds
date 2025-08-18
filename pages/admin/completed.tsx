@@ -1,4 +1,4 @@
-// ✅ pages/admin/completed.tsx – Completed Orders (no CSV/PDF) 🔐🛠️
+// ✅ pages/admin/completed.tsx – Completed Orders (refund-ready) 🔐🛠️
 
 import { useEffect, useState } from "react";
 import Head from "next/head";
@@ -6,6 +6,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useSession } from "next-auth/react";
 import Breadcrumbs from "@/components/Breadcrumbs";
+import RefundDialog from "@/components/RefundDialog";
 
 interface OrderItem {
   name: string;
@@ -24,7 +25,8 @@ interface Order {
   customerEmail: string;
   customerAddress: string;
   items?: OrderItem[];
-  amount: number;
+  amount: number; // dollars
+  refundedTotal?: number; // cents (optional)
   createdAt: string;
   stripeSessionId: string;
   orderNumber?: number;
@@ -54,6 +56,14 @@ export default function CompletedOrdersPage() {
   const [savingTracking, setSavingTracking] = useState<Record<string, boolean>>(
     {}
   );
+
+  // 👇 include BOTH ids, so we can pass Mongo _id to the API
+  const [refundTarget, setRefundTarget] = useState<{
+    orderId: string; // Mongo _id
+    sessionId: string; // Stripe session id
+    maxCents: number;
+  } | null>(null);
+
   const itemsPerPage = 5;
 
   useEffect(() => {
@@ -153,6 +163,17 @@ export default function CompletedOrdersPage() {
     }
   };
 
+  // 💳 Open refund modal with BOTH ids
+  const openRefund = (o: Order) => {
+    const sessionId = o.stripeSessionId;
+    if (!sessionId) return alert("❌ Missing Stripe session id on this order.");
+    const totalCents = Math.max(0, Math.round(o.amount * 100)); // dollars -> cents
+    const refundedCents = Math.max(0, Math.round(o.refundedTotal || 0)); // cents
+    const maxCents = Math.max(0, totalCents - refundedCents);
+    if (maxCents <= 0) return alert("Nothing left to refund for this order.");
+    setRefundTarget({ orderId: o._id, sessionId, maxCents });
+  };
+
   const filteredOrders = orders.filter((order) => {
     if (order.archived || order.delivered) return false;
     const q = searchQuery.toLowerCase();
@@ -248,187 +269,219 @@ export default function CompletedOrdersPage() {
 
           {/* 🧾 Orders */}
           <div className="space-y-10">
-            {pageData.map((order) => (
-              <div
-                key={order._id}
-                className="bg-[var(--bg-nav)] p-6 rounded-xl shadow"
-              >
-                <h2 className="text-xl font-semibold mb-1">
-                  {order.customerName} ({order.customerEmail})
-                </h2>
-                <p className="text-sm text-gray-300 mb-2">
-                  🔢 Order #: {order.orderNumber ?? "N/A"} | 🆔{" "}
-                  {order.stripeSessionId.slice(-8)}
-                </p>
-                <p className="mb-2">📍 {order.customerAddress}</p>
-                <p className="mb-4">
-                  🧾 Shipped: {new Date(order.shippedAt || "").toLocaleString()}
-                </p>
+            {pageData.map((order) => {
+              const totalCents = Math.max(0, Math.round(order.amount * 100));
+              const refundedCents = Math.max(
+                0,
+                Math.round(order.refundedTotal || 0)
+              );
+              const refundableCents = Math.max(0, totalCents - refundedCents);
 
-                {order.trackingNumber ? (
-                  <p>
-                    <strong>Tracking:</strong> {order.trackingNumber}
-                    {order.carrier ? ` (${order.carrier})` : ""}
+              return (
+                <div
+                  key={order._id}
+                  className="bg-[var(--bg-nav)] p-6 rounded-xl shadow"
+                >
+                  <h2 className="text-xl font-semibold mb-1">
+                    {order.customerName} ({order.customerEmail})
+                  </h2>
+                  <p className="text-sm text-gray-300 mb-2">
+                    🔢 Order #: {order.orderNumber ?? "N/A"} | 🆔{" "}
+                    {order.stripeSessionId.slice(-8)}
                   </p>
-                ) : (
-                  <div className="mt-2 flex flex-col sm:flex-row sm:items-center gap-2">
-                    <select
-                      value={
-                        trackingInputs[order.stripeSessionId]?.carrier || "USPS"
-                      }
-                      onChange={(e) =>
-                        setTrackingInputs((prev) => ({
-                          ...prev,
-                          [order.stripeSessionId]: {
-                            ...(prev[order.stripeSessionId] || {
-                              trackingNumber: "",
-                              carrier: "USPS",
-                            }),
-                            carrier: e.target.value,
-                          },
-                        }))
-                      }
-                      className="px-2 py-1 rounded bg-[#2e3a58] text-white"
-                    >
-                      <option value="USPS">USPS</option>
-                      <option value="UPS">UPS</option>
-                      <option value="FedEx">FedEx</option>
-                    </select>
-                    <input
-                      type="text"
-                      placeholder="Tracking #"
-                      value={
-                        trackingInputs[order.stripeSessionId]?.trackingNumber ||
-                        ""
-                      }
-                      onChange={(e) =>
-                        setTrackingInputs((prev) => ({
-                          ...prev,
-                          [order.stripeSessionId]: {
-                            ...(prev[order.stripeSessionId] || {
-                              trackingNumber: "",
-                              carrier: "USPS",
-                            }),
-                            trackingNumber: e.target.value,
-                          },
-                        }))
-                      }
-                      className="px-2 py-1 rounded bg-[#2e3a58] text-white flex-1"
-                    />
-                    {(() => {
-                      const inputVal =
-                        trackingInputs[order.stripeSessionId]?.trackingNumber ||
-                        "";
-                      const isSaved =
-                        !!inputVal &&
-                        savedTracking[order.stripeSessionId] === inputVal;
-                      const isSaving = savingTracking[order.stripeSessionId];
-                      return (
-                        <button
-                          onClick={() => updateTracking(order.stripeSessionId)}
-                          disabled={isSaved || isSaving}
-                          className="bg-green-600 px-3 py-1 rounded text-sm disabled:opacity-50"
-                        >
-                          {isSaved
-                            ? "✅ Saved"
-                            : isSaving
-                            ? "Saving..."
-                            : "Save Tracking"}
-                        </button>
-                      );
-                    })()}
-                  </div>
-                )}
+                  <p className="mb-2">📍 {order.customerAddress}</p>
+                  <p className="mb-4">
+                    🧾 Shipped:{" "}
+                    {new Date(order.shippedAt || "").toLocaleString()}
+                  </p>
 
-                <div className="mt-4">
-                  <strong>Items:</strong>
-                  {Array.isArray(order.items) && order.items.length > 0 ? (
-                    <ul className="list-disc list-inside space-y-1 mt-2">
-                      {order.items.map((item, i) => {
-                        const qty = item.quantity ?? 1;
-                        const displayPrice =
-                          item.salePrice ??
-                          item.discountedPrice ??
-                          item.originalPrice ??
-                          item.price ??
-                          0;
-                        const basePrice =
-                          item.originalPrice ?? item.price ?? displayPrice;
-                        const orig = basePrice * qty;
-                        const sale = displayPrice * qty;
-                        const safeImage =
-                          item.image && item.image.trim() !== ""
-                            ? item.image
-                            : "/products/gray-placeholder.jpg";
-                        return (
-                          <li key={i} className="flex items-center gap-2">
-                            <Image
-                              src={safeImage}
-                              alt={item.name || "Product image"}
-                              width={48}
-                              height={48}
-                              className="rounded object-cover"
-                              unoptimized
-                            />
-                            <span>
-                              {item.name || "Unnamed"}
-                              {item.size && (
-                                <span className="ml-2 text-xs px-2 py-0.5 rounded-full bg-[#364763] text-white align-middle">
-                                  Size: {item.size}
-                                </span>
-                              )}{" "}
-                              – x{qty} –{" "}
-                              {displayPrice < basePrice ? (
-                                <>
-                                  <span className="line-through mr-1">
-                                    ${orig.toFixed(2)}
-                                  </span>
-                                  <span className="text-green-400">
-                                    ${sale.toFixed(2)}
-                                  </span>
-                                </>
-                              ) : (
-                                <span>${sale.toFixed(2)}</span>
-                              )}
-                            </span>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  ) : (
-                    <p className="text-sm text-red-300 mt-2">
-                      ⚠️ No item data available.
+                  {order.trackingNumber ? (
+                    <p>
+                      <strong>Tracking:</strong> {order.trackingNumber}
+                      {order.carrier ? ` (${order.carrier})` : ""}
                     </p>
+                  ) : (
+                    <div className="mt-2 flex flex-col sm:flex-row sm:items-center gap-2">
+                      <select
+                        value={
+                          trackingInputs[order.stripeSessionId]?.carrier ||
+                          "USPS"
+                        }
+                        onChange={(e) =>
+                          setTrackingInputs((prev) => ({
+                            ...prev,
+                            [order.stripeSessionId]: {
+                              ...(prev[order.stripeSessionId] || {
+                                trackingNumber: "",
+                                carrier: "USPS",
+                              }),
+                              carrier: e.target.value,
+                            },
+                          }))
+                        }
+                        className="px-2 py-1 rounded bg-[#2e3a58] text-white"
+                      >
+                        <option value="USPS">USPS</option>
+                        <option value="UPS">UPS</option>
+                        <option value="FedEx">FedEx</option>
+                      </select>
+                      <input
+                        type="text"
+                        placeholder="Tracking #"
+                        value={
+                          trackingInputs[order.stripeSessionId]
+                            ?.trackingNumber || ""
+                        }
+                        onChange={(e) =>
+                          setTrackingInputs((prev) => ({
+                            ...prev,
+                            [order.stripeSessionId]: {
+                              ...(prev[order.stripeSessionId] || {
+                                trackingNumber: "",
+                                carrier: "USPS",
+                              }),
+                              trackingNumber: e.target.value,
+                            },
+                          }))
+                        }
+                        className="px-2 py-1 rounded bg-[#2e3a58] text-white flex-1"
+                      />
+                      {(() => {
+                        const inputVal =
+                          trackingInputs[order.stripeSessionId]
+                            ?.trackingNumber || "";
+                        const isSaved =
+                          !!inputVal &&
+                          savedTracking[order.stripeSessionId] === inputVal;
+                        const isSaving = savingTracking[order.stripeSessionId];
+                        return (
+                          <button
+                            onClick={() =>
+                              updateTracking(order.stripeSessionId)
+                            }
+                            disabled={isSaved || isSaving}
+                            className="bg-green-600 px-3 py-1 rounded text-sm disabled:opacity-50"
+                          >
+                            {isSaved
+                              ? "✅ Saved"
+                              : isSaving
+                              ? "Saving..."
+                              : "Save Tracking"}
+                          </button>
+                        );
+                      })()}
+                    </div>
                   )}
-                </div>
 
-                <div className="flex justify-between items-center mt-4">
-                  <span className="text-lg font-semibold">
-                    💰 Total: ${order.amount.toFixed(2)}
-                  </span>
-                  <div className="space-x-2">
-                    {/* ✅ NEW: View button to permanent details/refund page */}
-                    <Link href={`/admin/order/${order.stripeSessionId}`}>
-                      <span className="bg-blue-500 px-4 py-2 rounded text-sm cursor-pointer">
-                        View 🔍
-                      </span>
-                    </Link>
-                    <button
-                      onClick={() => markDelivered(order.stripeSessionId)}
-                      className="bg-blue-600 px-4 py-2 rounded text-sm"
-                    >
-                      Delivered 📬
-                    </button>
-                    <button
-                      onClick={() => archiveOrder(order.stripeSessionId)}
-                      className="bg-yellow-600 px-4 py-2 rounded text-sm"
-                    >
-                      Archive 🗂
-                    </button>
+                  <div className="mt-4">
+                    <strong>Items:</strong>
+                    {Array.isArray(order.items) && order.items.length > 0 ? (
+                      <ul className="list-disc list-inside space-y-1 mt-2">
+                        {order.items.map((item, i) => {
+                          const qty = item.quantity ?? 1;
+                          const displayPrice =
+                            item.salePrice ??
+                            item.discountedPrice ??
+                            item.originalPrice ??
+                            item.price ??
+                            0;
+                          const basePrice =
+                            item.originalPrice ?? item.price ?? displayPrice;
+                          const orig = basePrice * qty;
+                          const sale = displayPrice * qty;
+                          const safeImage =
+                            item.image && item.image.trim() !== ""
+                              ? item.image
+                              : "/products/gray-placeholder.jpg";
+                          return (
+                            <li key={i} className="flex items-center gap-2">
+                              <Image
+                                src={safeImage}
+                                alt={item.name || "Product image"}
+                                width={48}
+                                height={48}
+                                className="rounded object-cover"
+                                unoptimized
+                              />
+                              <span>
+                                {item.name || "Unnamed"}
+                                {item.size && (
+                                  <span className="ml-2 text-xs px-2 py-0.5 rounded-full bg-[#364763] text-white align-middle">
+                                    Size: {item.size}
+                                  </span>
+                                )}{" "}
+                                – x{qty} –{" "}
+                                {displayPrice < basePrice ? (
+                                  <>
+                                    <span className="line-through mr-1">
+                                      ${orig.toFixed(2)}
+                                    </span>
+                                    <span className="text-green-400">
+                                      ${sale.toFixed(2)}
+                                    </span>
+                                  </>
+                                ) : (
+                                  <span>${sale.toFixed(2)}</span>
+                                )}
+                              </span>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    ) : (
+                      <p className="text-sm text-red-300 mt-2">
+                        ⚠️ No item data available.
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="flex justify-between items-center mt-4">
+                    <span className="text-lg font-semibold">
+                      💰 Total: ${order.amount.toFixed(2)}
+                      {refundedCents > 0 && (
+                        <span className="ml-2 text-sm text-gray-300">
+                          • Refunded ${(refundedCents / 100).toFixed(2)}
+                        </span>
+                      )}
+                    </span>
+                    <div className="space-x-2">
+                      <Link href={`/admin/order/${order.stripeSessionId}`}>
+                        <span className="bg-blue-500 px-4 py-2 rounded text-sm cursor-pointer">
+                          View 🔍
+                        </span>
+                      </Link>
+                      {/* 💳 Refund (opens modal with both ids) */}
+                      <button
+                        onClick={() => openRefund(order)}
+                        className="bg-indigo-600 px-4 py-2 rounded text-sm disabled:opacity-60"
+                        disabled={refundableCents <= 0}
+                        title={
+                          refundableCents <= 0
+                            ? "Nothing left to refund"
+                            : `Refund up to $${(refundableCents / 100).toFixed(
+                                2
+                              )}`
+                        }
+                      >
+                        Refund 💳
+                      </button>
+                      <button
+                        onClick={() => markDelivered(order.stripeSessionId)}
+                        className="bg-blue-600 px-4 py-2 rounded text-sm"
+                      >
+                        Delivered 📬
+                      </button>
+                      <button
+                        onClick={() => archiveOrder(order.stripeSessionId)}
+                        className="bg-yellow-600 px-4 py-2 rounded text-sm"
+                      >
+                        Archive 🗂
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           {/* 📄 Pagination */}
@@ -459,6 +512,20 @@ export default function CompletedOrdersPage() {
             Exit Admin Panel 🔒
           </button>
         </>
+      )}
+
+      {/* 💳 Refund modal – now passes BOTH ids */}
+      {refundTarget && (
+        <RefundDialog
+          orderId={refundTarget.orderId}
+          sessionId={refundTarget.sessionId}
+          maxCents={refundTarget.maxCents}
+          onClose={() => setRefundTarget(null)}
+          onSuccess={async () => {
+            setRefundTarget(null);
+            await fetchCompletedOrders();
+          }}
+        />
       )}
     </div>
   );

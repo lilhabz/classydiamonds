@@ -19,6 +19,10 @@ type RefundBody = {
   note?: string;
 };
 
+function isValidObjectId(s?: string) {
+  return !!s && /^[0-9a-fA-F]{24}$/.test(s);
+}
+
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
@@ -38,16 +42,25 @@ export default async function handler(
       reason = "requested_by_customer",
       note,
     } = req.body as RefundBody;
+
     if (!orderId && !sessionId)
       return res.status(400).json({ error: "Provide orderId or sessionId" });
 
     const db = (await clientPromise).db();
     const Orders = db.collection("orders");
 
-    // Find by _id OR stripeSessionId
-    const query: any = orderId
-      ? { _id: new ObjectId(orderId) }
-      : { stripeSessionId: sessionId };
+    // ✅ Find by _id when the id looks like a 24-hex string, otherwise by stripeSessionId
+    let query: any = null;
+    if (isValidObjectId(orderId)) {
+      query = { _id: new ObjectId(orderId as string) };
+    } else if (sessionId) {
+      query = { stripeSessionId: sessionId };
+    } else {
+      return res
+        .status(400)
+        .json({ error: "Invalid orderId; missing sessionId fallback" });
+    }
+
     const order = await Orders.findOne(query);
     if (!order) return res.status(404).json({ error: "Order not found" });
 
@@ -65,7 +78,7 @@ export default async function handler(
     if (!pi || typeof pi === "string")
       return res.status(400).json({ error: "PaymentIntent not found" });
 
-    const maxAmount = pi.amount_received ?? 0;
+    const maxAmount = pi.amount_received ?? 0; // cents
     const refundAmount =
       typeof amount === "number" ? Math.min(amount, maxAmount) : undefined; // undefined = full
 
@@ -84,7 +97,7 @@ export default async function handler(
     // Update order with refund entry
     const refundEntry = {
       refundId: refund.id,
-      amount: refund.amount ?? maxAmount,
+      amount: refund.amount ?? maxAmount, // cents
       reason,
       note: note || "",
       adminEmail: session.user.email,
@@ -93,20 +106,22 @@ export default async function handler(
       status: refund.status,
     };
 
+    const orderTotalCents =
+      Math.round(
+        (order.amount || order.saleTotal || order.originalTotal || 0) * 100
+      ) || 0;
+
     const refundedTotal =
       (order.refundedTotal || 0) + (refundEntry.amount || 0);
     const newStatus =
-      refundedTotal >=
-      (order.amount || order.saleTotal || order.originalTotal || 0)
-        ? "refunded"
-        : "partially_refunded";
+      refundedTotal >= orderTotalCents ? "refunded" : "partially_refunded";
 
     await Orders.updateOne(
       { _id: order._id },
       {
         $push: { refunds: refundEntry },
         $set: {
-          refundedTotal,
+          refundedTotal, // cents
           status: newStatus,
           refundedAt: new Date().toISOString(),
         },
@@ -146,9 +161,9 @@ export default async function handler(
             <p>Hi ${order.customerName || "there"},</p>
             <p>We've processed your ${
               refundAmount ? "partial" : "full"
-            } refund of <strong>$${((refundEntry.amount || 0) / 100).toFixed(
-            2
-          )}</strong>.</p>
+            } refund of
+              <strong>$${((refundEntry.amount || 0) / 100).toFixed(2)}</strong>.
+            </p>
             ${note ? `<p><strong>Note from us:</strong> ${note}</p>` : ""}
             <p>It can take 5–10 business days to appear on your statement.</p>
             <p>Thanks,<br/>${

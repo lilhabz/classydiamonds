@@ -75,7 +75,7 @@ export default function AdminOrderDetailPage() {
   // Refundable balance (in cents). If you later track refunded amounts, subtract them here.
   const refundableCents = useMemo(() => {
     const amt = safeNum(order?.amount, 0); // dollars
-    return Math.max(0, Math.round(amt * 100)); // assume no prior refunds stored; adjust if you add refundedTotal
+    return Math.max(0, Math.round(amt * 100));
   }, [order?.amount]);
 
   // Admin actions
@@ -93,7 +93,6 @@ export default function AdminOrderDetailPage() {
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) return alert("❌ " + (data?.error || "Failed"));
-    // refresh
     router.replace(router.asPath);
   };
 
@@ -200,11 +199,7 @@ export default function AdminOrderDetailPage() {
               <ul className="space-y-3">
                 {order.items.map((i, idx) => {
                   const qty = i.quantity || 1;
-                  const unit = safeNum(
-                    i.discountedPrice ??
-                      i.price /* already normalized in API */,
-                    0
-                  );
+                  const unit = safeNum(i.discountedPrice ?? i.price, 0);
                   const line = unit * qty;
                   const img = safeStr(i.image, "");
                   return (
@@ -264,14 +259,12 @@ export default function AdminOrderDetailPage() {
       {/* Refund modal */}
       {showRefund && order && (
         <RefundDialog
-          // Your backend looks up by Stripe session id, so it's safe to pass the same id here
-          orderId={sessionId}
+          orderId={""} // not known on this page; API will use sessionId
           sessionId={sessionId}
           maxCents={refundableCents}
           onClose={() => setShowRefund(false)}
           onSuccess={async () => {
             setShowRefund(false);
-            // Re-fetch to reflect any refund status you choose to store later
             router.replace(router.asPath);
           }}
         />
