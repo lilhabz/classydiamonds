@@ -3,6 +3,8 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { ObjectId } from "mongodb";
 import clientPromise from "@/lib/mongodb";
 
+type OrderStatus = "pending" | "shipped" | "refunded" | "archived";
+
 interface RawOrder {
   _id: ObjectId;
   customerName: string;
@@ -47,7 +49,11 @@ interface RawOrder {
   stripeSessionId: string;
   orderNumber?: number;
   shipped?: boolean;
+  shippedAt?: Date;
   archived?: boolean;
+  status?: OrderStatus;
+  refundedAt?: Date;
+  refundReason?: string;
 }
 
 interface OrderItem {
@@ -87,6 +93,9 @@ interface Order {
   orderNumber: number | null;
   shipped: boolean;
   archived: boolean;
+  status: OrderStatus;
+  refundedAt?: string;
+  refundReason?: string;
 }
 
 type OrdersResponse = {
@@ -143,6 +152,14 @@ export default async function handler(
               .join(", ")
           : "");
 
+      const status: OrderStatus =
+        o.status ||
+        (o.shippedAt || o.shipped
+          ? "shipped"
+          : o.archived
+          ? "archived"
+          : "pending");
+
       return {
         _id: o._id.toHexString(),
         customerName: o.customerName,
@@ -167,6 +184,9 @@ export default async function handler(
         orderNumber: o.orderNumber ?? null,
         shipped: o.shipped ?? false,
         archived: o.archived ?? false,
+        status,
+        refundedAt: o.refundedAt ? new Date(o.refundedAt).toISOString() : undefined,
+        refundReason: o.refundReason,
       };
     });
 

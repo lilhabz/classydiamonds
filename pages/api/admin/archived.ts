@@ -4,6 +4,8 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import clientPromise from "@/lib/mongodb";
 // (getServerSession/authOptions were imported but unused; safe to remove)
 
+type OrderStatus = "pending" | "shipped" | "refunded" | "archived";
+
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
@@ -16,35 +18,48 @@ export default async function handler(
       // 1️⃣ Fetch raw archived orders
       const raw = await db
         .collection("orders")
-        .find({ archived: true })
+        .find({ $or: [{ status: "archived" }, { archived: true }] })
         .sort({ archivedAt: -1 })
         .toArray();
 
       // 2️⃣ Remap each order’s items to expose both prices + image + size
-      const orders = raw.map((o: any) => ({
-        _id: o._id.toString(),
-        customerName: o.customerName,
-        customerEmail: o.customerEmail,
-        customerAddress: o.customerAddress,
-        shipping_address_string: o.shipping_address_string,
-        amount: o.amount,
-        currency: o.currency || "usd",
-        paymentStatus: o.paymentStatus || "",
-        createdAt: o.createdAt,
-        archived: o.archived ?? false,
-        archivedAt: o.archivedAt,
-        orderNumber: o.orderNumber,
-        stripeSessionId: o.stripeSessionId,
+      const orders = raw.map((o: any) => {
+        const status: OrderStatus =
+          o.status ||
+          (o.archived
+            ? "archived"
+            : o.shippedAt || o.shipped
+            ? "shipped"
+            : "pending");
+        return {
+          _id: o._id.toString(),
+          customerName: o.customerName,
+          customerEmail: o.customerEmail,
+          customerAddress: o.customerAddress,
+          shipping_address_string: o.shipping_address_string,
+          amount: o.amount,
+          currency: o.currency || "usd",
+          paymentStatus: o.paymentStatus || "",
+          createdAt: o.createdAt,
+          archived: o.archived ?? false,
+          archivedAt: o.archivedAt,
+          orderNumber: o.orderNumber,
+          stripeSessionId: o.stripeSessionId,
+          status,
+          refundedAt: o.refundedAt ? new Date(o.refundedAt).toISOString() : undefined,
+          refundReason: o.refundReason,
 
-        items: (o.items || []).map((i: any) => ({
-          name: i.name,
-          quantity: i.quantity,
-          price: i.originalPrice, // original price
-          discountedPrice: i.salePrice !== undefined ? i.salePrice : undefined, // sale price if discounted
-          image: i.image || "",
-          size: i.size || undefined, // 🆕 include ring size
-        })),
-      }));
+          items: (o.items || []).map((i: any) => ({
+            name: i.name,
+            quantity: i.quantity,
+            price: i.originalPrice, // original price
+            discountedPrice:
+              i.salePrice !== undefined ? i.salePrice : undefined, // sale price if discounted
+            image: i.image || "",
+            size: i.size || undefined, // 🆕 include ring size
+          })),
+        };
+      });
 
       return res.status(200).json({ orders });
     } catch (err: any) {
@@ -60,8 +75,8 @@ export default async function handler(
     }
     try {
       const update = restore
-        ? { $set: { archived: false }, $unset: { archivedAt: "" } }
-        : { $set: { archived: true, archivedAt: new Date() } };
+        ? { $set: { archived: false, status: "pending" }, $unset: { archivedAt: "" } }
+        : { $set: { archived: true, archivedAt: new Date(), status: "archived" } };
 
       const result = await db
         .collection("orders")

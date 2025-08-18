@@ -1,26 +1,11 @@
-// 📂 pages/api/admin/refund.ts – Full/partial refunds by _id or stripeSessionId
 import type { NextApiRequest, NextApiResponse } from "next";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "../auth/[...nextauth]";
 import clientPromise from "@/lib/mongodb";
-import Stripe from "stripe";
 import { ObjectId } from "mongodb";
-import nodemailer from "nodemailer";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string, {
-  apiVersion: "2025-04-30.basil",
-});
-
-type RefundBody = {
-  orderId?: string; // Mongo _id (string)
-  sessionId?: string; // Stripe session id (string)
-  amount?: number; // cents; omit for full refund
-  reason?: "requested_by_customer" | "duplicate" | "fraudulent" | "general";
-  note?: string;
-};
-
-function isValidObjectId(s?: string) {
-  return !!s && /^[0-9a-fA-F]{24}$/.test(s);
+function isValidObjectId(id: string) {
+  return /^[0-9a-fA-F]{24}$/.test(id);
 }
 
 export default async function handler(
@@ -31,165 +16,46 @@ export default async function handler(
     return res.status(405).json({ error: "Method not allowed" });
 
   const session = await getServerSession(req, res, authOptions);
-  if (!session?.user?.email)
-    return res.status(401).json({ error: "Not authenticated" });
+  if (!session?.user?.isAdmin)
+    return res.status(401).json({ error: "Unauthorized" });
+
+  const { orderId, reason } = req.body || {};
+  if (typeof orderId !== "string" || !isValidObjectId(orderId)) {
+    return res.status(400).json({ error: "Invalid orderId" });
+  }
 
   try {
-    const {
-      orderId,
-      sessionId,
-      amount,
-      reason = "requested_by_customer",
-      note,
-    } = req.body as RefundBody;
-
-    if (!orderId && !sessionId)
-      return res.status(400).json({ error: "Provide orderId or sessionId" });
-
     const db = (await clientPromise).db();
     const Orders = db.collection("orders");
+    const AdminLogs = db.collection("adminLogs");
+    const _id = new ObjectId(orderId);
 
-    // ✅ Find by _id when the id looks like a 24-hex string, otherwise by stripeSessionId
-    let query: any = null;
-    if (isValidObjectId(orderId)) {
-      query = { _id: new ObjectId(orderId as string) };
-    } else if (sessionId) {
-      query = { stripeSessionId: sessionId };
-    } else {
-      return res
-        .status(400)
-        .json({ error: "Invalid orderId; missing sessionId fallback" });
-    }
-
-    const order = await Orders.findOne(query);
-    if (!order) return res.status(404).json({ error: "Order not found" });
-
-    const stripeSessionId: string | undefined =
-      order.stripeSessionId || sessionId;
-    if (!stripeSessionId)
-      return res.status(400).json({ error: "Order missing stripeSessionId" });
-
-    // Get PaymentIntent from Checkout Session
-    const sessionObj = await stripe.checkout.sessions.retrieve(
-      stripeSessionId,
-      { expand: ["payment_intent"] }
-    );
-    const pi = sessionObj.payment_intent as Stripe.PaymentIntent | null;
-    if (!pi || typeof pi === "string")
-      return res.status(400).json({ error: "PaymentIntent not found" });
-
-    const maxAmount = pi.amount_received ?? 0; // cents
-    const refundAmount =
-      typeof amount === "number" ? Math.min(amount, maxAmount) : undefined; // undefined = full
-
-    // Create refund
-    const refund = await stripe.refunds.create({
-      payment_intent: pi.id,
-      amount: refundAmount,
-      reason: reason === "general" ? undefined : (reason as any),
-      metadata: {
-        orderId: String(order._id),
-        adminEmail: session.user.email,
-        note: note || "",
-      },
-    });
-
-    // Update order with refund entry
-    const refundEntry = {
-      refundId: refund.id,
-      amount: refund.amount ?? maxAmount, // cents
-      reason,
-      note: note || "",
-      adminEmail: session.user.email,
-      createdAt: new Date().toISOString(),
-      provider: "stripe" as const,
-      status: refund.status,
-    };
-
-    const orderTotalCents =
-      Math.round(
-        (order.amount || order.saleTotal || order.originalTotal || 0) * 100
-      ) || 0;
-
-    const refundedTotal =
-      (order.refundedTotal || 0) + (refundEntry.amount || 0);
-    const newStatus =
-      refundedTotal >= orderTotalCents ? "refunded" : "partially_refunded";
+    const existing = await Orders.findOne({ _id });
+    if (!existing) return res.status(404).json({ error: "Order not found" });
+    if (existing.status === "refunded") return res.status(200).json({ ok: true });
 
     await Orders.updateOne(
-      { _id: order._id },
+      { _id },
       {
-        $push: { refunds: refundEntry },
         $set: {
-          refundedTotal, // cents
-          status: newStatus,
-          refundedAt: new Date().toISOString(),
+          status: "refunded",
+          refundedAt: new Date(),
+          ...(reason ? { refundReason: reason } : {}),
         },
       }
     );
 
-    // Log to adminLogs
-    const AdminLogs = db.collection("adminLogs");
     await AdminLogs.insertOne({
-      orderId: String(order._id),
-      action: "refund",
-      amount: refundEntry.amount,
-      note: note || "",
-      timestamp: new Date().toISOString(),
+      orderId,
+      action: "refunded",
+      timestamp: new Date(),
       performedBy: session.user.email,
-      provider: "stripe",
-      refundId: refund.id,
+      ...(reason ? { reason } : {}),
     });
 
-    // Optional: email the customer
-    try {
-      if (order.customerEmail && process.env.EMAIL_HOST) {
-        const transporter = nodemailer.createTransport({
-          host: process.env.EMAIL_HOST,
-          port: Number(process.env.EMAIL_PORT || "587"),
-          secure: false,
-          auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
-        });
-
-        await transporter.sendMail({
-          from: process.env.EMAIL_FROM,
-          to: order.customerEmail,
-          subject: `Your refund has been issued for Order #${
-            order.orderNumber || String(order._id).slice(-6)
-          }`,
-          html: `
-            <p>Hi ${order.customerName || "there"},</p>
-            <p>We've processed your ${
-              refundAmount ? "partial" : "full"
-            } refund of
-              <strong>$${((refundEntry.amount || 0) / 100).toFixed(2)}</strong>.
-            </p>
-            ${note ? `<p><strong>Note from us:</strong> ${note}</p>` : ""}
-            <p>It can take 5–10 business days to appear on your statement.</p>
-            <p>Thanks,<br/>${
-              process.env.BUSINESS_NAME || "Customer Support"
-            }</p>
-          `,
-        });
-      }
-    } catch (e) {
-      await AdminLogs.insertOne({
-        orderId: String(order._id),
-        action: "refund_email_failed",
-        error: (e as Error).message,
-        timestamp: new Date().toISOString(),
-        performedBy: session.user.email,
-      });
-    }
-
-    return res.status(200).json({
-      ok: true,
-      refund: refundEntry,
-      status: newStatus,
-      refundedTotal,
-    });
-  } catch (err: any) {
-    console.error(err);
-    return res.status(500).json({ error: err.message || "Refund failed" });
+    return res.status(200).json({ ok: true });
+  } catch (e: any) {
+    console.error("refund error:", e);
+    return res.status(500).json({ error: e.message || "Refund failed" });
   }
 }

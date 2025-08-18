@@ -32,6 +32,9 @@ interface Order {
   orderNumber?: number;
   shippedAt?: string;
   archived?: boolean;
+  status?: "pending" | "shipped" | "refunded" | "archived";
+  refundedAt?: string;
+  refundReason?: string;
 }
 
 /** Robust number parser: accepts number or "$1,234.56" strings. */
@@ -92,8 +95,11 @@ export default function ArchivedOrdersPage() {
 
   const filteredOrders = orders.filter((order) => {
     const q = searchQuery.toLowerCase();
+    const st =
+      order.status ||
+      (order.archived ? "archived" : order.shippedAt ? "shipped" : "pending");
     return (
-      order.archived &&
+      (st === "archived" || order.archived) &&
       ((order.customerName || "").toLowerCase().includes(q) ||
         (order.customerEmail || "").toLowerCase().includes(q) ||
         (order.stripeSessionId || "").toLowerCase().includes(q))
@@ -139,6 +145,9 @@ export default function ArchivedOrdersPage() {
         </Link>
         <Link href="/admin/completed" className="hover:text-yellow-300">
           ✅ Shipped
+        </Link>
+        <Link href="/admin/refunded" className="hover:text-yellow-300">
+          💸 Refunded
         </Link>
         <Link href="/admin/delivered" className="hover:text-yellow-300">
           📬 Delivered

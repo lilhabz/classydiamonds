@@ -6,7 +6,6 @@ import Link from "next/link";
 import Image from "next/image";
 import { useSession } from "next-auth/react";
 import Breadcrumbs from "@/components/Breadcrumbs";
-import RefundDialog from "@/components/RefundDialog";
 
 interface OrderItem {
   name: string;
@@ -38,6 +37,9 @@ interface Order {
   delivered?: boolean;
   deliveredAt?: string;
   archived?: boolean;
+  status?: "pending" | "shipped" | "refunded" | "archived";
+  refundedAt?: string;
+  refundReason?: string;
 }
 
 /** Robust number parser: accepts number or string like "$1,234.56". */
@@ -69,10 +71,6 @@ export default function CompletedOrdersPage() {
   const [savingTracking, setSavingTracking] = useState<Record<string, boolean>>(
     {}
   );
-  const [refundTarget, setRefundTarget] = useState<{
-    sessionId: string;
-    maxCents: number;
-  } | null>(null);
 
   const itemsPerPage = 5;
 
@@ -173,18 +171,27 @@ export default function CompletedOrdersPage() {
     }
   };
 
-  const openRefund = (o: Order) => {
-    const sessionId = o.stripeSessionId;
-    if (!sessionId) return alert("❌ Missing Stripe session id on this order.");
-    const totalCents = Math.max(0, Math.round(n(o.amount) * 100)); // dollars -> cents
-    const refundedCents = Math.max(0, Math.round(n(o.refundedTotal))); // already cents
-    const maxCents = Math.max(0, totalCents - refundedCents);
-    if (maxCents <= 0) return alert("Nothing left to refund for this order.");
-    setRefundTarget({ sessionId, maxCents });
+  const refundOrder = async (orderId: string) => {
+    if (!confirm("Refund this order? This moves it to Refunded.")) return;
+    try {
+      const res = await fetch("/api/admin/refund", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderId }),
+      });
+      const result = await res.json();
+      if (res.ok) fetchCompletedOrders();
+      else alert("❌ " + result.error);
+    } catch (err) {
+      console.error("❌ Refund error:", err);
+    }
   };
 
   const filteredOrders = orders.filter((order) => {
-    if (order.archived || order.delivered) return false;
+    const st =
+      order.status ||
+      (order.shippedAt ? "shipped" : order.archived ? "archived" : "pending");
+    if (st !== "shipped" || order.delivered) return false;
     const q = searchQuery.toLowerCase();
     const matchQ =
       (order.customerName || "").toLowerCase().includes(q) ||
@@ -233,6 +240,9 @@ export default function CompletedOrdersPage() {
         </Link>
         <Link href="/admin/completed" className="text-yellow-400">
           ✅ Shipped
+        </Link>
+        <Link href="/admin/refunded" className="hover:text-yellow-300">
+          💸 Refunded
         </Link>
         <Link href="/admin/delivered" className="hover:text-yellow-300">
           📬 Delivered
@@ -283,12 +293,10 @@ export default function CompletedOrdersPage() {
           {/* 🧾 Orders */}
           <div className="space-y-10">
             {pageData.map((order) => {
-              const totalCents = Math.max(0, Math.round(n(order.amount) * 100));
               const refundedCents = Math.max(
                 0,
                 Math.round(n(order.refundedTotal))
               );
-              const refundableCents = Math.max(0, totalCents - refundedCents);
 
               return (
                 <div
@@ -473,16 +481,8 @@ export default function CompletedOrdersPage() {
                         </span>
                       </Link>
                       <button
-                        onClick={() => openRefund(order)}
-                        className="bg-indigo-600 px-4 py-2 rounded text-sm disabled:opacity-60"
-                        disabled={refundableCents <= 0}
-                        title={
-                          refundableCents <= 0
-                            ? "Nothing left to refund"
-                            : `Refund up to $${(refundableCents / 100).toFixed(
-                                2
-                              )}`
-                        }
+                        onClick={() => refundOrder(order._id)}
+                        className="bg-indigo-600 px-4 py-2 rounded text-sm"
                       >
                         Refund 💳
                       </button>
@@ -535,19 +535,6 @@ export default function CompletedOrdersPage() {
         </>
       )}
 
-      {/* 💳 Refund modal */}
-      {refundTarget && (
-        <RefundDialog
-          orderId={refundTarget.sessionId} // backend accepts either; will fall back to stripeSessionId
-          sessionId={refundTarget.sessionId}
-          maxCents={refundTarget.maxCents}
-          onClose={() => setRefundTarget(null)}
-          onSuccess={async () => {
-            setRefundTarget(null);
-            await fetchCompletedOrders();
-          }}
-        />
-      )}
     </div>
   );
 }

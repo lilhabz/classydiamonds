@@ -9,9 +9,16 @@ import Breadcrumbs from "@/components/Breadcrumbs";
 interface AdminLog {
   _id: string;
   orderId: string;
-  action: "archive" | "restore" | "shipped" | "delivered" | "tracking";
+  action:
+    | "archive"
+    | "restore"
+    | "shipped"
+    | "delivered"
+    | "tracking"
+    | "refunded";
   timestamp: string;
   performedBy: string;
+  reason?: string;
 }
 
 interface OrderItem {
@@ -192,6 +199,9 @@ export default function AdminLogsPage() {
         <Link href="/admin/completed" className="hover:text-yellow-300">
           ✅ Shipped
         </Link>
+        <Link href="/admin/refunded" className="hover:text-yellow-300">
+          💸 Refunded
+        </Link>
         <Link href="/admin/delivered" className="hover:text-yellow-300">
           📬 Delivered
         </Link>
@@ -314,6 +324,8 @@ export default function AdminLogsPage() {
                             ? "text-blue-400"
                             : latest.action === "tracking"
                             ? "text-teal-300"
+                            : latest.action === "refunded"
+                            ? "text-red-400"
                             : "text-yellow-300"
                         }`}
                       >
