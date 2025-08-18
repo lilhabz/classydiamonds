@@ -1,4 +1,4 @@
-// ✅ pages/admin/index.tsx – Admin Orders (no CSV/PDF) 🔐🛠️ (hardened)
+// ✅ pages/admin/index.tsx – Admin Orders (refund-ready, hardened) 🔐🛠️
 
 import { useEffect, useState, useMemo } from "react";
 import Head from "next/head";
@@ -17,20 +17,22 @@ const safeSlice = (v: unknown, start?: number, end?: number): string =>
 
 const safeArray = <T,>(v: unknown): T[] => (Array.isArray(v) ? (v as T[]) : []);
 
-const safeNum = (v: unknown, fallback = 0): number =>
-  typeof v === "number" && !Number.isNaN(v) ? v : fallback;
+const n = (v: unknown, d = 0): number => {
+  const num = typeof v === "string" ? Number(v) : (v as number);
+  return Number.isFinite(num) ? num : d;
+};
 
-/* ---------- Types (make possibly-undefined fields optional to match API reality) ---------- */
+/* ---------- Types (tolerate string numbers from DB) ---------- */
 interface OrderItem {
   name?: string;
-  quantity?: number;
-  price?: number;
-  discountedPrice?: number;
-  salePrice?: number;
-  originalPrice?: number;
+  quantity?: number | string;
+  price?: number | string;
+  discountedPrice?: number | string;
+  salePrice?: number | string;
+  originalPrice?: number | string;
   image?: string | null;
-  size?: string; // ring size
-  unitPrice?: number; // new flow
+  size?: string;
+  unitPrice?: number | string;
 }
 
 interface Order {
@@ -49,8 +51,8 @@ interface Order {
   shipping_address_string?: string;
   addressSource?: "Stripe" | "Account" | "Unknown";
   items?: OrderItem[];
-  amount?: number; // dollars
-  refundedTotal?: number; // cents (optional; may be absent on older orders)
+  amount?: number | string; // dollars (may be string)
+  refundedTotal?: number | string; // cents (older orders may omit)
   createdAt?: string | Date;
   stripeSessionId?: string;
   orderNumber?: number | null;
@@ -74,7 +76,6 @@ export default function AdminOrdersPage() {
   } | null>(null);
   const itemsPerPage = 5;
 
-  // 📦 Fetch orders after admin session confirmed
   useEffect(() => {
     if (session?.user?.isAdmin) fetchOrders();
   }, [session]);
@@ -136,20 +137,24 @@ export default function AdminOrdersPage() {
     }
   }
 
-  // 🔁 Open refund modal for an order
+  // 💳 Open refund modal for an order (uses Stripe sessionId)
   function openRefund(o: Order) {
     const sessionId = safeStr(o.stripeSessionId);
     if (!sessionId) {
       alert("❌ Missing Stripe session id on this order.");
       return;
     }
-    const totalCents = Math.max(0, Math.round(safeNum(o.amount, 0) * 100));
-    const refundedCents = Math.max(0, Math.round(safeNum(o.refundedTotal, 0))); // already cents
+    const totalCents = Math.max(0, Math.round(n(o.amount, 0) * 100));
+    const refundedCents = Math.max(0, Math.round(n(o.refundedTotal, 0))); // already cents
     const maxCents = Math.max(0, totalCents - refundedCents);
+    if (maxCents <= 0) {
+      alert("Nothing left to refund for this order.");
+      return;
+    }
     setRefundTarget({ sessionId, maxCents });
   }
 
-  // 🔍 Filter & paginate (all guards)
+  // 🔍 Filter & paginate
   const filtered = useMemo(() => {
     const q = searchQuery.toLowerCase();
     const start = startDate ? new Date(startDate) : null;
@@ -271,15 +276,9 @@ export default function AdminOrdersPage() {
 
           const list = safeArray<OrderItem>(o.items);
 
-          // Refund math (for button label / sanity)
-          const totalCents = Math.max(
-            0,
-            Math.round(safeNum(o.amount, 0) * 100)
-          );
-          const refundedCents = Math.max(
-            0,
-            Math.round(safeNum(o.refundedTotal, 0))
-          );
+          // Refund math
+          const totalCents = Math.max(0, Math.round(n(o.amount, 0) * 100));
+          const refundedCents = Math.max(0, Math.round(n(o.refundedTotal, 0)));
           const refundableCents = Math.max(0, totalCents - refundedCents);
 
           return (
@@ -306,31 +305,20 @@ export default function AdminOrdersPage() {
 
               <ul className="mb-4 list-disc pl-4 text-sm">
                 {list.map((i, idx) => {
-                  const qty = safeNum(i?.quantity, 1);
-                  // Prefer unitPrice (new flow), else fallbacks
-                  const displayUnit =
-                    (typeof i?.salePrice === "number"
-                      ? i?.salePrice
-                      : undefined) ??
-                    (typeof i?.discountedPrice === "number"
-                      ? i?.discountedPrice
-                      : undefined) ??
-                    (typeof i?.unitPrice === "number"
-                      ? i?.unitPrice
-                      : undefined) ??
-                    (typeof i?.originalPrice === "number"
-                      ? i?.originalPrice
-                      : undefined) ??
-                    (typeof i?.price === "number" ? i?.price : 0);
+                  const qty = Math.max(1, Math.round(n(i?.quantity, 1)));
 
-                  const baseUnit =
-                    (typeof i?.originalPrice === "number"
-                      ? i?.originalPrice
-                      : undefined) ??
-                    (typeof i?.price === "number" ? i?.price : displayUnit);
+                  // Unit price we display (coerced)
+                  const unit =
+                    n(i?.salePrice) ||
+                    n(i?.discountedPrice) ||
+                    n(i?.unitPrice) ||
+                    n(i?.originalPrice) ||
+                    n(i?.price);
 
-                  const orig = safeNum(baseUnit) * qty;
-                  const sale = safeNum(displayUnit) * qty;
+                  const base = n(i?.originalPrice) || n(i?.price) || unit;
+
+                  const lineOrig = base * qty;
+                  const lineSale = unit * qty;
 
                   const imgSrc = safeStr(i?.image, "");
                   const hasImg = imgSrc.trim().length > 0;
@@ -360,17 +348,17 @@ export default function AdminOrdersPage() {
                           </span>
                         )}{" "}
                         – x{qty} –{" "}
-                        {sale < orig ? (
+                        {unit < base ? (
                           <>
                             <span className="line-through text-gray-400 mr-1">
-                              ${orig.toFixed(2)}
+                              ${lineOrig.toFixed(2)}
                             </span>
                             <span className="text-green-400 font-semibold">
-                              ${sale.toFixed(2)}
+                              ${lineSale.toFixed(2)}
                             </span>
                           </>
                         ) : (
-                          <span>${sale.toFixed(2)}</span>
+                          <span>${lineSale.toFixed(2)}</span>
                         )}
                       </span>
                     </li>
@@ -380,7 +368,7 @@ export default function AdminOrdersPage() {
 
               <div className="flex justify-between items-center">
                 <span className="text-lg font-semibold">
-                  💰 Total: ${safeNum(o.amount).toFixed(2)}
+                  💰 Total: ${n(o.amount, 0).toFixed(2)}
                   {refundedCents > 0 && (
                     <span className="ml-2 text-sm text-gray-300">
                       • Refunded ${(refundedCents / 100).toFixed(2)}
@@ -452,7 +440,7 @@ export default function AdminOrdersPage() {
         Exit Admin Panel 🔒
       </button>
 
-      {/* 💳 Refund modal (global for the page) */}
+      {/* 💳 Refund modal */}
       {refundTarget && (
         <RefundDialog
           orderId={refundTarget.sessionId} // backend accepts sessionId or _id
@@ -461,7 +449,7 @@ export default function AdminOrdersPage() {
           onClose={() => setRefundTarget(null)}
           onSuccess={async () => {
             setRefundTarget(null);
-            await fetchOrders(); // refresh list to reflect refundedTotal
+            await fetchOrders(); // refresh to reflect refundedTotal
           }}
         />
       )}

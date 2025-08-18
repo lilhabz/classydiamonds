@@ -1,4 +1,4 @@
-// ✅ pages/admin/archived.tsx – Archived Orders (no CSV/PDF) 🔐🗂️
+// ✅ pages/admin/archived.tsx – Archived Orders (robust prices + unitPrice) 🔐🗂️
 
 import { useEffect, useState } from "react";
 import Head from "next/head";
@@ -8,28 +8,42 @@ import { useSession } from "next-auth/react";
 import Breadcrumbs from "@/components/Breadcrumbs";
 
 interface OrderItem {
-  name: string;
-  quantity: number;
-  price?: number;
-  discountedPrice?: number;
-  salePrice?: number;
-  originalPrice?: number;
+  name?: string;
+  quantity?: number | string;
+  // support both new + legacy shapes (may arrive as string)
+  unitPrice?: number | string;
+  price?: number | string;
+  discountedPrice?: number | string;
+  salePrice?: number | string;
+  originalPrice?: number | string;
   image?: string;
   size?: string;
 }
 
 interface Order {
   _id: string;
-  customerName: string;
-  customerEmail: string;
-  customerAddress: string;
+  customerName?: string;
+  customerEmail?: string;
+  customerAddress?: string;
   items?: OrderItem[];
-  amount: number;
-  createdAt: string;
+  amount?: number | string; // dollars
+  createdAt?: string;
   stripeSessionId: string;
   orderNumber?: number;
   shippedAt?: string;
   archived?: boolean;
+}
+
+/** Robust number parser: accepts number or "$1,234.56" strings. */
+function n(v: unknown, d = 0): number {
+  if (v == null || v === "") return d;
+  if (typeof v === "number") return Number.isFinite(v) ? v : d;
+  if (typeof v === "string") {
+    const cleaned = v.replace(/[^0-9.\-]/g, "");
+    const num = parseFloat(cleaned);
+    return Number.isFinite(num) ? num : d;
+  }
+  return d;
 }
 
 export default function ArchivedOrdersPage() {
@@ -48,7 +62,7 @@ export default function ArchivedOrdersPage() {
     try {
       const res = await fetch("/api/admin/archived");
       const data = await res.json();
-      setOrders(data.orders || []);
+      setOrders(Array.isArray(data.orders) ? data.orders : []);
     } catch (err) {
       console.error("❌ Failed to fetch archived orders:", err);
     } finally {
@@ -56,19 +70,17 @@ export default function ArchivedOrdersPage() {
     }
   };
 
-  const restoreOrder = async (orderId: string) => {
-    const confirmed = window.confirm(
-      `♻️ Restore this order?\nOrder ID: ${orderId}`
-    );
-    if (!confirmed) return;
-
+  // We pass the Stripe session id to the API (your backend accepts it).
+  const restoreOrder = async (sessionId: string) => {
+    if (!window.confirm(`♻️ Restore this order?\nID: ${sessionId.slice(-8)}`))
+      return;
     try {
       const adminName =
         (session?.user as any)?.firstName || session?.user?.name?.split(" ")[0];
       const res = await fetch("/api/admin/archived", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ orderId, restore: true, adminName }),
+        body: JSON.stringify({ orderId: sessionId, restore: true, adminName }),
       });
       const result = await res.json();
       if (res.ok) fetchArchivedOrders();
@@ -79,16 +91,19 @@ export default function ArchivedOrdersPage() {
   };
 
   const filteredOrders = orders.filter((order) => {
-    const query = searchQuery.toLowerCase();
+    const q = searchQuery.toLowerCase();
     return (
       order.archived &&
-      (order.customerName?.toLowerCase().includes(query) ||
-        order.customerEmail?.toLowerCase().includes(query) ||
-        order.stripeSessionId?.toLowerCase().includes(query))
+      ((order.customerName || "").toLowerCase().includes(q) ||
+        (order.customerEmail || "").toLowerCase().includes(q) ||
+        (order.stripeSessionId || "").toLowerCase().includes(q))
     );
   });
 
-  const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
+  const totalPages = Math.max(
+    1,
+    Math.ceil(filteredOrders.length / Math.max(1, itemsPerPage))
+  );
   const paginatedOrders = filteredOrders.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
@@ -173,31 +188,38 @@ export default function ArchivedOrdersPage() {
               </p>
               <p className="mb-2 text-sm">📍 {order.customerAddress}</p>
               <p className="mb-4 text-sm">
-                🧾 Order Date: {new Date(order.createdAt).toLocaleString()}
+                🧾 Order Date:{" "}
+                {order.createdAt
+                  ? new Date(order.createdAt).toLocaleString()
+                  : "—"}
               </p>
 
               <ul className="mb-4 pl-4 list-disc text-sm">
-                {order.items?.map((item, index) => {
-                  const qty = item.quantity ?? 1;
-                  const displayPrice =
-                    item.salePrice ??
-                    item.discountedPrice ??
-                    item.originalPrice ??
-                    item.price ??
-                    0;
-                  const basePrice =
-                    item.originalPrice ?? item.price ?? displayPrice;
-                  const orig = basePrice * qty;
-                  const sale = displayPrice * qty;
+                {(order.items || []).map((item, index) => {
+                  const qty = Math.max(1, Math.round(n(item.quantity, 1)));
+
+                  // ✅ prefer unitPrice (new), then sale/discount, then legacy
+                  const unit =
+                    n(item.unitPrice) ||
+                    n(item.salePrice) ||
+                    n(item.discountedPrice) ||
+                    n(item.originalPrice) ||
+                    n(item.price);
+
+                  const base = n(item.originalPrice) || n(item.price) || unit;
+
+                  const orig = base * qty;
+                  const sale = unit * qty;
+
+                  const img =
+                    item.image && item.image.trim() !== ""
+                      ? item.image
+                      : "/products/gray-placeholder.jpg";
 
                   return (
                     <li key={index} className="flex items-center gap-2">
                       <Image
-                        src={
-                          item.image && item.image.trim() !== ""
-                            ? item.image
-                            : "/products/gray-placeholder.jpg"
-                        }
+                        src={img}
                         alt={item.name || "Product image"}
                         width={48}
                         height={48}
@@ -205,14 +227,14 @@ export default function ArchivedOrdersPage() {
                         unoptimized
                       />
                       <span>
-                        {item.name}
+                        {item.name || "Item"}
                         {item.size && (
                           <span className="ml-2 text-xs px-2 py-0.5 rounded-full bg-[#364763] text-white align-middle">
                             Size: {item.size}
                           </span>
                         )}{" "}
                         – x{qty} –{" "}
-                        {displayPrice < basePrice ? (
+                        {unit < base ? (
                           <>
                             <span className="line-through mr-1">
                               ${orig.toFixed(2)}
@@ -232,10 +254,10 @@ export default function ArchivedOrdersPage() {
 
               <div className="flex justify-between items-center">
                 <span className="text-lg font-semibold">
-                  💰 Total: ${order.amount.toFixed(2)}
+                  💰 Total: ${n(order.amount).toFixed(2)}
                 </span>
                 <div className="space-x-2">
-                  {/* ✅ NEW: View button */}
+                  {/* View details/refund page */}
                   <Link href={`/admin/order/${order.stripeSessionId}`}>
                     <span className="bg-blue-500 px-4 py-2 rounded text-sm cursor-pointer">
                       View 🔍
@@ -256,7 +278,7 @@ export default function ArchivedOrdersPage() {
 
       {totalPages > 1 && (
         <div className="flex justify-center mt-8 space-x-2">
-          {[...Array(totalPages)].map((_, index) => (
+          {Array.from({ length: totalPages }).map((_, index) => (
             <button
               key={index}
               onClick={() => setCurrentPage(index + 1)}

@@ -1,4 +1,4 @@
-// ✅ pages/admin/delivered.tsx – view delivered orders (size-aware, no CSV/PDF) 🔐📬
+// ✅ pages/admin/delivered.tsx – view delivered orders (size/price-safe) 🔐📬
 
 import { useEffect, useState } from "react";
 import Head from "next/head";
@@ -9,11 +9,12 @@ import Breadcrumbs from "@/components/Breadcrumbs";
 
 interface OrderItem {
   name: string;
-  quantity?: number;
-  price?: number;
-  discountedPrice?: number;
-  salePrice?: number;
-  originalPrice?: number;
+  quantity?: number | string;
+  price?: number | string;
+  discountedPrice?: number | string;
+  salePrice?: number | string;
+  originalPrice?: number | string;
+  unitPrice?: number | string; // ✅ new flow support
   image?: string;
   size?: string;
 }
@@ -24,7 +25,7 @@ interface Order {
   customerEmail: string;
   customerAddress: string;
   items?: OrderItem[];
-  amount: number;
+  amount: number | string; // dollars (sometimes string)
   createdAt: string;
   stripeSessionId: string;
   orderNumber?: number;
@@ -35,6 +36,18 @@ interface Order {
   delivered?: boolean;
   deliveredAt?: string;
   archived?: boolean;
+}
+
+/** Robust number parser: accepts number or string like "$1,234.56". */
+function n(v: unknown, d = 0): number {
+  if (v == null || v === "") return d;
+  if (typeof v === "number") return Number.isFinite(v) ? v : d;
+  if (typeof v === "string") {
+    const cleaned = v.replace(/[^0-9.\-]/g, "");
+    const num = parseFloat(cleaned);
+    return Number.isFinite(num) ? num : d;
+  }
+  return d;
 }
 
 export default function DeliveredOrdersPage() {
@@ -55,7 +68,7 @@ export default function DeliveredOrdersPage() {
     try {
       const res = await fetch("/api/admin/delivered");
       const data = await res.json();
-      setOrders(data.orders || []);
+      setOrders(Array.isArray(data.orders) ? data.orders : []);
     } catch (err) {
       console.error("❌ Failed to fetch delivered orders:", err);
     } finally {
@@ -90,9 +103,9 @@ export default function DeliveredOrdersPage() {
 
     const query = searchQuery.toLowerCase();
     const matchQuery =
-      order.customerName?.toLowerCase().includes(query) ||
-      order.customerEmail?.toLowerCase().includes(query) ||
-      order.stripeSessionId?.toLowerCase().includes(query);
+      (order.customerName || "").toLowerCase().includes(query) ||
+      (order.customerEmail || "").toLowerCase().includes(query) ||
+      (order.stripeSessionId || "").toLowerCase().includes(query);
 
     const orderDate = new Date(order.deliveredAt || "");
     const afterStart = startDate ? orderDate >= new Date(startDate) : true;
@@ -101,7 +114,10 @@ export default function DeliveredOrdersPage() {
     return matchQuery && afterStart && beforeEnd;
   });
 
-  const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
+  const totalPages = Math.max(
+    1,
+    Math.ceil(filteredOrders.length / Math.max(1, itemsPerPage))
+  );
   const paginatedOrders = filteredOrders.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
@@ -208,22 +224,31 @@ export default function DeliveredOrdersPage() {
                     {order.carrier ? ` (${order.carrier})` : ""}
                   </p>
                 )}
+
                 <div className="mt-4">
                   <strong>Items:</strong>
                   {Array.isArray(order.items) && order.items.length > 0 ? (
                     <ul className="list-disc list-inside space-y-1 mt-2">
                       {order.items.map((item, i) => {
-                        const qty = item.quantity ?? 1;
-                        const displayPrice =
-                          item.salePrice ??
-                          item.discountedPrice ??
-                          item.originalPrice ??
-                          item.price ??
-                          0;
-                        const basePrice =
-                          item.originalPrice ?? item.price ?? displayPrice;
-                        const orig = basePrice * qty;
-                        const sale = displayPrice * qty;
+                        const qty = Math.max(
+                          1,
+                          Math.round(n(item.quantity, 1))
+                        );
+
+                        // ✅ prefer unitPrice (new), then sale/discount, then legacy
+                        const unit =
+                          n(item.unitPrice) ||
+                          n(item.salePrice) ||
+                          n(item.discountedPrice) ||
+                          n(item.originalPrice) ||
+                          n(item.price);
+
+                        const base =
+                          n(item.originalPrice) || n(item.price) || unit;
+
+                        const lineOrig = base * qty;
+                        const lineSale = unit * qty;
+
                         const safeImage =
                           item.image && item.image.trim() !== ""
                             ? item.image
@@ -247,17 +272,17 @@ export default function DeliveredOrdersPage() {
                                 </span>
                               )}{" "}
                               – x{qty} –{" "}
-                              {displayPrice < basePrice ? (
+                              {unit < base ? (
                                 <>
                                   <span className="line-through mr-1">
-                                    ${orig.toFixed(2)}
+                                    ${lineOrig.toFixed(2)}
                                   </span>
                                   <span className="text-green-400">
-                                    ${sale.toFixed(2)}
+                                    ${lineSale.toFixed(2)}
                                   </span>
                                 </>
                               ) : (
-                                <span>${sale.toFixed(2)}</span>
+                                <span>${lineSale.toFixed(2)}</span>
                               )}
                             </span>
                           </li>
@@ -270,9 +295,10 @@ export default function DeliveredOrdersPage() {
                     </p>
                   )}
                 </div>
+
                 <div className="flex justify-between items-center mt-4">
                   <span className="text-lg font-semibold">
-                    💰 Total: ${order.amount.toFixed(2)}
+                    💰 Total: ${n(order.amount).toFixed(2)}
                   </span>
                   <div className="space-x-2">
                     <Link href={`/admin/order/${order.stripeSessionId}`}>
@@ -295,7 +321,7 @@ export default function DeliveredOrdersPage() {
           {/* 🔄 Pagination */}
           {totalPages > 1 && (
             <div className="flex justify-center mt-8 space-x-2">
-              {[...Array(totalPages)].map((_, index) => (
+              {Array.from({ length: totalPages }).map((_, index) => (
                 <button
                   key={index}
                   onClick={() => setCurrentPage(index + 1)}

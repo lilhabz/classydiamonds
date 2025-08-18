@@ -10,11 +10,12 @@ import RefundDialog from "@/components/RefundDialog";
 
 interface OrderItem {
   name: string;
-  quantity?: number;
-  price?: number;
-  discountedPrice?: number;
-  salePrice?: number;
-  originalPrice?: number;
+  quantity?: number | string;
+  price?: number | string;
+  discountedPrice?: number | string;
+  salePrice?: number | string;
+  originalPrice?: number | string;
+  unitPrice?: number | string; // ✅ new flow support
   image?: string;
   size?: string;
 }
@@ -25,8 +26,8 @@ interface Order {
   customerEmail: string;
   customerAddress: string;
   items?: OrderItem[];
-  amount: number; // dollars
-  refundedTotal?: number; // cents (optional)
+  amount: number | string; // dollars
+  refundedTotal?: number | string; // cents stored in DB; may come back as string
   createdAt: string;
   stripeSessionId: string;
   orderNumber?: number;
@@ -37,6 +38,18 @@ interface Order {
   delivered?: boolean;
   deliveredAt?: string;
   archived?: boolean;
+}
+
+/** Robust number parser: accepts number or string like "$1,234.56". */
+function n(v: unknown, d = 0): number {
+  if (v == null || v === "") return d;
+  if (typeof v === "number") return Number.isFinite(v) ? v : d;
+  if (typeof v === "string") {
+    const cleaned = v.replace(/[^0-9.\-]/g, ""); // strip $, commas, spaces
+    const num = parseFloat(cleaned);
+    return Number.isFinite(num) ? num : d;
+  }
+  return d;
 }
 
 export default function CompletedOrdersPage() {
@@ -56,11 +69,8 @@ export default function CompletedOrdersPage() {
   const [savingTracking, setSavingTracking] = useState<Record<string, boolean>>(
     {}
   );
-
-  // 👇 include BOTH ids, so we can pass Mongo _id to the API
   const [refundTarget, setRefundTarget] = useState<{
-    orderId: string; // Mongo _id
-    sessionId: string; // Stripe session id
+    sessionId: string;
     maxCents: number;
   } | null>(null);
 
@@ -74,7 +84,7 @@ export default function CompletedOrdersPage() {
     try {
       const res = await fetch("/api/admin/completed");
       const data = await res.json();
-      setOrders(data.orders || []);
+      setOrders(Array.isArray(data.orders) ? data.orders : []);
       const saved: Record<string, string> = {};
       (data.orders || []).forEach((o: Order) => {
         if (o.trackingNumber) saved[o.stripeSessionId] = o.trackingNumber;
@@ -163,34 +173,37 @@ export default function CompletedOrdersPage() {
     }
   };
 
-  // 💳 Open refund modal with BOTH ids
   const openRefund = (o: Order) => {
     const sessionId = o.stripeSessionId;
     if (!sessionId) return alert("❌ Missing Stripe session id on this order.");
-    const totalCents = Math.max(0, Math.round(o.amount * 100)); // dollars -> cents
-    const refundedCents = Math.max(0, Math.round(o.refundedTotal || 0)); // cents
+    const totalCents = Math.max(0, Math.round(n(o.amount) * 100)); // dollars -> cents
+    const refundedCents = Math.max(0, Math.round(n(o.refundedTotal))); // already cents
     const maxCents = Math.max(0, totalCents - refundedCents);
     if (maxCents <= 0) return alert("Nothing left to refund for this order.");
-    setRefundTarget({ orderId: o._id, sessionId, maxCents });
+    setRefundTarget({ sessionId, maxCents });
   };
 
   const filteredOrders = orders.filter((order) => {
     if (order.archived || order.delivered) return false;
     const q = searchQuery.toLowerCase();
     const matchQ =
-      order.customerName?.toLowerCase().includes(q) ||
-      order.customerEmail?.toLowerCase().includes(q) ||
-      order.stripeSessionId?.toLowerCase().includes(q);
+      (order.customerName || "").toLowerCase().includes(q) ||
+      (order.customerEmail || "").toLowerCase().includes(q) ||
+      (order.stripeSessionId || "").toLowerCase().includes(q);
     const date = new Date(order.shippedAt || "");
     const after = startDate ? date >= new Date(startDate) : true;
     const before = endDate ? date <= new Date(endDate) : true;
     return matchQ && after && before;
   });
 
-  const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
+  const itemsPerPageSafe = Math.max(1, itemsPerPage);
+  const totalPages = Math.max(
+    1,
+    Math.ceil(filteredOrders.length / itemsPerPageSafe)
+  );
   const pageData = filteredOrders.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
+    (currentPage - 1) * itemsPerPageSafe,
+    currentPage * itemsPerPageSafe
   );
 
   if (status === "loading")
@@ -270,10 +283,10 @@ export default function CompletedOrdersPage() {
           {/* 🧾 Orders */}
           <div className="space-y-10">
             {pageData.map((order) => {
-              const totalCents = Math.max(0, Math.round(order.amount * 100));
+              const totalCents = Math.max(0, Math.round(n(order.amount) * 100));
               const refundedCents = Math.max(
                 0,
-                Math.round(order.refundedTotal || 0)
+                Math.round(n(order.refundedTotal))
               );
               const refundableCents = Math.max(0, totalCents - refundedCents);
 
@@ -378,21 +391,30 @@ export default function CompletedOrdersPage() {
                     {Array.isArray(order.items) && order.items.length > 0 ? (
                       <ul className="list-disc list-inside space-y-1 mt-2">
                         {order.items.map((item, i) => {
-                          const qty = item.quantity ?? 1;
-                          const displayPrice =
-                            item.salePrice ??
-                            item.discountedPrice ??
-                            item.originalPrice ??
-                            item.price ??
-                            0;
-                          const basePrice =
-                            item.originalPrice ?? item.price ?? displayPrice;
-                          const orig = basePrice * qty;
-                          const sale = displayPrice * qty;
+                          const qty = Math.max(
+                            1,
+                            Math.round(n(item.quantity, 1))
+                          );
+
+                          // ✅ prefer unitPrice (new), then sale/discount, then legacy
+                          const unit =
+                            n(item.unitPrice) ||
+                            n(item.salePrice) ||
+                            n(item.discountedPrice) ||
+                            n(item.originalPrice) ||
+                            n(item.price);
+
+                          const base =
+                            n(item.originalPrice) || n(item.price) || unit;
+
+                          const lineOrig = base * qty;
+                          const lineSale = unit * qty;
+
                           const safeImage =
                             item.image && item.image.trim() !== ""
                               ? item.image
                               : "/products/gray-placeholder.jpg";
+
                           return (
                             <li key={i} className="flex items-center gap-2">
                               <Image
@@ -411,17 +433,17 @@ export default function CompletedOrdersPage() {
                                   </span>
                                 )}{" "}
                                 – x{qty} –{" "}
-                                {displayPrice < basePrice ? (
+                                {unit < base ? (
                                   <>
                                     <span className="line-through mr-1">
-                                      ${orig.toFixed(2)}
+                                      ${lineOrig.toFixed(2)}
                                     </span>
                                     <span className="text-green-400">
-                                      ${sale.toFixed(2)}
+                                      ${lineSale.toFixed(2)}
                                     </span>
                                   </>
                                 ) : (
-                                  <span>${sale.toFixed(2)}</span>
+                                  <span>${lineSale.toFixed(2)}</span>
                                 )}
                               </span>
                             </li>
@@ -437,7 +459,7 @@ export default function CompletedOrdersPage() {
 
                   <div className="flex justify-between items-center mt-4">
                     <span className="text-lg font-semibold">
-                      💰 Total: ${order.amount.toFixed(2)}
+                      💰 Total: ${n(order.amount).toFixed(2)}
                       {refundedCents > 0 && (
                         <span className="ml-2 text-sm text-gray-300">
                           • Refunded ${(refundedCents / 100).toFixed(2)}
@@ -450,7 +472,6 @@ export default function CompletedOrdersPage() {
                           View 🔍
                         </span>
                       </Link>
-                      {/* 💳 Refund (opens modal with both ids) */}
                       <button
                         onClick={() => openRefund(order)}
                         className="bg-indigo-600 px-4 py-2 rounded text-sm disabled:opacity-60"
@@ -514,10 +535,10 @@ export default function CompletedOrdersPage() {
         </>
       )}
 
-      {/* 💳 Refund modal – now passes BOTH ids */}
+      {/* 💳 Refund modal */}
       {refundTarget && (
         <RefundDialog
-          orderId={refundTarget.orderId}
+          orderId={refundTarget.sessionId} // backend accepts either; will fall back to stripeSessionId
           sessionId={refundTarget.sessionId}
           maxCents={refundTarget.maxCents}
           onClose={() => setRefundTarget(null)}

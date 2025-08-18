@@ -12,23 +12,32 @@ import RefundDialog from "@/components/RefundDialog";
 /* ---------- Helpers ---------- */
 const safeStr = (v: unknown, fallback = ""): string =>
   typeof v === "string" ? v : v == null ? fallback : String(v);
-const safeNum = (v: unknown, fallback = 0): number =>
-  typeof v === "number" && Number.isFinite(v) ? v : fallback;
+
+// Coerce numbers coming as strings ("199.99") or numbers
+const safeNum = (v: unknown, fallback = 0): number => {
+  if (typeof v === "number" && Number.isFinite(v)) return v;
+  if (typeof v === "string" && v.trim() !== "") {
+    const num = Number(v);
+    return Number.isFinite(num) ? num : fallback;
+  }
+  return fallback;
+};
+
 const toMoney = (n: number) => `$${n.toFixed(2)}`;
 
 /* ---------- Types (mirror /api/admin/order.ts response) ---------- */
 interface Item {
   name: string;
-  quantity: number;
-  price: number; // unit price we display
-  discountedPrice?: number;
+  quantity: number | string;
+  price: number | string; // unit price we display (can be string)
+  discountedPrice?: number | string; // may be string
   image?: string;
   size?: string | null;
 }
 interface OrderAPI {
   orderNumber: number | null;
   items: Item[];
-  amount: number; // dollars
+  amount: number | string; // dollars (may be string)
   currency: string;
   paymentStatus: string;
   customerAddress: string; // printable
@@ -45,6 +54,7 @@ export default function AdminOrderDetailPage() {
   const [order, setOrder] = useState<OrderAPI | null>(null);
   const [loading, setLoading] = useState(true);
   const [showRefund, setShowRefund] = useState(false);
+
   const sessionIdParam = router.query.sessionId;
   const sessionId =
     typeof sessionIdParam === "string"
@@ -57,6 +67,7 @@ export default function AdminOrderDetailPage() {
     (async () => {
       setLoading(true);
       try {
+        // If your API expects ?sessionId= use that key; if it expects ?orderId= keep it.
         const res = await fetch(
           `/api/admin/order?orderId=${encodeURIComponent(sessionId)}`
         );
@@ -74,7 +85,7 @@ export default function AdminOrderDetailPage() {
 
   // Refundable balance (in cents). If you later track refunded amounts, subtract them here.
   const refundableCents = useMemo(() => {
-    const amt = safeNum(order?.amount, 0); // dollars
+    const amt = safeNum(order?.amount, 0); // dollars (coerced)
     return Math.max(0, Math.round(amt * 100));
   }, [order?.amount]);
 
@@ -198,7 +209,7 @@ export default function AdminOrderDetailPage() {
             ) : (
               <ul className="space-y-3">
                 {order.items.map((i, idx) => {
-                  const qty = i.quantity || 1;
+                  const qty = Math.max(1, Math.round(safeNum(i.quantity, 1)));
                   const unit = safeNum(i.discountedPrice ?? i.price, 0);
                   const line = unit * qty;
                   const img = safeStr(i.image, "");
@@ -259,7 +270,8 @@ export default function AdminOrderDetailPage() {
       {/* Refund modal */}
       {showRefund && order && (
         <RefundDialog
-          orderId={""} // not known on this page; API will use sessionId
+          // Pass your Stripe session id to BOTH props so the API can match by stripeSessionId
+          orderId={sessionId}
           sessionId={sessionId}
           maxCents={refundableCents}
           onClose={() => setShowRefund(false)}
