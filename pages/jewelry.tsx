@@ -1,4 +1,4 @@
-// 📄 pages/jewelry.tsx – Ordered categories + Desktop 1-line + Mobile swipe (visible scrollbar) + Product cards match index ✅💎
+// 📄 pages/jewelry.tsx – Category tiles at top + “All Jewelry” full product grid ✅💎
 
 "use client";
 
@@ -118,7 +118,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
     resetCount();
   }, []);
 
-  // Preselect from Home via localStorage
+  // Preselect from Home via localStorage (kept as-is; doesn’t affect “All Jewelry” grid)
   useEffect(() => {
     const stored = localStorage.getItem("preselectedCategory");
     if (stored) {
@@ -208,7 +208,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
     [orderedAvailable, extras]
   );
 
-  // URL query handling
+  // URL query handling (kept; doesn’t affect “All Jewelry” grid below)
   useEffect(() => {
     if (!router.isReady) return;
     const { category, gender, scroll } = router.query;
@@ -232,7 +232,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
     }
   }, [router.isReady]);
 
-  // On filter change: reset & scroll to header
+  // On tile change: keep smooth UX (even though grid below shows All)
   useEffect(() => {
     if (initialMount.current) {
       initialMount.current = false;
@@ -242,7 +242,8 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
     headerRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }, [activeCategory, genderFilter]);
 
-  // Filtering
+  // NOTE: We are now intentionally showing ALL products in the grid below.
+  // Keeping these variables for future use if you want to add filtered sections again:
   const filteredByGender = genderFilter
     ? products.filter((p) => p.gender === genderFilter)
     : products;
@@ -289,7 +290,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
         <Breadcrumbs />
       </div>
 
-      {/* 💎 Category Filters */}
+      {/* 💎 Category Tiles (Top Section) */}
       <section
         ref={headerRef}
         className="pt-6 pb-6 px-0 sm:px-0 w-full"
@@ -297,26 +298,19 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
       >
         <div className="text-center mb-4 px-4 sm:px-6">
           <h2 className="text-2xl sm:text-3xl font-serif font-semibold tracking-wider leading-snug">
-            {genderFilter === "him"
-              ? "For Him"
-              : genderFilter === "her"
-              ? "For Her"
-              : activeCategory === "All"
-              ? "Our Jewelry"
-              : formatCategory(activeCategory)}
+            Shop by Category
           </h2>
         </div>
 
-        {/* 📱 Mobile: Home-style swipe row (visible scrollbar) */}
+        {/* 📱 Mobile: swipe row (visible scrollbar) */}
         <div className="sm:hidden px-0 mt-2">
           <div
             className="overflow-x-auto show-scrollbar"
             style={{
-              WebkitOverflowScrolling: "touch", // smooth iOS scroll
-              scrollbarWidth: "thin", // Firefox thin bar
+              WebkitOverflowScrolling: "touch",
+              scrollbarWidth: "thin",
             }}
           >
-            {/* Visible horizontal scrollbar for WebKit */}
             <style jsx>{`
               .show-scrollbar::-webkit-scrollbar {
                 height: 8px;
@@ -390,9 +384,8 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
           </div>
         </div>
 
-        {/* 🖥️ Desktop: ONE line, NO scroll, 10 tiles (All + 8 cats + For Her + For Him) */}
+        {/* 🖥️ Desktop: ONE line, NO scroll, 10 tiles */}
         <div className="hidden sm:block w-screen relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw]">
-          {/* Adjust max-w to fine-tune tile size if needed */}
           <div className="mx-auto max-w-[1440px] px-2">
             <div className="grid grid-cols-10 gap-[6px]">
               {desktopOrder.map((key, i) => {
@@ -452,10 +445,17 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
         </div>
       </section>
 
-      {/* 🛒 Product Grid — EXACT index sizing */}
+      {/* 🔽 NEW: “All Jewelry” Title */}
+      <div className="text-center mt-4 px-4 sm:px-6">
+        <h2 className="text-2xl sm:text-3xl font-serif font-semibold tracking-wider leading-snug">
+          All Jewelry
+        </h2>
+      </div>
+
+      {/* 🛒 Product Grid — SHOW ALL PRODUCTS */}
       <section className="mt-8 px-4 sm:px-6 max-w-7xl mx-auto mb-20">
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
-          {filteredProducts.slice(0, visibleCount).map((product) => (
+          {products.slice(0, visibleCount).map((product) => (
             <div
               key={product.id}
               className="group bg-[var(--bg-nav)] w-full sm:w-full md:w-[210px] lg:w-[233.61px] h-auto min-h-[387.61px] rounded-2xl overflow-hidden shadow-md hover:shadow-2xl hover:scale-105 transition-transform duration-300 flex flex-col justify-between"
@@ -512,7 +512,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
                   }
                   addToCart({
                     id: product.id,
-                    slug: product.slug, // ✅ include slug in quick add
+                    slug: product.slug,
                     name: product.name,
                     price: product.price,
                     discountedPrice: product.salePrice ?? undefined,
@@ -528,7 +528,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
           ))}
         </div>
 
-        {visibleCount < filteredProducts.length && (
+        {visibleCount < products.length && (
           <div className="flex justify-center mt-10">
             <button
               onClick={() => setVisibleCount((v) => v + 4)}
