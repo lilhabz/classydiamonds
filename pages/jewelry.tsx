@@ -1,4 +1,4 @@
-// 📄 pages/jewelry.tsx – Category tiles at top + “All Jewelry” full product grid ✅💎
+// 📄 pages/jewelry.tsx – 4 categories at top (Rings/Earrings/Bracelets/Necklaces & Pendants) + “All Jewelry” grid ✅💎
 
 "use client";
 
@@ -27,23 +27,30 @@ export type ProductType = {
 /* --------------------------------- Helpers -------------------------------- */
 const isRingCategory = (cat?: string) =>
   (cat ?? "").toLowerCase().includes("ring");
-const formatCategory = (cat: string) =>
-  cat.replace(/-/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
 
-const CATEGORY_IMAGES: Record<string, string | undefined> = {
-  All: undefined,
-  Engagement: "/category/engagement-cat.jpg",
-  "Wedding Bands": "/category/wedding-band-cat.jpg",
+const formatCategory = (cat: string) => {
+  // Display override for Necklaces
+  if (cat === "Necklaces") return "Necklaces & Pendants";
+  return cat.replace(/-/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
+};
+
+// Only the four categories we want to show
+const FIXED_CATEGORIES = [
+  "Rings",
+  "Earrings",
+  "Bracelets",
+  "Necklaces",
+] as const;
+
+const CATEGORY_IMAGES: Record<(typeof FIXED_CATEGORIES)[number], string> = {
   Rings: "/category/ring-cat.jpg",
+  Earrings: "/category/earring-cat.jpg",
   Bracelets: "/category/bracelet-cat.jpg",
   Necklaces: "/category/necklace-cat.jpg",
-  Earrings: "/category/earring-cat.jpg",
-  "For Her": "/category/her-gift-cat.jpg",
-  "For Him": "/category/his-gift-cat.jpg",
 };
-const imageFor = (label: string) =>
-  CATEGORY_IMAGES[label] ??
-  `/category/${label.toLowerCase().replace(/\s+/g, "-")}-cat.jpg`;
+
+const imageFor = (label: (typeof FIXED_CATEGORIES)[number]) =>
+  CATEGORY_IMAGES[label];
 
 /* ------------------------------ Category Tile ----------------------------- */
 function CategoryTile({
@@ -106,8 +113,12 @@ function CategoryTile({
 export default function JewelryPage({ products }: { products: ProductType[] }) {
   const { addToCart } = useCart();
   const [visibleCount, setVisibleCount] = useState(8);
-  const [activeCategory, setActiveCategory] = useState<string>("All");
-  const [genderFilter, setGenderFilter] = useState<"him" | "her" | null>(null);
+
+  // Selection is only for highlighting the active tile; the grid below shows ALL products.
+  const [activeCategory, setActiveCategory] = useState<
+    (typeof FIXED_CATEGORIES)[number] | null
+  >(null);
+
   const heroRef = useRef<HTMLDivElement>(null);
   const headerRef = useRef<HTMLDivElement>(null);
   const initialMount = useRef(true);
@@ -118,110 +129,18 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
     resetCount();
   }, []);
 
-  // Preselect from Home via localStorage (kept as-is; doesn’t affect “All Jewelry” grid)
-  useEffect(() => {
-    const stored = localStorage.getItem("preselectedCategory");
-    if (stored) {
-      if (stored === "for-him") {
-        setGenderFilter("him");
-        setActiveCategory("All");
-      } else if (stored === "for-her") {
-        setGenderFilter("her");
-        setActiveCategory("All");
-      } else {
-        setGenderFilter(null);
-        setActiveCategory(stored);
-      }
-      resetCount();
-      localStorage.removeItem("preselectedCategory");
-      setTimeout(() => {
-        if (heroRef.current) {
-          const offset =
-            heroRef.current.offsetTop + heroRef.current.offsetHeight;
-          window.scrollTo({ top: offset, behavior: "smooth" });
-        }
-      }, 0);
-    }
-  }, []);
-
-  // Categories from DB (dedup + clean)
-  const allCategoriesRaw = useMemo(
-    () =>
-      Array.from(
-        new Set(products.map((p) => (p.category || "").trim()).filter(Boolean))
-      ),
-    [products]
-  );
-
-  // Your required order for core product categories
-  const preferredOrder = [
-    "Engagement",
-    "Wedding Bands",
-    "Rings",
-    "Bracelets",
-    "Necklaces",
-    "Earrings",
-  ];
-
-  // Only true product categories (exclude any 'for-him/her' in DB if present)
-  const coreCategories = useMemo(
-    () =>
-      allCategoriesRaw.filter((c) => {
-        const lc = c.toLowerCase();
-        return (
-          lc !== "for-him" &&
-          lc !== "for her" &&
-          lc !== "for-her" &&
-          lc !== "for him"
-        );
-      }),
-    [allCategoriesRaw]
-  );
-
-  // Put preferred ones first (only those that actually exist), then extras alpha
-  const orderedAvailable = useMemo(
-    () => preferredOrder.filter((c) => coreCategories.includes(c)),
-    [coreCategories]
-  );
-  const extras = useMemo(
-    () =>
-      coreCategories
-        .filter((c) => !preferredOrder.includes(c))
-        .sort((a, b) => a.localeCompare(b)),
-    [coreCategories]
-  );
-
-  // Desktop: All + up to 8 categories + For Her + For Him = 10 tiles
-  const desktopCats = useMemo(() => {
-    const filled = [...orderedAvailable, ...extras];
-    return filled.slice(0, 8);
-  }, [orderedAvailable, extras]);
-
-  const desktopOrder = useMemo(
-    () => ["All", ...desktopCats, "For Her", "For Him"],
-    [desktopCats]
-  );
-
-  // Mobile: show all (preferred → extras), genders last
-  const mobileOrder = useMemo(
-    () => ["All", ...orderedAvailable, ...extras, "For Her", "For Him"],
-    [orderedAvailable, extras]
-  );
-
-  // URL query handling (kept; doesn’t affect “All Jewelry” grid below)
+  // If a category is provided in the URL (?category=Rings), highlight it.
   useEffect(() => {
     if (!router.isReady) return;
-    const { category, gender, scroll } = router.query;
+    const { category, scroll } = router.query;
 
-    if (gender === "him" || category === "for-him") {
-      setGenderFilter("him");
-      setActiveCategory("All");
-    } else if (gender === "her" || category === "for-her") {
-      setGenderFilter("her");
-      setActiveCategory("All");
-    } else if (typeof category === "string" && category) {
-      setGenderFilter(null);
-      setActiveCategory(category);
+    if (typeof category === "string") {
+      // Normalize: allow "necklaces" or "Necklaces"
+      const normalized =
+        FIXED_CATEGORIES.find(
+          (c) => c.toLowerCase() === category.toLowerCase()
+        ) ?? null;
+      setActiveCategory(normalized);
     }
 
     resetCount();
@@ -232,7 +151,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
     }
   }, [router.isReady]);
 
-  // On tile change: keep smooth UX (even though grid below shows All)
+  // Smooth scroll UX when changing the highlighted tile
   useEffect(() => {
     if (initialMount.current) {
       initialMount.current = false;
@@ -240,20 +159,15 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
     }
     resetCount();
     headerRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-  }, [activeCategory, genderFilter]);
+  }, [activeCategory]);
 
-  // NOTE: We are now intentionally showing ALL products in the grid below.
-  // Keeping these variables for future use if you want to add filtered sections again:
-  const filteredByGender = genderFilter
-    ? products.filter((p) => p.gender === genderFilter)
-    : products;
-  const filteredProducts = filteredByGender.filter((p) =>
-    activeCategory === "All" ? true : p.category === activeCategory
-  );
-
+  // Keep these, even though the grid shows ALL, so it's easy to re-enable filtered sections later.
   const pageTitle = "Jewelry Collection | Classy Diamonds";
   const pageDesc =
     "Explore timeless engagement rings, wedding bands, necklaces, earrings, and more.";
+
+  // Show product count in the "Load More" logic
+  const totalProducts = products.length;
 
   return (
     <div className="min-h-screen flex flex-col bg-[var(--bg-page)] text-[var(--foreground)]">
@@ -328,51 +242,28 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
             `}</style>
 
             <div className="flex gap-3 w-max px-4">
-              {mobileOrder.map((key, i) => {
-                const isGender = key === "For Her" || key === "For Him";
-                const catValue =
-                  key === "All"
-                    ? "All"
-                    : isGender
-                    ? key === "For Her"
-                      ? "for-her"
-                      : "for-him"
-                    : key;
-                const label =
-                  key === "All" ? "All" : isGender ? key : formatCategory(key);
-                const img = key === "All" ? undefined : imageFor(label);
-                const active =
-                  (key === "All" &&
-                    activeCategory === "All" &&
-                    !genderFilter) ||
-                  (key === "For Him" &&
-                    genderFilter === "him" &&
-                    activeCategory === "All") ||
-                  (key === "For Her" &&
-                    genderFilter === "her" &&
-                    activeCategory === "All") ||
-                  (!isGender && activeCategory === key && !genderFilter);
+              {FIXED_CATEGORIES.map((key) => {
+                const label = formatCategory(key);
+                const img = imageFor(key);
+                const active = activeCategory === key;
 
                 return (
                   <CategoryTile
-                    key={`m-${key}-${i}`}
+                    key={`m-${key}`}
                     label={label}
                     img={img}
                     active={!!active}
                     onClick={() => {
-                      if (key === "All") {
-                        setGenderFilter(null);
-                        setActiveCategory("All");
-                      } else if (key === "For Him") {
-                        setGenderFilter("him");
-                        setActiveCategory("All");
-                      } else if (key === "For Her") {
-                        setGenderFilter("her");
-                        setActiveCategory("All");
-                      } else {
-                        setGenderFilter(null);
-                        setActiveCategory(catValue);
-                      }
+                      setActiveCategory(key);
+                      // Keep deep-linking behavior if you want to link ads/email directly
+                      router.push(
+                        {
+                          pathname: "/jewelry",
+                          query: { category: key, scroll: "true" },
+                        },
+                        undefined,
+                        { shallow: true }
+                      );
                     }}
                     className="w-32"
                     textSizeClass="text-[12px]"
@@ -384,58 +275,34 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
           </div>
         </div>
 
-        {/* 🖥️ Desktop: ONE line, NO scroll, 10 tiles */}
+        {/* 🖥️ Desktop: single row of 4 tiles */}
         <div className="hidden sm:block w-screen relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw]">
           <div className="mx-auto max-w-[1440px] px-2">
-            <div className="grid grid-cols-10 gap-[6px]">
-              {desktopOrder.map((key, i) => {
-                const isGender = key === "For Her" || key === "For Him";
-                const catValue =
-                  key === "All"
-                    ? "All"
-                    : isGender
-                    ? key === "For Her"
-                      ? "for-her"
-                      : "for-him"
-                    : key;
-                const label =
-                  key === "All" ? "All" : isGender ? key : formatCategory(key);
-                const img = key === "All" ? undefined : imageFor(label);
-                const active =
-                  (key === "All" &&
-                    activeCategory === "All" &&
-                    !genderFilter) ||
-                  (key === "For Him" &&
-                    genderFilter === "him" &&
-                    activeCategory === "All") ||
-                  (key === "For Her" &&
-                    genderFilter === "her" &&
-                    activeCategory === "All") ||
-                  (!isGender && activeCategory === key && !genderFilter);
+            <div className="grid grid-cols-4 gap-[8px]">
+              {FIXED_CATEGORIES.map((key) => {
+                const label = formatCategory(key);
+                const img = imageFor(key);
+                const active = activeCategory === key;
 
                 return (
                   <CategoryTile
-                    key={`d-${key}-${i}`}
+                    key={`d-${key}`}
                     label={label}
                     img={img}
                     active={!!active}
                     onClick={() => {
-                      if (key === "All") {
-                        setGenderFilter(null);
-                        setActiveCategory("All");
-                      } else if (key === "For Him") {
-                        setGenderFilter("him");
-                        setActiveCategory("All");
-                      } else if (key === "For Her") {
-                        setGenderFilter("her");
-                        setActiveCategory("All");
-                      } else {
-                        setGenderFilter(null);
-                        setActiveCategory(catValue);
-                      }
+                      setActiveCategory(key);
+                      router.push(
+                        {
+                          pathname: "/jewelry",
+                          query: { category: key, scroll: "true" },
+                        },
+                        undefined,
+                        { shallow: true }
+                      );
                     }}
                     className="w-full"
-                    textSizeClass="text-[12px]"
+                    textSizeClass="text-[13px]"
                     aspect="aspect-[5/4]"
                   />
                 );
@@ -445,7 +312,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
         </div>
       </section>
 
-      {/* 🔽 NEW: “All Jewelry” Title */}
+      {/* 🔽 “All Jewelry” Title */}
       <div className="text-center mt-4 px-4 sm:px-6">
         <h2 className="text-2xl sm:text-3xl font-serif font-semibold tracking-wider leading-snug">
           All Jewelry
@@ -461,14 +328,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
               className="group bg-[var(--bg-nav)] w-full sm:w-full md:w-[210px] lg:w-[233.61px] h-auto min-h-[387.61px] rounded-2xl overflow-hidden shadow-md hover:shadow-2xl hover:scale-105 transition-transform duration-300 flex flex-col justify-between"
             >
               <Link
-                href={
-                  genderFilter
-                    ? {
-                        pathname: `/category/${product.category}/${product.slug}`,
-                        query: { gender: genderFilter },
-                      }
-                    : `/category/${product.category}/${product.slug}`
-                }
+                href={`/category/${product.category}/${product.slug}`}
                 className="flex-1 flex flex-col h-full"
               >
                 <div className="relative w-full aspect-square">
@@ -528,7 +388,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
           ))}
         </div>
 
-        {visibleCount < products.length && (
+        {visibleCount < totalProducts && (
           <div className="flex justify-center mt-10">
             <button
               onClick={() => setVisibleCount((v) => v + 4)}
@@ -544,17 +404,15 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
 }
 
 /* ----------------------------- Server-side data ---------------------------- */
-export const getServerSideProps: GetServerSideProps = async ({ query }) => {
+export const getServerSideProps: GetServerSideProps = async () => {
   const client = await clientPromise;
-  let genderQuery: "him" | "her" | undefined;
-  if (query.category === "for-him") genderQuery = "him";
-  if (query.category === "for-her") genderQuery = "her";
-  const filter = genderQuery ? { gender: genderQuery } : {};
+
   const productsRaw = await client
     .db()
     .collection("products")
-    .find(filter)
+    .find({})
     .toArray();
+
   const products: ProductType[] = productsRaw.map((p: any) => ({
     id: p._id.toString(),
     slug: p.slug,
@@ -566,5 +424,6 @@ export const getServerSideProps: GetServerSideProps = async ({ query }) => {
     gender: p.gender || "unisex",
     description: p.description || "",
   }));
+
   return { props: { products } };
 };
