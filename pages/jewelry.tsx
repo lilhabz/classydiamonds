@@ -1,4 +1,4 @@
-// pages/jewelry.tsx — All Jewelry by default + 4 categories + subcategory pills (no title)
+// pages/jewelry.tsx — All Jewelry by default + 4 categories + subcategory pills + FILTER SIDEBAR
 "use client";
 
 import Image from "next/image";
@@ -11,6 +11,7 @@ import clientPromise from "@/lib/mongodb";
 import { GetServerSideProps } from "next";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import CategoryGrid, { CategoryItem } from "@/components/CategoryGrid";
+import FiltersSidebar from "@/components/FiltersSidebar";
 
 export type ProductType = {
   id: string;
@@ -20,7 +21,11 @@ export type ProductType = {
   salePrice?: number | null;
   image: string;
   category: string; // "rings" | "earrings" | "bracelets" | "necklaces"
-  subcategory?: string; // used for ring/earring/etc. sub-filters
+  subcategory?: string; // style (halo, studs, tennis, pendants, engagement, wedding-bands)
+  metal?: string; // "yellow-gold" | "platinum" | ...
+  stone?: string; // "diamond" | "lab-grown" | "moissanite" | ...
+  shape?: string; // "round" | "oval" | ...
+  carat?: number | null; // e.g., 1.25
   gender?: "unisex" | "him" | "her";
   description?: string;
 };
@@ -37,6 +42,8 @@ const ALLOWED: readonly CategorySlug[] = [
 /* --------------------------------- Helpers -------------------------------- */
 const isRingCategory = (cat?: string) =>
   (cat ?? "").toLowerCase().includes("ring");
+const toArray = (v: string | string[] | undefined): string[] =>
+  !v ? [] : Array.isArray(v) ? v : [v];
 
 /* ------------------------------- Constants -------------------------------- */
 // 4 category tiles only
@@ -124,7 +131,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
       typeof category === "string" &&
       ALLOWED.includes(category.toLowerCase() as CategorySlug)
     ) {
-      const cat = category.toLowerCase() as CategorySlug; // ✅ narrowed; not null
+      const cat = category.toLowerCase() as CategorySlug;
       setActiveCategorySlug(cat);
 
       const subs = SUBS[cat];
@@ -164,19 +171,86 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
     ? SUBS[activeCategorySlug] ?? [{ label: "All", slug: "all" }]
     : [];
 
-  // Compute products to show:
-  // - no category selected => all products
-  // - category selected => filter by category, then by sub if not "all"
+  // ------- Read facet filters from URL (FiltersSidebar writes to these) -------
+  const metals = toArray(router.query.metal as any).map((x) =>
+    String(x).toLowerCase()
+  );
+  const stones = toArray(router.query.stone as any).map((x) =>
+    String(x).toLowerCase()
+  );
+  const shapes = toArray(router.query.shape as any).map((x) =>
+    String(x).toLowerCase()
+  );
+
+  const priceMin = router.query.priceMin
+    ? Number(router.query.priceMin)
+    : undefined;
+  const priceMax = router.query.priceMax
+    ? Number(router.query.priceMax)
+    : undefined;
+  const caratMin = router.query.caratMin
+    ? Number(router.query.caratMin)
+    : undefined;
+  const caratMax = router.query.caratMax
+    ? Number(router.query.caratMax)
+    : undefined;
+
+  // ----------------------------- Filtering logic -----------------------------
   const shown = useMemo(() => {
-    if (!activeCategorySlug) return products; // All jewelry
-    const byCat = products.filter(
-      (p) => (p.category || "").toLowerCase() === activeCategorySlug
-    );
-    if (activeSub === "all") return byCat;
-    return byCat.filter(
-      (p) => (p.subcategory || "").toLowerCase() === activeSub
-    );
-  }, [products, activeCategorySlug, activeSub]);
+    // 1) Category/Subcategory base filter
+    let base = products;
+    if (activeCategorySlug) {
+      base = base.filter(
+        (p) => (p.category || "").toLowerCase() === activeCategorySlug
+      );
+      if (activeSub !== "all") {
+        base = base.filter(
+          (p) => (p.subcategory || "").toLowerCase() === activeSub
+        );
+      }
+    }
+
+    // 2) Facet filters
+    const meets = (p: ProductType) => {
+      const metalOk = metals.length
+        ? metals.includes((p.metal || "").toLowerCase())
+        : true;
+      const stoneOk = stones.length
+        ? stones.includes((p.stone || "").toLowerCase())
+        : true;
+      const shapeOk = shapes.length
+        ? shapes.includes((p.shape || "").toLowerCase())
+        : true;
+
+      const effectivePrice = (p.salePrice ?? p.price) as number;
+      const priceOk =
+        (priceMin === undefined || effectivePrice >= priceMin) &&
+        (priceMax === undefined || effectivePrice <= priceMax);
+
+      const caratVal = typeof p.carat === "number" ? p.carat : null;
+      const caratOk =
+        caratMin === undefined && caratMax === undefined
+          ? true
+          : caratVal !== null &&
+            (caratMin === undefined || caratVal >= caratMin) &&
+            (caratMax === undefined || caratVal <= caratMax);
+
+      return metalOk && stoneOk && shapeOk && priceOk && caratOk;
+    };
+
+    return base.filter(meets);
+  }, [
+    products,
+    activeCategorySlug,
+    activeSub,
+    metals,
+    stones,
+    shapes,
+    priceMin,
+    priceMax,
+    caratMin,
+    caratMax,
+  ]);
 
   const totalProducts = shown.length;
 
@@ -185,7 +259,10 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
     setActiveCategorySlug(slug);
     setActiveSub("all");
     router.push(
-      { pathname: "/jewelry", query: { category: slug, scroll: "true" } },
+      {
+        pathname: "/jewelry",
+        query: { category: slug, scroll: "true", ...router.query },
+      },
       undefined,
       { shallow: true }
     );
@@ -195,11 +272,13 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
   const goSub = (slug: string) => {
     if (!activeCategorySlug) return;
     setActiveSub(slug);
-    const query =
-      slug === "all"
-        ? { category: activeCategorySlug }
-        : { category: activeCategorySlug, sub: slug };
-    router.push({ pathname: "/jewelry", query }, undefined, { shallow: true });
+    const next = { ...router.query };
+    if (slug === "all") delete (next as any).sub;
+    else (next as any).sub = slug;
+    next.category = activeCategorySlug;
+    router.push({ pathname: "/jewelry", query: next }, undefined, {
+      shallow: true,
+    });
   };
 
   // Heading text
@@ -259,11 +338,11 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
         />
       </section>
 
-      {/* 🔖 Subcategory pills (only visible when a category is selected) */}
+      {/* 🔖 Subcategory pills (only when a category is selected) */}
       {activeCategorySlug && (
-        <section className="mt-2 mb-6 px-4 sm:px-6">
+        <section className="mt-2 mb-4 px-4 sm:px-6">
           <div className="mx-auto max-w-7xl">
-            <h3 className="sr-only">Filters</h3> {/* no visible title */}
+            <h3 className="sr-only">Filters</h3>
             {/* mobile */}
             <div className="sm:hidden mt-1 overflow-x-auto">
               <div className="flex gap-2 w-max">
@@ -319,85 +398,99 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
         </h2>
       </div>
 
-      {/* 🛒 Product Grid — shows all, or filtered by category/subcategory */}
-      <section className="mt-8 px-4 sm:px-6 max-w-7xl mx-auto mb-20">
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
-          {shown.slice(0, visibleCount).map((product) => (
-            <div
-              key={product.id}
-              className="group bg-[var(--bg-nav)] w-full sm:w-full md:w-[210px] lg:w-[233.61px] h-auto min-h-[387.61px] rounded-2xl overflow-hidden shadow-md hover:shadow-2xl hover:scale-105 transition-transform duration-300 flex flex-col justify-between"
-            >
-              <Link
-                href={`/category/${product.category}/${product.slug}`}
-                className="flex-1 flex flex-col h-full"
-              >
-                <div className="relative w-full aspect-square">
-                  <Image
-                    src={product.image}
-                    alt={product.name}
-                    fill
-                    className="object-cover group-hover:scale-110 transition-transform duration-300"
-                  />
-                </div>
-                <div className="p-4 text-center flex-1 flex flex-col justify-between">
-                  <h3 className="font-semibold text-[var(--foreground)] truncate text-sm tracking-wide leading-snug">
-                    {product.name}
-                  </h3>
-                  <p className="text-[#cfd2d6] text-sm leading-relaxed tracking-wide">
-                    {product.salePrice ? (
-                      <>
-                        <span className="line-through mr-1">
-                          ${product.price.toLocaleString()}
-                        </span>
-                        <span className="text-green-500">
-                          ${product.salePrice.toLocaleString()}
-                        </span>
-                      </>
-                    ) : (
-                      <>${product.price.toLocaleString()}</>
-                    )}
-                  </p>
-                </div>
-              </Link>
-
-              {/* 🔁 Quick add for non-rings; redirect for rings */}
-              <button
-                onClick={(e) => {
-                  e.preventDefault();
-                  if (isRingCategory(product.category)) {
-                    router.push(
-                      `/category/${product.category}/${product.slug}`
-                    );
-                    return;
-                  }
-                  addToCart({
-                    id: product.id,
-                    slug: product.slug,
-                    name: product.name,
-                    price: product.price,
-                    discountedPrice: product.salePrice ?? undefined,
-                    image: product.image,
-                    quantity: 1,
-                  });
-                }}
-                className="m-4 px-6 py-3 bg-[#e0e0e0] text-[#1f2a44] rounded-xl hover:scale-105 transition"
-              >
-                Add to Cart
-              </button>
-            </div>
-          ))}
-        </div>
-
-        {visibleCount < totalProducts && (
-          <div className="flex justify-center mt-10">
-            <button
-              onClick={() => setVisibleCount((v) => v + 4)}
-              className="px-8 py-4 bg-[var(--foreground)] text-[var(--bg-nav)] rounded-full"
-            >
-              Load More
-            </button>
+      {/* 🧰 SIDEBAR + GRID */}
+      <section className="mt-6 px-4 sm:px-6 max-w-7xl mx-auto mb-20">
+        <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-6">
+          {/* Sidebar (visible on all sizes; stacks above grid on mobile) */}
+          <div className="block">
+            <FiltersSidebar />
           </div>
-        )}
+
+          {/* Product Grid — shows all, or filtered by category/subcategory + facets */}
+          <div>
+            {shown.length === 0 ? (
+              <p className="text-white/80">No products found.</p>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
+                {shown.slice(0, visibleCount).map((product) => (
+                  <div
+                    key={product.id}
+                    className="group bg-[var(--bg-nav)] w-full sm:w-full md:w-[210px] lg:w-[233.61px] h-auto min-h-[387.61px] rounded-2xl overflow-hidden shadow-md hover:shadow-2xl hover:scale-105 transition-transform duration-300 flex flex-col justify-between"
+                  >
+                    <Link
+                      href={`/category/${product.category}/${product.slug}`}
+                      className="flex-1 flex flex-col h-full"
+                    >
+                      <div className="relative w-full aspect-square">
+                        <Image
+                          src={product.image}
+                          alt={product.name}
+                          fill
+                          className="object-cover group-hover:scale-110 transition-transform duration-300"
+                        />
+                      </div>
+                      <div className="p-4 text-center flex-1 flex flex-col justify-between">
+                        <h3 className="font-semibold text-[var(--foreground)] truncate text-sm tracking-wide leading-snug">
+                          {product.name}
+                        </h3>
+                        <p className="text-[#cfd2d6] text-sm leading-relaxed tracking-wide">
+                          {product.salePrice ? (
+                            <>
+                              <span className="line-through mr-1">
+                                ${product.price.toLocaleString()}
+                              </span>
+                              <span className="text-green-500">
+                                ${product.salePrice.toLocaleString()}
+                              </span>
+                            </>
+                          ) : (
+                            <>${product.price.toLocaleString()}</>
+                          )}
+                        </p>
+                      </div>
+                    </Link>
+
+                    {/* 🔁 Quick add for non-rings; redirect for rings */}
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        if (isRingCategory(product.category)) {
+                          router.push(
+                            `/category/${product.category}/${product.slug}`
+                          );
+                          return;
+                        }
+                        addToCart({
+                          id: product.id,
+                          slug: product.slug,
+                          name: product.name,
+                          price: product.price,
+                          discountedPrice: product.salePrice ?? undefined,
+                          image: product.image,
+                          quantity: 1,
+                        });
+                      }}
+                      className="m-4 px-6 py-3 bg-[#e0e0e0] text-[#1f2a44] rounded-xl hover:scale-105 transition"
+                    >
+                      Add to Cart
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {visibleCount < totalProducts && shown.length > 0 && (
+              <div className="flex justify-center mt-10">
+                <button
+                  onClick={() => setVisibleCount((v) => v + 4)}
+                  className="px-8 py-4 bg-[var(--foreground)] text-[var(--bg-nav)] rounded-full"
+                >
+                  Load More
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
       </section>
     </div>
   );
@@ -407,7 +500,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
 export const getServerSideProps: GetServerSideProps = async () => {
   const client = await clientPromise;
 
-  // Fetch all products; client filters by category/subcat
+  // Fetch all products; client filters by category/subcat + facets
   const productsRaw = await client
     .db()
     .collection("products")
@@ -423,6 +516,10 @@ export const getServerSideProps: GetServerSideProps = async () => {
     image: p.imageUrl || p.image,
     category: (p.category || "").toLowerCase(),
     subcategory: (p.subcategory ?? p.subCategory ?? "").toLowerCase(),
+    metal: (p.metal || "").toLowerCase(),
+    stone: (p.stone || "").toLowerCase(),
+    shape: (p.shape || "").toLowerCase(),
+    carat: typeof p.carat === "number" ? p.carat : null,
     gender: p.gender || "unisex",
     description: p.description || "",
   }));
