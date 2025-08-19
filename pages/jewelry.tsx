@@ -332,9 +332,9 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
           title="Shop by Category"
           fullBleedDesktop
           desktopCols={4}
-          activeSlug={activeCategorySlug ?? undefined}
-          routeTo="/jewelry" // stay on /jewelry, adjust query
-          onSelect={(slug) => goCategory(slug as CategorySlug)}
+          // 👉 send users to real category pages like /category/rings
+          routeTo="/category"
+          // remove onSelect + activeSlug; CategoryGrid will handle routing
         />
       </section>
 
