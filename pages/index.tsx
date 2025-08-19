@@ -1,4 +1,4 @@
-// 📄 pages/index.tsx – Home Page with Responsive Featured Placement 💎✅
+// 📄 pages/index.tsx – Home Page matching 4-category layout (Rings / Earrings / Bracelets / Necklaces & Pendants) 💎✅
 
 "use client";
 
@@ -30,9 +30,6 @@ interface HomeProps {
 export const getServerSideProps: GetServerSideProps<HomeProps> = async () => {
   // ---------------------------------------------
   // 🎯 OPTION 1: DATABASE-DRIVEN FEATURED
-  //    - Fetch only those products in MongoDB marked { featured: true }
-  //    - Make sure your “products” collection has documents with featured: true!
-  //    - If none are marked, the array will be empty (so “Featured” disappears).
   // ---------------------------------------------
   const client = await clientPromise;
   const db = client.db();
@@ -53,17 +50,18 @@ export const getServerSideProps: GetServerSideProps<HomeProps> = async () => {
   }));
 
   // ---------------------------------------------
-  // 🎯 OPTION 2: STATIC FALLBACK (uncomment if you prefer using hard-coded data)
-  //    const staticFeaturedItems = staticFeatured.slice(0, 4).map(item => ({
-  //      _id: item.id.toString(),
-  //      name: item.name,
-  //      price: item.price,
-  //      image: item.image,
-  //      category: item.category,
-  //      slug: item.slug,
-  //    }));
-  //    return { props: { products: staticFeaturedItems } };
+  // 🎯 OPTION 2: STATIC FALLBACK (uncomment if needed)
   // ---------------------------------------------
+  // const staticFeaturedItems = staticFeatured.slice(0, 4).map(item => ({
+  //   _id: item.id.toString(),
+  //   name: item.name,
+  //   price: item.price,
+  //   salePrice: item.salePrice ?? null,
+  //   image: item.image,
+  //   category: item.category,
+  //   slug: item.slug,
+  // }));
+  // return { props: { products: staticFeaturedItems } };
 
   return { props: { products } };
 };
@@ -83,7 +81,6 @@ export default function Home({ products }: HomeProps) {
       <button
         type="button"
         onClick={() => {
-          // 🚀 Navigate just like “Shop by Category” — include scroll=true
           router.push({
             pathname: "/jewelry",
             query: gender
@@ -110,13 +107,35 @@ export default function Home({ products }: HomeProps) {
     );
   }
 
+  // 🔧 Category list (ONLY 4) used by both mobile + desktop sections
+  const CATEGORY_BLOCKS: Array<{ label: string; slug: string; image: string }> =
+    [
+      { label: "Rings", slug: "rings", image: "/category/ring-cat.jpg" },
+      {
+        label: "Earrings",
+        slug: "earrings",
+        image: "/category/earring-cat.jpg",
+      },
+      {
+        label: "Bracelets",
+        slug: "bracelets",
+        image: "/category/bracelet-cat.jpg",
+      },
+      // Display "Necklaces & Pendants", route to necklaces
+      {
+        label: "Necklaces & Pendants",
+        slug: "necklaces",
+        image: "/category/necklace-cat.jpg",
+      },
+    ];
+
   return (
     <>
       <Head>
         <title>Classy Diamonds - Fine Jewelry</title>
         <meta
           name="description"
-          content="Explore elegant engagement rings, wedding bands, and fine jewelry."
+          content="Explore elegant rings, earrings, bracelets, and necklaces & pendants."
         />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
@@ -136,8 +155,7 @@ export default function Home({ products }: HomeProps) {
               Timeless Elegance
             </h1>
             <p className="text-base sm:text-lg md:text-xl text-[#e0e0e0] mb-8 max-w-2xl mx-auto leading-relaxed">
-              Discover handcrafted engagement rings, wedding bands, and fine
-              jewelry.
+              Discover handcrafted fine jewelry made to be worn and loved.
             </p>
             <Link href={{ pathname: "/jewelry", query: { scroll: "true" } }}>
               <button className="px-8 py-4 bg-[#e0e0e0] text-[#1f2a44] rounded-full shadow hover:shadow-lg hover:scale-105 transition">
@@ -155,40 +173,27 @@ export default function Home({ products }: HomeProps) {
 
           <div className="overflow-x-auto">
             <div className="flex gap-4 w-max py-2">
-              {[
-                { name: "Engagement", image: "/category/engagement-cat.jpg" },
-                {
-                  name: "Wedding Bands",
-                  image: "/category/wedding-band-cat.jpg",
-                },
-                { name: "Rings", image: "/category/ring-cat.jpg" },
-                { name: "Bracelets", image: "/category/bracelet-cat.jpg" },
-                { name: "Necklaces", image: "/category/necklace-cat.jpg" },
-                { name: "Earrings", image: "/category/earring-cat.jpg" },
-              ].map((cat, i) => (
+              {CATEGORY_BLOCKS.map((cat, i) => (
                 <Link
-                  key={cat.name}
+                  key={cat.label}
                   href={{
                     pathname: "/jewelry",
-                    query: {
-                      category: cat.name.toLowerCase().replace(/\s+/g, "-"),
-                      scroll: "true",
-                    },
+                    query: { category: cat.slug, scroll: "true" },
                   }}
                   className="group relative rounded-xl overflow-hidden shadow-md hover:shadow-2xl hover:scale-105 transition-transform duration-300 flex-shrink-0 w-56"
-                  aria-label={cat.name}
+                  aria-label={cat.label}
                 >
                   <div className="relative aspect-[4/3] w-full">
                     <Image
                       src={cat.image}
-                      alt={cat.name}
+                      alt={cat.label}
                       fill
                       priority={i < 2}
                       className="object-cover rounded-xl group-hover:scale-110 transition-transform duration-300"
                     />
                     <div className="absolute inset-0 bg-black/35" />
                     <span className="absolute inset-0 flex items-center justify-center text-base font-semibold text-white">
-                      {cat.name}
+                      {cat.label}
                     </span>
                   </div>
                 </Link>
@@ -247,10 +252,10 @@ export default function Home({ products }: HomeProps) {
                         onClick={() =>
                           addToCart({
                             id: item._id,
-                            slug: item.slug, // ✅ added slug
+                            slug: item.slug,
                             name: item.name,
-                            price: item.price, // ORIGINAL price
-                            discountedPrice: item.salePrice, // SALE price or undefined
+                            price: item.price,
+                            discountedPrice: item.salePrice,
                             image: item.image,
                             quantity: 1,
                           })
@@ -317,10 +322,10 @@ export default function Home({ products }: HomeProps) {
                       onClick={() =>
                         addToCart({
                           id: item._id,
-                          slug: item.slug, // ✅ added slug
+                          slug: item.slug,
                           name: item.name,
-                          price: item.price, // ORIGINAL price
-                          discountedPrice: item.salePrice, // SALE price or undefined
+                          price: item.price,
+                          discountedPrice: item.salePrice,
                           image: item.image,
                           quantity: 1,
                         })
@@ -336,45 +341,32 @@ export default function Home({ products }: HomeProps) {
           </div>
         </section>
 
-        {/* 🛍️ Desktop-Only Category Grid */}
+        {/* 🛍️ Desktop-Only Category Grid (ONLY 4 categories) */}
         <section className="hidden sm:block py-16 sm:py-20 w-full px-4 sm:px-10">
           <h2 className="text-2xl sm:text-3xl font-serif font-semibold tracking-wide text-center mb-12 sm:mb-16">
             Shop by Category
           </h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-            {[
-              { name: "Engagement", image: "/category/engagement-cat.jpg" },
-              {
-                name: "Wedding Bands",
-                image: "/category/wedding-band-cat.jpg",
-              },
-              { name: "Rings", image: "/category/ring-cat.jpg" },
-              { name: "Bracelets", image: "/category/bracelet-cat.jpg" },
-              { name: "Necklaces", image: "/category/necklace-cat.jpg" },
-              { name: "Earrings", image: "/category/earring-cat.jpg" },
-            ].map((category, index) => (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {CATEGORY_BLOCKS.map((category, index) => (
               <Link
-                key={category.name}
+                key={category.label}
                 href={{
                   pathname: "/jewelry",
-                  query: {
-                    category: category.name.toLowerCase().replace(/\s+/g, "-"),
-                    scroll: "true",
-                  },
+                  query: { category: category.slug, scroll: "true" },
                 }}
                 className="group relative rounded-xl overflow-hidden shadow-md hover:shadow-2xl hover:scale-105 transition-transform duration-300"
               >
                 <div className="relative aspect-[4/3] w-full">
                   <Image
                     src={category.image}
-                    alt={category.name}
+                    alt={category.label}
                     fill
                     priority={index < 3}
                     className="rounded-xl object-cover z-0"
                   />
                   <div className="absolute inset-0 bg-black/30 z-10" />
                   <span className="absolute inset-0 flex items-center justify-center text-sm sm:text-base font-semibold text-white z-20">
-                    {category.name}
+                    {category.label}
                   </span>
                 </div>
               </Link>
@@ -382,7 +374,7 @@ export default function Home({ products }: HomeProps) {
           </div>
         </section>
 
-        {/* 🎁 Gifts for Him & Her Section */}
+        {/* 🎁 Gifts for Him & Her Section (kept as-is; not part of category layout) */}
         <section className="py-16 sm:py-20 px-4 sm:px-10 w-full">
           <h2 className="text-2xl sm:text-3xl font-serif font-semibold tracking-wide text-center mb-12 sm:mb-16">
             Gifts for Him & Her
@@ -446,7 +438,7 @@ export default function Home({ products }: HomeProps) {
             </p>
             <Link
               href="/custom"
-              className="inline-block mt-4 px-8 py-4 bg-[#e0e0e0] text-[#1f2a44] rounded-full font-semibold text-base sm:text-lg hover:bg-white hover:scale-105 transition-transform duration-300"
+              className="inline-block mt-4 px-8 py-4 bg-[#e0e0e0] text-[#1f2a44] rounded-full font-semibold text-base sm:text-lg hover:bg白 hover:scale-105 transition-transform duration-300"
             >
               {" "}
               Start Your Custom Piece{" "}
