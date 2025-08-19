@@ -1,236 +1,295 @@
-// 📄 pages/category/[category]/index.tsx – Category Product Grid with Static + Server Data Merge 🚀
+// pages/category/[category]/index.tsx
+"use client";
 
-import { GetServerSideProps } from "next";
 import Head from "next/head";
 import Image from "next/image";
 import Link from "next/link";
-import { useState, useRef, useEffect } from "react";
+import { GetServerSideProps } from "next";
+import { useEffect } from "react";
 import { useRouter } from "next/router";
-import { useCart } from "@/context/CartContext";
-import Breadcrumbs from "@/components/Breadcrumbs";
+import clientPromise from "@/lib/mongodb";
+import CategoryGrid, { CategoryItem } from "@/components/CategoryGrid";
 
-interface Product {
-  _id: string;
+// Fallback local data if DB isn’t ready
+import { productsData as staticProducts } from "@/data/productsData";
+import { jewelryData as staticJewelry } from "@/data/jewelryData";
+
+type Product = {
+  _id?: string;
+  id?: string;
   name: string;
   price: number;
   salePrice?: number;
   image: string;
   category: string;
-  gender?: "unisex" | "him" | "her";
+  subcategory?: string;
   slug: string;
-}
-
-interface CategoryPageProps {
-  products: Product[]; // from your DB
-  category: string; // slug
-}
-
-// Fetch server items
-export const getServerSideProps: GetServerSideProps<
-  CategoryPageProps
-> = async ({ query }) => {
-  const cat = query.category as string;
-  const res = await fetch(
-    `${process.env.NEXTAUTH_URL}/api/products?category=${cat}`,
-  );
-  const products: Product[] = await res.json();
-  return { props: { products, category: cat } };
 };
 
-export default function CategoryPage({
-  products,
-  category,
-}: CategoryPageProps) {
-  const { addToCart } = useCart();
-  const [visibleCount, setVisibleCount] = useState(8);
-  const productsEndRef = useRef<HTMLDivElement>(null);
-  const titleRef = useRef<HTMLHeadingElement>(null);
+type SubItem = { label: string; slug: string };
+
+type PageProps = {
+  categorySlug: string;
+  categoryLabel: string;
+  categories: CategoryItem[];
+  subcategories: SubItem[];
+  products: Product[];
+};
+
+const CATEGORIES: CategoryItem[] = [
+  { label: "Engagement",     slug: "engagement",     image: "/category/engagement.jpg" },
+  { label: "Wedding Bands",  slug: "wedding-bands",  image: "/category/wedding-bands.jpg" },
+  { label: "Rings",          slug: "rings",          image: "/category/rings.jpg" },
+  { label: "Bracelets",      slug: "bracelets",      image: "/category/bracelets.jpg" },
+  { label: "Necklaces",      slug: "necklaces",      image: "/category/necklaces.jpg" },
+  { label: "Earrings",       slug: "earrings",       image: "/category/earrings.jpg" },
+  { label: "For Her",        slug: "for-her",        image: "/category/for-her.jpg" },
+  { label: "For Him",        slug: "for-him",        image: "/category/for-him.jpg" },
+];
+
+const CATEGORY_SUBS: Record<string, SubItem[]> = {
+  rings: [
+    { label: "All Rings", slug: "all" },
+    { label: "Engagement Rings", slug: "engagement" },
+    { label: "Wedding Bands", slug: "wedding-bands" },
+    { label: "Solitaire", slug: "solitaire" },
+    { label: "Halo", slug: "halo" },
+    { label: "Three-Stone", slug: "three-stone" },
+    { label: "Eternity", slug: "eternity" },
+    { label: "Men’s Rings", slug: "mens" },
+  ],
+  engagement: [
+    { label: "All Engagement", slug: "all" },
+    { label: "Solitaire", slug: "solitaire" },
+    { label: "Halo", slug: "halo" },
+    { label: "Three-Stone", slug: "three-stone" },
+    { label: "Vintage", slug: "vintage" },
+    { label: "Hidden Halo", slug: "hidden-halo" },
+  ],
+  "wedding-bands": [
+    { label: "All Wedding Bands", slug: "all" },
+    { label: "Women’s Bands", slug: "womens" },
+    { label: "Men’s Bands", slug: "mens" },
+    { label: "Eternity Bands", slug: "eternity" },
+    { label: "Anniversary", slug: "anniversary" },
+  ],
+  bracelets: [
+    { label: "All Bracelets", slug: "all" },
+    { label: "Tennis", slug: "tennis" },
+    { label: "Bangles", slug: "bangles" },
+    { label: "Cuffs", slug: "cuffs" },
+    { label: "Chains", slug: "chains" },
+  ],
+  necklaces: [
+    { label: "All Necklaces", slug: "all" },
+    { label: "Pendants", slug: "pendants" },
+    { label: "Solitaire", slug: "solitaire" },
+    { label: "Station", slug: "station" },
+    { label: "Nameplates", slug: "nameplates" },
+    { label: "Pearl", slug: "pearl" },
+  ],
+  earrings: [
+    { label: "All Earrings", slug: "all" },
+    { label: "Studs", slug: "studs" },
+    { label: "Hoops", slug: "hoops" },
+    { label: "Drops", slug: "drops" },
+    { label: "Huggies", slug: "huggies" },
+  ],
+  "for-her": [
+    { label: "All For Her", slug: "all" },
+    { label: "Rings", slug: "rings" },
+    { label: "Bracelets", slug: "bracelets" },
+    { label: "Necklaces", slug: "necklaces" },
+    { label: "Earrings", slug: "earrings" },
+  ],
+  "for-him": [
+    { label: "All For Him", slug: "all" },
+    { label: "Rings", slug: "rings" },
+    { label: "Bracelets", slug: "bracelets" },
+    { label: "Chains", slug: "chains" },
+  ],
+};
+
+const labelFor = (slug: string) => CATEGORIES.find((c) => c.slug === slug)?.label ?? slug;
+
+export const getServerSideProps: GetServerSideProps<PageProps> = async (ctx) => {
+  const categorySlug = String(ctx.params?.category || "").toLowerCase();
+  const categoryLabel = labelFor(categorySlug);
+
+  let products: Product[] = [];
+  try {
+    const client = await clientPromise;
+    const db = client.db(process.env.MONGODB_DB || "classydiamonds");
+    const docs = await db
+      .collection("products")
+      .find({ category: categorySlug })
+      .project({ _id: 1, name: 1, price: 1, salePrice: 1, image: 1, category: 1, subcategory: 1, slug: 1 })
+      .toArray();
+
+    products = docs.map((d: any) => ({
+      _id: String(d._id),
+      name: d.name,
+      price: d.price,
+      salePrice: d.salePrice,
+      image: d.image,
+      category: d.category,
+      subcategory: d.subcategory,
+      slug: d.slug,
+    }));
+  } catch {
+    const local = [...(staticProducts || []), ...(staticJewelry || [])] as Product[];
+    products = local.filter((p) => (p.category || "").toLowerCase() === categorySlug);
+  }
+
+  if (!categorySlug) return { notFound: true };
+
+  return {
+    props: {
+      categorySlug,
+      categoryLabel,
+      categories: CATEGORIES,
+      subcategories: CATEGORY_SUBS[categorySlug] || [{ label: "All", slug: "all" }],
+      products,
+    },
+  };
+};
+
+export default function CategoryPage({ categorySlug, categoryLabel, categories, subcategories, products }: PageProps) {
   const router = useRouter();
+  const activeSub = (router.query.sub as string) || "all";
 
-  // Use only products from the database
-  const allProducts: Product[] = products;
-
-  const handleLoadMore = () => {
-    setVisibleCount((prev) => prev + 4);
-    setTimeout(
-      () => productsEndRef.current?.scrollIntoView({ behavior: "smooth" }),
-      300,
-    );
-  };
-
-  const prettyCategory = category
-    .split("-")
-    .map((w) => w[0].toUpperCase() + w.slice(1))
-    .join(" ");
-
-  const categoryHeroImages: Record<string, string> = {
-    rings: "/category-hero/ring-hero.jpg",
-    bracelets: "/category-hero/bracelet-hero.jpg",
-    earrings: "/category-hero/earring-hero.jpg",
-    "wedding-bands": "/category-hero/wedding-band-hero.jpg",
-    engagement: "/category-hero/engagement-ring-hero.jpg",
-    necklaces: "/category-hero/necklace-hero.jpg",
-  };
-  const categoryImagePosition: Record<string, string> = {
-    rings: "object-[center_75%]",
-    bracelets: "object-center",
-    earrings: "object-[center_25%] brightness-275",
-    "wedding-bands": "object-center",
-    engagement: "object-[center_65%]",
-    necklaces: "object-[center_30%]",
-  };
-  const categoryHeroSubtitles: Record<string, string> = {
-    rings: "Timeless designs that sparkle forever",
-    bracelets: "Refined elegance for every wrist",
-    earrings: "Statement pieces that shine bright",
-    "wedding-bands": "Symbolizing eternal commitment",
-    engagement: "Crafted to capture forever",
-    necklaces: "Luxury that completes any look",
-  };
-
-  const heroImage = categoryHeroImages[category.toLowerCase()];
-  const heroClass = categoryImagePosition[category.toLowerCase()];
-  const heroSubtitle = categoryHeroSubtitles[category.toLowerCase()];
+  const subLabel =
+    subcategories.find((s) => s.slug.toLowerCase() === activeSub.toLowerCase())?.label ||
+    (activeSub === "all" ? "All" : activeSub);
 
   useEffect(() => {
-    if (!router.isReady) return;
-    if (router.query.scroll === "true") {
-      const header = document.querySelector("header");
-      const offset = (header as HTMLElement | null)?.clientHeight || 80;
-      if (titleRef.current) {
-        const top =
-          titleRef.current.getBoundingClientRect().top +
-          window.pageYOffset -
-          offset;
-        window.scrollTo({ top, behavior: "smooth" });
-      }
+    const { scroll } = router.query as { scroll?: string };
+    if (scroll === "true") {
+      const header = document.getElementById("category-header");
+      if (!header) return;
+      const navOffset = 80;
+      const y = header.getBoundingClientRect().top + window.scrollY - navOffset - 20;
+      requestAnimationFrame(() => window.scrollTo({ top: y, behavior: "smooth" }));
+      const q = { ...router.query };
+      delete (q as any).scroll;
+      router.replace({ pathname: router.pathname, query: q }, undefined, { shallow: true });
     }
-  }, [router.isReady]);
+  }, [router]);
+
+  const pushSub = (sub: string) => {
+    router.push({ pathname: `/category/${categorySlug}`, query: sub === "all" ? {} : { sub } }, undefined, { shallow: true });
+  };
+
+  const shown = products.filter((p) =>
+    activeSub === "all" ? true : (p.subcategory || "").toLowerCase() === activeSub.toLowerCase()
+  );
 
   return (
-    <div className="min-h-screen flex flex-col bg-[var(--bg-page)] text-[var(--foreground)]">
-      {/* 🔖 Head Meta */}
+    <>
       <Head>
-        <title>{prettyCategory} | Classy Diamonds</title>
-        <meta
-          name="description"
-          content={`Explore our stunning ${prettyCategory} pieces at Classy Diamonds.`}
-        />
+        <title>{categoryLabel} | Classy Diamonds</title>
+        <meta name="description" content={`Explore ${categoryLabel} at Classy Diamonds. Premium pieces and timeless style.`} />
       </Head>
 
-      {/* 🌟 Hero Section */}
-      {heroImage && (
-        <section className="relative w-full h-[40vh] sm:h-[50vh] overflow-hidden">
-          <Image
-            src={heroImage}
-            alt={`${prettyCategory} banner`}
-            fill
-            className={`object-cover ${heroClass}`}
-            priority
-          />
-          <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center text-center px-4">
-            <h1 className="text-3xl sm:text-5xl font-bold text-white capitalize">
-              {prettyCategory}
-            </h1>
-            {heroSubtitle && (
-              <p className="mt-2 text-base sm:text-lg text-[#e0e0e0] max-w-xl">
-                {heroSubtitle}
-              </p>
-            )}
-          </div>
-        </section>
-      )}
+      {/* Row 1: top categories */}
+      <CategoryGrid items={categories} title="Categories" fullBleedDesktop desktopCols={6} activeSlug={categorySlug} routeTo="/category" />
 
-      <div className="pl-4 pr-4 sm:pl-8 sm:pr-8 mt-6 mb-6">
-        <Breadcrumbs />
+      {/* Row 2: subcategories */}
+      <section className="mt-4 mb-6 px-4 sm:px-6">
+        <div className="mx-auto max-w-7xl">
+          <h3 className="text-xl sm:text-2xl font-semibold tracking-wide">Subcategories</h3>
+
+          {/* mobile */}
+          <div className="sm:hidden mt-3 overflow-x-auto">
+            <div className="flex gap-2 w-max">
+              {subcategories.map((s) => {
+                const active = activeSub.toLowerCase() === s.slug.toLowerCase();
+                return (
+                  <button
+                    key={s.slug}
+                    onClick={() => pushSub(s.slug)}
+                    className={
+                      "px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap border " +
+                      (active ? "bg-white text-[#1f2a44] border-white" : "bg-[#25304f] text-white border-white/20 hover:bg-[#2b3760]")
+                    }
+                    aria-pressed={active}
+                  >
+                    {s.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* desktop */}
+          <div className="hidden sm:flex gap-2 mt-3 flex-wrap">
+            {subcategories.map((s) => {
+              const active = activeSub.toLowerCase() === s.slug.toLowerCase();
+              return (
+                <button
+                  key={s.slug}
+                  onClick={() => pushSub(s.slug)}
+                  className={
+                    "px-3 py-2 rounded-lg text-sm font-medium border " +
+                    (active ? "bg-white text-[#1f2a44] border-white" : "bg-[#25304f] text-white border-white/20 hover:bg-[#2b3760]")
+                  }
+                  aria-pressed={active}
+                >
+                  {s.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* Anchor for scroll=true */}
+      <div id="category-header" className="sr-only" aria-hidden="true" />
+
+      {/* Breadcrumb-ish line + Heading */}
+      <div className="px-4 sm:px-6">
+        <div className="mx-auto max-w-7xl">
+          <p className="text-white/70 text-sm mb-1">
+            Category / <span className="text-white">{subLabel}</span>
+          </p>
+          <h1 className="text-2xl sm:text-3xl font-serif font-semibold tracking-wide mb-4">{categoryLabel}</h1>
+        </div>
       </div>
 
-      {/* 💍 Product Grid Section */}
-      <section className="py-20 px-4 sm:px-6 max-w-7xl mx-auto">
-        <h2
-          ref={titleRef}
-          className="text-2xl sm:text-3xl font-semibold text-center mb-12"
-        >
-          {prettyCategory} Pieces
-        </h2>
-        {allProducts.length === 0 ? (
-          <div className="text-center text-gray-400">No products found.</div>
-        ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6 auto-rows-fr">
-            {allProducts.slice(0, visibleCount).map((product) => (
-              <div key={product._id} className="group">
-                <div className="bg-[var(--bg-nav)] rounded-2xl overflow-hidden shadow-lg hover:ring-2 hover:ring-[var(--foreground)] hover:scale-105 transition-transform duration-300 flex flex-col h-full justify-between">
-                  {/* 🔗 Product Link & Image */}
-                  <Link
-                    href={`/category/${product.category}/${product.slug}`}
-                    className="flex-1 flex flex-col h-full"
-                  >
-                    <div className="product-card-img">
-                      <Image
-                        src={product.image}
-                        alt={product.name}
-                        fill
-                        className="object-cover group-hover:scale-110 transition h-full w-full"
-                      />
+      {/* Product grid */}
+      <section className="px-4 sm:px-6 pb-10">
+        <div className="mx-auto max-w-7xl">
+          {shown.length === 0 ? (
+            <p className="text-white/80">No products found.</p>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+              {shown.map((p) => {
+                const href = `/category/${encodeURIComponent(categorySlug)}/${encodeURIComponent(p.slug)}`;
+                return (
+                  <Link key={p.slug} href={href} className="group rounded-xl overflow-hidden bg-[#25304f] hover:shadow-xl transition">
+                    <div className="relative aspect-square">
+                      {p.image ? <Image src={p.image} alt={p.name} fill className="object-cover" /> : <div className="w-full h-full bg-black/20" />}
                     </div>
-                    <div className="p-4 text-center flex-1 flex flex-col justify-between">
-                      <h3 className="font-semibold text-[var(--foreground)] truncate text-sm">
-                        {product.name}
-                      </h3>
-                      <p className="text-[#cfd2d6] text-sm">
-                        {product.salePrice ? (
-                          <>
-                            <span className="line-through mr-1">
-                              ${product.price.toLocaleString()}
-                            </span>
-                            <span className="text-red-500">
-                              ${product.salePrice.toLocaleString()}
-                            </span>
-                          </>
+                    <div className="p-3">
+                      <h4 className="text-sm font-medium text-white line-clamp-2 group-hover:underline">{p.name}</h4>
+                      <div className="mt-1">
+                        {p.salePrice ? (
+                          <div className="flex items-center gap-2">
+                            <span className="text-white font-semibold">${Number(p.salePrice).toFixed(2)}</span>
+                            <span className="text-white/60 line-through text-sm">${Number(p.price).toFixed(2)}</span>
+                          </div>
                         ) : (
-                          <>${product.price.toLocaleString()}</>
+                          <span className="text-white font-semibold">${Number(p.price).toFixed(2)}</span>
                         )}
-                      </p>
+                      </div>
                     </div>
                   </Link>
-                  <button
-                    onClick={(e) => {
-                      e.preventDefault();
-                      addToCart({
-                        id: product._id,
-                        name: product.name,
-                        price: product.salePrice ?? product.price,
-                        discountedPrice: product.salePrice ?? undefined,
-                        image: product.image,
-                        quantity: 1,
-                      });
-                    }}
-                    className="m-4 px-6 py-3 bg-[#e0e0e0] text-[#1f2a44] rounded-xl hover:scale-105 transition"
-                  >
-                    Add to Cart
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-        {/* 🔽 Load More */}
-        <div ref={productsEndRef} />
-        {visibleCount < allProducts.length ? (
-          <div className="flex justify-center mt-12">
-            <button
-              onClick={handleLoadMore}
-              className="px-8 py-4 bg-[var(--foreground)] text-[var(--bg-nav)] rounded-full font-semibold text-lg hover:bg-white hover:scale-105 transition-transform"
-            >
-              Load More
-            </button>
-          </div>
-        ) : (
-          <div className="text-center mt-12 text-lg text-gray-400">
-            🎉 You’ve explored all our {prettyCategory.toLowerCase()} pieces!
-          </div>
-        )}
+                );
+              })}
+            </div>
+          )}
+        </div>
       </section>
-    </div>
+    </>
   );
 }

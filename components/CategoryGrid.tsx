@@ -6,15 +6,15 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 
 export type SubcategoryItem = {
-  label: string; // e.g. "Engagement Rings"
-  slug: string; // e.g. "engagement"
+  label: string;
+  slug: string;
 };
 
 export type CategoryItem = {
-  label: string; // e.g. "Rings"
-  slug: string; // e.g. "rings"
-  image?: string; // e.g. "/category/rings.jpg"
-  subcategories?: SubcategoryItem[]; // optional
+  label: string;
+  slug: string;
+  image?: string;
+  subcategories?: SubcategoryItem[];
 };
 
 type Props = {
@@ -25,12 +25,7 @@ type Props = {
   className?: string;
   activeSlug?: string | null;
   onSelect?: (slug: string) => void;
-
-  /**
-   * NEW: Where clicks should route.
-   * - "/category"  -> /category/[slug]
-   * - "/jewelry"   -> /jewelry?category=slug
-   */
+  /** Where clicks should route. "/category" -> /category/[slug], "/jewelry" -> /jewelry?category=slug */
   routeTo?: "/category" | "/jewelry";
 };
 
@@ -46,48 +41,29 @@ export default function CategoryGrid({
   className,
   activeSlug = null,
   onSelect,
-  routeTo = "/category", // default to the new category page
+  routeTo = "/category",
 }: Props) {
   const router = useRouter();
 
   const gridCols =
-    desktopCols === 6
-      ? "grid-cols-6"
-      : desktopCols === 5
-      ? "grid-cols-5"
-      : desktopCols === 3
-      ? "grid-cols-3"
-      : "grid-cols-4";
-
-  const pushTo = (slug: string) => {
-    if (routeTo === "/category") {
-      router.push(
-        { pathname: `/category/${slug}`, query: { scroll: "true" } },
-        undefined,
-        {
-          shallow: true,
-        }
-      );
-    } else {
-      router.push(
-        { pathname: "/jewelry", query: { category: slug, scroll: "true" } },
-        undefined,
-        {
-          shallow: true,
-        }
-      );
-    }
-  };
-
-  const handleSelect = (slug: string) => {
-    if (onSelect) onSelect(slug);
-    pushTo(slug);
-  };
+    desktopCols === 6 ? "grid-cols-6"
+    : desktopCols === 5 ? "grid-cols-5"
+    : desktopCols === 3 ? "grid-cols-3"
+    : "grid-cols-4";
 
   const hrefFor = (slug: string) =>
     routeTo === "/category"
       ? `/category/${encodeURIComponent(slug)}?scroll=true`
       : `/jewelry?category=${encodeURIComponent(slug)}&scroll=true`;
+
+  const handleSelect = (slug: string) => {
+    if (onSelect) onSelect(slug);
+    if (routeTo === "/category") {
+      router.push({ pathname: `/category/${slug}`, query: { scroll: "true" } }, undefined, { shallow: true });
+    } else {
+      router.push({ pathname: "/jewelry", query: { category: slug, scroll: "true" } }, undefined, { shallow: true });
+    }
+  };
 
   return (
     <section className={clsx("pt-6 pb-6", className)}>
@@ -98,33 +74,19 @@ export default function CategoryGrid({
         </h2>
       </div>
 
-      {/* 📱 Mobile: swipe row */}
+      {/* Mobile */}
       <div className="sm:hidden px-0 mt-2">
-        <div
-          className="overflow-x-auto show-scrollbar"
-          style={{ WebkitOverflowScrolling: "touch", scrollbarWidth: "thin" }}
-        >
+        <div className="overflow-x-auto show-scrollbar" style={{ WebkitOverflowScrolling: "touch", scrollbarWidth: "thin" }}>
           <style jsx>{`
-            .show-scrollbar::-webkit-scrollbar {
-              height: 8px;
-            }
-            .show-scrollbar::-webkit-scrollbar-track {
-              background: transparent;
-            }
-            .show-scrollbar::-webkit-scrollbar-thumb {
-              background: rgba(255, 255, 255, 0.35);
-              border-radius: 9999px;
-            }
-            .show-scrollbar:hover::-webkit-scrollbar-thumb {
-              background: rgba(255, 255, 255, 0.55);
-            }
+            .show-scrollbar::-webkit-scrollbar { height: 8px; }
+            .show-scrollbar::-webkit-scrollbar-track { background: transparent; }
+            .show-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,.35); border-radius: 9999px; }
+            .show-scrollbar:hover::-webkit-scrollbar-thumb { background: rgba(255,255,255,.55); }
           `}</style>
 
           <div className="flex gap-3 w-max px-4">
             {items.map((cat, i) => {
-              const isActive =
-                activeSlug &&
-                activeSlug.toLowerCase() === cat.slug.toLowerCase();
+              const isActive = activeSlug && activeSlug.toLowerCase() === cat.slug.toLowerCase();
               return (
                 <button
                   key={`m-${cat.slug}-${i}`}
@@ -138,24 +100,12 @@ export default function CategoryGrid({
                   title={cat.label}
                 >
                   <div className="relative w-full bg-[#25304f] aspect-[4/3]">
-                    {cat.image ? (
-                      <Image
-                        src={cat.image}
-                        alt={cat.label}
-                        fill
-                        className="object-cover"
-                      />
-                    ) : null}
+                    {cat.image ? <Image src={cat.image} alt={cat.label} fill className="object-cover" /> : null}
                     <div className="absolute inset-0 bg-black/40 group-hover:bg-black/30 transition-colors z-10" />
                     <span className="absolute inset-0 flex items-center justify-center z-30 font-semibold text-white text-center px-3 drop-shadow-[0_1px_2px_rgba(0,0,0,0.7)] text-[12px]">
                       {cat.label}
                     </span>
-                    {isActive && (
-                      <span
-                        aria-hidden
-                        className="absolute inset-0 ring-2 ring-white rounded-xl z-20"
-                      />
-                    )}
+                    {isActive && <span aria-hidden className="absolute inset-0 ring-2 ring-white rounded-xl z-20" />}
                   </div>
                 </button>
               );
@@ -164,93 +114,44 @@ export default function CategoryGrid({
         </div>
       </div>
 
-      {/* 🖥️ Desktop: single row grid */}
-      <div
-        className={clsx(
-          "hidden sm:block",
-          fullBleedDesktop &&
-            "w-screen relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw]"
-        )}
-      >
-        <div
-          className={clsx(
-            "mx-auto",
-            fullBleedDesktop ? "max-w-[1440px] px-2" : "max-w-7xl px-4 sm:px-6"
-          )}
-        >
+      {/* Desktop */}
+      <div className={clsx("hidden sm:block", fullBleedDesktop && "w-screen relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw]")}> 
+        <div className={clsx("mx-auto", fullBleedDesktop ? "max-w-[1440px] px-2" : "max-w-7xl px-4 sm:px-6")}> 
           <div className={clsx("grid gap-[8px]", gridCols)}>
             {items.map((cat, i) => {
-              const isActive =
-                activeSlug &&
-                activeSlug.toLowerCase() === cat.slug.toLowerCase();
-
-              const common = clsx(
-                "group relative rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-transform duration-150 hover:scale-[1.03]",
-                isActive && "ring-2 ring-white"
-              );
+              const isActive = activeSlug && activeSlug.toLowerCase() === cat.slug.toLowerCase();
+              const common = clsx("group relative rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-transform duration-150 hover:scale-[1.03]", isActive && "ring-2 ring-white");
 
               if (onSelect) {
                 return (
                   <a
                     key={`d-${cat.slug}-${i}`}
                     href={hrefFor(cat.slug)}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      handleSelect(cat.slug);
-                    }}
+                    onClick={(e) => { e.preventDefault(); handleSelect(cat.slug); }}
                     className={common}
                     aria-label={cat.label}
                   >
                     <div className="relative w-full bg-[#25304f] aspect-[5/4]">
-                      {cat.image ? (
-                        <Image
-                          src={cat.image}
-                          alt={cat.label}
-                          fill
-                          className="object-cover"
-                        />
-                      ) : null}
+                      {cat.image ? <Image src={cat.image} alt={cat.label} fill className="object-cover" /> : null}
                       <div className="absolute inset-0 bg-black/40 group-hover:bg-black/30 transition-colors z-10" />
                       <span className="absolute inset-0 flex items-center justify-center z-30 font-semibold text-white text-center px-3 drop-shadow-[0_1px_2px_rgba(0,0,0,0.7)] text-[13px]">
                         {cat.label}
                       </span>
-                      {isActive && (
-                        <span
-                          aria-hidden
-                          className="absolute inset-0 ring-2 ring-white rounded-xl z-20"
-                        />
-                      )}
+                      {isActive && <span aria-hidden className="absolute inset-0 ring-2 ring-white rounded-xl z-20" />}
                     </div>
                   </a>
                 );
               }
 
               return (
-                <Link
-                  key={`d-${cat.slug}-${i}`}
-                  href={hrefFor(cat.slug)}
-                  className={common}
-                  aria-label={cat.label}
-                >
+                <Link key={`d-${cat.slug}-${i}`} href={hrefFor(cat.slug)} className={common} aria-label={cat.label}>
                   <div className="relative w-full bg-[#25304f] aspect-[5/4]">
-                    {cat.image ? (
-                      <Image
-                        src={cat.image}
-                        alt={cat.label}
-                        fill
-                        className="object-cover"
-                      />
-                    ) : null}
+                    {cat.image ? <Image src={cat.image} alt={cat.label} fill className="object-cover" /> : null}
                     <div className="absolute inset-0 bg-black/40 group-hover:bg-black/30 transition-colors z-10" />
                     <span className="absolute inset-0 flex items-center justify-center z-30 font-semibold text-white text-center px-3 drop-shadow-[0_1px_2px_rgba(0,0,0,0.7)] text-[13px]">
                       {cat.label}
                     </span>
-                    {isActive && (
-                      <span
-                        aria-hidden
-                        className="absolute inset-0 ring-2 ring-white rounded-xl z-20"
-                      />
-                    )}
+                    {isActive && <span aria-hidden className="absolute inset-0 ring-2 ring-white rounded-xl z-20" />}
                   </div>
                 </Link>
               );
@@ -261,3 +162,4 @@ export default function CategoryGrid({
     </section>
   );
 }
+
