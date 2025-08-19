@@ -1,17 +1,16 @@
-// 📄 pages/jewelry.tsx – 4 categories at top (Rings/Earrings/Bracelets/Necklaces & Pendants) + “All Jewelry” grid ✅💎
-
+// pages/jewelry.tsx — All Jewelry by default + 4 categories + subcategory pills (no title)
 "use client";
 
 import Image from "next/image";
 import Link from "next/link";
 import Head from "next/head";
 import { useCart } from "@/context/CartContext";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/router";
 import clientPromise from "@/lib/mongodb";
 import { GetServerSideProps } from "next";
 import Breadcrumbs from "@/components/Breadcrumbs";
-import CategoryGrid from "@/components/CategoryGrid";
+import CategoryGrid, { CategoryItem } from "@/components/CategoryGrid";
 
 export type ProductType = {
   id: string;
@@ -20,17 +19,28 @@ export type ProductType = {
   price: number;
   salePrice?: number | null;
   image: string;
-  category: string;
+  category: string; // "rings" | "earrings" | "bracelets" | "necklaces"
+  subcategory?: string; // used for ring/earring/etc. sub-filters
   gender?: "unisex" | "him" | "her";
   description?: string;
 };
+
+type SubItem = { label: string; slug: string };
+type CategorySlug = "rings" | "earrings" | "bracelets" | "necklaces";
+const ALLOWED: readonly CategorySlug[] = [
+  "rings",
+  "earrings",
+  "bracelets",
+  "necklaces",
+] as const;
 
 /* --------------------------------- Helpers -------------------------------- */
 const isRingCategory = (cat?: string) =>
   (cat ?? "").toLowerCase().includes("ring");
 
 /* ------------------------------- Constants -------------------------------- */
-const CATEGORY_ITEMS = [
+// 4 category tiles only
+const CATEGORY_ITEMS: CategoryItem[] = [
   { label: "Rings", slug: "rings", image: "/category/ring-cat.jpg" },
   { label: "Earrings", slug: "earrings", image: "/category/earring-cat.jpg" },
   {
@@ -43,41 +53,92 @@ const CATEGORY_ITEMS = [
     slug: "necklaces",
     image: "/category/necklace-cat.jpg",
   },
-] as const;
+];
+
+// Subcategory pills (shown only when a category is selected)
+const SUBS: Record<CategorySlug, SubItem[]> = {
+  rings: [
+    { label: "All", slug: "all" },
+    { label: "Engagement", slug: "engagement" }, // requested
+    { label: "Wedding Bands", slug: "wedding-bands" }, // requested
+    { label: "Solitaire", slug: "solitaire" },
+    { label: "Halo", slug: "halo" },
+    { label: "Three-Stone", slug: "three-stone" },
+    { label: "Eternity", slug: "eternity" },
+    { label: "Men’s", slug: "mens" },
+  ],
+  earrings: [
+    { label: "All", slug: "all" },
+    { label: "Studs", slug: "studs" },
+    { label: "Hoops", slug: "hoops" },
+    { label: "Drops", slug: "drops" },
+    { label: "Huggies", slug: "huggies" },
+  ],
+  bracelets: [
+    { label: "All", slug: "all" },
+    { label: "Tennis", slug: "tennis" },
+    { label: "Bangles", slug: "bangles" },
+    { label: "Cuffs", slug: "cuffs" },
+    { label: "Chains", slug: "chains" },
+  ],
+  necklaces: [
+    { label: "All", slug: "all" },
+    { label: "Pendants", slug: "pendants" },
+    { label: "Solitaire", slug: "solitaire" },
+    { label: "Station", slug: "station" },
+    { label: "Nameplates", slug: "nameplates" },
+    { label: "Pearl", slug: "pearl" },
+  ],
+};
+
+// Map for nicer headings
+const CATEGORY_LABELS: Record<CategorySlug, string> = {
+  rings: "Rings",
+  earrings: "Earrings",
+  bracelets: "Bracelets",
+  necklaces: "Necklaces & Pendants",
+};
 
 /* ---------------------------------- Page ---------------------------------- */
 export default function JewelryPage({ products }: { products: ProductType[] }) {
   const { addToCart } = useCart();
   const [visibleCount, setVisibleCount] = useState(8);
 
-  // Highlighted category (by slug). Grid below still shows ALL products.
-  const [activeCategorySlug, setActiveCategorySlug] = useState<
-    "rings" | "earrings" | "bracelets" | "necklaces" | null
-  >(null);
+  // When null => All Jewelry
+  const [activeCategorySlug, setActiveCategorySlug] =
+    useState<CategorySlug | null>(null);
+  const [activeSub, setActiveSub] = useState<string>("all");
 
   const heroRef = useRef<HTMLDivElement>(null);
   const headerRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
   const resetCount = () => setVisibleCount(8);
-  useEffect(() => {
-    resetCount();
-  }, []);
 
-  // Read ?category and ?scroll on load/shallow nav
+  // Read ?category and ?sub on load/shallow nav; default is "All Jewelry"
   useEffect(() => {
     if (!router.isReady) return;
-    const { category, scroll } = router.query;
+    const { category, sub, scroll } = router.query;
 
-    if (typeof category === "string") {
-      const slug = category.toLowerCase();
-      if (["rings", "earrings", "bracelets", "necklaces"].includes(slug)) {
-        setActiveCategorySlug(slug as typeof activeCategorySlug);
+    if (
+      typeof category === "string" &&
+      ALLOWED.includes(category.toLowerCase() as CategorySlug)
+    ) {
+      const cat = category.toLowerCase() as CategorySlug; // ✅ narrowed; not null
+      setActiveCategorySlug(cat);
+
+      const subs = SUBS[cat];
+      if (
+        typeof sub === "string" &&
+        subs?.some((s: SubItem) => s.slug.toLowerCase() === sub.toLowerCase())
+      ) {
+        setActiveSub(sub.toLowerCase());
       } else {
-        setActiveCategorySlug(null);
+        setActiveSub("all");
       }
     } else {
       setActiveCategorySlug(null);
+      setActiveSub("all");
     }
 
     resetCount();
@@ -88,7 +149,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
     }
   }, [router.isReady, router.query]);
 
-  // On category change, reset count and scroll to header
+  // When category changes via click, reset count and scroll to header
   useEffect(() => {
     resetCount();
     headerRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -98,7 +159,53 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
   const pageDesc =
     "Explore timeless rings, earrings, bracelets, and necklaces & pendants.";
 
-  const totalProducts = products.length;
+  // Build sub pills for current category
+  const subPills: SubItem[] = activeCategorySlug
+    ? SUBS[activeCategorySlug] ?? [{ label: "All", slug: "all" }]
+    : [];
+
+  // Compute products to show:
+  // - no category selected => all products
+  // - category selected => filter by category, then by sub if not "all"
+  const shown = useMemo(() => {
+    if (!activeCategorySlug) return products; // All jewelry
+    const byCat = products.filter(
+      (p) => (p.category || "").toLowerCase() === activeCategorySlug
+    );
+    if (activeSub === "all") return byCat;
+    return byCat.filter(
+      (p) => (p.subcategory || "").toLowerCase() === activeSub
+    );
+  }, [products, activeCategorySlug, activeSub]);
+
+  const totalProducts = shown.length;
+
+  // Push URL when user clicks a top category tile
+  const goCategory = (slug: CategorySlug) => {
+    setActiveCategorySlug(slug);
+    setActiveSub("all");
+    router.push(
+      { pathname: "/jewelry", query: { category: slug, scroll: "true" } },
+      undefined,
+      { shallow: true }
+    );
+  };
+
+  // Push URL when user clicks a sub pill
+  const goSub = (slug: string) => {
+    if (!activeCategorySlug) return;
+    setActiveSub(slug);
+    const query =
+      slug === "all"
+        ? { category: activeCategorySlug }
+        : { category: activeCategorySlug, sub: slug };
+    router.push({ pathname: "/jewelry", query }, undefined, { shallow: true });
+  };
+
+  // Heading text
+  const heading = activeCategorySlug
+    ? CATEGORY_LABELS[activeCategorySlug]
+    : "All Jewelry";
 
   return (
     <div className="min-h-screen flex flex-col bg-[var(--bg-page)] text-[var(--foreground)]">
@@ -138,31 +245,84 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
       {/* 💎 Category Tiles (Top Section) */}
       <section
         ref={headerRef}
-        className="pt-6 pb-6 px-0 sm:px-0 w-full"
+        className="pt-6 pb-4 px-0 sm:px-0 w-full"
         style={{ scrollMarginTop: "40px" }}
       >
         <CategoryGrid
-          items={CATEGORY_ITEMS as any}
+          items={CATEGORY_ITEMS}
           title="Shop by Category"
           fullBleedDesktop
+          desktopCols={4}
           activeSlug={activeCategorySlug ?? undefined}
-          onSelect={(slug) =>
-            setActiveCategorySlug(slug as typeof activeCategorySlug)
-          }
+          routeTo="/jewelry" // stay on /jewelry, adjust query
+          onSelect={(slug) => goCategory(slug as CategorySlug)}
         />
       </section>
 
-      {/* 🔽 “All Jewelry” Title */}
+      {/* 🔖 Subcategory pills (only visible when a category is selected) */}
+      {activeCategorySlug && (
+        <section className="mt-2 mb-6 px-4 sm:px-6">
+          <div className="mx-auto max-w-7xl">
+            <h3 className="sr-only">Filters</h3> {/* no visible title */}
+            {/* mobile */}
+            <div className="sm:hidden mt-1 overflow-x-auto">
+              <div className="flex gap-2 w-max">
+                {subPills.map((s: SubItem) => {
+                  const active = activeSub === s.slug.toLowerCase();
+                  return (
+                    <button
+                      key={s.slug}
+                      onClick={() => goSub(s.slug)}
+                      className={
+                        "px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap border " +
+                        (active
+                          ? "bg-white text-[#1f2a44] border-white"
+                          : "bg-[#25304f] text-white border-white/20 hover:bg-[#2b3760]")
+                      }
+                      aria-pressed={active}
+                    >
+                      {s.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            {/* desktop */}
+            <div className="hidden sm:flex gap-2 mt-1 flex-wrap">
+              {subPills.map((s: SubItem) => {
+                const active = activeSub === s.slug.toLowerCase();
+                return (
+                  <button
+                    key={s.slug}
+                    onClick={() => goSub(s.slug)}
+                    className={
+                      "px-3 py-2 rounded-lg text-sm font-medium border " +
+                      (active
+                        ? "bg-white text-[#1f2a44] border-white"
+                        : "bg-[#25304f] text-white border-white/20 hover:bg-[#2b3760]")
+                    }
+                    aria-pressed={active}
+                  >
+                    {s.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* 🏷️ Dynamic heading */}
       <div className="text-center mt-2 px-4 sm:px-6">
         <h2 className="text-2xl sm:text-3xl font-serif font-semibold tracking-wider leading-snug">
-          All Jewelry
+          {heading}
         </h2>
       </div>
 
-      {/* 🛒 Product Grid — SHOW ALL PRODUCTS */}
+      {/* 🛒 Product Grid — shows all, or filtered by category/subcategory */}
       <section className="mt-8 px-4 sm:px-6 max-w-7xl mx-auto mb-20">
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
-          {products.slice(0, visibleCount).map((product) => (
+          {shown.slice(0, visibleCount).map((product) => (
             <div
               key={product.id}
               className="group bg-[var(--bg-nav)] w-full sm:w-full md:w-[210px] lg:w-[233.61px] h-auto min-h-[387.61px] rounded-2xl overflow-hidden shadow-md hover:shadow-2xl hover:scale-105 transition-transform duration-300 flex flex-col justify-between"
@@ -247,6 +407,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
 export const getServerSideProps: GetServerSideProps = async () => {
   const client = await clientPromise;
 
+  // Fetch all products; client filters by category/subcat
   const productsRaw = await client
     .db()
     .collection("products")
@@ -260,7 +421,8 @@ export const getServerSideProps: GetServerSideProps = async () => {
     price: p.price,
     salePrice: p.salePrice ?? null,
     image: p.imageUrl || p.image,
-    category: p.category || "",
+    category: (p.category || "").toLowerCase(),
+    subcategory: (p.subcategory ?? p.subCategory ?? "").toLowerCase(),
     gender: p.gender || "unisex",
     description: p.description || "",
   }));
