@@ -5,25 +5,33 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/router";
 
+export type SubcategoryItem = {
+  label: string; // e.g. "Engagement Rings"
+  slug: string; // e.g. "engagement"
+};
+
 export type CategoryItem = {
-  label: string; // e.g. "Necklaces & Pendants"
-  slug: string; // e.g. "necklaces" (query ?category=necklaces)
-  image?: string; // e.g. "/category/necklace-cat.jpg"
+  label: string; // e.g. "Rings"
+  slug: string; // e.g. "rings"
+  image?: string; // e.g. "/category/rings.jpg"
+  subcategories?: SubcategoryItem[]; // optional
 };
 
 type Props = {
   items: CategoryItem[];
   title?: string;
-  /** If true, desktop grid stretches full-bleed (w-screen) like your Jewelry page */
   fullBleedDesktop?: boolean;
-  /** Number of columns on desktop (default: 4) */
   desktopCols?: 3 | 4 | 5 | 6;
-  /** Optional className wrappers */
   className?: string;
-  /** Highlight the active category by slug (e.g., "rings") */
   activeSlug?: string | null;
-  /** Handle selection yourself; we'll shallow-push and call onSelect */
   onSelect?: (slug: string) => void;
+
+  /**
+   * NEW: Where clicks should route.
+   * - "/category"  -> /category/[slug]
+   * - "/jewelry"   -> /jewelry?category=slug
+   */
+  routeTo?: "/category" | "/jewelry";
 };
 
 function clsx(...xs: Array<string | false | null | undefined>) {
@@ -38,6 +46,7 @@ export default function CategoryGrid({
   className,
   activeSlug = null,
   onSelect,
+  routeTo = "/category", // default to the new category page
 }: Props) {
   const router = useRouter();
 
@@ -48,16 +57,37 @@ export default function CategoryGrid({
       ? "grid-cols-5"
       : desktopCols === 3
       ? "grid-cols-3"
-      : "grid-cols-4"; // default 4
+      : "grid-cols-4";
+
+  const pushTo = (slug: string) => {
+    if (routeTo === "/category") {
+      router.push(
+        { pathname: `/category/${slug}`, query: { scroll: "true" } },
+        undefined,
+        {
+          shallow: true,
+        }
+      );
+    } else {
+      router.push(
+        { pathname: "/jewelry", query: { category: slug, scroll: "true" } },
+        undefined,
+        {
+          shallow: true,
+        }
+      );
+    }
+  };
 
   const handleSelect = (slug: string) => {
     if (onSelect) onSelect(slug);
-    router.push(
-      { pathname: "/jewelry", query: { category: slug, scroll: "true" } },
-      undefined,
-      { shallow: true }
-    );
+    pushTo(slug);
   };
+
+  const hrefFor = (slug: string) =>
+    routeTo === "/category"
+      ? `/category/${encodeURIComponent(slug)}?scroll=true`
+      : `/jewelry?category=${encodeURIComponent(slug)}&scroll=true`;
 
   return (
     <section className={clsx("pt-6 pb-6", className)}>
@@ -68,14 +98,11 @@ export default function CategoryGrid({
         </h2>
       </div>
 
-      {/* 📱 Mobile: swipe row (visible scrollbar) — matches Jewelry */}
+      {/* 📱 Mobile: swipe row */}
       <div className="sm:hidden px-0 mt-2">
         <div
           className="overflow-x-auto show-scrollbar"
-          style={{
-            WebkitOverflowScrolling: "touch",
-            scrollbarWidth: "thin",
-          }}
+          style={{ WebkitOverflowScrolling: "touch", scrollbarWidth: "thin" }}
         >
           <style jsx>{`
             .show-scrollbar::-webkit-scrollbar {
@@ -137,7 +164,7 @@ export default function CategoryGrid({
         </div>
       </div>
 
-      {/* 🖥️ Desktop: single row grid — matches Jewelry */}
+      {/* 🖥️ Desktop: single row grid */}
       <div
         className={clsx(
           "hidden sm:block",
@@ -156,54 +183,53 @@ export default function CategoryGrid({
               const isActive =
                 activeSlug &&
                 activeSlug.toLowerCase() === cat.slug.toLowerCase();
-              return onSelect ? (
-                <a
-                  key={`d-${cat.slug}-${i}`}
-                  href={`/jewelry?category=${encodeURIComponent(
-                    cat.slug
-                  )}&scroll=true`}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    handleSelect(cat.slug);
-                  }}
-                  className={clsx(
-                    "group relative rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-transform duration-150 hover:scale-[1.03]",
-                    isActive && "ring-2 ring-white"
-                  )}
-                  aria-label={cat.label}
-                >
-                  <div className="relative w-full bg-[#25304f] aspect-[5/4]">
-                    {cat.image ? (
-                      <Image
-                        src={cat.image}
-                        alt={cat.label}
-                        fill
-                        className="object-cover"
-                      />
-                    ) : null}
-                    <div className="absolute inset-0 bg-black/40 group-hover:bg-black/30 transition-colors z-10" />
-                    <span className="absolute inset-0 flex items-center justify-center z-30 font-semibold text-white text-center px-3 drop-shadow-[0_1px_2px_rgba(0,0,0,0.7)] text-[13px]">
-                      {cat.label}
-                    </span>
-                    {isActive && (
-                      <span
-                        aria-hidden
-                        className="absolute inset-0 ring-2 ring-white rounded-xl z-20"
-                      />
-                    )}
-                  </div>
-                </a>
-              ) : (
+
+              const common = clsx(
+                "group relative rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-transform duration-150 hover:scale-[1.03]",
+                isActive && "ring-2 ring-white"
+              );
+
+              if (onSelect) {
+                return (
+                  <a
+                    key={`d-${cat.slug}-${i}`}
+                    href={hrefFor(cat.slug)}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handleSelect(cat.slug);
+                    }}
+                    className={common}
+                    aria-label={cat.label}
+                  >
+                    <div className="relative w-full bg-[#25304f] aspect-[5/4]">
+                      {cat.image ? (
+                        <Image
+                          src={cat.image}
+                          alt={cat.label}
+                          fill
+                          className="object-cover"
+                        />
+                      ) : null}
+                      <div className="absolute inset-0 bg-black/40 group-hover:bg-black/30 transition-colors z-10" />
+                      <span className="absolute inset-0 flex items-center justify-center z-30 font-semibold text-white text-center px-3 drop-shadow-[0_1px_2px_rgba(0,0,0,0.7)] text-[13px]">
+                        {cat.label}
+                      </span>
+                      {isActive && (
+                        <span
+                          aria-hidden
+                          className="absolute inset-0 ring-2 ring-white rounded-xl z-20"
+                        />
+                      )}
+                    </div>
+                  </a>
+                );
+              }
+
+              return (
                 <Link
                   key={`d-${cat.slug}-${i}`}
-                  href={{
-                    pathname: "/jewelry",
-                    query: { category: cat.slug, scroll: "true" },
-                  }}
-                  className={clsx(
-                    "group relative rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-transform duration-150 hover:scale-[1.03]",
-                    isActive && "ring-2 ring-white"
-                  )}
+                  href={hrefFor(cat.slug)}
+                  className={common}
                   aria-label={cat.label}
                 >
                   <div className="relative w-full bg-[#25304f] aspect-[5/4]">
