@@ -1,4 +1,4 @@
-// 📄 pages/index.tsx – Home Page matching 4-category layout (Rings / Earrings / Bracelets / Necklaces & Pendants) 💎✅
+// 📄 pages/index.tsx – Home Page matching 4-category layout (Rings / Earrings / Bracelets / Necklaces & Pendants) with spacing fix 💎✅
 
 "use client";
 
@@ -165,6 +165,7 @@ export default function Home({ products }: HomeProps) {
           items={CATEGORY_ITEMS}
           title="Shop by Category"
           fullBleedDesktop
+          className="mt-12 md:mt-16" // 👈 extra top spacing to match Jewelry page with Breadcrumbs
         />
 
         {/* 🛍️ Mobile-Only “Featured” Below Categories */}
