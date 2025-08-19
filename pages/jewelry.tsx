@@ -6,11 +6,12 @@ import Image from "next/image";
 import Link from "next/link";
 import Head from "next/head";
 import { useCart } from "@/context/CartContext";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/router";
 import clientPromise from "@/lib/mongodb";
 import { GetServerSideProps } from "next";
 import Breadcrumbs from "@/components/Breadcrumbs";
+import CategoryGrid from "@/components/CategoryGrid";
 
 export type ProductType = {
   id: string;
@@ -28,100 +29,34 @@ export type ProductType = {
 const isRingCategory = (cat?: string) =>
   (cat ?? "").toLowerCase().includes("ring");
 
-const formatCategory = (cat: string) => {
-  // Display override for Necklaces
-  if (cat === "Necklaces") return "Necklaces & Pendants";
-  return cat.replace(/-/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
-};
-
-// Only the four categories we want to show
-const FIXED_CATEGORIES = [
-  "Rings",
-  "Earrings",
-  "Bracelets",
-  "Necklaces",
+/* ------------------------------- Constants -------------------------------- */
+const CATEGORY_ITEMS = [
+  { label: "Rings", slug: "rings", image: "/category/ring-cat.jpg" },
+  { label: "Earrings", slug: "earrings", image: "/category/earring-cat.jpg" },
+  {
+    label: "Bracelets",
+    slug: "bracelets",
+    image: "/category/bracelet-cat.jpg",
+  },
+  {
+    label: "Necklaces & Pendants",
+    slug: "necklaces",
+    image: "/category/necklace-cat.jpg",
+  },
 ] as const;
-
-const CATEGORY_IMAGES: Record<(typeof FIXED_CATEGORIES)[number], string> = {
-  Rings: "/category/ring-cat.jpg",
-  Earrings: "/category/earring-cat.jpg",
-  Bracelets: "/category/bracelet-cat.jpg",
-  Necklaces: "/category/necklace-cat.jpg",
-};
-
-const imageFor = (label: (typeof FIXED_CATEGORIES)[number]) =>
-  CATEGORY_IMAGES[label];
-
-/* ------------------------------ Category Tile ----------------------------- */
-function CategoryTile({
-  label,
-  img,
-  active,
-  onClick,
-  className,
-  textSizeClass,
-  aspect = "aspect-[4/3]",
-}: {
-  label: string;
-  img?: string;
-  active: boolean;
-  onClick: () => void;
-  className: string;
-  textSizeClass: string;
-  aspect?: string;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-pressed={active}
-      title={label}
-      className={[
-        "group relative rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-transform duration-150 flex-shrink-0 hover:scale-[1.03]",
-        active ? "ring-2 ring-white" : "",
-        "focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-indigo-500",
-        className,
-      ].join(" ")}
-    >
-      <div className={["relative w-full bg-[#25304f]", aspect].join(" ")}>
-        {img ? (
-          <Image src={img} alt={label} fill className="object-cover" />
-        ) : null}
-        <div className="absolute inset-0 bg-black/40 group-hover:bg-black/30 transition-colors z-10" />
-        <span
-          className={[
-            "absolute inset-0 flex items-center justify-center z-30 font-semibold text-white text-center px-3",
-            "drop-shadow-[0_1px_2px_rgba(0,0,0,0.7)]",
-            textSizeClass,
-          ].join(" ")}
-        >
-          {label}
-        </span>
-        <span
-          aria-hidden
-          className={[
-            "pointer-events-none absolute inset-0 rounded-xl z-20",
-            active ? "ring-2 ring-white" : "",
-          ].join(" ")}
-        />
-      </div>
-    </button>
-  );
-}
 
 /* ---------------------------------- Page ---------------------------------- */
 export default function JewelryPage({ products }: { products: ProductType[] }) {
   const { addToCart } = useCart();
   const [visibleCount, setVisibleCount] = useState(8);
 
-  // Selection is only for highlighting the active tile; the grid below shows ALL products.
-  const [activeCategory, setActiveCategory] = useState<
-    (typeof FIXED_CATEGORIES)[number] | null
+  // Highlighted category (by slug). Grid below still shows ALL products.
+  const [activeCategorySlug, setActiveCategorySlug] = useState<
+    "rings" | "earrings" | "bracelets" | "necklaces" | null
   >(null);
 
   const heroRef = useRef<HTMLDivElement>(null);
   const headerRef = useRef<HTMLDivElement>(null);
-  const initialMount = useRef(true);
   const router = useRouter();
 
   const resetCount = () => setVisibleCount(8);
@@ -129,18 +64,20 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
     resetCount();
   }, []);
 
-  // If a category is provided in the URL (?category=Rings), highlight it.
+  // Read ?category and ?scroll on load/shallow nav
   useEffect(() => {
     if (!router.isReady) return;
     const { category, scroll } = router.query;
 
     if (typeof category === "string") {
-      // Normalize: allow "necklaces" or "Necklaces"
-      const normalized =
-        FIXED_CATEGORIES.find(
-          (c) => c.toLowerCase() === category.toLowerCase()
-        ) ?? null;
-      setActiveCategory(normalized);
+      const slug = category.toLowerCase();
+      if (["rings", "earrings", "bracelets", "necklaces"].includes(slug)) {
+        setActiveCategorySlug(slug as typeof activeCategorySlug);
+      } else {
+        setActiveCategorySlug(null);
+      }
+    } else {
+      setActiveCategorySlug(null);
     }
 
     resetCount();
@@ -149,24 +86,18 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
       const offset = heroRef.current.offsetTop + heroRef.current.offsetHeight;
       window.scrollTo({ top: offset, behavior: "smooth" });
     }
-  }, [router.isReady]);
+  }, [router.isReady, router.query]);
 
-  // Smooth scroll UX when changing the highlighted tile
+  // On category change, reset count and scroll to header
   useEffect(() => {
-    if (initialMount.current) {
-      initialMount.current = false;
-      return;
-    }
     resetCount();
     headerRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-  }, [activeCategory]);
+  }, [activeCategorySlug]);
 
-  // Keep these, even though the grid shows ALL, so it's easy to re-enable filtered sections later.
   const pageTitle = "Jewelry Collection | Classy Diamonds";
   const pageDesc =
-    "Explore timeless engagement rings, wedding bands, necklaces, earrings, and more.";
+    "Explore timeless rings, earrings, bracelets, and necklaces & pendants.";
 
-  // Show product count in the "Load More" logic
   const totalProducts = products.length;
 
   return (
@@ -210,110 +141,19 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
         className="pt-6 pb-6 px-0 sm:px-0 w-full"
         style={{ scrollMarginTop: "40px" }}
       >
-        <div className="text-center mb-4 px-4 sm:px-6">
-          <h2 className="text-2xl sm:text-3xl font-serif font-semibold tracking-wider leading-snug">
-            Shop by Category
-          </h2>
-        </div>
-
-        {/* 📱 Mobile: swipe row (visible scrollbar) */}
-        <div className="sm:hidden px-0 mt-2">
-          <div
-            className="overflow-x-auto show-scrollbar"
-            style={{
-              WebkitOverflowScrolling: "touch",
-              scrollbarWidth: "thin",
-            }}
-          >
-            <style jsx>{`
-              .show-scrollbar::-webkit-scrollbar {
-                height: 8px;
-              }
-              .show-scrollbar::-webkit-scrollbar-track {
-                background: transparent;
-              }
-              .show-scrollbar::-webkit-scrollbar-thumb {
-                background: rgba(255, 255, 255, 0.35);
-                border-radius: 9999px;
-              }
-              .show-scrollbar:hover::-webkit-scrollbar-thumb {
-                background: rgba(255, 255, 255, 0.55);
-              }
-            `}</style>
-
-            <div className="flex gap-3 w-max px-4">
-              {FIXED_CATEGORIES.map((key) => {
-                const label = formatCategory(key);
-                const img = imageFor(key);
-                const active = activeCategory === key;
-
-                return (
-                  <CategoryTile
-                    key={`m-${key}`}
-                    label={label}
-                    img={img}
-                    active={!!active}
-                    onClick={() => {
-                      setActiveCategory(key);
-                      // Keep deep-linking behavior if you want to link ads/email directly
-                      router.push(
-                        {
-                          pathname: "/jewelry",
-                          query: { category: key, scroll: "true" },
-                        },
-                        undefined,
-                        { shallow: true }
-                      );
-                    }}
-                    className="w-32"
-                    textSizeClass="text-[12px]"
-                    aspect="aspect-[4/3]"
-                  />
-                );
-              })}
-            </div>
-          </div>
-        </div>
-
-        {/* 🖥️ Desktop: single row of 4 tiles */}
-        <div className="hidden sm:block w-screen relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw]">
-          <div className="mx-auto max-w-[1440px] px-2">
-            <div className="grid grid-cols-4 gap-[8px]">
-              {FIXED_CATEGORIES.map((key) => {
-                const label = formatCategory(key);
-                const img = imageFor(key);
-                const active = activeCategory === key;
-
-                return (
-                  <CategoryTile
-                    key={`d-${key}`}
-                    label={label}
-                    img={img}
-                    active={!!active}
-                    onClick={() => {
-                      setActiveCategory(key);
-                      router.push(
-                        {
-                          pathname: "/jewelry",
-                          query: { category: key, scroll: "true" },
-                        },
-                        undefined,
-                        { shallow: true }
-                      );
-                    }}
-                    className="w-full"
-                    textSizeClass="text-[13px]"
-                    aspect="aspect-[5/4]"
-                  />
-                );
-              })}
-            </div>
-          </div>
-        </div>
+        <CategoryGrid
+          items={CATEGORY_ITEMS as any}
+          title="Shop by Category"
+          fullBleedDesktop
+          activeSlug={activeCategorySlug ?? undefined}
+          onSelect={(slug) =>
+            setActiveCategorySlug(slug as typeof activeCategorySlug)
+          }
+        />
       </section>
 
       {/* 🔽 “All Jewelry” Title */}
-      <div className="text-center mt-4 px-4 sm:px-6">
+      <div className="text-center mt-2 px-4 sm:px-6">
         <h2 className="text-2xl sm:text-3xl font-serif font-semibold tracking-wider leading-snug">
           All Jewelry
         </h2>

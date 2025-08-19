@@ -9,6 +9,7 @@ import { GetServerSideProps } from "next";
 import { useCart } from "@/context/CartContext";
 import clientPromise from "@/lib/mongodb";
 import { useRouter } from "next/router";
+import CategoryGrid from "@/components/CategoryGrid";
 
 // 🔷 OPTION 2 (static fallback) requires this import:
 // import { productsData as staticFeatured } from "@/data/productsData";
@@ -69,7 +70,7 @@ export const getServerSideProps: GetServerSideProps<HomeProps> = async () => {
 export default function Home({ products }: HomeProps) {
   const { addToCart } = useCart();
   const featured = products;
-  const router = useRouter(); // 🔄 router for navigation
+  const router = useRouter();
 
   type Gift = { name: string; image: string };
 
@@ -107,27 +108,21 @@ export default function Home({ products }: HomeProps) {
     );
   }
 
-  // 🔧 Category list (ONLY 4) used by both mobile + desktop sections
-  const CATEGORY_BLOCKS: Array<{ label: string; slug: string; image: string }> =
-    [
-      { label: "Rings", slug: "rings", image: "/category/ring-cat.jpg" },
-      {
-        label: "Earrings",
-        slug: "earrings",
-        image: "/category/earring-cat.jpg",
-      },
-      {
-        label: "Bracelets",
-        slug: "bracelets",
-        image: "/category/bracelet-cat.jpg",
-      },
-      // Display "Necklaces & Pendants", route to necklaces
-      {
-        label: "Necklaces & Pendants",
-        slug: "necklaces",
-        image: "/category/necklace-cat.jpg",
-      },
-    ];
+  // 🔧 4 categories (same as Jewelry)
+  const CATEGORY_ITEMS = [
+    { label: "Rings", slug: "rings", image: "/category/ring-cat.jpg" },
+    { label: "Earrings", slug: "earrings", image: "/category/earring-cat.jpg" },
+    {
+      label: "Bracelets",
+      slug: "bracelets",
+      image: "/category/bracelet-cat.jpg",
+    },
+    {
+      label: "Necklaces & Pendants",
+      slug: "necklaces",
+      image: "/category/necklace-cat.jpg",
+    },
+  ];
 
   return (
     <>
@@ -165,45 +160,15 @@ export default function Home({ products }: HomeProps) {
           </div>
         </section>
 
-        {/* 🛍️ Mobile-Only Category Photos (Horizontal Scroll) */}
-        <section className="sm:hidden px-4 mt-6 mb-8">
-          <h2 className="text-xl font-serif font-semibold tracking-wide text-center mb-4 text-white">
-            Shop by Category
-          </h2>
-
-          <div className="overflow-x-auto">
-            <div className="flex gap-4 w-max py-2">
-              {CATEGORY_BLOCKS.map((cat, i) => (
-                <Link
-                  key={cat.label}
-                  href={{
-                    pathname: "/jewelry",
-                    query: { category: cat.slug, scroll: "true" },
-                  }}
-                  className="group relative rounded-xl overflow-hidden shadow-md hover:shadow-2xl hover:scale-105 transition-transform duration-300 flex-shrink-0 w-56"
-                  aria-label={cat.label}
-                >
-                  <div className="relative aspect-[4/3] w-full">
-                    <Image
-                      src={cat.image}
-                      alt={cat.label}
-                      fill
-                      priority={i < 2}
-                      className="object-cover rounded-xl group-hover:scale-110 transition-transform duration-300"
-                    />
-                    <div className="absolute inset-0 bg-black/35" />
-                    <span className="absolute inset-0 flex items-center justify-center text-base font-semibold text-white">
-                      {cat.label}
-                    </span>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </div>
-        </section>
+        {/* 🛍️ Shared Category Grid (matches Jewelry sizes & behavior) */}
+        <CategoryGrid
+          items={CATEGORY_ITEMS}
+          title="Shop by Category"
+          fullBleedDesktop
+        />
 
         {/* 🛍️ Mobile-Only “Featured” Below Categories */}
-        <section className="sm:hidden px-4 mt-6 mb-8">
+        <section className="sm:hidden px-4 mt-2 mb-8">
           <h2 className="text-2xl font-serif font-semibold tracking-wide text-center mb-4 text-white">
             Featured Pieces
           </h2>
@@ -272,7 +237,7 @@ export default function Home({ products }: HomeProps) {
           </div>
         </section>
 
-        {/* 🖥️ Desktop-Only “Featured” Above Categories */}
+        {/* 🖥️ Desktop-Only “Featured” Above About */}
         <section className="hidden sm:block py-16 sm:py-20 px-4 sm:px-6 max-w-7xl mx-auto">
           <h2 className="text-3xl sm:text-4xl font-serif font-semibold tracking-wide text-center mb-8">
             Featured Pieces
@@ -341,40 +306,7 @@ export default function Home({ products }: HomeProps) {
           </div>
         </section>
 
-        {/* 🛍️ Desktop-Only Category Grid (ONLY 4 categories) */}
-        <section className="hidden sm:block py-16 sm:py-20 w-full px-4 sm:px-10">
-          <h2 className="text-2xl sm:text-3xl font-serif font-semibold tracking-wide text-center mb-12 sm:mb-16">
-            Shop by Category
-          </h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {CATEGORY_BLOCKS.map((category, index) => (
-              <Link
-                key={category.label}
-                href={{
-                  pathname: "/jewelry",
-                  query: { category: category.slug, scroll: "true" },
-                }}
-                className="group relative rounded-xl overflow-hidden shadow-md hover:shadow-2xl hover:scale-105 transition-transform duration-300"
-              >
-                <div className="relative aspect-[4/3] w-full">
-                  <Image
-                    src={category.image}
-                    alt={category.label}
-                    fill
-                    priority={index < 3}
-                    className="rounded-xl object-cover z-0"
-                  />
-                  <div className="absolute inset-0 bg-black/30 z-10" />
-                  <span className="absolute inset-0 flex items-center justify-center text-sm sm:text-base font-semibold text-white z-20">
-                    {category.label}
-                  </span>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </section>
-
-        {/* 🎁 Gifts for Him & Her Section (kept as-is; not part of category layout) */}
+        {/* 🎁 Gifts for Him & Her Section */}
         <section className="py-16 sm:py-20 px-4 sm:px-10 w-full">
           <h2 className="text-2xl sm:text-3xl font-serif font-semibold tracking-wide text-center mb-12 sm:mb-16">
             Gifts for Him & Her
@@ -425,11 +357,9 @@ export default function Home({ products }: HomeProps) {
         <section className="--bg-page py-16 sm:py-20 px-4 sm:px-6">
           <div className="max-w-5xl mx-auto text-center">
             <h2 className="text-3xl sm:text-4xl font-serif font-bold mb-8 tracking-wide">
-              {" "}
               Bring Your Vision to Life
             </h2>
             <p className="text-base sm:text-lg text-[#cfd2d6] mb-8 leading-relaxed">
-              {" "}
               Whether you’re imagining a one-of-a-kind engagement ring or
               redesigning a meaningful family heirloom, Ned brings decades of
               expertise to every detail. At Classy Diamonds, custom jewelry
@@ -438,10 +368,9 @@ export default function Home({ products }: HomeProps) {
             </p>
             <Link
               href="/custom"
-              className="inline-block mt-4 px-8 py-4 bg-[#e0e0e0] text-[#1f2a44] rounded-full font-semibold text-base sm:text-lg hover:bg白 hover:scale-105 transition-transform duration-300"
+              className="inline-block mt-4 px-8 py-4 bg-[#e0e0e0] text-[#1f2a44] rounded-full font-semibold text-base sm:text-lg hover:bg-white hover:scale-105 transition-transform duration-300"
             >
-              {" "}
-              Start Your Custom Piece{" "}
+              Start Your Custom Piece
             </Link>
           </div>
         </section>
