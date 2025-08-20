@@ -136,6 +136,7 @@ export const getServerSideProps: GetServerSideProps<PageProps> = async (
         price: 1,
         salePrice: 1,
         image: 1,
+        imageUrl: 1, // ✅ include remote field
         category: 1,
         subcategory: 1,
         metal: 1,
@@ -151,7 +152,7 @@ export const getServerSideProps: GetServerSideProps<PageProps> = async (
       name: d.name,
       price: d.price,
       salePrice: d.salePrice ?? null,
-      image: d.image,
+      image: d.imageUrl || d.image || "", // ✅ fallback to imageUrl
       category: (d.category || "").toLowerCase(),
       subcategory: (d.subcategory || d.subCategory || "").toLowerCase(),
       metal: (d.metal || "").toLowerCase(),

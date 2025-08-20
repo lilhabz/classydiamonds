@@ -161,6 +161,7 @@ export const getServerSideProps: GetServerSideProps<PageProps> = async (
         price: 1,
         salePrice: 1,
         image: 1,
+        imageUrl: 1, // ✅ include remote image field
         category: 1,
         subcategory: 1,
         metal: 1,
@@ -176,7 +177,7 @@ export const getServerSideProps: GetServerSideProps<PageProps> = async (
       name: d.name,
       price: d.price,
       salePrice: d.salePrice ?? null,
-      image: d.image,
+      image: d.imageUrl || d.image || "", // ✅ fallback to imageUrl (then empty -> placeholder in ProductCard)
       category: (d.category || "").toLowerCase(),
       subcategory: (d.subcategory || d.subCategory || "").toLowerCase(),
       metal: (d.metal || "").toLowerCase(),
@@ -308,7 +309,7 @@ export default function SubcategoryPage({
                       name={p.name}
                       price={p.price}
                       salePrice={p.salePrice ?? null}
-                      href={href} // ✅ link to /category/[category]/[slug]
+                      href={href}
                       onAddToCart={() =>
                         addToCart({
                           id: p._id || p.id || p.slug,
