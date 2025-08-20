@@ -1,4 +1,5 @@
 // data/taxonomy.ts
+
 export type Category =
   | "rings"
   | "necklaces-pendants"
@@ -6,7 +7,6 @@ export type Category =
   | "bracelets"
   | "watches";
 
-// ✅ Explicit grouping
 export const JEWELRY_CATEGORIES = [
   "rings",
   "necklaces-pendants",
@@ -24,14 +24,16 @@ export const CATEGORY_LABELS: Record<Category, string> = {
   watches: "Watches",
 };
 
-// Subcategories (you can expand these anytime)
+// 🟡 Rings now exactly matches your list (slugged for URLs/database)
 export const SUBCATEGORY_MAP: Record<Category, string[]> = {
   rings: [
     "engagement-rings",
-    "wedding-bands",
-    "fashion-rings",
+    "wedding-rings",
     "promise-rings",
-    "anniversary-rings",
+    "eternity-rings",
+    "birthstone-rings",
+    "signet-rings",
+    "mens-rings",
   ],
   "necklaces-pendants": [
     "pendants",
@@ -42,7 +44,7 @@ export const SUBCATEGORY_MAP: Record<Category, string[]> = {
   ],
   earrings: ["studs", "hoops", "drops", "huggies", "climbers"],
   bracelets: ["tennis-bracelets", "bangle", "chain-bracelets", "cuff"],
-  watches: ["men", "women"], // lives on own page
+  watches: ["men", "women"],
 };
 
 export const NONE_OPTION = "— None —";
