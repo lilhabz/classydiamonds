@@ -21,8 +21,14 @@ export default function SubcategoryCards({
           {subcategories.map((s) => (
             <Link
               key={s.key}
-              href={`/category/${category}/subcategory/${s.key}`}
+              href={{
+                pathname: `/category/${encodeURIComponent(
+                  category
+                )}/subcategory/${encodeURIComponent(s.key)}`,
+                query: { scroll: "true" }, // ✅ keeps your scroll behavior
+              }}
               className="group inline-block align-top w-[220px] sm:w-[240px] rounded-2xl overflow-hidden bg-[#25304f] shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-300"
+              aria-label={`${s.label} in ${category}`}
             >
               <div className="relative aspect-[3/2]">
                 <Image
@@ -30,6 +36,7 @@ export default function SubcategoryCards({
                   alt={s.label}
                   fill
                   className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+                  sizes="(max-width: 640px) 220px, 240px"
                 />
                 <div className="absolute inset-0 bg-black/20" />
                 <div className="absolute inset-0 flex items-end">

@@ -184,7 +184,7 @@ export default function CategoryPage({
   const router = useRouter();
   const { addToCart } = useCart();
 
-  // Keep your ?scroll=true behavior
+  // Keep ?scroll=true behavior
   useEffect(() => {
     const { scroll } = router.query as { scroll?: string };
     if (scroll === "true") {
@@ -226,39 +226,41 @@ export default function CategoryPage({
         />
       </Head>
 
-      {/* Breadcrumbs – left edge like other pages */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 py-4">
+      {/* ✅ Breadcrumbs aligned like other pages (flush to left edge with page padding) */}
+      <div className="pl-4 pr-4 sm:pl-8 sm:pr-8 mt-8 mb-6">
         <Breadcrumbs />
       </div>
 
-      {/* Title (NO hero on category page) */}
-      <div className="px-4 sm:px-6">
-        <div className="mx-auto max-w-7xl">
-          <h1 className="text-2xl sm:text-3xl font-serif font-semibold tracking-wide mb-3">
-            {categoryLabel}
-          </h1>
-        </div>
+      {/* ✅ Centered title, consistent with your other pages */}
+      <div className="text-center mt-2 px-4 sm:px-6">
+        <h1 className="text-2xl sm:text-3xl font-serif font-semibold tracking-wide">
+          {categoryLabel}
+        </h1>
       </div>
 
-      {/* Subcategory cards */}
+      {/* ONLY subcategory cards — with bottom spacing to separate from grid */}
       {subcategories.length > 0 && (
-        <div className="mt-2">
-          <SubcategoryCards
-            category={categorySlug}
-            subcategories={subcategories.map((s) => ({
-              key: s.slug,
-              label: s.label,
-              image: subcatImage(s.slug),
-            }))}
-          />
+        <div className="mt-4 px-4 sm:px-6">
+          <div className="mx-auto max-w-7xl">
+            <SubcategoryCards
+              category={categorySlug}
+              subcategories={subcategories.map((s) => ({
+                key: s.slug,
+                label: s.label,
+                image: subcatImage(s.slug),
+              }))}
+            />
+          </div>
+          {/* 👇 extra space under subcategory cards */}
+          <div className="h-6 sm:h-10" />
         </div>
       )}
 
       {/* Anchor for scroll=true */}
       <div id="category-header" className="sr-only" aria-hidden="true" />
 
-      {/* Main content: Sidebar + Grid (cards now reuse ProductCard) */}
-      <section className="px-4 sm:px-6 pb-10">
+      {/* Main content: Sidebar + Grid — with extra top margin so cards don’t crowd subcards */}
+      <section className="mt-6 sm:mt-10 px-4 sm:px-6 pb-12">
         <div className="mx-auto max-w-7xl">
           <div className="grid grid-cols-1 md:grid-cols-[260px_1fr] gap-6">
             {/* Sidebar */}
@@ -266,7 +268,7 @@ export default function CategoryPage({
               <FiltersSidebar />
             </div>
 
-            {/* Product grid — EXACT same card component/styles as /jewelry */}
+            {/* Product grid */}
             {products.length === 0 ? (
               <p className="text-white/80">No products found.</p>
             ) : (
@@ -284,7 +286,7 @@ export default function CategoryPage({
                       name={p.name}
                       price={p.price}
                       salePrice={p.salePrice ?? null}
-                      href={href} // link to /category/[category]/[slug]
+                      href={href}
                       onAddToCart={() =>
                         addToCart({
                           id: p._id || p.id || p.slug,
