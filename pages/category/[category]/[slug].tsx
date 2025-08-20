@@ -1,4 +1,4 @@
-// 📄 pages/category/[category]/[slug].tsx – Text Ring Size + Availability + Robust Image Src
+// 📄 pages/category/[category]/[slug].tsx – Text Ring Size + Availability + Robust Image Src (synced button style)
 
 "use client";
 
@@ -8,7 +8,7 @@ import clientPromise from "@/lib/mongodb";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import Head from "next/head";
 import Image from "next/image";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { productsData } from "@/data/productsData";
 
 type ProductType = {
@@ -25,17 +25,11 @@ type ProductType = {
 const PLACEHOLDER = "/gray-placeholder.jpg"; // must exist in /public
 
 function normalizeLocalPath(src: string) {
-  // Ensure it starts with a leading slash and points into /products
-  // Example DB values like "products/round-brilliant.jpg" or "/products/round-brilliant.jpg"
   const trimmed = src.trim();
   if (!trimmed) return PLACEHOLDER;
-
   if (trimmed.startsWith("http")) return trimmed; // handled elsewhere
 
-  // Guarantee leading slash
   const withSlash = trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
-
-  // If user stored only filename like "round-brilliant.jpg", force it into /products
   if (!withSlash.startsWith("/products/")) {
     return `/products/${withSlash.replace(/^\//, "")}`;
   }
@@ -43,26 +37,19 @@ function normalizeLocalPath(src: string) {
 }
 
 function squareCloudinary(url: string) {
-  // Inject a square transform only if it's a Cloudinary URL without an existing/compatible transform in that segment.
-  // We’ll add a common, safe preset.
-  // Example: https://res.cloudinary.com/xxx/image/upload/.../file.jpg
   try {
     const u = new URL(url);
     if (!u.hostname.includes("cloudinary.com")) return url;
-
-    // Only modify the /upload/ segment once
-    const replaced = url.replace(
+    return url.replace(
       "/upload/",
       "/upload/c_fill,ar_1:1,w_1000,h_1000,f_auto,q_auto/"
     );
-    return replaced;
   } catch {
     return url;
   }
 }
 
 function resolveImageSrc(product: ProductType) {
-  // Priority: product.image -> productsData fallback (by slug) -> PLACEHOLDER
   const fromDb = product.image?.trim() || "";
   const fromStatic =
     productsData.find((i) => i.slug === product.slug)?.image?.trim() || "";
@@ -70,11 +57,8 @@ function resolveImageSrc(product: ProductType) {
   const chosen = fromDb || fromStatic || PLACEHOLDER;
 
   if (chosen.startsWith("http")) {
-    // Likely Cloudinary or other remote; add square transform for Cloudinary
     return squareCloudinary(chosen);
   }
-
-  // Local path case
   return normalizeLocalPath(chosen);
 }
 
@@ -94,10 +78,11 @@ export default function ProductPage({ product }: { product: ProductType }) {
   );
 
   const resolvedSrc = useMemo(() => resolveImageSrc(product), [product]);
-  // Initialize img src once
-  if (!imgSrc && resolvedSrc) {
-    setImgSrc(resolvedSrc);
-  }
+
+  // ✅ set image src safely when it changes
+  useEffect(() => {
+    setImgSrc(resolvedSrc || PLACEHOLDER);
+  }, [resolvedSrc]);
 
   const handleAddToCart = () => {
     if (needsRingSize && !ringSize.trim()) {
@@ -107,7 +92,7 @@ export default function ProductPage({ product }: { product: ProductType }) {
 
     addToCart({
       id: product.id,
-      slug: product.slug, // ✅ include slug
+      slug: product.slug,
       name: product.name,
       price: product.price,
       discountedPrice: product.salePrice ?? undefined,
@@ -219,10 +204,12 @@ export default function ProductPage({ product }: { product: ProductType }) {
               delivery delays, that are outside of standard processing time.
             </div>
 
-            {/* 🛒 Add to Cart */}
+            {/* 🛒 Add to Cart — MATCHES /jewelry card button */}
             <button
               onClick={handleAddToCart}
-              className="px-8 py-4 bg-[#e0e0e0] text-[#1f2a44] text-lg rounded-xl hover:scale-105 transition"
+              className="mt-1 w-full rounded-xl bg-white/10 px-4 py-2.5 text-sm md:text-base font-semibold text-white backdrop-blur
+                         hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-white/40"
+              aria-label={`Add ${product.name} to cart`}
             >
               Add to Cart
             </button>
@@ -247,7 +234,7 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
     salePrice: p.salePrice ?? null,
     image: p.imageUrl || p.image || "", // can be local path or remote URL
     slug: p.slug,
-    category: p.category,
+    category: String(p.category || "").toLowerCase(),
   };
 
   return { props: { product } };

@@ -2,8 +2,6 @@
 "use client";
 
 import Head from "next/head";
-import Image from "next/image";
-import Link from "next/link";
 import { GetServerSideProps } from "next";
 import { useEffect } from "react";
 import { useRouter } from "next/router";
@@ -12,6 +10,7 @@ import FiltersSidebar from "@/components/FiltersSidebar";
 import SubcategoryCards from "@/components/SubcategoryCards";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import { useCart } from "@/context/CartContext";
+import ProductCard from "@/components/ProductCard";
 
 /* ------------------------------ Types ------------------------------ */
 type Product = {
@@ -19,7 +18,7 @@ type Product = {
   id?: string;
   name: string;
   price: number;
-  salePrice?: number;
+  salePrice?: number | null;
   image: string;
   category: string;
   subcategory?: string;
@@ -40,10 +39,9 @@ type PageProps = {
 };
 
 /* ------------------------- Subcategory map ------------------------- */
-/** Rings ONLY: 7 subs in one row (cards handled by SubcategoryCards) */
 const RINGS_SUBS: SubItem[] = [
   { label: "Engagement Rings", slug: "engagement-rings" },
-  { label: "Wedding Rings", slug: "wedding-rings" }, // (DB may be "wedding-bands" -> handled in subcategory alias file)
+  { label: "Wedding Rings", slug: "wedding-rings" },
   { label: "Promise Rings", slug: "promise-rings" },
   { label: "Eternity Rings", slug: "eternity-rings" },
   { label: "Birthstone Rings", slug: "birthstone-rings" },
@@ -152,7 +150,7 @@ export const getServerSideProps: GetServerSideProps<PageProps> = async (
       _id: String(d._id),
       name: d.name,
       price: d.price,
-      salePrice: d.salePrice,
+      salePrice: d.salePrice ?? null,
       image: d.image,
       category: (d.category || "").toLowerCase(),
       subcategory: (d.subcategory || d.subCategory || "").toLowerCase(),
@@ -206,12 +204,10 @@ export default function CategoryPage({
     }
   }, [router]);
 
-  // Subcategory card images (use your known files; safe fallbacks otherwise)
+  // Subcategory card images
   const subcatImage = (slug: string) => {
     if (slug === "engagement-rings") return "/category/engagement-cat.jpg";
     if (slug === "wedding-rings") return "/category/wedding-band-cat.jpg";
-    // Add your own when available, else fallback:
-    // e.g., if you add /category/promise-cat.jpg, map it below
     if (slug === "promise-rings") return "/category/ring-cat.jpg";
     if (slug === "eternity-rings") return "/category/ring-cat.jpg";
     if (slug === "birthstone-rings") return "/category/ring-cat.jpg";
@@ -244,7 +240,7 @@ export default function CategoryPage({
         </div>
       </div>
 
-      {/* ONLY subcategory cards — single line (handled by SubcategoryCards) */}
+      {/* Subcategory cards */}
       {subcategories.length > 0 && (
         <div className="mt-2">
           <SubcategoryCards
@@ -261,90 +257,46 @@ export default function CategoryPage({
       {/* Anchor for scroll=true */}
       <div id="category-header" className="sr-only" aria-hidden="true" />
 
-      {/* Main content: Sidebar + Grid (+ Add to Cart) */}
+      {/* Main content: Sidebar + Grid (cards now reuse ProductCard) */}
       <section className="px-4 sm:px-6 pb-10">
         <div className="mx-auto max-w-7xl">
           <div className="grid grid-cols-1 md:grid-cols-[260px_1fr] gap-6">
-            {/* Sidebar (hidden on mobile by default; could add a drawer later) */}
+            {/* Sidebar */}
             <div className="hidden md:block">
               <FiltersSidebar />
             </div>
 
-            {/* Product grid */}
+            {/* Product grid — EXACT same card component/styles as /jewelry */}
             {products.length === 0 ? (
               <p className="text-white/80">No products found.</p>
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
                 {products.map((p) => {
                   const href = `/category/${encodeURIComponent(
                     categorySlug
                   )}/${encodeURIComponent(p.slug)}`;
+
                   return (
-                    <div
+                    <ProductCard
                       key={p.slug}
-                      className="group rounded-xl overflow-hidden bg-[#25304f] hover:shadow-xl transition flex flex-col"
-                    >
-                      <Link href={href} className="block">
-                        <div className="relative aspect-square">
-                          {p.image ? (
-                            <Image
-                              src={p.image}
-                              alt={p.name}
-                              fill
-                              className="object-cover group-hover:scale-105 transition-transform"
-                            />
-                          ) : (
-                            <div className="w-full h-full bg-black/20" />
-                          )}
-                        </div>
-                      </Link>
-
-                      <div className="p-3 flex flex-col gap-2">
-                        <Link href={href} className="block">
-                          <h4 className="text-sm font-medium text-white line-clamp-2 group-hover:underline">
-                            {p.name}
-                          </h4>
-                        </Link>
-
-                        <div className="flex items-center justify-between">
-                          <div>
-                            {p.salePrice ? (
-                              <div className="flex items-center gap-2">
-                                <span className="text-white font-semibold">
-                                  ${Number(p.salePrice).toFixed(2)}
-                                </span>
-                                <span className="text-white/60 line-through text-sm">
-                                  ${Number(p.price).toFixed(2)}
-                                </span>
-                              </div>
-                            ) : (
-                              <span className="text-white font-semibold">
-                                ${Number(p.price).toFixed(2)}
-                              </span>
-                            )}
-                          </div>
-
-                          {/* Add to Cart button — match Jewelry page style */}
-                          <button
-                            onClick={() =>
-                              addToCart({
-                                id: p._id || p.id || p.slug, // fallback
-                                slug: p.slug,
-                                name: p.name,
-                                price: p.price,
-                                discountedPrice: p.salePrice,
-                                image: p.image,
-                                quantity: 1,
-                              })
-                            }
-                            className="px-6 py-3 bg-[#e0e0e0] text-[#1f2a44] rounded-xl shadow hover:shadow-md hover:scale-105 transition text-xs sm:text-sm"
-                            aria-label={`Add ${p.name} to cart`}
-                          >
-                            Add to Cart
-                          </button>
-                        </div>
-                      </div>
-                    </div>
+                      slug={p.slug}
+                      image={p.image}
+                      name={p.name}
+                      price={p.price}
+                      salePrice={p.salePrice ?? null}
+                      href={href} // link to /category/[category]/[slug]
+                      onAddToCart={() =>
+                        addToCart({
+                          id: p._id || p.id || p.slug,
+                          slug: p.slug,
+                          name: p.name,
+                          price: p.price,
+                          discountedPrice: p.salePrice ?? undefined,
+                          image: p.image,
+                          quantity: 1,
+                        })
+                      }
+                    />
                   );
                 })}
               </div>

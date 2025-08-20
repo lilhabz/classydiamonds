@@ -1,4 +1,4 @@
-// 📄 pages/index.tsx – Home Page matching 4-category layout (Rings / Earrings / Bracelets / Necklaces & Pendants) with spacing fix 💎✅
+// 📄 pages/index.tsx – Home Page using shared ProductCard for Featured (matches Jewelry) 💎✅
 
 "use client";
 
@@ -10,6 +10,7 @@ import { useCart } from "@/context/CartContext";
 import clientPromise from "@/lib/mongodb";
 import { useRouter } from "next/router";
 import CategoryGrid from "@/components/CategoryGrid";
+import ProductCard from "@/components/ProductCard";
 
 // 🔷 OPTION 2 (static fallback) requires this import:
 // import { productsData as staticFeatured } from "@/data/productsData";
@@ -18,7 +19,7 @@ interface Product {
   _id: string;
   name: string;
   price: number;
-  salePrice?: number;
+  salePrice?: number | null;
   image: string;
   category: string;
   slug: string;
@@ -46,7 +47,7 @@ export const getServerSideProps: GetServerSideProps<HomeProps> = async () => {
     price: doc.price,
     salePrice: doc.salePrice ?? null,
     image: doc.imageUrl || doc.image,
-    category: doc.category,
+    category: String(doc.category || "").toLowerCase(),
     slug: doc.slug,
   }));
 
@@ -165,146 +166,83 @@ export default function Home({ products }: HomeProps) {
           items={CATEGORY_ITEMS}
           title="Shop by Category"
           fullBleedDesktop
-          className="mt-12 md:mt-16" // 👈 extra top spacing to match Jewelry page with Breadcrumbs
+          className="mt-12 md:mt-16" // extra top spacing to match Jewelry page with Breadcrumbs
         />
 
-        {/* 🛍️ Mobile-Only “Featured” Below Categories */}
+        {/* 🛍️ Mobile-Only “Featured” Below Categories (uses ProductCard) */}
         <section className="sm:hidden px-4 mt-2 mb-8">
           <h2 className="text-2xl font-serif font-semibold tracking-wide text-center mb-4 text-white">
             Featured Pieces
           </h2>
-          <div className="overflow-x-auto">
-            <div className="flex space-x-6 w-max py-2">
-              {featured.length === 0 ? (
-                <p className="text-white text-center w-full">
-                  No featured items to display.
-                </p>
-              ) : (
-                featured.map((item) => (
-                  <div
-                    key={item._id}
-                    className="flex-shrink-0 w-48 bg-[#25304f] rounded-2xl shadow-md hover:shadow-2xl hover:scale-105 transition-transform duration-300 flex flex-col h-full justify-between"
-                  >
-                    <Link
-                      href={`/category/${item.category}/${item.slug}?scroll=true`}
-                    >
-                      <Image
-                        src={item.image}
-                        alt={item.name}
-                        width={192}
-                        height={192}
-                        className="rounded-t-2xl object-cover h-48 w-full"
-                      />
-                    </Link>
-                    <div className="p-4 text-center flex flex-col flex-grow justify-between">
-                      <h3 className="text-sm font-semibold text-[#cfd2d6] truncate tracking-wide">
-                        {item.name}
-                      </h3>
-                      <p className="text-gray-400 text-xs mb-2">
-                        {item.salePrice ? (
-                          <>
-                            <span className="line-through mr-1">
-                              ${item.price.toLocaleString()}
-                            </span>
-                            <span className="text-green-500">
-                              ${item.salePrice.toLocaleString()}
-                            </span>
-                          </>
-                        ) : (
-                          <>${item.price.toLocaleString()}</>
-                        )}
-                      </p>
-                      <button
-                        onClick={() =>
-                          addToCart({
-                            id: item._id,
-                            slug: item.slug,
-                            name: item.name,
-                            price: item.price,
-                            discountedPrice: item.salePrice,
-                            image: item.image,
-                            quantity: 1,
-                          })
-                        }
-                        className="px-3 py-2 bg-[#e0e0e0] text-[#1f2a44] rounded-xl text-sm shadow hover:shadow-md hover:scale-105 transition"
-                      >
-                        Add to Cart
-                      </button>
-                    </div>
-                  </div>
-                ))
-              )}
+
+          {featured.length === 0 ? (
+            <p className="text-white text-center w-full">
+              No featured items to display.
+            </p>
+          ) : (
+            <div className="grid grid-cols-2 gap-4">
+              {featured.map((item) => (
+                <ProductCard
+                  key={item._id}
+                  slug={item.slug}
+                  image={item.image}
+                  name={item.name}
+                  price={item.price}
+                  salePrice={item.salePrice ?? null}
+                  href={`/category/${item.category}/${item.slug}?scroll=true`}
+                  onAddToCart={() =>
+                    addToCart({
+                      id: item._id,
+                      slug: item.slug,
+                      name: item.name,
+                      price: item.price,
+                      discountedPrice: item.salePrice ?? undefined,
+                      image: item.image,
+                      quantity: 1,
+                    })
+                  }
+                />
+              ))}
             </div>
-          </div>
+          )}
         </section>
 
-        {/* 🖥️ Desktop-Only “Featured” Above About */}
+        {/* 🖥️ Desktop-Only “Featured” Above About (uses ProductCard) */}
         <section className="hidden sm:block py-16 sm:py-20 px-4 sm:px-6 max-w-7xl mx-auto">
           <h2 className="text-3xl sm:text-4xl font-serif font-semibold tracking-wide text-center mb-8">
             Featured Pieces
           </h2>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-10">
-            {featured.length === 0 ? (
-              <p className="text-white text-center col-span-4">
-                No featured items to display.
-              </p>
-            ) : (
-              featured.map((item) => (
-                <div
+
+          {featured.length === 0 ? (
+            <p className="text-white text-center">
+              No featured items to display.
+            </p>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-10">
+              {featured.map((item) => (
+                <ProductCard
                   key={item._id}
-                  className="group bg-[#25304f] rounded-2xl overflow-hidden shadow-md hover:shadow-2xl hover:scale-105 transition-transform duration-300 flex flex-col h-full justify-between"
-                >
-                  <Link
-                    href={`/category/${item.category}/${item.slug}?scroll=true`}
-                  >
-                    <div className="relative w-full h-64">
-                      <Image
-                        src={item.image}
-                        alt={item.name}
-                        fill
-                        className="object-cover group-hover:scale-110 transition h-full w-full"
-                      />
-                    </div>
-                  </Link>
-                  <div className="p-6 text-center flex flex-col flex-grow justify-between">
-                    <h3 className="text-xl text-[#cfd2d6] mb-2 group-hover:text-white transition truncate text-sm tracking-wide">
-                      {item.name}
-                    </h3>
-                    <p className="text-gray-400 mb-4 group-hover:text-white transition text-sm tracking-wide">
-                      {item.salePrice ? (
-                        <>
-                          <span className="line-through mr-1">
-                            ${item.price.toLocaleString()}
-                          </span>
-                          <span className="text-green-500">
-                            ${item.salePrice.toLocaleString()}
-                          </span>
-                        </>
-                      ) : (
-                        <>${item.price.toLocaleString()}</>
-                      )}
-                    </p>
-                    <button
-                      onClick={() =>
-                        addToCart({
-                          id: item._id,
-                          slug: item.slug,
-                          name: item.name,
-                          price: item.price,
-                          discountedPrice: item.salePrice,
-                          image: item.image,
-                          quantity: 1,
-                        })
-                      }
-                      className="px-6 py-3 bg-[#e0e0e0] text-[#1f2a44] rounded-xl shadow hover:shadow-md hover:scale-105 transition"
-                    >
-                      Add to Cart
-                    </button>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
+                  slug={item.slug}
+                  image={item.image}
+                  name={item.name}
+                  price={item.price}
+                  salePrice={item.salePrice ?? null}
+                  href={`/category/${item.category}/${item.slug}?scroll=true`}
+                  onAddToCart={() =>
+                    addToCart({
+                      id: item._id,
+                      slug: item.slug,
+                      name: item.name,
+                      price: item.price,
+                      discountedPrice: item.salePrice ?? undefined,
+                      image: item.image,
+                      quantity: 1,
+                    })
+                  }
+                />
+              ))}
+            </div>
+          )}
         </section>
 
         {/* 🎁 Gifts for Him & Her Section */}
@@ -369,7 +307,7 @@ export default function Home({ products }: HomeProps) {
             </p>
             <Link
               href="/custom"
-              className="inline-block mt-4 px-8 py-4 bg-[#e0e0e0] text-[#1f2a44] rounded-full font-semibold text-base sm:text-lg hover:bg-white hover:scale-105 transition-transform duration-300"
+              className="inline-block mt-4 px-8 py-4 bg-[#e0e0e0] text-[#1f2a44] rounded-full font-semibold text-base sm:text-lg hover:bg:white hover:scale-105 transition-transform duration-300"
             >
               Start Your Custom Piece
             </Link>

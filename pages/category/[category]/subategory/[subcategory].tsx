@@ -2,8 +2,6 @@
 "use client";
 
 import Head from "next/head";
-import Image from "next/image";
-import Link from "next/link";
 import type { GetServerSideProps } from "next";
 import { useEffect } from "react";
 import { useRouter } from "next/router";
@@ -12,6 +10,7 @@ import FiltersSidebar from "@/components/FiltersSidebar";
 import HeroBanner from "@/components/HeroBanner";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import { useCart } from "@/context/CartContext";
+import ProductCard from "@/components/ProductCard";
 
 /* ------------------------------ Types ------------------------------ */
 type Product = {
@@ -19,7 +18,7 @@ type Product = {
   id?: string;
   name: string;
   price: number;
-  salePrice?: number;
+  salePrice?: number | null;
   image: string;
   category: string;
   subcategory?: string;
@@ -176,7 +175,7 @@ export const getServerSideProps: GetServerSideProps<PageProps> = async (
       _id: String(d._id),
       name: d.name,
       price: d.price,
-      salePrice: d.salePrice,
+      salePrice: d.salePrice ?? null,
       image: d.image,
       category: (d.category || "").toLowerCase(),
       subcategory: (d.subcategory || d.subCategory || "").toLowerCase(),
@@ -274,12 +273,15 @@ export default function SubcategoryPage({
         <h1 className="text-2xl sm:text-3xl font-serif font-semibold tracking-wider leading-snug">
           {subcategoryLabel}
         </h1>
+        {heroSubtitle ? (
+          <p className="mt-2 text-sm text-white/70">{heroSubtitle}</p>
+        ) : null}
       </div>
 
       {/* Anchor for scroll=true */}
       <div id="subcategory-header" className="sr-only" aria-hidden="true" />
 
-      {/* Main content: Sidebar + Grid (match Jewelry product cards) */}
+      {/* Main content: Sidebar + Grid (cards now reuse ProductCard) */}
       <section className="mt-6 px-4 sm:px-6 max-w-7xl mx-auto mb-20">
         <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-6">
           {/* Filters */}
@@ -287,7 +289,7 @@ export default function SubcategoryPage({
             <FiltersSidebar />
           </div>
 
-          {/* Product grid — EXACT card sizing/styling as Jewelry page */}
+          {/* Product grid — uses shared ProductCard, so styles match /jewelry */}
           <div>
             {products.length === 0 ? (
               <p className="text-white/80">No products found.</p>
@@ -297,64 +299,28 @@ export default function SubcategoryPage({
                   const href = `/category/${encodeURIComponent(
                     categorySlug
                   )}/${encodeURIComponent(p.slug)}`;
-                  return (
-                    <div
-                      key={p.slug}
-                      className="group bg-[var(--bg-nav)] w-full sm:w/full md:w-[210px] lg:w-[233.61px] h-auto min-h-[387.61px] rounded-2xl overflow-hidden shadow-md hover:shadow-2xl hover:scale-105 transition-transform duration-300 flex flex-col justify-between"
-                    >
-                      <Link href={href} className="flex-1 flex flex-col h-full">
-                        <div className="relative w-full aspect-square">
-                          {p.image ? (
-                            <Image
-                              src={p.image}
-                              alt={p.name}
-                              fill
-                              className="object-cover group-hover:scale-110 transition-transform duration-300"
-                            />
-                          ) : (
-                            <div className="w-full h-full bg-black/20" />
-                          )}
-                        </div>
-                        <div className="p-4 text-center flex-1 flex flex-col justify-between">
-                          <h3 className="font-semibold text-[var(--foreground)] truncate text-sm tracking-wide leading-snug">
-                            {p.name}
-                          </h3>
-                          <p className="text-[#cfd2d6] text-sm leading-relaxed tracking-wide">
-                            {p.salePrice ? (
-                              <>
-                                <span className="line-through mr-1">
-                                  ${Number(p.price).toLocaleString()}
-                                </span>
-                                <span className="text-green-500">
-                                  ${Number(p.salePrice).toLocaleString()}
-                                </span>
-                              </>
-                            ) : (
-                              <>${Number(p.price).toLocaleString()}</>
-                            )}
-                          </p>
-                        </div>
-                      </Link>
 
-                      <button
-                        onClick={(e) => {
-                          e.preventDefault();
-                          // keep behavior same as Jewelry: quick add
-                          addToCart({
-                            id: p._id || p.id || p.slug,
-                            slug: p.slug,
-                            name: p.name,
-                            price: p.price,
-                            discountedPrice: p.salePrice,
-                            image: p.image,
-                            quantity: 1,
-                          });
-                        }}
-                        className="m-4 px-6 py-3 bg-[#e0e0e0] text-[#1f2a44] rounded-xl hover:scale-105 transition"
-                      >
-                        Add to Cart
-                      </button>
-                    </div>
+                  return (
+                    <ProductCard
+                      key={p.slug}
+                      slug={p.slug}
+                      image={p.image}
+                      name={p.name}
+                      price={p.price}
+                      salePrice={p.salePrice ?? null}
+                      href={href} // ✅ link to /category/[category]/[slug]
+                      onAddToCart={() =>
+                        addToCart({
+                          id: p._id || p.id || p.slug,
+                          slug: p.slug,
+                          name: p.name,
+                          price: p.price,
+                          discountedPrice: p.salePrice ?? undefined,
+                          image: p.image,
+                          quantity: 1,
+                        })
+                      }
+                    />
                   );
                 })}
               </div>

@@ -3,12 +3,12 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
 import Head from "next/head";
 import { useCart } from "@/context/CartContext";
 import { GetServerSideProps } from "next";
 import clientPromise from "@/lib/mongodb";
 import Breadcrumbs from "@/components/Breadcrumbs";
+import ProductCard from "@/components/ProductCard";
 
 export type ProductType = {
   id: string;
@@ -38,10 +38,10 @@ export default function WatchesPage({ products }: WatchesProps) {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
 
-      {/* 🖼 Hero Section (unchanged layout) */}
+      {/* 🖼 Hero Section */}
       <section className="-mt-20 relative w-full h-[80vh] flex items-center justify-center overflow-hidden">
         <Image
-          src="/hero-jewelry.jpg" /* ✅ swap later if you add a watches-specific hero */
+          src="/hero-jewelry.jpg" /* swap later if you add a watches-specific hero */
           alt="Watch Hero"
           fill
           className="object-cover"
@@ -62,7 +62,7 @@ export default function WatchesPage({ products }: WatchesProps) {
         <Breadcrumbs />
       </div>
 
-      {/* 📦 Product Grid */}
+      {/* 📦 Product Grid (uses shared ProductCard) */}
       <section className="pt-20 pb-20 px-4 sm:px-6 max-w-7xl mx-auto">
         <h2 className="text-3xl font-serif font-semibold tracking-wide text-white text-center mb-8">
           Watches
@@ -73,80 +73,33 @@ export default function WatchesPage({ products }: WatchesProps) {
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
             {products.map((product) => {
-              const cardInner = (
-                <div className="flex-1 flex flex-col h-full">
-                  {/* 🖼 Image block — exact match with Jewelry (aspect-square + zoom on hover) */}
-                  <div className="relative w-full aspect-square">
-                    <Image
-                      src={product.image}
-                      alt={product.name}
-                      fill
-                      className="object-cover group-hover:scale-110 transition-transform duration-300"
-                      sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                      priority={false}
-                    />
-                  </div>
-
-                  {/* 🏷️ Name + Price (with sale logic identical to Jewelry) */}
-                  <div className="p-4 text-center flex-1 flex flex-col justify-between">
-                    <h3 className="font-semibold text-[var(--foreground)] truncate text-sm tracking-wide leading-snug">
-                      {product.name}
-                    </h3>
-                    <p className="text-[#cfd2d6] text-sm leading-relaxed tracking-wide">
-                      {product.salePrice ? (
-                        <>
-                          <span className="line-through mr-1">
-                            ${product.price.toLocaleString()}
-                          </span>
-                          <span className="text-green-500">
-                            ${product.salePrice.toLocaleString()}
-                          </span>
-                        </>
-                      ) : (
-                        <>${product.price.toLocaleString()}</>
-                      )}
-                    </p>
-                  </div>
-                </div>
-              );
-
-              const linkHref =
+              const href =
                 product.slug &&
-                `/category/${product.category || "watches"}/${product.slug}`;
+                `/category/${(product.category || "watches").toLowerCase()}/${
+                  product.slug
+                }`;
 
               return (
-                <div
+                <ProductCard
                   key={product.id}
-                  className="group bg-[var(--bg-nav)] w-full sm:w-full md:w-[210px] lg:w-[233.61px] h-auto min-h-[387.61px] rounded-2xl overflow-hidden shadow-md hover:shadow-2xl hover:scale-105 transition-transform duration-300 flex flex-col justify-between"
-                >
-                  {linkHref ? (
-                    <Link href={linkHref} className="flex-1">
-                      {cardInner}
-                    </Link>
-                  ) : (
-                    cardInner
-                  )}
-
-                  {/* 🛒 Quick Add (Watches = quick-add allowed) */}
-                  <button
-                    onClick={(e) => {
-                      e.preventDefault();
-                      addToCart({
-                        id: product.id,
-                        slug: product.slug, // ✅ include slug for cart + checkout
-                        name: product.name,
-                        price: product.price,
-                        discountedPrice: product.salePrice || undefined,
-                        image: product.image,
-                        quantity: 1,
-                      });
-                    }}
-                    className="m-4 px-6 py-3 bg-[#e0e0e0] text-[#1f2a44] rounded-xl hover:scale-105 transition"
-                    aria-label={`Add ${product.name} to cart`}
-                  >
-                    Add to Cart
-                  </button>
-                </div>
+                  slug={product.slug || product.id}
+                  image={product.image}
+                  name={product.name}
+                  price={product.price}
+                  salePrice={product.salePrice ?? null}
+                  href={href || undefined}
+                  onAddToCart={() =>
+                    addToCart({
+                      id: product.id,
+                      slug: product.slug,
+                      name: product.name,
+                      price: product.price,
+                      discountedPrice: product.salePrice ?? undefined,
+                      image: product.image,
+                      quantity: 1,
+                    })
+                  }
+                />
               );
             })}
           </div>
@@ -156,7 +109,7 @@ export default function WatchesPage({ products }: WatchesProps) {
   );
 }
 
-/* 🧠 Server-side data loader — mirrors Jewelry mapping (includes salePrice, image fallbacks) */
+/* 🧠 Server-side data loader — mirrors Jewelry mapping */
 export const getServerSideProps: GetServerSideProps<
   WatchesProps
 > = async () => {
@@ -164,7 +117,7 @@ export const getServerSideProps: GetServerSideProps<
   const productsRaw = await client
     .db()
     .collection("products")
-    .find({ category: "watches" })
+    .find({ category: { $in: ["watches", "watch"] } }) // include "watch" just in case
     .toArray();
 
   const products: ProductType[] = productsRaw.map((p: any) => ({
@@ -174,7 +127,7 @@ export const getServerSideProps: GetServerSideProps<
     price: p.price,
     salePrice: p.salePrice ?? null,
     image: p.imageUrl || p.image,
-    category: p.category || "watches",
+    category: String(p.category || "watches").toLowerCase(),
   }));
 
   return { props: { products } };

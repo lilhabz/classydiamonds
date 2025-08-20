@@ -12,6 +12,7 @@ import { GetServerSideProps } from "next";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import CategoryGrid, { CategoryItem } from "@/components/CategoryGrid";
 import FiltersSidebar from "@/components/FiltersSidebar";
+import ProductCard from "@/components/ProductCard";
 
 export type ProductType = {
   id: string;
@@ -66,8 +67,8 @@ const CATEGORY_ITEMS: CategoryItem[] = [
 const SUBS: Record<CategorySlug, SubItem[]> = {
   rings: [
     { label: "All", slug: "all" },
-    { label: "Engagement", slug: "engagement" }, // requested
-    { label: "Wedding Bands", slug: "wedding-bands" }, // requested
+    { label: "Engagement", slug: "engagement" },
+    { label: "Wedding Bands", slug: "wedding-bands" },
     { label: "Solitaire", slug: "solitaire" },
     { label: "Halo", slug: "halo" },
     { label: "Three-Stone", slug: "three-stone" },
@@ -334,7 +335,6 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
           desktopCols={4}
           // 👉 send users to real category pages like /category/rings
           routeTo="/category"
-          // remove onSelect + activeSlug; CategoryGrid will handle routing
         />
       </section>
 
@@ -412,54 +412,23 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
               <p className="text-white/80">No products found.</p>
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
-                {shown.slice(0, visibleCount).map((product) => (
-                  <div
-                    key={product.id}
-                    className="group bg-[var(--bg-nav)] w-full sm:w-full md:w-[210px] lg:w-[233.61px] h-auto min-h-[387.61px] rounded-2xl overflow-hidden shadow-md hover:shadow-2xl hover:scale-105 transition-transform duration-300 flex flex-col justify-between"
-                  >
-                    <Link
-                      href={`/category/${product.category}/${product.slug}`}
-                      className="flex-1 flex flex-col h-full"
-                    >
-                      <div className="relative w-full aspect-square">
-                        <Image
-                          src={product.image}
-                          alt={product.name}
-                          fill
-                          className="object-cover group-hover:scale-110 transition-transform duration-300"
-                        />
-                      </div>
-                      <div className="p-4 text-center flex-1 flex flex-col justify-between">
-                        <h3 className="font-semibold text-[var(--foreground)] truncate text-sm tracking-wide leading-snug">
-                          {product.name}
-                        </h3>
-                        <p className="text-[#cfd2d6] text-sm leading-relaxed tracking-wide">
-                          {product.salePrice ? (
-                            <>
-                              <span className="line-through mr-1">
-                                ${product.price.toLocaleString()}
-                              </span>
-                              <span className="text-green-500">
-                                ${product.salePrice.toLocaleString()}
-                              </span>
-                            </>
-                          ) : (
-                            <>${product.price.toLocaleString()}</>
-                          )}
-                        </p>
-                      </div>
-                    </Link>
-
-                    {/* 🔁 Quick add for non-rings; redirect for rings */}
-                    <button
-                      onClick={(e) => {
-                        e.preventDefault();
+                {shown.slice(0, visibleCount).map((product) => {
+                  const href = `/category/${product.category}/${product.slug}`;
+                  return (
+                    <ProductCard
+                      key={product.id}
+                      slug={product.slug}
+                      image={product.image}
+                      name={product.name}
+                      price={product.price}
+                      salePrice={product.salePrice ?? null}
+                      href={href}
+                      onAddToCart={() => {
                         if (isRingCategory(product.category)) {
-                          router.push(
-                            `/category/${product.category}/${product.slug}`
-                          );
-                          return;
+                          // Rings go to PDP to capture size/etc.
+                          return router.push(href);
                         }
+                        // Non-rings quick add
                         addToCart({
                           id: product.id,
                           slug: product.slug,
@@ -470,12 +439,9 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
                           quantity: 1,
                         });
                       }}
-                      className="m-4 px-6 py-3 bg-[#e0e0e0] text-[#1f2a44] rounded-xl hover:scale-105 transition"
-                    >
-                      Add to Cart
-                    </button>
-                  </div>
-                ))}
+                    />
+                  );
+                })}
               </div>
             )}
 
