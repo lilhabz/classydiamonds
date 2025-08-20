@@ -8,11 +8,11 @@ import { GetServerSideProps } from "next";
 import { useEffect } from "react";
 import { useRouter } from "next/router";
 import clientPromise from "@/lib/mongodb";
-import CategoryGrid, { CategoryItem } from "@/components/CategoryGrid";
 import FiltersSidebar from "@/components/FiltersSidebar";
 import HeroBanner from "@/components/HeroBanner";
 import SubcategoryCards from "@/components/SubcategoryCards";
 import Breadcrumbs from "@/components/Breadcrumbs";
+import { useCart } from "@/context/CartContext";
 
 /* ------------------------------ Types ------------------------------ */
 type Product = {
@@ -36,44 +36,15 @@ type SubItem = { label: string; slug: string };
 type PageProps = {
   categorySlug: string;
   categoryLabel: string;
-  categories: CategoryItem[];
   subcategories: SubItem[];
   heroImage: string;
   heroSubtitle?: string;
   products: Product[];
 };
 
-/* ------------------------- Category Definitions ------------------------- */
-/** Top category tiles (no For Her / For Him) — use your existing images */
-const CATEGORIES: CategoryItem[] = [
-  {
-    label: "Engagement",
-    slug: "engagement",
-    image: "/category/engagement-cat.jpg",
-  },
-  {
-    label: "Wedding Bands",
-    slug: "wedding-bands",
-    image: "/category/wedding-band-cat.jpg",
-  },
-  { label: "Rings", slug: "rings", image: "/category/ring-cat.jpg" },
-  {
-    label: "Bracelets",
-    slug: "bracelets",
-    image: "/category/bracelet-cat.jpg",
-  },
-  {
-    label: "Necklaces",
-    slug: "necklaces",
-    image: "/category/necklace-cat.jpg",
-  },
-  { label: "Earrings", slug: "earrings", image: "/category/earring-cat.jpg" },
-];
-
-/** Subcategory mapping for the pills/cards (show cards Tiffany-style) */
+/* ------------------------- Subcategory & Hero maps ------------------------- */
 const CATEGORY_SUBS: Record<string, SubItem[]> = {
   rings: [
-    { label: "All Rings", slug: "all" },
     { label: "Engagement Rings", slug: "engagement" },
     { label: "Wedding Bands", slug: "wedding-bands" },
     { label: "Solitaire", slug: "solitaire" },
@@ -83,29 +54,26 @@ const CATEGORY_SUBS: Record<string, SubItem[]> = {
     { label: "Men’s Rings", slug: "mens" },
   ],
   earrings: [
-    { label: "All Earrings", slug: "all" },
     { label: "Studs", slug: "studs" },
     { label: "Hoops", slug: "hoops" },
     { label: "Drops", slug: "drops" },
     { label: "Huggies", slug: "huggies" },
   ],
   bracelets: [
-    { label: "All Bracelets", slug: "all" },
     { label: "Tennis", slug: "tennis" },
     { label: "Bangles", slug: "bangles" },
     { label: "Cuffs", slug: "cuffs" },
     { label: "Chains", slug: "chains" },
   ],
   necklaces: [
-    { label: "All Necklaces", slug: "all" },
     { label: "Pendants", slug: "pendants" },
     { label: "Solitaire", slug: "solitaire" },
     { label: "Station", slug: "station" },
     { label: "Nameplates", slug: "nameplates" },
     { label: "Pearl", slug: "pearl" },
   ],
-  engagement: [{ label: "All", slug: "all" }],
-  "wedding-bands": [{ label: "All", slug: "all" }],
+  engagement: [],
+  "wedding-bands": [],
 };
 
 const HERO_BY_CATEGORY: Record<string, { image: string; subtitle?: string }> = {
@@ -136,7 +104,16 @@ const HERO_BY_CATEGORY: Record<string, { image: string; subtitle?: string }> = {
 };
 
 const labelFor = (slug: string) =>
-  CATEGORIES.find((c) => c.slug === slug)?.label ?? slug;
+  ((
+    {
+      engagement: "Engagement",
+      "wedding-bands": "Wedding Bands",
+      rings: "Rings",
+      bracelets: "Bracelets",
+      necklaces: "Necklaces",
+      earrings: "Earrings",
+    } as Record<string, string>
+  )[slug] ?? slug);
 
 /* ----------------------------- SERVER DATA ------------------------------ */
 export const getServerSideProps: GetServerSideProps<PageProps> = async (
@@ -242,10 +219,7 @@ export const getServerSideProps: GetServerSideProps<PageProps> = async (
     props: {
       categorySlug,
       categoryLabel,
-      categories: CATEGORIES,
-      subcategories: CATEGORY_SUBS[categorySlug] || [
-        { label: "All", slug: "all" },
-      ],
+      subcategories: CATEGORY_SUBS[categorySlug] || [],
       heroImage: hero.image,
       heroSubtitle: hero.subtitle,
       products,
@@ -257,19 +231,13 @@ export const getServerSideProps: GetServerSideProps<PageProps> = async (
 export default function CategoryPage({
   categorySlug,
   categoryLabel,
-  categories,
   subcategories,
   heroImage,
   heroSubtitle,
   products,
 }: PageProps) {
   const router = useRouter();
-  const activeSub = (router.query.sub as string) || "all";
-
-  // For “Category / Subcategory” text
-  const subLabel =
-    subcategories.find((s) => s.slug.toLowerCase() === activeSub.toLowerCase())
-      ?.label || (activeSub === "all" ? "All" : activeSub);
+  const { addToCart } = useCart();
 
   // Keep your ?scroll=true behavior
   useEffect(() => {
@@ -291,18 +259,6 @@ export default function CategoryPage({
     }
   }, [router]);
 
-  // If you still want to keep query-based pills navigation:
-  const pushSub = (sub: string) => {
-    const next = { ...router.query };
-    if (sub === "all") delete (next as any).sub;
-    else (next as any).sub = sub;
-    router.push(
-      { pathname: `/category/${categorySlug}`, query: next },
-      undefined,
-      { shallow: true }
-    );
-  };
-
   return (
     <>
       <Head>
@@ -313,7 +269,7 @@ export default function CategoryPage({
         />
       </Head>
 
-      {/* 🔹 Big hero to match Home (80vh, -mt-20, solid overlay) */}
+      {/* Big hero to match Home (80vh, -mt-20, solid overlay) */}
       <HeroBanner
         title={categoryLabel}
         subtitle={heroSubtitle}
@@ -323,50 +279,33 @@ export default function CategoryPage({
         overlay="solid"
       />
 
-      {/* Crumbs */}
+      {/* Breadcrumbs – left edge like other pages */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 py-4">
         <Breadcrumbs />
       </div>
 
-      {/* 🔹 Top categories row */}
-      <CategoryGrid
-        items={categories}
-        title="Categories"
-        fullBleedDesktop
-        desktopCols={6}
-        activeSlug={categorySlug}
-        routeTo="/category"
-      />
-
-      {/* 🔹 Tiffany-style subcategory cards (link to dedicated pages) */}
-      {/* Only show cards when you actually have subcategories for this category */}
-      {categorySlug in CATEGORY_SUBS && subcategories.length > 0 && (
-        <div className="mt-4">
+      {/* ONLY subcategory cards (no main category grid here) */}
+      {subcategories.length > 0 && (
+        <div className="mt-2">
           <SubcategoryCards
             category={categorySlug}
-            subcategories={
-              // Build cards only for real subcats, skip the "all" pseudo-entry
-              subcategories
-                .filter((s) => s.slug !== "all")
-                .map((s) => ({
-                  key: s.slug,
-                  label: s.label,
-                  // Reuse your category tiles as images; replace with dedicated subcat images later if you have them
-                  image:
-                    s.slug === "engagement"
-                      ? "/category/engagement-cat.jpg"
-                      : s.slug === "wedding-bands"
-                      ? "/category/wedding-band-cat.jpg"
-                      : s.slug === "studs"
-                      ? "/category/earring-cat.jpg"
-                      : s.slug === "tennis"
-                      ? "/category/bracelet-cat.jpg"
-                      : s.slug === "pendants"
-                      ? "/category/necklace-cat.jpg"
-                      : // fallback
-                        "/category/ring-cat.jpg",
-                }))
-            }
+            subcategories={subcategories.map((s) => ({
+              key: s.slug,
+              label: s.label,
+              // Temporary image mapping; replace with real subcategory images if you have them
+              image:
+                s.slug === "engagement"
+                  ? "/category/engagement-cat.jpg"
+                  : s.slug === "wedding-bands"
+                  ? "/category/wedding-band-cat.jpg"
+                  : s.slug === "studs"
+                  ? "/category/earring-cat.jpg"
+                  : s.slug === "tennis"
+                  ? "/category/bracelet-cat.jpg"
+                  : s.slug === "pendants"
+                  ? "/category/necklace-cat.jpg"
+                  : "/category/ring-cat.jpg",
+            }))}
           />
         </div>
       )}
@@ -374,19 +313,16 @@ export default function CategoryPage({
       {/* Anchor for scroll=true */}
       <div id="category-header" className="sr-only" aria-hidden="true" />
 
-      {/* Breadcrumb-esque text + Heading */}
+      {/* Heading */}
       <div className="px-4 sm:px-6">
         <div className="mx-auto max-w-7xl">
-          <p className="text-white/70 text-sm mb-1">
-            {categoryLabel} / <span className="text-white">{subLabel}</span>
-          </p>
           <h1 className="text-2xl sm:text-3xl font-serif font-semibold tracking-wide mb-4">
             {categoryLabel}
           </h1>
         </div>
       </div>
 
-      {/* Main content: Sidebar + Grid */}
+      {/* Main content: Sidebar + Grid (+ Add to Cart) */}
       <section className="px-4 sm:px-6 pb-10">
         <div className="mx-auto max-w-7xl">
           <div className="grid grid-cols-1 md:grid-cols-[260px_1fr] gap-6">
@@ -405,45 +341,70 @@ export default function CategoryPage({
                     categorySlug
                   )}/${encodeURIComponent(p.slug)}`;
                   return (
-                    <Link
+                    <div
                       key={p.slug}
-                      href={href}
-                      className="group rounded-xl overflow-hidden bg-[#25304f] hover:shadow-xl transition"
+                      className="group rounded-xl overflow-hidden bg-[#25304f] hover:shadow-xl transition flex flex-col"
                     >
-                      <div className="relative aspect-square">
-                        {p.image ? (
-                          <Image
-                            src={p.image}
-                            alt={p.name}
-                            fill
-                            className="object-cover"
-                          />
-                        ) : (
-                          <div className="w-full h-full bg-black/20" />
-                        )}
-                      </div>
-                      <div className="p-3">
-                        <h4 className="text-sm font-medium text-white line-clamp-2 group-hover:underline">
-                          {p.name}
-                        </h4>
-                        <div className="mt-1">
-                          {p.salePrice ? (
-                            <div className="flex items-center gap-2">
-                              <span className="text-white font-semibold">
-                                ${Number(p.salePrice).toFixed(2)}
-                              </span>
-                              <span className="text-white/60 line-through text-sm">
-                                ${Number(p.price).toFixed(2)}
-                              </span>
-                            </div>
+                      <Link href={href} className="block">
+                        <div className="relative aspect-square">
+                          {p.image ? (
+                            <Image
+                              src={p.image}
+                              alt={p.name}
+                              fill
+                              className="object-cover group-hover:scale-105 transition-transform"
+                            />
                           ) : (
-                            <span className="text-white font-semibold">
-                              ${Number(p.price).toFixed(2)}
-                            </span>
+                            <div className="w-full h-full bg-black/20" />
                           )}
                         </div>
+                      </Link>
+
+                      <div className="p-3 flex flex-col gap-2">
+                        <Link href={href} className="block">
+                          <h4 className="text-sm font-medium text-white line-clamp-2 group-hover:underline">
+                            {p.name}
+                          </h4>
+                        </Link>
+
+                        <div className="flex items-center justify-between">
+                          <div>
+                            {p.salePrice ? (
+                              <div className="flex items-center gap-2">
+                                <span className="text-white font-semibold">
+                                  ${Number(p.salePrice).toFixed(2)}
+                                </span>
+                                <span className="text-white/60 line-through text-sm">
+                                  ${Number(p.price).toFixed(2)}
+                                </span>
+                              </div>
+                            ) : (
+                              <span className="text-white font-semibold">
+                                ${Number(p.price).toFixed(2)}
+                              </span>
+                            )}
+                          </div>
+
+                          <button
+                            onClick={() =>
+                              addToCart({
+                                id: p._id || p.id || p.slug, // fallback
+                                slug: p.slug,
+                                name: p.name,
+                                price: p.price,
+                                discountedPrice: p.salePrice,
+                                image: p.image,
+                                quantity: 1,
+                              })
+                            }
+                            className="px-3 py-2 bg-[#e0e0e0] text-[#1f2a44] rounded-xl text-xs shadow hover:shadow-md hover:scale-105 transition"
+                            aria-label={`Add ${p.name} to cart`}
+                          >
+                            Add to Cart
+                          </button>
+                        </div>
                       </div>
-                    </Link>
+                    </div>
                   );
                 })}
               </div>

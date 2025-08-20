@@ -11,6 +11,7 @@ import clientPromise from "@/lib/mongodb";
 import FiltersSidebar from "@/components/FiltersSidebar";
 import HeroBanner from "@/components/HeroBanner";
 import Breadcrumbs from "@/components/Breadcrumbs";
+import { useCart } from "@/context/CartContext";
 
 /* ------------------------------ Types ------------------------------ */
 type Product = {
@@ -40,7 +41,6 @@ type PageProps = {
 };
 
 /* ------------------------- Label / Hero maps ------------------------- */
-// Reuse the same labels you used on the category page
 const CATEGORY_LABELS: Record<string, string> = {
   engagement: "Engagement",
   "wedding-bands": "Wedding Bands",
@@ -93,7 +93,7 @@ export const getServerSideProps: GetServerSideProps<PageProps> = async (
     CATEGORY_LABELS[categorySlug] ?? titleCase(categorySlug);
   const subcategoryLabel = titleCase(subcategorySlug);
 
-  // Read optional query filters (so filters work on subcategory page too)
+  // Optional query filters so FiltersSidebar works here too
   const metal = ctx.query.metal
     ? Array.isArray(ctx.query.metal)
       ? ctx.query.metal.map((m) => String(m).toLowerCase())
@@ -170,7 +170,7 @@ export const getServerSideProps: GetServerSideProps<PageProps> = async (
       carat: typeof d.carat === "number" ? d.carat : undefined,
       slug: d.slug,
     }));
-  } catch (e) {
+  } catch {
     products = [];
   }
 
@@ -196,13 +196,13 @@ export const getServerSideProps: GetServerSideProps<PageProps> = async (
 export default function SubcategoryPage({
   categorySlug,
   categoryLabel,
-  subcategorySlug,
   subcategoryLabel,
   heroImage,
   heroSubtitle,
   products,
 }: PageProps) {
   const router = useRouter();
+  const { addToCart } = useCart();
 
   // Preserve your ?scroll=true behavior
   useEffect(() => {
@@ -228,8 +228,8 @@ export default function SubcategoryPage({
     <>
       <Head>
         <title>
-          {subcategoryLabel}{" "}
-          {categoryLabel !== subcategoryLabel ? `| ${categoryLabel}` : ""} |
+          {subcategoryLabel}
+          {categoryLabel !== subcategoryLabel ? ` | ${categoryLabel}` : ""} |
           Classy Diamonds
         </title>
         <meta
@@ -248,12 +248,12 @@ export default function SubcategoryPage({
         overlay="solid"
       />
 
-      {/* Breadcrumbs */}
+      {/* Breadcrumbs (left-aligned container) */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 py-4">
         <Breadcrumbs />
       </div>
 
-      {/* Back link to the parent category */}
+      {/* Heading + Back link */}
       <div className="px-4 sm:px-6">
         <div className="mx-auto max-w-7xl flex items-center justify-between">
           <h1 className="text-2xl sm:text-3xl font-serif font-semibold tracking-wide mb-4">
@@ -271,7 +271,7 @@ export default function SubcategoryPage({
       {/* Anchor for scroll=true */}
       <div id="subcategory-header" className="sr-only" aria-hidden="true" />
 
-      {/* Main content: Sidebar + Grid */}
+      {/* Main content: Sidebar + Grid (with Add to Cart) */}
       <section className="px-4 sm:px-6 pb-10">
         <div className="mx-auto max-w-7xl">
           <div className="grid grid-cols-1 md:grid-cols-[260px_1fr] gap-6">
@@ -290,45 +290,70 @@ export default function SubcategoryPage({
                     categorySlug
                   )}/${encodeURIComponent(p.slug)}`;
                   return (
-                    <Link
+                    <div
                       key={p.slug}
-                      href={href}
-                      className="group rounded-xl overflow-hidden bg-[#25304f] hover:shadow-xl transition"
+                      className="group rounded-xl overflow-hidden bg-[#25304f] hover:shadow-xl transition flex flex-col"
                     >
-                      <div className="relative aspect-square">
-                        {p.image ? (
-                          <Image
-                            src={p.image}
-                            alt={p.name}
-                            fill
-                            className="object-cover"
-                          />
-                        ) : (
-                          <div className="w-full h-full bg-black/20" />
-                        )}
-                      </div>
-                      <div className="p-3">
-                        <h4 className="text-sm font-medium text-white line-clamp-2 group-hover:underline">
-                          {p.name}
-                        </h4>
-                        <div className="mt-1">
-                          {p.salePrice ? (
-                            <div className="flex items-center gap-2">
-                              <span className="text-white font-semibold">
-                                ${Number(p.salePrice).toFixed(2)}
-                              </span>
-                              <span className="text-white/60 line-through text-sm">
-                                ${Number(p.price).toFixed(2)}
-                              </span>
-                            </div>
+                      <Link href={href} className="block">
+                        <div className="relative aspect-square">
+                          {p.image ? (
+                            <Image
+                              src={p.image}
+                              alt={p.name}
+                              fill
+                              className="object-cover group-hover:scale-105 transition-transform"
+                            />
                           ) : (
-                            <span className="text-white font-semibold">
-                              ${Number(p.price).toFixed(2)}
-                            </span>
+                            <div className="w-full h-full bg-black/20" />
                           )}
                         </div>
+                      </Link>
+
+                      <div className="p-3 flex flex-col gap-2">
+                        <Link href={href} className="block">
+                          <h4 className="text-sm font-medium text-white line-clamp-2 group-hover:underline">
+                            {p.name}
+                          </h4>
+                        </Link>
+
+                        <div className="flex items-center justify-between">
+                          <div>
+                            {p.salePrice ? (
+                              <div className="flex items-center gap-2">
+                                <span className="text-white font-semibold">
+                                  ${Number(p.salePrice).toFixed(2)}
+                                </span>
+                                <span className="text-white/60 line-through text-sm">
+                                  ${Number(p.price).toFixed(2)}
+                                </span>
+                              </div>
+                            ) : (
+                              <span className="text-white font-semibold">
+                                ${Number(p.price).toFixed(2)}
+                              </span>
+                            )}
+                          </div>
+
+                          <button
+                            onClick={() =>
+                              addToCart({
+                                id: p._id || p.id || p.slug, // fallback id
+                                slug: p.slug,
+                                name: p.name,
+                                price: p.price,
+                                discountedPrice: p.salePrice,
+                                image: p.image,
+                                quantity: 1,
+                              })
+                            }
+                            className="px-3 py-2 bg-[#e0e0e0] text-[#1f2a44] rounded-xl text-xs shadow hover:shadow-md hover:scale-105 transition"
+                            aria-label={`Add ${p.name} to cart`}
+                          >
+                            Add to Cart
+                          </button>
+                        </div>
                       </div>
-                    </Link>
+                    </div>
                   );
                 })}
               </div>
