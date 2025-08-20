@@ -1,8 +1,4 @@
-// 📄 pages/admin/products.tsx – Admin Product Management (with Subcategories) 🛠️💎
-// - Adds Category → Subcategory dependent dropdowns (with “None” and “Custom…”)
-// - Works for both Add and Edit flows; preserves your featured limit + image previews
-// - Keeps batch save for featured toggles
-// - Assumes API accepts/returns `subcategory?: string`
+// 📄 pages/admin/products.tsx – Admin Product Management with Category → Subcategory & Watches Split 🛠️💎
 
 import { useState, useEffect, useRef, useMemo } from "react";
 import { useRouter } from "next/router";
@@ -12,52 +8,29 @@ import Head from "next/head";
 import Link from "next/link";
 import Breadcrumbs from "@/components/Breadcrumbs";
 
-// 🚀 Allowed categories (kept as-is, matching your current data)
-type Category =
-  | "engagement"
-  | "wedding-bands"
-  | "rings"
-  | "bracelets"
-  | "necklaces"
-  | "earrings"
-  | "watches";
+import {
+  Category,
+  CATEGORY_LABELS,
+  JEWELRY_CATEGORIES,
+  WATCHES_CATEGORY,
+  subcategoryOptionsFor,
+  NONE_OPTION,
+  CUSTOM_OPTION,
+  isWatch,
+  isJewelry,
+} from "@/data/taxonomy";
 
-const allCategories: Category[] = [
-  "engagement",
-  "wedding-bands",
-  "rings",
-  "bracelets",
-  "necklaces",
-  "earrings",
-  "watches",
-];
-
-// 🧭 Suggested subcategories per category (edit these labels to your taxonomy)
-const SUBCATEGORY_MAP: Record<Category, string[]> = {
-  engagement: ["solitaire", "halo", "three-stone", "vintage", "pave"],
-  "wedding-bands": ["mens-bands", "womens-bands", "eternity", "stackable"],
-  rings: ["fashion-rings", "statement-rings", "promise-rings"],
-  bracelets: ["tennis-bracelets", "bangle", "chain-bracelets", "cuff"],
-  necklaces: ["pendants", "chains", "nameplate", "solitaire"],
-  earrings: ["studs", "hoops", "drops", "huggies"],
-  watches: ["men", "women"],
-};
-
-// ⛳ Shared constants for dropdown UX
-const NONE_OPTION = "— None —";
-const CUSTOM_OPTION = "Custom…";
-
-// 🛠️ Product type (mirrors collection, adding optional `subcategory`)
+// 🛠️ Product type (mirrors collection; includes optional subcategory)
 interface AdminProduct {
-  _id: string; // MongoDB ID
-  skuNumber?: number; // sequential SKU
+  _id: string;
+  skuNumber?: number;
   name: string;
   slug?: string;
   description: string;
   price: number;
   salePrice?: number;
   category: Category;
-  subcategory?: string; // 🆕
+  subcategory?: string;
   imageUrl?: string;
   featured: boolean;
   gender?: "unisex" | "him" | "her";
@@ -76,59 +49,30 @@ export async function getServerSideProps(context: any) {
 export default function AdminProductsPage() {
   const router = useRouter();
 
-  // 🔥 State: list of products from DB
+  // View toggle: keep Watches separate from Jewelry
+  const [catalogView, setCatalogView] = useState<"jewelry" | "watches">(
+    "jewelry"
+  );
+
+  // 🔥 Products from DB
   const [products, setProducts] = useState<AdminProduct[]>([]);
   const [loadingList, setLoadingList] = useState(false);
 
-  // 💾 Local edits tracked here before batch save (currently featured only)
+  // 💾 Local edits for batch save (featured)
   const [rowEdits, setRowEdits] = useState<
     Record<string, { featured: boolean }>
   >({});
 
-  // 🖼️ Local preview of current or replaced image (Edit form only)
-  const [previewImage, setPreviewImage] = useState<string>("");
-
-  // ✏️ Product currently being edited
+  // ✏️ Active edit
   const [editingProduct, setEditingProduct] = useState<AdminProduct | null>(
     null
   );
-
-  // 📍 Ref to the edit form for scrolling (declare ONCE)
   const editFormRef = useRef<HTMLFormElement | null>(null);
 
-  // 📋 Separate form state for editing (with subcategory + custom)
-  const [editForm, setEditForm] = useState({
-    name: "",
-    description: "",
-    price: "",
-    salePrice: "",
-    category: "engagement" as Category,
-    subcategorySelect: NONE_OPTION, // dropdown selection
-    subcategoryCustom: "", // free text when Custom… is chosen
-    featured: false,
-    gender: "unisex" as "unisex" | "him" | "her",
-    imageFile: null as File | null,
-    imageRemoved: false,
-  });
+  // 🖼️ Image preview for edit
+  const [previewImage, setPreviewImage] = useState<string>("");
 
-  // 📋 Form state for adding a new product (with subcategory + preview)
-  const [formState, setFormState] = useState({
-    name: "",
-    description: "",
-    price: "",
-    salePrice: "",
-    category: "engagement" as Category,
-    subcategorySelect: NONE_OPTION,
-    subcategoryCustom: "",
-    featured: false,
-    gender: "unisex" as "unisex" | "him" | "her",
-    imageFile: null as File | null,
-  });
-
-  // 🖼️ Live preview for Add form file selection (uses blob: URL)
-  const [addPreviewUrl, setAddPreviewUrl] = useState<string>("");
-
-  // 🎯 Status for operations
+  // 🎯 Status
   const [status, setStatus] = useState({
     loading: false,
     error: "",
@@ -138,10 +82,9 @@ export default function AdminProductsPage() {
   // 🔘 Toggle for Add Product form visibility
   const [showAddForm, setShowAddForm] = useState(false);
 
-  // 🔍 Filtering dropdowns
+  // 🔍 Filters in admin table
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [genderFilter, setGenderFilter] = useState<string>("all");
-
   const [sortConfig, setSortConfig] = useState<{
     field: "category" | "gender" | "skuNumber";
     direction: "asc" | "desc";
@@ -155,33 +98,116 @@ export default function AdminProductsPage() {
     );
   };
 
-  // 🚚 When a product is selected for editing, scroll the form into view
+  // 📋 Add form state
+  const [formState, setFormState] = useState({
+    name: "",
+    description: "",
+    price: "",
+    salePrice: "",
+    category: (JEWELRY_CATEGORIES[0] as Category) || ("rings" as Category),
+    subcategorySelect: NONE_OPTION,
+    subcategoryCustom: "",
+    featured: false,
+    gender: "unisex" as "unisex" | "him" | "her",
+    imageFile: null as File | null,
+  });
+
+  // 📋 Edit form state
+  const [editForm, setEditForm] = useState({
+    name: "",
+    description: "",
+    price: "",
+    salePrice: "",
+    category: (JEWELRY_CATEGORIES[0] as Category) || ("rings" as Category),
+    subcategorySelect: NONE_OPTION,
+    subcategoryCustom: "",
+    featured: false,
+    gender: "unisex" as "unisex" | "him" | "her",
+    imageFile: null as File | null,
+    imageRemoved: false,
+  });
+
+  // 🖼️ Live preview for Add form file selection
+  const [addPreviewUrl, setAddPreviewUrl] = useState<string>("");
+
+  // Allowed categories for each view
+  const allowedCategoriesForView = (view: "jewelry" | "watches"): Category[] =>
+    view === "jewelry"
+      ? (JEWELRY_CATEGORIES as unknown as Category[])
+      : [WATCHES_CATEGORY];
+
+  // Ensure Add form category always matches the active view
+  useEffect(() => {
+    setFormState((s) => {
+      const allowed = allowedCategoriesForView(catalogView);
+      return allowed.includes(s.category)
+        ? s
+        : {
+            ...s,
+            category: allowed[0],
+            subcategorySelect: NONE_OPTION,
+            subcategoryCustom: "",
+          };
+    });
+    // also reset table category filter when switching views
+    setCategoryFilter("all");
+  }, [catalogView]);
+
+  // 🚚 Scroll to edit form when editing product
   useEffect(() => {
     if (editingProduct && editFormRef.current) {
       const headerOffset = 120;
-      const formTop =
+      const top =
         editFormRef.current.getBoundingClientRect().top +
         window.pageYOffset -
         headerOffset;
-      window.scrollTo({ top: formTop, behavior: "smooth" });
+      window.scrollTo({ top, behavior: "smooth" });
     }
   }, [editingProduct]);
 
-  // 🧮 Count of featured items currently checked in rowEdits
+  // ==================== LOAD PRODUCTS ====================
+  useEffect(() => {
+    async function load() {
+      setLoadingList(true);
+      try {
+        const res = await fetch("/api/admin/products");
+        const data = await res.json();
+        setProducts(data.products);
+        const edits: Record<string, { featured: boolean }> = {};
+        (data.products as AdminProduct[]).forEach((p) => {
+          edits[p._id] = { featured: p.featured };
+        });
+        setRowEdits(edits);
+      } catch (err: any) {
+        console.error("Failed to load products:", err);
+      } finally {
+        setLoadingList(false);
+      }
+    }
+    load();
+  }, []);
+
+  // ==================== DERIVED LISTS ====================
   const featuredCount = useMemo(
     () => Object.values(rowEdits).filter((e) => e.featured).length,
     [rowEdits]
   );
 
+  const viewFiltered = useMemo(() => {
+    return products.filter((p) =>
+      catalogView === "jewelry" ? isJewelry(p.category) : isWatch(p.category)
+    );
+  }, [products, catalogView]);
+
   const filteredProducts = useMemo(() => {
-    return products.filter((p) => {
+    return viewFiltered.filter((p) => {
       if (categoryFilter !== "all" && p.category !== categoryFilter)
         return false;
       const g = p.gender ?? "unisex";
       if (genderFilter !== "all" && g !== genderFilter) return false;
       return true;
     });
-  }, [products, categoryFilter, genderFilter]);
+  }, [viewFiltered, categoryFilter, genderFilter]);
 
   const sortedProducts = useMemo(() => {
     const data = [...filteredProducts];
@@ -206,35 +232,12 @@ export default function AdminProductsPage() {
     return data;
   }, [filteredProducts, sortConfig]);
 
-  // ==================== LOAD PRODUCTS ====================
-  useEffect(() => {
-    async function load() {
-      setLoadingList(true);
-      try {
-        const res = await fetch("/api/admin/products");
-        const data = await res.json();
-        setProducts(data.products);
-        // Initialize rowEdits from fetched data
-        const edits: Record<string, { featured: boolean }> = {};
-        (data.products as AdminProduct[]).forEach((p) => {
-          edits[p._id] = { featured: p.featured };
-        });
-        setRowEdits(edits);
-      } catch (err: any) {
-        console.error("Failed to load products:", err);
-      } finally {
-        setLoadingList(false);
-      }
-    }
-    load();
-  }, []);
-
-  // ==================== HANDLE NEW PRODUCT ====================
+  // ==================== ADD FORM ====================
   const handleInput = (field: string, value: any) => {
     setFormState((s) => ({ ...s, [field]: value }));
   };
 
-  // Auto-reset subcategory if category changes (Add form)
+  // Reset subcategory when Add form category changes
   useEffect(() => {
     setFormState((s) => ({
       ...s,
@@ -243,14 +246,12 @@ export default function AdminProductsPage() {
     }));
   }, [formState.category]);
 
-  // Create/destroy blob URL previews for the Add form file input
+  // Blob preview for Add form
   useEffect(() => {
     if (formState.imageFile) {
       const url = URL.createObjectURL(formState.imageFile);
       setAddPreviewUrl(url);
-      return () => {
-        URL.revokeObjectURL(url);
-      };
+      return () => URL.revokeObjectURL(url);
     } else {
       setAddPreviewUrl("");
     }
@@ -263,12 +264,12 @@ export default function AdminProductsPage() {
     if (selectValue === NONE_OPTION) return "";
     if (selectValue === CUSTOM_OPTION) return (customValue || "").trim();
     return selectValue;
+    // keep as slug-like strings; display formatting can happen in UI
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // 🚨 Featured guard
     if (formState.featured && featuredCount >= 4) {
       setStatus({
         loading: false,
@@ -306,22 +307,20 @@ export default function AdminProductsPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Failed to add product");
 
-      // Update products list
       setProducts((p) => [data.product, ...p]);
-
-      // Keep rowEdits in sync for featured count & toggling
       setRowEdits((e) => ({
         ...e,
         [data.product._id]: { featured: data.product.featured },
       }));
 
       // Reset Add form
+      const allowed = allowedCategoriesForView(catalogView);
       setFormState({
         name: "",
         description: "",
         price: "",
         salePrice: "",
-        category: "engagement",
+        category: allowed[0],
         subcategorySelect: NONE_OPTION,
         subcategoryCustom: "",
         featured: false,
@@ -335,17 +334,18 @@ export default function AdminProductsPage() {
     }
   };
 
-  // ==================== HANDLE EDIT PRODUCT ====================
-  // Prepare edit form when clicking "Edit"
+  // ==================== EDIT FORM ====================
   const handleEditClick = (product: AdminProduct) => {
     setEditingProduct(product);
 
-    // Decide how to populate subcategory controls:
-    const options = SUBCATEGORY_MAP[product.category] || [];
+    // prefill subcategory UI
+    const opts = subcategoryOptionsFor(product.category).filter(
+      (o) => o !== NONE_OPTION && o !== CUSTOM_OPTION
+    );
     let subcategorySelect = NONE_OPTION;
     let subcategoryCustom = "";
     if (product.subcategory && product.subcategory.trim()) {
-      if (options.includes(product.subcategory)) {
+      if (opts.includes(product.subcategory)) {
         subcategorySelect = product.subcategory;
       } else {
         subcategorySelect = CUSTOM_OPTION;
@@ -367,10 +367,7 @@ export default function AdminProductsPage() {
       imageRemoved: false,
     });
 
-    // 🖼 Show current product image in preview
     setPreviewImage(product.imageUrl || "");
-
-    // Smooth scroll to edit form
     setTimeout(() => {
       editFormRef.current?.scrollIntoView({
         behavior: "smooth",
@@ -379,7 +376,7 @@ export default function AdminProductsPage() {
     }, 100);
   };
 
-  // Reset subcategory controls when edit category changes
+  // Reset subcategory when Edit form category changes
   useEffect(() => {
     if (!editingProduct) return;
     setEditForm((f) => ({
@@ -390,10 +387,17 @@ export default function AdminProductsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editForm.category]);
 
+  // Allow editing a product category even if not in current view (include its current category)
+  const editAllowedCats: Category[] = useMemo(() => {
+    if (!editingProduct) return allowedCategoriesForView(catalogView);
+    const base = new Set<Category>(allowedCategoriesForView(catalogView));
+    base.add(editingProduct.category);
+    return Array.from(base);
+  }, [catalogView, editingProduct]);
+
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // 🚨 Featured guard on edit
     if (editForm.featured && featuredCount >= 4 && !editingProduct?.featured) {
       setStatus({
         loading: false,
@@ -432,12 +436,9 @@ export default function AdminProductsPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Failed to update product");
 
-      // Update local list
       setProducts((p) =>
         p.map((prod) => (prod._id === data.product._id ? data.product : prod))
       );
-
-      // Keep rowEdits in sync (important for featuredCount)
       setRowEdits((r) => ({
         ...r,
         [data.product._id]: { featured: data.product.featured },
@@ -455,7 +456,7 @@ export default function AdminProductsPage() {
     }
   };
 
-  // ==================== BATCH SAVE ALL CHANGES ====================
+  // ==================== BATCH SAVE (Featured) ====================
   const handleSaveAll = async () => {
     if (featuredCount > 4) {
       setStatus({
@@ -484,15 +485,12 @@ export default function AdminProductsPage() {
       });
 
       const results = await Promise.all(updates);
-
       setProducts((p) =>
         p.map((x) => {
           const updated = results.find((u) => u && u._id === x._id);
           return updated || x;
         })
       );
-
-      // Sync rowEdits with server truth after batch save
       setRowEdits((prev) => {
         const next = { ...prev };
         results.forEach((u) => {
@@ -500,24 +498,22 @@ export default function AdminProductsPage() {
         });
         return next;
       });
-
       setStatus({ loading: false, error: "", success: "All changes saved 💾" });
     } catch (err: any) {
       setStatus({ loading: false, error: err.message, success: "" });
     }
   };
 
-  // ==================== DELETE PRODUCT ====================
+  // ==================== DELETE ====================
   const handleDelete = async (id: string) => {
     if (!confirm("Delete this product?")) return;
     const res = await fetch(`/api/admin/products/${id}`, { method: "DELETE" });
     if (res.ok) {
       setProducts((p) => p.filter((x) => x._id !== id));
-      // Also remove from rowEdits
       setRowEdits((r) => {
-        const newEdits = { ...r };
-        delete newEdits[id];
-        return newEdits;
+        const next = { ...r };
+        delete next[id];
+        return next;
       });
       setStatus({ loading: false, error: "", success: "Product deleted 🗑️" });
     }
@@ -531,7 +527,7 @@ export default function AdminProductsPage() {
       description: "",
       price: "",
       salePrice: "",
-      category: "engagement",
+      category: (JEWELRY_CATEGORIES[0] as Category) || ("rings" as Category),
       subcategorySelect: NONE_OPTION,
       subcategoryCustom: "",
       featured: false,
@@ -540,13 +536,6 @@ export default function AdminProductsPage() {
       imageRemoved: false,
     });
     setPreviewImage("");
-  };
-
-  // Helpers: options for a given category
-  const subcategoryOptionsFor = (cat: Category) => {
-    const base = SUBCATEGORY_MAP[cat] || [];
-    return [NONE_OPTION, ...base, CUSTOM_OPTION];
-    // if you want to show current custom value in dropdown, keep as is and render input when CUSTOM_OPTION
   };
 
   return (
@@ -588,10 +577,33 @@ export default function AdminProductsPage() {
       </nav>
 
       <div className="max-w-6xl mx-auto space-y-6">
-        <h2 className="text-2xl font-bold">🛠️ Manage Products</h2>
+        {/* View toggle + Add button */}
+        <div className="flex items-center justify-between">
+          <div className="inline-flex rounded overflow-hidden border">
+            <button
+              type="button"
+              onClick={() => setCatalogView("jewelry")}
+              className={`px-3 py-2 ${
+                catalogView === "jewelry"
+                  ? "bg-yellow-500 text-black"
+                  : "bg-[var(--bg-nav)]"
+              }`}
+            >
+              Jewelry
+            </button>
+            <button
+              type="button"
+              onClick={() => setCatalogView("watches")}
+              className={`px-3 py-2 ${
+                catalogView === "watches"
+                  ? "bg-yellow-500 text-black"
+                  : "bg-[var(--bg-nav)]"
+              }`}
+            >
+              Watches
+            </button>
+          </div>
 
-        {/* ➕ Add Product Toggle Button */}
-        <div className="flex justify-end">
           <button
             onClick={() => setShowAddForm(!showAddForm)}
             className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
@@ -619,7 +631,7 @@ export default function AdminProductsPage() {
               {String(editingProduct.skuNumber ?? 0).padStart(5, "0")})
             </h3>
 
-            {/* 🖼 Current Image Preview (Live) */}
+            {/* 🖼 Current Image Preview */}
             <div className="col-span-full flex flex-col items-center mb-2">
               {previewImage ? (
                 <Image
@@ -739,11 +751,17 @@ export default function AdminProductsPage() {
                 }
                 className="mt-1 w-full border rounded p-2 bg-[var(--bg-page)] text-[var(--foreground)]"
               >
-                {allCategories.map((cat) => (
-                  <option key={cat} value={cat}>
-                    {cat}
-                  </option>
-                ))}
+                {(() => {
+                  const allowed = new Set<Category>(
+                    allowedCategoriesForView(catalogView)
+                  );
+                  if (editingProduct) allowed.add(editingProduct.category);
+                  return Array.from(allowed).map((cat) => (
+                    <option key={cat} value={cat}>
+                      {CATEGORY_LABELS[cat]}
+                    </option>
+                  ));
+                })()}
               </select>
             </label>
 
@@ -778,7 +796,7 @@ export default function AdminProductsPage() {
                 📝 Custom Subcategory
                 <input
                   type="text"
-                  placeholder="e.g., cushion-halo, diamond-tennis, etc."
+                  placeholder="e.g., engagement-rings, tennis-bracelets, etc."
                   value={editForm.subcategoryCustom}
                   onChange={(e) =>
                     setEditForm((f) => ({
@@ -916,7 +934,7 @@ export default function AdminProductsPage() {
               />
             </label>
 
-            {/* 📂 Category */}
+            {/* 📂 Category (restricted by view) */}
             <label>
               📂 Category
               <select
@@ -926,9 +944,9 @@ export default function AdminProductsPage() {
                 }
                 className="mt-1 w-full border rounded p-2 bg-[var(--bg-nav)] text-[var(--foreground)]"
               >
-                {allCategories.map((cat) => (
+                {allowedCategoriesForView(catalogView).map((cat) => (
                   <option key={cat} value={cat}>
-                    {cat}
+                    {CATEGORY_LABELS[cat]}
                   </option>
                 ))}
               </select>
@@ -958,7 +976,7 @@ export default function AdminProductsPage() {
                 📝 Custom Subcategory
                 <input
                   type="text"
-                  placeholder="e.g., cushion-halo, diamond-tennis, etc."
+                  placeholder="e.g., engagement-rings, tennis-bracelets, etc."
                   value={formState.subcategoryCustom}
                   onChange={(e) =>
                     handleInput("subcategoryCustom", e.target.value)
@@ -1018,7 +1036,6 @@ export default function AdminProductsPage() {
               />
             </label>
 
-            {/* Live preview for Add form */}
             <div className="col-span-full flex items-center gap-4">
               <div className="w-36 h-36 bg-gray-500/40 rounded flex items-center justify-center overflow-hidden">
                 {addPreviewUrl ? (
@@ -1062,7 +1079,6 @@ export default function AdminProductsPage() {
           <p>Loading...</p>
         ) : (
           <>
-            {/* ⚠️ Warning if too many featured selected */}
             {featuredCount > 4 && (
               <p className="text-yellow-500 mb-2">
                 ⚠️ You have selected more than 4 featured items. Please uncheck
@@ -1070,7 +1086,6 @@ export default function AdminProductsPage() {
               </p>
             )}
 
-            {/* ⚡ Make this div scrollable on small screens */}
             <div className="overflow-x-auto w-full">
               <table className="min-w-max w-full table-auto border-collapse">
                 <thead>
@@ -1099,9 +1114,9 @@ export default function AdminProductsPage() {
                         className="mt-1 w-full border rounded p-1 bg-[var(--bg-nav)] text-[var(--foreground)]"
                       >
                         <option value="all">All</option>
-                        {allCategories.map((c) => (
+                        {allowedCategoriesForView(catalogView).map((c) => (
                           <option key={c} value={c}>
-                            {c}
+                            {CATEGORY_LABELS[c]}
                           </option>
                         ))}
                       </select>
@@ -1171,7 +1186,9 @@ export default function AdminProductsPage() {
                           )}
                         </td>
 
-                        <td className="p-2 capitalize">{p.category}</td>
+                        <td className="p-2 capitalize">
+                          {CATEGORY_LABELS[p.category]}
+                        </td>
                         <td className="p-2">
                           {p.subcategory || (
                             <span className="opacity-60">—</span>
@@ -1231,8 +1248,6 @@ export default function AdminProductsPage() {
             {status.loading ? "Saving..." : "Save All Changes 💾"}
           </button>
         </div>
-
-        {/* 🚧 Placeholder for future: pagination, search, CSV export, etc. */}
       </div>
     </div>
   );
