@@ -1,4 +1,8 @@
-// 📂 components/Breadcrumbs.tsx – Clean, Watches + Jewelry Fixed + Auto Capitalization
+// 📂 components/Breadcrumbs.tsx – Final Cleaned Version ✅
+// - Watches + Jewelry fixed
+// - Gender crumbs handled
+// - Auto capitalization
+// - Custom labels/paths respected
 
 import Link from "next/link";
 import { useRouter } from "next/router";
@@ -12,12 +16,12 @@ export default function Breadcrumbs({
 }) {
   const router = useRouter();
 
-  // Remove "category" from path for cleaner segments
+  // Split into path segments, excluding query + "category"
   const segments = router.asPath
     .split("?")[0]
     .split("/")
     .filter((s) => Boolean(s) && s !== "category");
-  /// 111
+
   const genderParam =
     router.query.gender === "him"
       ? "for-him"
@@ -31,33 +35,31 @@ export default function Breadcrumbs({
   const isProductPage = router.pathname === "/category/[category]/[slug]";
   let filteredSegments = [...segments];
 
-  // Gender logic: If browsing gender page without product, only show gender crumb
+  // If browsing gender-only (not product), only show gender crumb
   if (genderParam) {
     filteredSegments = isProductPage ? segments.slice(-1) : [];
   }
 
+  // Build hrefs for crumbs
   const buildHref = (index: number) => {
     const key = segments[index];
     const isWatches = key?.toLowerCase() === "watches";
 
-    // 🏷 Product page first crumb → Watches or Jewelry
+    // On product page, first crumb = Watches or Jewelry
     if (isProductPage && index === 0) {
-      if (isWatches) {
-        return `/watches`;
-      }
-      return `/jewelry?category=${encodeURIComponent(key)}&scroll=true`;
+      return isWatches
+        ? "/watches"
+        : `/jewelry?category=${encodeURIComponent(key)}&scroll=true`;
     }
 
-    // 🔄 Custom paths (if passed)
-    if (customPaths[key]) {
-      return customPaths[key];
-    }
+    // Custom path overrides
+    if (customPaths[key]) return customPaths[key];
 
-    // 🔁 Default rebuild URL
+    // Default: rebuild path
     return "/" + segments.slice(0, index + 1).join("/");
   };
 
-  // 🏷 Auto format segment label
+  // Format label for crumb
   const formatLabel = (segment: string) => {
     return (
       customLabels[segment] ??
@@ -92,7 +94,7 @@ export default function Breadcrumbs({
           </li>
         )}
 
-        {/* 📍 Category & product crumbs */}
+        {/* 📍 Category & Product crumbs */}
         {filteredSegments.map((seg, i) => {
           const origIndex = segments.indexOf(seg);
           const href = buildHref(origIndex);

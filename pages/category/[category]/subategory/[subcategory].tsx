@@ -1,17 +1,15 @@
-// pages/category/[category]/index.tsx
+// pages/category/[category]/subcategory/[subcategory].tsx
 "use client";
 
 import Head from "next/head";
 import Image from "next/image";
 import Link from "next/link";
-import { GetServerSideProps } from "next";
+import type { GetServerSideProps } from "next";
 import { useEffect } from "react";
 import { useRouter } from "next/router";
 import clientPromise from "@/lib/mongodb";
-import CategoryGrid, { CategoryItem } from "@/components/CategoryGrid";
 import FiltersSidebar from "@/components/FiltersSidebar";
 import HeroBanner from "@/components/HeroBanner";
-import SubcategoryCards from "@/components/SubcategoryCards";
 import Breadcrumbs from "@/components/Breadcrumbs";
 
 /* ------------------------------ Types ------------------------------ */
@@ -22,90 +20,34 @@ type Product = {
   price: number;
   salePrice?: number;
   image: string;
-  category: string; // "rings", "necklaces", etc.
-  subcategory?: string; // "halo", "studs", etc.
-  metal?: string; // "yellow-gold" | "platinum" ...
-  stone?: string; // "diamond" | "lab-grown" | ...
-  shape?: string; // "round" | "oval" ...
-  carat?: number; // e.g., 1.25
+  category: string;
+  subcategory?: string;
+  metal?: string;
+  stone?: string;
+  shape?: string;
+  carat?: number;
   slug: string;
 };
-
-type SubItem = { label: string; slug: string };
 
 type PageProps = {
   categorySlug: string;
   categoryLabel: string;
-  categories: CategoryItem[];
-  subcategories: SubItem[];
+  subcategorySlug: string;
+  subcategoryLabel: string;
   heroImage: string;
   heroSubtitle?: string;
   products: Product[];
 };
 
-/* ------------------------- Category Definitions ------------------------- */
-/** Top category tiles (no For Her / For Him) — use your existing images */
-const CATEGORIES: CategoryItem[] = [
-  {
-    label: "Engagement",
-    slug: "engagement",
-    image: "/category/engagement-cat.jpg",
-  },
-  {
-    label: "Wedding Bands",
-    slug: "wedding-bands",
-    image: "/category/wedding-band-cat.jpg",
-  },
-  { label: "Rings", slug: "rings", image: "/category/ring-cat.jpg" },
-  {
-    label: "Bracelets",
-    slug: "bracelets",
-    image: "/category/bracelet-cat.jpg",
-  },
-  {
-    label: "Necklaces",
-    slug: "necklaces",
-    image: "/category/necklace-cat.jpg",
-  },
-  { label: "Earrings", slug: "earrings", image: "/category/earring-cat.jpg" },
-];
-
-/** Subcategory mapping for the pills/cards (show cards Tiffany-style) */
-const CATEGORY_SUBS: Record<string, SubItem[]> = {
-  rings: [
-    { label: "All Rings", slug: "all" },
-    { label: "Engagement Rings", slug: "engagement" },
-    { label: "Wedding Bands", slug: "wedding-bands" },
-    { label: "Solitaire", slug: "solitaire" },
-    { label: "Halo", slug: "halo" },
-    { label: "Three-Stone", slug: "three-stone" },
-    { label: "Eternity", slug: "eternity" },
-    { label: "Men’s Rings", slug: "mens" },
-  ],
-  earrings: [
-    { label: "All Earrings", slug: "all" },
-    { label: "Studs", slug: "studs" },
-    { label: "Hoops", slug: "hoops" },
-    { label: "Drops", slug: "drops" },
-    { label: "Huggies", slug: "huggies" },
-  ],
-  bracelets: [
-    { label: "All Bracelets", slug: "all" },
-    { label: "Tennis", slug: "tennis" },
-    { label: "Bangles", slug: "bangles" },
-    { label: "Cuffs", slug: "cuffs" },
-    { label: "Chains", slug: "chains" },
-  ],
-  necklaces: [
-    { label: "All Necklaces", slug: "all" },
-    { label: "Pendants", slug: "pendants" },
-    { label: "Solitaire", slug: "solitaire" },
-    { label: "Station", slug: "station" },
-    { label: "Nameplates", slug: "nameplates" },
-    { label: "Pearl", slug: "pearl" },
-  ],
-  engagement: [{ label: "All", slug: "all" }],
-  "wedding-bands": [{ label: "All", slug: "all" }],
+/* ------------------------- Label / Hero maps ------------------------- */
+// Reuse the same labels you used on the category page
+const CATEGORY_LABELS: Record<string, string> = {
+  engagement: "Engagement",
+  "wedding-bands": "Wedding Bands",
+  rings: "Rings",
+  bracelets: "Bracelets",
+  necklaces: "Necklaces",
+  earrings: "Earrings",
 };
 
 const HERO_BY_CATEGORY: Record<string, { image: string; subtitle?: string }> = {
@@ -135,22 +77,23 @@ const HERO_BY_CATEGORY: Record<string, { image: string; subtitle?: string }> = {
   },
 };
 
-const labelFor = (slug: string) =>
-  CATEGORIES.find((c) => c.slug === slug)?.label ?? slug;
+const titleCase = (s: string) =>
+  s.replace(/-/g, " ").replace(/\b\w/g, (m) => m.toUpperCase());
 
-/* ----------------------------- SERVER DATA ------------------------------ */
+/* ----------------------------- SSR ------------------------------ */
 export const getServerSideProps: GetServerSideProps<PageProps> = async (
   ctx
 ) => {
   const categorySlug = String(ctx.params?.category || "").toLowerCase();
-  if (!categorySlug) return { notFound: true };
+  const subcategorySlug = String(ctx.params?.subcategory || "").toLowerCase();
 
-  const categoryLabel = labelFor(categorySlug);
+  if (!categorySlug || !subcategorySlug) return { notFound: true };
 
-  // read query filters
-  const sub =
-    typeof ctx.query.sub === "string" ? ctx.query.sub.toLowerCase() : undefined;
+  const categoryLabel =
+    CATEGORY_LABELS[categorySlug] ?? titleCase(categorySlug);
+  const subcategoryLabel = titleCase(subcategorySlug);
 
+  // Read optional query filters (so filters work on subcategory page too)
   const metal = ctx.query.metal
     ? Array.isArray(ctx.query.metal)
       ? ctx.query.metal.map((m) => String(m).toLowerCase())
@@ -179,8 +122,7 @@ export const getServerSideProps: GetServerSideProps<PageProps> = async (
     const client = await clientPromise;
     const db = client.db(process.env.MONGODB_DB || "classydiamonds");
 
-    const q: any = { category: categorySlug };
-    if (sub && sub !== "all") q.subcategory = sub;
+    const q: any = { category: categorySlug, subcategory: subcategorySlug };
     if (metal.length) q.metal = { $in: metal };
     if (stone.length) q.stone = { $in: stone };
     if (shape.length) q.shape = { $in: shape };
@@ -229,7 +171,6 @@ export const getServerSideProps: GetServerSideProps<PageProps> = async (
       slug: d.slug,
     }));
   } catch (e) {
-    // fallback local data (optional)
     products = [];
   }
 
@@ -242,10 +183,8 @@ export const getServerSideProps: GetServerSideProps<PageProps> = async (
     props: {
       categorySlug,
       categoryLabel,
-      categories: CATEGORIES,
-      subcategories: CATEGORY_SUBS[categorySlug] || [
-        { label: "All", slug: "all" },
-      ],
+      subcategorySlug,
+      subcategoryLabel,
       heroImage: hero.image,
       heroSubtitle: hero.subtitle,
       products,
@@ -254,28 +193,22 @@ export const getServerSideProps: GetServerSideProps<PageProps> = async (
 };
 
 /* ---------------------------------- PAGE --------------------------------- */
-export default function CategoryPage({
+export default function SubcategoryPage({
   categorySlug,
   categoryLabel,
-  categories,
-  subcategories,
+  subcategorySlug,
+  subcategoryLabel,
   heroImage,
   heroSubtitle,
   products,
 }: PageProps) {
   const router = useRouter();
-  const activeSub = (router.query.sub as string) || "all";
 
-  // For “Category / Subcategory” text
-  const subLabel =
-    subcategories.find((s) => s.slug.toLowerCase() === activeSub.toLowerCase())
-      ?.label || (activeSub === "all" ? "All" : activeSub);
-
-  // Keep your ?scroll=true behavior
+  // Preserve your ?scroll=true behavior
   useEffect(() => {
     const { scroll } = router.query as { scroll?: string };
     if (scroll === "true") {
-      const header = document.getElementById("category-header");
+      const header = document.getElementById("subcategory-header");
       if (!header) return;
       const navOffset = 80;
       const y =
@@ -291,106 +224,58 @@ export default function CategoryPage({
     }
   }, [router]);
 
-  // If you still want to keep query-based pills navigation:
-  const pushSub = (sub: string) => {
-    const next = { ...router.query };
-    if (sub === "all") delete (next as any).sub;
-    else (next as any).sub = sub;
-    router.push(
-      { pathname: `/category/${categorySlug}`, query: next },
-      undefined,
-      { shallow: true }
-    );
-  };
-
   return (
     <>
       <Head>
-        <title>{categoryLabel} | Classy Diamonds</title>
+        <title>
+          {subcategoryLabel}{" "}
+          {categoryLabel !== subcategoryLabel ? `| ${categoryLabel}` : ""} |
+          Classy Diamonds
+        </title>
         <meta
           name="description"
-          content={`Explore ${categoryLabel} at Classy Diamonds. Filter by metal, stone, shape, price, and carat.`}
+          content={`Shop ${subcategoryLabel} in ${categoryLabel}. Filter by metal, stone, shape, price, and carat.`}
         />
       </Head>
 
-      {/* 🔹 Big hero to match Home (80vh, -mt-20, solid overlay) */}
+      {/* 80vh hero, matches Home */}
       <HeroBanner
-        title={categoryLabel}
-        subtitle={heroSubtitle}
+        title={subcategoryLabel}
+        subtitle={categoryLabel}
         imageSrc={heroImage}
         heightClass="h-[80vh]"
         topOffsetClass="-mt-20"
         overlay="solid"
       />
 
-      {/* Crumbs */}
+      {/* Breadcrumbs */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 py-4">
         <Breadcrumbs />
       </div>
 
-      {/* 🔹 Top categories row */}
-      <CategoryGrid
-        items={categories}
-        title="Categories"
-        fullBleedDesktop
-        desktopCols={6}
-        activeSlug={categorySlug}
-        routeTo="/category"
-      />
-
-      {/* 🔹 Tiffany-style subcategory cards (link to dedicated pages) */}
-      {/* Only show cards when you actually have subcategories for this category */}
-      {categorySlug in CATEGORY_SUBS && subcategories.length > 0 && (
-        <div className="mt-4">
-          <SubcategoryCards
-            category={categorySlug}
-            subcategories={
-              // Build cards only for real subcats, skip the "all" pseudo-entry
-              subcategories
-                .filter((s) => s.slug !== "all")
-                .map((s) => ({
-                  key: s.slug,
-                  label: s.label,
-                  // Reuse your category tiles as images; replace with dedicated subcat images later if you have them
-                  image:
-                    s.slug === "engagement"
-                      ? "/category/engagement-cat.jpg"
-                      : s.slug === "wedding-bands"
-                      ? "/category/wedding-band-cat.jpg"
-                      : s.slug === "studs"
-                      ? "/category/earring-cat.jpg"
-                      : s.slug === "tennis"
-                      ? "/category/bracelet-cat.jpg"
-                      : s.slug === "pendants"
-                      ? "/category/necklace-cat.jpg"
-                      : // fallback
-                        "/category/ring-cat.jpg",
-                }))
-            }
-          />
-        </div>
-      )}
-
-      {/* Anchor for scroll=true */}
-      <div id="category-header" className="sr-only" aria-hidden="true" />
-
-      {/* Breadcrumb-esque text + Heading */}
+      {/* Back link to the parent category */}
       <div className="px-4 sm:px-6">
-        <div className="mx-auto max-w-7xl">
-          <p className="text-white/70 text-sm mb-1">
-            {categoryLabel} / <span className="text-white">{subLabel}</span>
-          </p>
+        <div className="mx-auto max-w-7xl flex items-center justify-between">
           <h1 className="text-2xl sm:text-3xl font-serif font-semibold tracking-wide mb-4">
-            {categoryLabel}
+            {subcategoryLabel}
           </h1>
+          <Link
+            href={`/category/${categorySlug}`}
+            className="text-sm underline text-white/90 hover:text-white"
+          >
+            Back to all {categoryLabel}
+          </Link>
         </div>
       </div>
+
+      {/* Anchor for scroll=true */}
+      <div id="subcategory-header" className="sr-only" aria-hidden="true" />
 
       {/* Main content: Sidebar + Grid */}
       <section className="px-4 sm:px-6 pb-10">
         <div className="mx-auto max-w-7xl">
           <div className="grid grid-cols-1 md:grid-cols-[260px_1fr] gap-6">
-            {/* Sidebar (hidden on mobile by default; could add a drawer later) */}
+            {/* Filters on subcategory too (optional but useful) */}
             <div className="hidden md:block">
               <FiltersSidebar />
             </div>
