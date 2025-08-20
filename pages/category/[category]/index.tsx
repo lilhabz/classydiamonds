@@ -9,7 +9,6 @@ import { useEffect } from "react";
 import { useRouter } from "next/router";
 import clientPromise from "@/lib/mongodb";
 import FiltersSidebar from "@/components/FiltersSidebar";
-import HeroBanner from "@/components/HeroBanner";
 import SubcategoryCards from "@/components/SubcategoryCards";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import { useCart } from "@/context/CartContext";
@@ -22,12 +21,12 @@ type Product = {
   price: number;
   salePrice?: number;
   image: string;
-  category: string; // "rings", "necklaces", etc.
-  subcategory?: string; // "halo", "studs", etc.
-  metal?: string; // "yellow-gold" | "platinum" ...
-  stone?: string; // "diamond" | "lab-grown" | ...
-  shape?: string; // "round" | "oval" ...
-  carat?: number; // e.g., 1.25
+  category: string;
+  subcategory?: string;
+  metal?: string;
+  stone?: string;
+  shape?: string;
+  carat?: number;
   slug: string;
 };
 
@@ -37,70 +36,28 @@ type PageProps = {
   categorySlug: string;
   categoryLabel: string;
   subcategories: SubItem[];
-  heroImage: string;
-  heroSubtitle?: string;
   products: Product[];
 };
 
-/* ------------------------- Subcategory & Hero maps ------------------------- */
+/* ------------------------- Subcategory map ------------------------- */
+/** Rings ONLY: 7 subs in one row (cards handled by SubcategoryCards) */
+const RINGS_SUBS: SubItem[] = [
+  { label: "Engagement Rings", slug: "engagement-rings" },
+  { label: "Wedding Rings", slug: "wedding-rings" }, // (DB may be "wedding-bands" -> handled in subcategory alias file)
+  { label: "Promise Rings", slug: "promise-rings" },
+  { label: "Eternity Rings", slug: "eternity-rings" },
+  { label: "Birthstone Rings", slug: "birthstone-rings" },
+  { label: "Signet Rings", slug: "signet-rings" },
+  { label: "Mens Rings", slug: "mens-rings" },
+];
+
 const CATEGORY_SUBS: Record<string, SubItem[]> = {
-  rings: [
-    { label: "Engagement Rings", slug: "engagement" },
-    { label: "Wedding Bands", slug: "wedding-bands" },
-    { label: "Solitaire", slug: "solitaire" },
-    { label: "Halo", slug: "halo" },
-    { label: "Three-Stone", slug: "three-stone" },
-    { label: "Eternity", slug: "eternity" },
-    { label: "Men’s Rings", slug: "mens" },
-  ],
-  earrings: [
-    { label: "Studs", slug: "studs" },
-    { label: "Hoops", slug: "hoops" },
-    { label: "Drops", slug: "drops" },
-    { label: "Huggies", slug: "huggies" },
-  ],
-  bracelets: [
-    { label: "Tennis", slug: "tennis" },
-    { label: "Bangles", slug: "bangles" },
-    { label: "Cuffs", slug: "cuffs" },
-    { label: "Chains", slug: "chains" },
-  ],
-  necklaces: [
-    { label: "Pendants", slug: "pendants" },
-    { label: "Solitaire", slug: "solitaire" },
-    { label: "Station", slug: "station" },
-    { label: "Nameplates", slug: "nameplates" },
-    { label: "Pearl", slug: "pearl" },
-  ],
+  rings: RINGS_SUBS,
+  earrings: [],
+  bracelets: [],
+  necklaces: [],
   engagement: [],
   "wedding-bands": [],
-};
-
-const HERO_BY_CATEGORY: Record<string, { image: string; subtitle?: string }> = {
-  engagement: {
-    image: "/category-hero/engagement-ring-hero.jpg",
-    subtitle: "Signature solitaires and brilliant halos.",
-  },
-  "wedding-bands": {
-    image: "/category-hero/wedding-band-hero.jpg",
-    subtitle: "Classic, comfort-fit, pavé and more.",
-  },
-  rings: {
-    image: "/category-hero/ring-hero.jpg",
-    subtitle: "From timeless designs to bold statements.",
-  },
-  bracelets: {
-    image: "/category-hero/bracelet-hero.jpg",
-    subtitle: "Chain, cuff, tennis and more.",
-  },
-  necklaces: {
-    image: "/category-hero/necklace-hero.jpg",
-    subtitle: "Minimal to ornate — elevate every neckline.",
-  },
-  earrings: {
-    image: "/category-hero/earring-hero.jpg",
-    subtitle: "Studs, hoops, drops and more.",
-  },
 };
 
 const labelFor = (slug: string) =>
@@ -124,7 +81,7 @@ export const getServerSideProps: GetServerSideProps<PageProps> = async (
 
   const categoryLabel = labelFor(categorySlug);
 
-  // read query filters
+  // Optional filters
   const sub =
     typeof ctx.query.sub === "string" ? ctx.query.sub.toLowerCase() : undefined;
 
@@ -205,23 +162,15 @@ export const getServerSideProps: GetServerSideProps<PageProps> = async (
       carat: typeof d.carat === "number" ? d.carat : undefined,
       slug: d.slug,
     }));
-  } catch (e) {
-    // fallback local data (optional)
+  } catch {
     products = [];
   }
-
-  const hero = HERO_BY_CATEGORY[categorySlug] ?? {
-    image: "/hero-jewelry.jpg",
-    subtitle: undefined,
-  };
 
   return {
     props: {
       categorySlug,
       categoryLabel,
       subcategories: CATEGORY_SUBS[categorySlug] || [],
-      heroImage: hero.image,
-      heroSubtitle: hero.subtitle,
       products,
     },
   };
@@ -232,8 +181,6 @@ export default function CategoryPage({
   categorySlug,
   categoryLabel,
   subcategories,
-  heroImage,
-  heroSubtitle,
   products,
 }: PageProps) {
   const router = useRouter();
@@ -259,32 +206,45 @@ export default function CategoryPage({
     }
   }, [router]);
 
+  // Subcategory card images (use your known files; safe fallbacks otherwise)
+  const subcatImage = (slug: string) => {
+    if (slug === "engagement-rings") return "/category/engagement-cat.jpg";
+    if (slug === "wedding-rings") return "/category/wedding-band-cat.jpg";
+    // Add your own when available, else fallback:
+    // e.g., if you add /category/promise-cat.jpg, map it below
+    if (slug === "promise-rings") return "/category/ring-cat.jpg";
+    if (slug === "eternity-rings") return "/category/ring-cat.jpg";
+    if (slug === "birthstone-rings") return "/category/ring-cat.jpg";
+    if (slug === "signet-rings") return "/category/ring-cat.jpg";
+    if (slug === "mens-rings") return "/category/ring-cat.jpg";
+    return "/category/ring-cat.jpg";
+  };
+
   return (
     <>
       <Head>
         <title>{categoryLabel} | Classy Diamonds</title>
         <meta
           name="description"
-          content={`Explore ${categoryLabel} at Classy Diamonds. Filter by metal, stone, shape, price, and carat.`}
+          content={`Explore ${categoryLabel} at Classy Diamonds.`}
         />
       </Head>
-
-      {/* Big hero to match Home (80vh, -mt-20, solid overlay) */}
-      <HeroBanner
-        title={categoryLabel}
-        subtitle={heroSubtitle}
-        imageSrc={heroImage}
-        heightClass="h-[80vh]"
-        topOffsetClass="-mt-20"
-        overlay="solid"
-      />
 
       {/* Breadcrumbs – left edge like other pages */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 py-4">
         <Breadcrumbs />
       </div>
 
-      {/* ONLY subcategory cards (no main category grid here) */}
+      {/* Title (NO hero on category page) */}
+      <div className="px-4 sm:px-6">
+        <div className="mx-auto max-w-7xl">
+          <h1 className="text-2xl sm:text-3xl font-serif font-semibold tracking-wide mb-3">
+            {categoryLabel}
+          </h1>
+        </div>
+      </div>
+
+      {/* ONLY subcategory cards — single line (handled by SubcategoryCards) */}
       {subcategories.length > 0 && (
         <div className="mt-2">
           <SubcategoryCards
@@ -292,19 +252,7 @@ export default function CategoryPage({
             subcategories={subcategories.map((s) => ({
               key: s.slug,
               label: s.label,
-              // Temporary image mapping; replace with real subcategory images if you have them
-              image:
-                s.slug === "engagement"
-                  ? "/category/engagement-cat.jpg"
-                  : s.slug === "wedding-bands"
-                  ? "/category/wedding-band-cat.jpg"
-                  : s.slug === "studs"
-                  ? "/category/earring-cat.jpg"
-                  : s.slug === "tennis"
-                  ? "/category/bracelet-cat.jpg"
-                  : s.slug === "pendants"
-                  ? "/category/necklace-cat.jpg"
-                  : "/category/ring-cat.jpg",
+              image: subcatImage(s.slug),
             }))}
           />
         </div>
@@ -312,15 +260,6 @@ export default function CategoryPage({
 
       {/* Anchor for scroll=true */}
       <div id="category-header" className="sr-only" aria-hidden="true" />
-
-      {/* Heading */}
-      <div className="px-4 sm:px-6">
-        <div className="mx-auto max-w-7xl">
-          <h1 className="text-2xl sm:text-3xl font-serif font-semibold tracking-wide mb-4">
-            {categoryLabel}
-          </h1>
-        </div>
-      </div>
 
       {/* Main content: Sidebar + Grid (+ Add to Cart) */}
       <section className="px-4 sm:px-6 pb-10">
@@ -385,6 +324,7 @@ export default function CategoryPage({
                             )}
                           </div>
 
+                          {/* Add to Cart button — match Jewelry page style */}
                           <button
                             onClick={() =>
                               addToCart({
@@ -397,7 +337,7 @@ export default function CategoryPage({
                                 quantity: 1,
                               })
                             }
-                            className="px-3 py-2 bg-[#e0e0e0] text-[#1f2a44] rounded-xl text-xs shadow hover:shadow-md hover:scale-105 transition"
+                            className="px-6 py-3 bg-[#e0e0e0] text-[#1f2a44] rounded-xl shadow hover:shadow-md hover:scale-105 transition text-xs sm:text-sm"
                             aria-label={`Add ${p.name} to cart`}
                           >
                             Add to Cart

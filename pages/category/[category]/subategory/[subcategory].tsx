@@ -80,6 +80,18 @@ const HERO_BY_CATEGORY: Record<string, { image: string; subtitle?: string }> = {
 const titleCase = (s: string) =>
   s.replace(/-/g, " ").replace(/\b\w/g, (m) => m.toUpperCase());
 
+/* ------------------------- Subcategory alias map ------------------------- */
+/** Pretty subcategory slugs → possible DB values (to ensure pages open & match data) */
+const SUBCAT_ALIASES: Record<string, string[]> = {
+  "engagement-rings": ["engagement", "engagement-rings"],
+  "wedding-rings": ["wedding-bands", "wedding-rings"],
+  "promise-rings": ["promise-rings", "promise"],
+  "eternity-rings": ["eternity-rings", "eternity"],
+  "birthstone-rings": ["birthstone-rings", "birthstone"],
+  "signet-rings": ["signet-rings", "signet"],
+  "mens-rings": ["mens", "men", "mens-rings"],
+};
+
 /* ----------------------------- SSR ------------------------------ */
 export const getServerSideProps: GetServerSideProps<PageProps> = async (
   ctx
@@ -122,7 +134,13 @@ export const getServerSideProps: GetServerSideProps<PageProps> = async (
     const client = await clientPromise;
     const db = client.db(process.env.MONGODB_DB || "classydiamonds");
 
-    const q: any = { category: categorySlug, subcategory: subcategorySlug };
+    // Use alias list to match DB values
+    const aliasList = SUBCAT_ALIASES[subcategorySlug] ?? [subcategorySlug];
+
+    const q: any = {
+      category: categorySlug,
+      subcategory: { $in: aliasList },
+    };
     if (metal.length) q.metal = { $in: metal };
     if (stone.length) q.stone = { $in: stone };
     if (shape.length) q.shape = { $in: shape };
@@ -334,6 +352,7 @@ export default function SubcategoryPage({
                             )}
                           </div>
 
+                          {/* Button style matches Jewelry page */}
                           <button
                             onClick={() =>
                               addToCart({
@@ -346,7 +365,7 @@ export default function SubcategoryPage({
                                 quantity: 1,
                               })
                             }
-                            className="px-3 py-2 bg-[#e0e0e0] text-[#1f2a44] rounded-xl text-xs shadow hover:shadow-md hover:scale-105 transition"
+                            className="px-6 py-3 bg-[#e0e0e0] text-[#1f2a44] rounded-xl shadow hover:shadow-md hover:scale-105 transition text-xs sm:text-sm"
                             aria-label={`Add ${p.name} to cart`}
                           >
                             Add to Cart
