@@ -81,7 +81,6 @@ const titleCase = (s: string) =>
   s.replace(/-/g, " ").replace(/\b\w/g, (m) => m.toUpperCase());
 
 /* ------------------------- Subcategory alias map ------------------------- */
-/** Pretty subcategory slugs → possible DB values (to ensure pages open & match data) */
 const SUBCAT_ALIASES: Record<string, string[]> = {
   "engagement-rings": ["engagement", "engagement-rings"],
   "wedding-rings": ["wedding-bands", "wedding-rings"],
@@ -134,7 +133,6 @@ export const getServerSideProps: GetServerSideProps<PageProps> = async (
     const client = await clientPromise;
     const db = client.db(process.env.MONGODB_DB || "classydiamonds");
 
-    // Use alias list to match DB values
     const aliasList = SUBCAT_ALIASES[subcategorySlug] ?? [subcategorySlug];
 
     const q: any = {
@@ -256,7 +254,7 @@ export default function SubcategoryPage({
         />
       </Head>
 
-      {/* 80vh hero, matches Home */}
+      {/* 80vh hero */}
       <HeroBanner
         title={subcategoryLabel}
         subtitle={categoryLabel}
@@ -266,43 +264,35 @@ export default function SubcategoryPage({
         overlay="solid"
       />
 
-      {/* Breadcrumbs (left-aligned container) */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 py-4">
+      {/* Breadcrumbs — same left-edge wrapper as Jewelry */}
+      <div className="pl-4 pr-4 sm:pl-8 sm:pr-8 mt-8 mb-6">
         <Breadcrumbs />
       </div>
 
-      {/* Heading + Back link */}
-      <div className="px-4 sm:px-6">
-        <div className="mx-auto max-w-7xl flex items-center justify-between">
-          <h1 className="text-2xl sm:text-3xl font-serif font-semibold tracking-wide mb-4">
-            {subcategoryLabel}
-          </h1>
-          <Link
-            href={`/category/${categorySlug}`}
-            className="text-sm underline text-white/90 hover:text-white"
-          >
-            Back to all {categoryLabel}
-          </Link>
-        </div>
+      {/* Centered title matching other pages */}
+      <div className="text-center mt-2 px-4 sm:px-6">
+        <h1 className="text-2xl sm:text-3xl font-serif font-semibold tracking-wider leading-snug">
+          {subcategoryLabel}
+        </h1>
       </div>
 
       {/* Anchor for scroll=true */}
       <div id="subcategory-header" className="sr-only" aria-hidden="true" />
 
-      {/* Main content: Sidebar + Grid (with Add to Cart) */}
-      <section className="px-4 sm:px-6 pb-10">
-        <div className="mx-auto max-w-7xl">
-          <div className="grid grid-cols-1 md:grid-cols-[260px_1fr] gap-6">
-            {/* Filters on subcategory too (optional but useful) */}
-            <div className="hidden md:block">
-              <FiltersSidebar />
-            </div>
+      {/* Main content: Sidebar + Grid (match Jewelry product cards) */}
+      <section className="mt-6 px-4 sm:px-6 max-w-7xl mx-auto mb-20">
+        <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-6">
+          {/* Filters */}
+          <div className="block">
+            <FiltersSidebar />
+          </div>
 
-            {/* Product grid */}
+          {/* Product grid — EXACT card sizing/styling as Jewelry page */}
+          <div>
             {products.length === 0 ? (
               <p className="text-white/80">No products found.</p>
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
                 {products.map((p) => {
                   const href = `/category/${encodeURIComponent(
                     categorySlug
@@ -310,68 +300,60 @@ export default function SubcategoryPage({
                   return (
                     <div
                       key={p.slug}
-                      className="group rounded-xl overflow-hidden bg-[#25304f] hover:shadow-xl transition flex flex-col"
+                      className="group bg-[var(--bg-nav)] w-full sm:w/full md:w-[210px] lg:w-[233.61px] h-auto min-h-[387.61px] rounded-2xl overflow-hidden shadow-md hover:shadow-2xl hover:scale-105 transition-transform duration-300 flex flex-col justify-between"
                     >
-                      <Link href={href} className="block">
-                        <div className="relative aspect-square">
+                      <Link href={href} className="flex-1 flex flex-col h-full">
+                        <div className="relative w-full aspect-square">
                           {p.image ? (
                             <Image
                               src={p.image}
                               alt={p.name}
                               fill
-                              className="object-cover group-hover:scale-105 transition-transform"
+                              className="object-cover group-hover:scale-110 transition-transform duration-300"
                             />
                           ) : (
                             <div className="w-full h-full bg-black/20" />
                           )}
                         </div>
+                        <div className="p-4 text-center flex-1 flex flex-col justify-between">
+                          <h3 className="font-semibold text-[var(--foreground)] truncate text-sm tracking-wide leading-snug">
+                            {p.name}
+                          </h3>
+                          <p className="text-[#cfd2d6] text-sm leading-relaxed tracking-wide">
+                            {p.salePrice ? (
+                              <>
+                                <span className="line-through mr-1">
+                                  ${Number(p.price).toLocaleString()}
+                                </span>
+                                <span className="text-green-500">
+                                  ${Number(p.salePrice).toLocaleString()}
+                                </span>
+                              </>
+                            ) : (
+                              <>${Number(p.price).toLocaleString()}</>
+                            )}
+                          </p>
+                        </div>
                       </Link>
 
-                      <div className="p-3 flex flex-col gap-2">
-                        <Link href={href} className="block">
-                          <h4 className="text-sm font-medium text-white line-clamp-2 group-hover:underline">
-                            {p.name}
-                          </h4>
-                        </Link>
-
-                        <div className="flex items-center justify-between">
-                          <div>
-                            {p.salePrice ? (
-                              <div className="flex items-center gap-2">
-                                <span className="text-white font-semibold">
-                                  ${Number(p.salePrice).toFixed(2)}
-                                </span>
-                                <span className="text-white/60 line-through text-sm">
-                                  ${Number(p.price).toFixed(2)}
-                                </span>
-                              </div>
-                            ) : (
-                              <span className="text-white font-semibold">
-                                ${Number(p.price).toFixed(2)}
-                              </span>
-                            )}
-                          </div>
-
-                          {/* Button style matches Jewelry page */}
-                          <button
-                            onClick={() =>
-                              addToCart({
-                                id: p._id || p.id || p.slug, // fallback id
-                                slug: p.slug,
-                                name: p.name,
-                                price: p.price,
-                                discountedPrice: p.salePrice,
-                                image: p.image,
-                                quantity: 1,
-                              })
-                            }
-                            className="px-6 py-3 bg-[#e0e0e0] text-[#1f2a44] rounded-xl shadow hover:shadow-md hover:scale-105 transition text-xs sm:text-sm"
-                            aria-label={`Add ${p.name} to cart`}
-                          >
-                            Add to Cart
-                          </button>
-                        </div>
-                      </div>
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          // keep behavior same as Jewelry: quick add
+                          addToCart({
+                            id: p._id || p.id || p.slug,
+                            slug: p.slug,
+                            name: p.name,
+                            price: p.price,
+                            discountedPrice: p.salePrice,
+                            image: p.image,
+                            quantity: 1,
+                          });
+                        }}
+                        className="m-4 px-6 py-3 bg-[#e0e0e0] text-[#1f2a44] rounded-xl hover:scale-105 transition"
+                      >
+                        Add to Cart
+                      </button>
                     </div>
                   );
                 })}
