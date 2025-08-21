@@ -1,6 +1,4 @@
 // pages/category/[category]/subcategory/[subcategory].tsx
-"use client";
-
 import Head from "next/head";
 import type { GetServerSideProps } from "next";
 import { useEffect } from "react";
@@ -11,6 +9,7 @@ import HeroBanner from "@/components/HeroBanner";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import { useCart } from "@/context/CartContext";
 import ProductCard from "@/components/ProductCard";
+import { CATEGORY_LABELS } from "@/data/taxonomy";
 
 /* ------------------------------ Types ------------------------------ */
 type Product = {
@@ -39,15 +38,9 @@ type PageProps = {
   products: Product[];
 };
 
-/* ------------------------- Label / Hero maps ------------------------- */
-const CATEGORY_LABELS: Record<string, string> = {
-  engagement: "Engagement",
-  "wedding-bands": "Wedding Bands",
-  rings: "Rings",
-  bracelets: "Bracelets",
-  necklaces: "Necklaces",
-  earrings: "Earrings",
-};
+/* ------------------------- Helpers / Hero -------------------------- */
+const titleCase = (s: string) =>
+  s.replace(/-/g, " ").replace(/\b\w/g, (m) => m.toUpperCase());
 
 const HERO_BY_CATEGORY: Record<string, { image: string; subtitle?: string }> = {
   engagement: {
@@ -66,7 +59,7 @@ const HERO_BY_CATEGORY: Record<string, { image: string; subtitle?: string }> = {
     image: "/category-hero/bracelet-hero.jpg",
     subtitle: "Chain, cuff, tennis and more.",
   },
-  necklaces: {
+  "necklaces-pendants": {
     image: "/category-hero/necklace-hero.jpg",
     subtitle: "Minimal to ornate — elevate every neckline.",
   },
@@ -76,31 +69,17 @@ const HERO_BY_CATEGORY: Record<string, { image: string; subtitle?: string }> = {
   },
 };
 
-const titleCase = (s: string) =>
-  s.replace(/-/g, " ").replace(/\b\w/g, (m) => m.toUpperCase());
-
-/* ------------------------- Subcategory alias map ------------------------- */
-const SUBCAT_ALIASES: Record<string, string[]> = {
-  "engagement-rings": ["engagement", "engagement-rings"],
-  "wedding-rings": ["wedding-bands", "wedding-rings"],
-  "promise-rings": ["promise-rings", "promise"],
-  "eternity-rings": ["eternity-rings", "eternity"],
-  "birthstone-rings": ["birthstone-rings", "birthstone"],
-  "signet-rings": ["signet-rings", "signet"],
-  "mens-rings": ["mens", "men", "mens-rings"],
-};
-
 /* ----------------------------- SSR ------------------------------ */
 export const getServerSideProps: GetServerSideProps<PageProps> = async (
   ctx
 ) => {
   const categorySlug = String(ctx.params?.category || "").toLowerCase();
   const subcategorySlug = String(ctx.params?.subcategory || "").toLowerCase();
-
   if (!categorySlug || !subcategorySlug) return { notFound: true };
 
   const categoryLabel =
-    CATEGORY_LABELS[categorySlug] ?? titleCase(categorySlug);
+    CATEGORY_LABELS[categorySlug as keyof typeof CATEGORY_LABELS] ??
+    titleCase(categorySlug);
   const subcategoryLabel = titleCase(subcategorySlug);
 
   // Optional query filters so FiltersSidebar works here too
@@ -132,12 +111,8 @@ export const getServerSideProps: GetServerSideProps<PageProps> = async (
     const client = await clientPromise;
     const db = client.db(process.env.MONGODB_DB || "classydiamonds");
 
-    const aliasList = SUBCAT_ALIASES[subcategorySlug] ?? [subcategorySlug];
-
-    const q: any = {
-      category: categorySlug,
-      subcategory: { $in: aliasList },
-    };
+    // 🔑 STRICT match on category + subcategory so edited/admin values show up
+    const q: any = { category: categorySlug, subcategory: subcategorySlug };
     if (metal.length) q.metal = { $in: metal };
     if (stone.length) q.stone = { $in: stone };
     if (shape.length) q.shape = { $in: shape };
@@ -161,7 +136,7 @@ export const getServerSideProps: GetServerSideProps<PageProps> = async (
         price: 1,
         salePrice: 1,
         image: 1,
-        imageUrl: 1, // ✅ include remote image field
+        imageUrl: 1,
         category: 1,
         subcategory: 1,
         metal: 1,
@@ -177,7 +152,7 @@ export const getServerSideProps: GetServerSideProps<PageProps> = async (
       name: d.name,
       price: d.price,
       salePrice: d.salePrice ?? null,
-      image: d.imageUrl || d.image || "", // ✅ fallback to imageUrl (then empty -> placeholder in ProductCard)
+      image: d.imageUrl || d.image || "", // ✅ fallback to imageUrl
       category: (d.category || "").toLowerCase(),
       subcategory: (d.subcategory || d.subCategory || "").toLowerCase(),
       metal: (d.metal || "").toLowerCase(),
@@ -282,7 +257,7 @@ export default function SubcategoryPage({
       {/* Anchor for scroll=true */}
       <div id="subcategory-header" className="sr-only" aria-hidden="true" />
 
-      {/* Main content: Sidebar + Grid (cards now reuse ProductCard) */}
+      {/* Main content: Sidebar + Grid */}
       <section className="mt-6 px-4 sm:px-6 max-w-7xl mx-auto mb-20">
         <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-6">
           {/* Filters */}

@@ -2,6 +2,7 @@
 // ✅ Supports multipart *and* JSON updates
 // ✅ Moves deleted/replaced images to Cloudinary backup
 // ✅ Regenerates slug on name change, unsets salePrice when cleared
+// ✅ NEW: Handles `subcategory` (JSON + multipart), normalized to slug
 
 import type { NextApiRequest, NextApiResponse } from "next";
 import { ObjectId } from "mongodb";
@@ -19,6 +20,7 @@ type Product = {
   price: number;
   salePrice?: number;
   category: string;
+  subcategory?: string; // ✅ added
   slug: string;
   imageUrl: string; // may be ""
   featured: boolean;
@@ -51,6 +53,7 @@ function getString(val: any, fallback = ""): string {
   if (typeof val === "string") return val;
   return fallback;
 }
+const toSlug = (s: string) => slugify(s, { lower: true, strict: true });
 
 // Formidable returns a map of arrays; define a safe indexable type
 type AnyFiles = Record<string, File[] | undefined>;
@@ -72,7 +75,8 @@ async function parseMultipart(
 
 async function parseJsonBody<T = any>(req: NextApiRequest): Promise<T> {
   const chunks: Buffer[] = [];
-  for await (const chunk of req) chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+  for await (const chunk of req)
+    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
   const raw = Buffer.concat(chunks).toString("utf8");
   try {
     return raw ? (JSON.parse(raw) as T) : ({} as T);
@@ -100,7 +104,9 @@ function extractPublicIdFromUrl(url?: string): string | null {
 
     if (!noVersion.length) return null;
     const last = noVersion.pop()!; // "file.ext"
-    const filenameNoExt = last.includes(".") ? last.slice(0, last.lastIndexOf(".")) : last;
+    const filenameNoExt = last.includes(".")
+      ? last.slice(0, last.lastIndexOf("."))
+      : last;
     const folder = noVersion.length ? noVersion.join("/") + "/" : "";
     return folder + filenameNoExt; // e.g. "classy-diamonds/original/abcd"
   } catch {
@@ -115,10 +121,12 @@ async function moveToBackup(imageUrl?: string) {
   if (!publicId) return;
   try {
     // turn "classy-diamonds/original/abcd" -> "classy-diamonds/backup/abcd"
-    const backupId = publicId.replace(
-      /(^|\/)original(\/|$)/,
-      (_m, a, b) => `${a}backup${b}`
-    ).replace(/^classy-diamonds\/(?!original|backup)/, "classy-diamonds/backup/"); // safety
+    const backupId = publicId
+      .replace(/(^|\/)original(\/|$)/, (_m, a, b) => `${a}backup${b}`)
+      .replace(
+        /^classy-diamonds\/(?!original|backup)/,
+        "classy-diamonds/backup/"
+      ); // safety
     await cloudinary.uploader.rename(publicId, backupId);
   } catch (e) {
     // best-effort; do not block
@@ -143,10 +151,15 @@ async function uploadNewImage(filepath: string): Promise<string> {
 }
 
 // --------------------------------- Handler ---------------------------------
-export default async function handler(req: NextApiRequest, res: NextApiResponse<Data>) {
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse<Data>
+) {
   const { id } = req.query;
   if (!id || typeof id !== "string" || !ObjectId.isValid(id)) {
-    return res.status(400).json({ success: false, message: "Invalid product ID" });
+    return res
+      .status(400)
+      .json({ success: false, message: "Invalid product ID" });
   }
 
   const client = await clientPromise;
@@ -161,29 +174,31 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
       // Load existing product early (needed for image moves / slug rename logic)
       const existing = await collection.findOne(filter);
       if (!existing) {
-        return res.status(404).json({ success: false, message: "Product not found" });
+        return res
+          .status(404)
+          .json({ success: false, message: "Product not found" });
       }
 
       let updates: Partial<Product> = {};
       let unset: Record<string, "" | true> = {};
 
       if (contentType.includes("application/json")) {
-        // 🔁 Batch "Save All" path (JSON)
+        // 🔁 Batch or JSON edit
         const body = await parseJsonBody<Record<string, any>>(req);
 
-        // Only accept known fields (commonly 'featured')
+        // Common single-field updates
         if (typeof body.featured === "boolean") {
           updates.featured = body.featured;
         }
-
-        // Allow simple edits too (optional)
         if (typeof body.name === "string") {
           updates.name = body.name.trim();
           if (updates.name && updates.name !== existing.name) {
             updates.slug = slugify(updates.name, { lower: true, strict: true });
           }
         }
-        if (typeof body.description === "string") updates.description = body.description.trim();
+        if (typeof body.description === "string")
+          updates.description = body.description.trim();
+
         if (typeof body.price !== "undefined") {
           const pr = Number(body.price);
           if (!Number.isNaN(pr)) updates.price = pr;
@@ -196,12 +211,27 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
             if (!Number.isNaN(sp)) updates.salePrice = sp;
           }
         }
-        if (typeof body.category === "string") updates.category = body.category.trim();
-        if (body.gender === "him" || body.gender === "her" || body.gender === "unisex") {
+        if (typeof body.category === "string")
+          updates.category = body.category.trim();
+
+        // ✅ NEW: subcategory (JSON)
+        if (typeof body.subcategory !== "undefined") {
+          const rawSub = String(body.subcategory || "").trim();
+          if (rawSub) {
+            updates.subcategory = toSlug(rawSub);
+          } else {
+            unset.subcategory = ""; // clear if set to empty
+          }
+        }
+
+        if (
+          body.gender === "him" ||
+          body.gender === "her" ||
+          body.gender === "unisex"
+        ) {
           updates.gender = body.gender;
         }
         // no image handling in JSON path
-
       } else {
         // 🧾 Multipart form path (Edit form)
         const { fields, files } = await parseMultipart(req);
@@ -214,6 +244,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
         const featured = getString(fields.featured, "false") === "true";
         const genderStr = getString(fields.gender, "unisex");
         const imageRemoved = getString(fields.imageRemoved, "false") === "true";
+
+        // ✅ NEW: subcategory (multipart)
+        const rawSub = getString(fields.subcategory).trim();
+        if (rawSub) {
+          updates.subcategory = toSlug(rawSub);
+        } else if (typeof fields.subcategory !== "undefined") {
+          // explicit clear if field exists but empty
+          unset.subcategory = "";
+        }
 
         if (name) {
           updates.name = name;
@@ -238,10 +277,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
 
         if (category) updates.category = category;
         updates.featured = featured;
-        updates.gender = (["him", "her", "unisex"].includes(genderStr) ? genderStr : "unisex") as
-          | "him"
-          | "her"
-          | "unisex";
+        updates.gender = (
+          ["him", "her", "unisex"].includes(genderStr) ? genderStr : "unisex"
+        ) as "him" | "her" | "unisex";
 
         // Handle image removal first
         if (imageRemoved && existing.imageUrl) {
@@ -251,7 +289,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
 
         // Handle new image upload
         const imageArr = (files as AnyFiles)["image"]; // File[] | undefined
-        const imageFile = imageArr?.[0];               // File | undefined
+        const imageFile = imageArr?.[0]; // File | undefined
         if (imageFile && (imageFile as any).filepath) {
           // If we already had one, move old to backup, then upload new
           if (existing.imageUrl) {
@@ -283,7 +321,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
       return res.status(200).json({ success: true, product: updated! });
     } catch (err: any) {
       console.error("PUT /api/admin/products/[id] Error:", err);
-      return res.status(500).json({ success: false, message: err?.message || "Server error" });
+      return res
+        .status(500)
+        .json({ success: false, message: err?.message || "Server error" });
     }
   }
 
@@ -297,7 +337,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
       return res.status(200).json({ success: true, deleted: true });
     } catch (err: any) {
       console.error("DELETE /api/admin/products/[id] Error:", err);
-      return res.status(500).json({ success: false, message: err?.message || "Server error" });
+      return res
+        .status(500)
+        .json({ success: false, message: err?.message || "Server error" });
     }
   }
 

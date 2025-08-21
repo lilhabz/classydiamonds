@@ -1,5 +1,4 @@
 // pages/category/[category]/index.tsx
-"use client";
 
 import Head from "next/head";
 import { GetServerSideProps } from "next";
@@ -11,6 +10,7 @@ import SubcategoryCards from "@/components/SubcategoryCards";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import { useCart } from "@/context/CartContext";
 import ProductCard from "@/components/ProductCard";
+import { CATEGORY_LABELS, SUBCATEGORY_MAP } from "@/data/taxonomy";
 
 /* ------------------------------ Types ------------------------------ */
 type Product = {
@@ -38,37 +38,9 @@ type PageProps = {
   products: Product[];
 };
 
-/* ------------------------- Subcategory map ------------------------- */
-const RINGS_SUBS: SubItem[] = [
-  { label: "Engagement Rings", slug: "engagement-rings" },
-  { label: "Wedding Rings", slug: "wedding-rings" },
-  { label: "Promise Rings", slug: "promise-rings" },
-  { label: "Eternity Rings", slug: "eternity-rings" },
-  { label: "Birthstone Rings", slug: "birthstone-rings" },
-  { label: "Signet Rings", slug: "signet-rings" },
-  { label: "Mens Rings", slug: "mens-rings" },
-];
-
-const CATEGORY_SUBS: Record<string, SubItem[]> = {
-  rings: RINGS_SUBS,
-  earrings: [],
-  bracelets: [],
-  necklaces: [],
-  engagement: [],
-  "wedding-bands": [],
-};
-
-const labelFor = (slug: string) =>
-  ((
-    {
-      engagement: "Engagement",
-      "wedding-bands": "Wedding Bands",
-      rings: "Rings",
-      bracelets: "Bracelets",
-      necklaces: "Necklaces",
-      earrings: "Earrings",
-    } as Record<string, string>
-  )[slug] ?? slug);
+/* ------------------------- Helpers ------------------------- */
+const pretty = (slug: string) =>
+  slug.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 
 /* ----------------------------- SERVER DATA ------------------------------ */
 export const getServerSideProps: GetServerSideProps<PageProps> = async (
@@ -77,7 +49,9 @@ export const getServerSideProps: GetServerSideProps<PageProps> = async (
   const categorySlug = String(ctx.params?.category || "").toLowerCase();
   if (!categorySlug) return { notFound: true };
 
-  const categoryLabel = labelFor(categorySlug);
+  const categoryLabel =
+    CATEGORY_LABELS[categorySlug as keyof typeof CATEGORY_LABELS] ??
+    categorySlug;
 
   // Optional filters
   const sub =
@@ -165,11 +139,19 @@ export const getServerSideProps: GetServerSideProps<PageProps> = async (
     products = [];
   }
 
+  // Build subcategory cards from taxonomy (not hardcoded)
+  const subSlugs =
+    SUBCATEGORY_MAP[categorySlug as keyof typeof SUBCATEGORY_MAP] || [];
+  const subcategories: SubItem[] = subSlugs.map((slug) => ({
+    slug,
+    label: pretty(slug),
+  }));
+
   return {
     props: {
       categorySlug,
       categoryLabel,
-      subcategories: CATEGORY_SUBS[categorySlug] || [],
+      subcategories,
       products,
     },
   };
@@ -205,15 +187,17 @@ export default function CategoryPage({
     }
   }, [router]);
 
-  // Subcategory card images
+  // Subcategory card images (fallbacks)
   const subcatImage = (slug: string) => {
-    if (slug === "engagement-rings") return "/category/engagement-cat.jpg";
-    if (slug === "wedding-rings") return "/category/wedding-band-cat.jpg";
-    if (slug === "promise-rings") return "/category/ring-cat.jpg";
-    if (slug === "eternity-rings") return "/category/ring-cat.jpg";
-    if (slug === "birthstone-rings") return "/category/ring-cat.jpg";
-    if (slug === "signet-rings") return "/category/ring-cat.jpg";
-    if (slug === "mens-rings") return "/category/ring-cat.jpg";
+    if (categorySlug === "rings") {
+      if (slug === "engagement-rings") return "/category/engagement-cat.jpg";
+      if (slug === "wedding-rings") return "/category/wedding-band-cat.jpg";
+      return "/category/ring-cat.jpg";
+    }
+    if (categorySlug === "earrings") return "/category/earring-cat.jpg";
+    if (categorySlug === "bracelets") return "/category/bracelet-cat.jpg";
+    if (categorySlug === "necklaces-pendants")
+      return "/category/necklace-cat.jpg";
     return "/category/ring-cat.jpg";
   };
 

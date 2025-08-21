@@ -1,4 +1,4 @@
-// 📄 pages/admin/products.tsx – Admin Product Management with Category → Subcategory & Watches Split 🛠️💎
+// 📄 pages/admin/products.tsx – Admin Product Management with Category → Subcategory (all jewelry) & Watches Split 🛠️💎
 
 import { useState, useEffect, useRef, useMemo } from "react";
 import { useRouter } from "next/router";
@@ -136,6 +136,15 @@ export default function AdminProductsPage() {
   // 🖼️ Live preview for Add form file selection
   const [addPreviewUrl, setAddPreviewUrl] = useState<string>("");
 
+  // Helper: Does this category have subcategories to show?
+  const hasSubcatsFor = (cat: Category) => {
+    const opts = subcategoryOptionsFor(cat);
+    // show picker if there are real options between NONE and CUSTOM
+    return (
+      opts.filter((o) => o !== NONE_OPTION && o !== CUSTOM_OPTION).length > 0
+    );
+  };
+
   // Allowed categories for each view
   const allowedCategoriesForView = (view: "jewelry" | "watches"): Category[] =>
     view === "jewelry"
@@ -270,7 +279,6 @@ export default function AdminProductsPage() {
     if (selectValue === NONE_OPTION) return "";
     if (selectValue === CUSTOM_OPTION) return (customValue || "").trim();
     return selectValue;
-    // keep as slug-like strings; display formatting can happen in UI
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -344,7 +352,7 @@ export default function AdminProductsPage() {
   const handleEditClick = (product: AdminProduct) => {
     setEditingProduct(product);
 
-    // prefill subcategory UI
+    // prefill subcategory UI (for any category that has options)
     const opts = subcategoryOptionsFor(product.category).filter(
       (o) => o !== NONE_OPTION && o !== CUSTOM_OPTION
     );
@@ -582,7 +590,7 @@ export default function AdminProductsPage() {
         </Link>
       </nav>
 
-      <div className="max-w-6xl mx-auto space-y-6">
+      <div className="max-w-7xl mx-auto space-y-6">
         {/* View toggle + Add button */}
         <div className="flex items-center justify-between">
           <div className="inline-flex rounded overflow-hidden border">
@@ -753,13 +761,9 @@ export default function AdminProductsPage() {
                   setEditForm((f) => ({
                     ...f,
                     category: e.target.value as Category,
-                    // when switching category away from rings, clear subcat
-                    ...(e.target.value !== "rings"
-                      ? {
-                          subcategorySelect: NONE_OPTION,
-                          subcategoryCustom: "",
-                        }
-                      : {}),
+                    // when switching category, reset subcat UI
+                    subcategorySelect: NONE_OPTION,
+                    subcategoryCustom: "",
                   }))
                 }
                 className="mt-1 w-full border rounded p-2 bg-[var(--bg-page)] text-[var(--foreground)]"
@@ -778,8 +782,8 @@ export default function AdminProductsPage() {
               </select>
             </label>
 
-            {/* 🔽 Subcategory (only for Rings) */}
-            {editForm.category === "rings" && (
+            {/* 🔽 Subcategory (for any category that has options) */}
+            {hasSubcatsFor(editForm.category) && (
               <>
                 <label>
                   🔽 Subcategory
@@ -805,13 +809,12 @@ export default function AdminProductsPage() {
                   </select>
                 </label>
 
-                {/* 📝 Custom subcategory (only when Custom… chosen) */}
                 {editForm.subcategorySelect === CUSTOM_OPTION && (
                   <label className="md:col-span-2">
                     📝 Custom Subcategory
                     <input
                       type="text"
-                      placeholder="e.g., engagement-rings"
+                      placeholder="e.g., engagement-rings, tennis-bracelets"
                       value={editForm.subcategoryCustom}
                       onChange={(e) =>
                         setEditForm((f) => ({
@@ -893,7 +896,7 @@ export default function AdminProductsPage() {
         <div
           className={`transition-all duration-500 ease-in-out overflow-hidden ${
             showAddForm
-              ? "max-h-[1400px] opacity-100 mt-4"
+              ? "max-h-[1600px] opacity-100 mt-4"
               : "max-h-0 opacity-0 mt-0"
           }`}
         >
@@ -969,8 +972,8 @@ export default function AdminProductsPage() {
               </select>
             </label>
 
-            {/* 🔽 Subcategory (only for Rings) */}
-            {formState.category === "rings" && (
+            {/* 🔽 Subcategory (for any category that has options) */}
+            {hasSubcatsFor(formState.category) && (
               <>
                 <label>
                   🔽 Subcategory
@@ -995,7 +998,7 @@ export default function AdminProductsPage() {
                     📝 Custom Subcategory
                     <input
                       type="text"
-                      placeholder="e.g., engagement-rings"
+                      placeholder="e.g., engagement-rings, tennis-bracelets"
                       value={formState.subcategoryCustom}
                       onChange={(e) =>
                         handleInput("subcategoryCustom", e.target.value)
@@ -1107,8 +1110,9 @@ export default function AdminProductsPage() {
               </p>
             )}
 
-            <div className="overflow-x-auto w-full">
-              <table className="min-w-max w-full table-auto border-collapse">
+            {/* Full width table; no horizontal scroll on desktop */}
+            <div className="w-full">
+              <table className="w-full table-auto border-collapse">
                 <thead>
                   <tr className="bg-[var(--bg-nav)] text-left align-top">
                     <th
@@ -1172,8 +1176,8 @@ export default function AdminProductsPage() {
                   {sortedProducts.map((p) => {
                     const edit = rowEdits[p._id];
                     return (
-                      <tr key={p._id} className="border-t">
-                        <td className="p-2">
+                      <tr key={p._id} className="border-t align-top">
+                        <td className="p-2 whitespace-normal break-words">
                           {(p.skuNumber ?? 0).toString().padStart(5, "0")}
                         </td>
 
@@ -1194,7 +1198,7 @@ export default function AdminProductsPage() {
                           </div>
                         </td>
 
-                        <td className="p-2">
+                        <td className="p-2 whitespace-normal break-words">
                           {p.slug ? (
                             <Link
                               href={`/category/${p.category}/${p.slug}`}
@@ -1207,17 +1211,17 @@ export default function AdminProductsPage() {
                           )}
                         </td>
 
-                        <td className="p-2 capitalize">
+                        <td className="p-2 capitalize whitespace-normal break-words">
                           {CATEGORY_LABELS[p.category]}
                         </td>
-                        <td className="p-2">
+                        <td className="p-2 whitespace-normal break-words">
                           {p.subcategory ? (
                             prettyLabel(p.subcategory)
                           ) : (
                             <span className="opacity-60">—</span>
                           )}
                         </td>
-                        <td className="p-2 capitalize">
+                        <td className="p-2 capitalize whitespace-normal break-words">
                           {p.gender ?? "unisex"}
                         </td>
 

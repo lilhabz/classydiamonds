@@ -1,4 +1,4 @@
-// 📄 pages/api/admin/products.ts – Admin product list & creation handler (no placeholders, Cloudinary upload)
+// 📄 pages/api/admin/products.ts – Admin product list & creation handler (Cloudinary upload + SUBCATEGORY support)
 
 import type { NextApiRequest, NextApiResponse } from "next";
 import { v2 as cloudinary } from "cloudinary";
@@ -16,6 +16,7 @@ type Product = {
   price: number;
   salePrice?: number;
   category: string;
+  subcategory?: string; // ✅ added
   slug: string;
   imageUrl: string; // empty string if no image
   featured: boolean;
@@ -35,6 +36,12 @@ function getString(val: any, fallback = ""): string {
   return fallback;
 }
 
+// conservative slug normalizer (keeps what Admin sends but safe)
+function toSlug(s: string) {
+  // use slugify for strong normalization
+  return slugify(s, { lower: true, strict: true });
+}
+
 async function parseForm(
   req: NextApiRequest
 ): Promise<{ fields: Fields; files: Files }> {
@@ -44,11 +51,16 @@ async function parseForm(
     maxFileSize: 20 * 1024 * 1024, // 20MB
   });
   return new Promise((resolve, reject) => {
-    form.parse(req, (err, fields, files) => (err ? reject(err) : resolve({ fields, files })));
+    form.parse(req, (err, fields, files) =>
+      err ? reject(err) : resolve({ fields, files })
+    );
   });
 }
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse<Data>) {
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse<Data>
+) {
   // Basic method allowlist / preflight
   if (req.method === "OPTIONS") {
     res.setHeader("Allow", ["GET", "POST", "OPTIONS"]);
@@ -68,7 +80,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
     !process.env.CLOUDINARY_API_SECRET
   ) {
     console.error("Cloudinary config missing");
-    // We still allow GET even if Cloudinary envs are missing
     if (req.method === "POST") {
       return res
         .status(500)
@@ -100,6 +111,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
       price: doc.price,
       salePrice: doc.salePrice,
       category: doc.category,
+      subcategory: doc.subcategory || "", // ✅ ensure string
       slug: doc.slug,
       imageUrl: doc.imageUrl || "", // ensure string
       featured: !!doc.featured,
@@ -123,6 +135,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
     const salePriceStr = getString(fields.salePrice).trim();
     const category = getString(fields.category).trim();
     const featured = getString(fields.featured, "false") === "true";
+
+    // ✅ subcategory (optional) – keep slug coming from Admin; normalize safely
+    const rawSub = getString(fields.subcategory).trim();
+    const subcategory = rawSub ? toSlug(rawSub) : "";
 
     if (!name || !description || !category) {
       return res
@@ -176,12 +192,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
         console.error("Cloudinary upload failed:", err);
         return res
           .status(500)
-          .json({ success: false, message: "Image upload failed. Please try again." });
+          .json({
+            success: false,
+            message: "Image upload failed. Please try again.",
+          });
       }
     }
 
     // 🔢 Determine next SKU
-    const top = await collection.find().sort({ skuNumber: -1 }).limit(1).toArray();
+    const top = await collection
+      .find()
+      .sort({ skuNumber: -1 })
+      .limit(1)
+      .toArray();
     const maxSku = top[0]?.skuNumber ?? 0;
     const skuNumber = maxSku + 1;
 
@@ -201,6 +224,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
       price,
       ...(salePrice !== undefined && { salePrice }),
       category,
+      subcategory, // ✅ save it
       slug,
       imageUrl, // "" if none
       featured,

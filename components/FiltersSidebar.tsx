@@ -3,6 +3,7 @@
 
 import { useRouter } from "next/router";
 import { useMemo } from "react";
+import { SUBCATEGORY_MAP, CATEGORY_LABELS, Category } from "@/data/taxonomy";
 
 type FacetKey = "metal" | "stone" | "shape";
 type RangeKey = "priceMin" | "priceMax" | "caratMin" | "caratMax";
@@ -10,6 +11,16 @@ type RangeKey = "priceMin" | "priceMax" | "caratMin" | "caratMax";
 const METALS = ["yellow-gold", "white-gold", "rose-gold", "platinum"];
 const STONES = ["diamond", "lab-grown", "moissanite", "gemstone"];
 const SHAPES = ["round", "oval", "princess", "emerald", "cushion", "pear"];
+
+// Some routes may use "necklaces" but DB/taxonomy uses "necklaces-pendants".
+const CATEGORY_ALIAS_TO_TAXONOMY: Record<string, Category> = {
+  necklaces: "necklaces-pendants",
+  "necklaces-pendants": "necklaces-pendants",
+  rings: "rings",
+  earrings: "earrings",
+  bracelets: "bracelets",
+  watches: "watches",
+};
 
 function toArray(v: string | string[] | undefined): string[] {
   if (!v) return [];
@@ -31,6 +42,10 @@ function setParam(q: Record<string, any>, key: string, value?: any) {
   return next;
 }
 
+// "engagement-rings" -> "Engagement Rings"
+const pretty = (s: string) =>
+  s.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+
 export default function FiltersSidebar({ className }: { className?: string }) {
   const router = useRouter();
   const q = router.query;
@@ -46,13 +61,20 @@ export default function FiltersSidebar({ className }: { className?: string }) {
   const caratMin = q.caratMin ? Number(q.caratMin) : undefined;
   const caratMax = q.caratMax ? Number(q.caratMax) : undefined;
 
-  const basePath = useMemo(
-    () =>
-      `/category/${encodeURIComponent(
-        String(q.category ?? router.query.category ?? router.query["category"])
-      )}`,
-    [q, router.query]
-  );
+  // current category from route params
+  const currentCategorySlugRaw =
+    (router.query.category as string) || (q.category as string) || "";
+  const currentCategory: Category | undefined =
+    CATEGORY_ALIAS_TO_TAXONOMY[currentCategorySlugRaw?.toLowerCase?.() || ""];
+
+  // Subcategory support (drives ?sub=)
+  const subSelected = typeof q.sub === "string" ? q.sub : undefined;
+  const subOptions = useMemo(() => {
+    if (!currentCategory) return [];
+    // pull from taxonomy
+    const list = SUBCATEGORY_MAP[currentCategory] || [];
+    return list;
+  }, [currentCategory]);
 
   const push = (nextQuery: Record<string, any>) => {
     router.push({ pathname: router.pathname, query: nextQuery }, undefined, {
@@ -77,6 +99,13 @@ export default function FiltersSidebar({ className }: { className?: string }) {
     push(next);
   };
 
+  const setSubcategory = (value: string) => {
+    // "" or "all" clears the filter
+    const v = value === "" || value === "all" ? undefined : value;
+    const next = setParam(q, "sub", v);
+    push(next);
+  };
+
   const clearAll = () => {
     const next = { ...q };
     [
@@ -87,6 +116,7 @@ export default function FiltersSidebar({ className }: { className?: string }) {
       "priceMax",
       "caratMin",
       "caratMax",
+      "sub",
     ].forEach((k) => delete (next as any)[k]);
     push(next);
   };
@@ -103,6 +133,31 @@ export default function FiltersSidebar({ className }: { className?: string }) {
             Clear
           </button>
         </div>
+
+        {/* Subcategory (only when the current category has defined subcategories) */}
+        {currentCategory && subOptions.length > 0 && (
+          <details open className="mb-3">
+            <summary className="cursor-pointer select-none py-2 font-medium">
+              Subcategory
+            </summary>
+            <div className="mt-2">
+              <select
+                value={subSelected ?? "all"}
+                onChange={(e) => setSubcategory(e.target.value)}
+                className="w-full px-3 py-2 rounded-md bg-[#0f1530] border border-white/10 text-sm"
+              >
+                <option value="all">
+                  All {CATEGORY_LABELS[currentCategory]}
+                </option>
+                {subOptions.map((s) => (
+                  <option key={s} value={s}>
+                    {pretty(s)}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </details>
+        )}
 
         {/* Metal */}
         <details open className="mb-3">

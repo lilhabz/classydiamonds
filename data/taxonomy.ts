@@ -24,7 +24,7 @@ export const CATEGORY_LABELS: Record<Category, string> = {
   watches: "Watches",
 };
 
-// 🟡 Rings now exactly matches your list (slugged for URLs/database)
+// 🔒 Official subcategories (slugs) by category
 export const SUBCATEGORY_MAP: Record<Category, string[]> = {
   rings: [
     "engagement-rings",
@@ -44,7 +44,7 @@ export const SUBCATEGORY_MAP: Record<Category, string[]> = {
   ],
   earrings: ["studs", "hoops", "drops", "huggies", "climbers"],
   bracelets: ["tennis-bracelets", "bangle", "chain-bracelets", "cuff"],
-  watches: ["men", "women"],
+  watches: ["men", "women"], // optional, not used on jewelry pages
 };
 
 export const NONE_OPTION = "— None —";
