@@ -1,7 +1,9 @@
 // pages/category/[category]/subcategory/[subcategory].tsx
+"use client";
+
 import Head from "next/head";
 import type { GetServerSideProps } from "next";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import clientPromise from "@/lib/mongodb";
 import FiltersSidebar from "@/components/FiltersSidebar";
@@ -69,6 +71,9 @@ const HERO_BY_CATEGORY: Record<string, { image: string; subtitle?: string }> = {
   },
 };
 
+const isRingCategory = (cat?: string) =>
+  (cat ?? "").toLowerCase().includes("ring");
+
 /* ----------------------------- SSR ------------------------------ */
 export const getServerSideProps: GetServerSideProps<PageProps> = async (
   ctx
@@ -111,7 +116,7 @@ export const getServerSideProps: GetServerSideProps<PageProps> = async (
     const client = await clientPromise;
     const db = client.db(process.env.MONGODB_DB || "classydiamonds");
 
-    // 🔑 STRICT match on category + subcategory so edited/admin values show up
+    // STRICT match on category + subcategory so edited/admin values show up
     const q: any = { category: categorySlug, subcategory: subcategorySlug };
     if (metal.length) q.metal = { $in: metal };
     if (stone.length) q.stone = { $in: stone };
@@ -194,6 +199,7 @@ export default function SubcategoryPage({
 }: PageProps) {
   const router = useRouter();
   const { addToCart } = useCart();
+  const [visibleCount, setVisibleCount] = useState(8);
 
   // Preserve your ?scroll=true behavior
   useEffect(() => {
@@ -214,6 +220,9 @@ export default function SubcategoryPage({
       });
     }
   }, [router]);
+
+  // reset visible when route changes (matches jewelry behavior)
+  useEffect(() => setVisibleCount(8), [categorySlug, subcategoryLabel]);
 
   return (
     <>
@@ -265,27 +274,32 @@ export default function SubcategoryPage({
             <FiltersSidebar />
           </div>
 
-          {/* Product grid — uses shared ProductCard, so styles match /jewelry */}
+          {/* Product grid — EXACTLY matches /jewelry */}
           <div>
             {products.length === 0 ? (
               <p className="text-white/80">No products found.</p>
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
-                {products.map((p) => {
+                {products.slice(0, visibleCount).map((p) => {
                   const href = `/category/${encodeURIComponent(
                     categorySlug
                   )}/${encodeURIComponent(p.slug)}`;
 
                   return (
                     <ProductCard
-                      key={p.slug}
+                      key={p._id || p.id || p.slug} // ✅ safer key
                       slug={p.slug}
                       image={p.image}
                       name={p.name}
                       price={p.price}
                       salePrice={p.salePrice ?? null}
                       href={href}
-                      onAddToCart={() =>
+                      onAddToCart={() => {
+                        // ✅ match /jewelry behavior:
+                        // Rings go to PDP (for size/options); others quick add
+                        if (isRingCategory(p.category)) {
+                          return router.push(href);
+                        }
                         addToCart({
                           id: p._id || p.id || p.slug,
                           slug: p.slug,
@@ -294,11 +308,22 @@ export default function SubcategoryPage({
                           discountedPrice: p.salePrice ?? undefined,
                           image: p.image,
                           quantity: 1,
-                        })
-                      }
+                        });
+                      }}
                     />
                   );
                 })}
+              </div>
+            )}
+
+            {visibleCount < products.length && (
+              <div className="flex justify-center mt-10">
+                <button
+                  onClick={() => setVisibleCount((v) => v + 4)}
+                  className="px-8 py-4 bg-[var(--foreground)] text-[var(--bg-nav)] rounded-full"
+                >
+                  Load More
+                </button>
               </div>
             )}
           </div>
