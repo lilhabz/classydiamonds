@@ -93,16 +93,19 @@ export const getServerSideProps: GetServerSideProps<PageProps> = async (
       ? ctx.query.metal.map((m) => String(m).toLowerCase())
       : [String(ctx.query.metal).toLowerCase()]
     : [];
+
   const stone = ctx.query.stone
     ? Array.isArray(ctx.query.stone)
       ? ctx.query.stone.map((s) => String(s).toLowerCase())
       : [String(ctx.query.stone).toLowerCase()]
     : [];
+
   const shape = ctx.query.shape
     ? Array.isArray(ctx.query.shape)
       ? ctx.query.shape.map((s) => String(s).toLowerCase())
       : [String(ctx.query.shape).toLowerCase()]
     : [];
+
   const priceMin = ctx.query.priceMin ? Number(ctx.query.priceMin) : undefined;
   const priceMax = ctx.query.priceMax ? Number(ctx.query.priceMax) : undefined;
   const caratMin = ctx.query.caratMin ? Number(ctx.query.caratMin) : undefined;
@@ -113,6 +116,7 @@ export const getServerSideProps: GetServerSideProps<PageProps> = async (
     const client = await clientPromise;
     const db = client.db(process.env.MONGODB_DB || "classydiamonds");
 
+    // STRICT match on category + subcategory so edited/admin values show up
     const q: any = { category: categorySlug, subcategory: subcategorySlug };
     if (metal.length) q.metal = { $in: metal };
     if (stone.length) q.stone = { $in: stone };
@@ -153,7 +157,7 @@ export const getServerSideProps: GetServerSideProps<PageProps> = async (
       name: d.name,
       price: d.price,
       salePrice: d.salePrice ?? null,
-      image: d.imageUrl || d.image || "",
+      image: d.imageUrl || d.image || "", // ✅ fallback to imageUrl
       category: (d.category || "").toLowerCase(),
       subcategory: (d.subcategory || d.subCategory || "").toLowerCase(),
       metal: (d.metal || "").toLowerCase(),
@@ -197,6 +201,7 @@ export default function SubcategoryPage({
   const { addToCart } = useCart();
   const [visibleCount, setVisibleCount] = useState(8);
 
+  // Preserve ?scroll=true behavior
   useEffect(() => {
     const { scroll } = router.query as { scroll?: string };
     if (scroll === "true") {
@@ -216,6 +221,7 @@ export default function SubcategoryPage({
     }
   }, [router]);
 
+  // reset visible when route changes (matches jewelry behavior)
   useEffect(() => setVisibleCount(8), [categorySlug, subcategoryLabel]);
 
   return (
@@ -232,6 +238,7 @@ export default function SubcategoryPage({
         />
       </Head>
 
+      {/* 80vh hero */}
       <HeroBanner
         title={subcategoryLabel}
         subtitle={categoryLabel}
@@ -241,10 +248,12 @@ export default function SubcategoryPage({
         overlay="solid"
       />
 
+      {/* Breadcrumbs — same left-edge wrapper as Jewelry */}
       <div className="pl-4 pr-4 sm:pl-8 sm:pr-8 mt-8 mb-6">
         <Breadcrumbs />
       </div>
 
+      {/* Centered title matching other pages */}
       <div className="text-center mt-2 px-4 sm:px-6">
         <h1 className="text-2xl sm:text-3xl font-serif font-semibold tracking-wider leading-snug">
           {subcategoryLabel}
@@ -254,15 +263,18 @@ export default function SubcategoryPage({
         ) : null}
       </div>
 
+      {/* Anchor for scroll=true */}
       <div id="subcategory-header" className="sr-only" aria-hidden="true" />
 
+      {/* Main content: Sidebar + Grid */}
       <section className="mt-6 px-4 sm:px-6 max-w-7xl mx-auto mb-20">
         <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-6">
+          {/* Filters */}
           <div className="block">
             <FiltersSidebar />
           </div>
 
-          {/* ⬇️ FIXED-CARD GRID: exact 219px columns + exact 339px card height */}
+          {/* Product grid — subcategory-only sizing to match Jewelry */}
           <div>
             {products.length === 0 ? (
               <p className="text-white/80">No products found.</p>
@@ -272,6 +284,7 @@ export default function SubcategoryPage({
                   const href = `/category/${encodeURIComponent(
                     categorySlug
                   )}/${encodeURIComponent(p.slug)}`;
+
                   return (
                     <ProductCard
                       key={p._id || p.id || p.slug}
@@ -282,8 +295,9 @@ export default function SubcategoryPage({
                       salePrice={p.salePrice ?? null}
                       href={href}
                       onAddToCart={() => {
-                        if (isRingCategory(p.category))
+                        if (isRingCategory(p.category)) {
                           return router.push(href);
+                        }
                         addToCart({
                           id: p._id || p.id || p.slug,
                           slug: p.slug,
@@ -314,9 +328,9 @@ export default function SubcategoryPage({
         </div>
       </section>
 
-      {/* 🔧 Page-scoped, exact sizing for subcategory product cards */}
+      {/* 🔧 Subcategory-only: replicate Jewelry page card footprint */}
       <style jsx global>{`
-        /* 1) Make columns exactly 219px wide and auto-fill */
+        /* Grid uses OUTER card size for columns: 219px */
         .subcategory-page .fixed-card-grid {
           display: grid;
           grid-template-columns: repeat(auto-fill, 219px);
@@ -329,18 +343,19 @@ export default function SubcategoryPage({
           }
         }
 
-        /* 2) Force each card to 219x339, and hide overflow so it doesn't spill */
+        /* ProductCard root (has .group) — force the exact outer size */
         .subcategory-page .fixed-card-grid > .group {
-          width: 219px !important;
-          height: 339px !important;
-          overflow: hidden;
+          width: 219px !important; /* outer card width */
+          height: 339px !important; /* outer card height */
+          box-sizing: border-box;
+          overflow: hidden; /* prevents spill if text is long */
+          display: flex;
+          flex-direction: column;
         }
 
-        /* 3) Keep the image wrapper square inside the fixed-size card */
-        .subcategory-page .fixed-card-grid > .group .aspect-square {
-          width: 219px !important;
-          height: 219px !important; /* square image area */
-        }
+        /* Do NOT size the image wrapper: keep aspect-square + w-full.
+           With p-3 padding (12*2=24), inner width = 219 - 24 = 195px,
+           so the image becomes 195x195 automatically, matching Jewelry. */
       `}</style>
     </div>
   );
