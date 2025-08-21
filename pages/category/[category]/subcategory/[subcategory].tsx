@@ -225,7 +225,7 @@ export default function SubcategoryPage({
   useEffect(() => setVisibleCount(8), [categorySlug, subcategoryLabel]);
 
   return (
-    <>
+    <div className="subcategory-page">
       <Head>
         <title>
           {subcategoryLabel}
@@ -287,7 +287,7 @@ export default function SubcategoryPage({
 
                   return (
                     <ProductCard
-                      key={p._id || p.id || p.slug} // ✅ safer key
+                      key={p._id || p.id || p.slug}
                       slug={p.slug}
                       image={p.image}
                       name={p.name}
@@ -295,8 +295,6 @@ export default function SubcategoryPage({
                       salePrice={p.salePrice ?? null}
                       href={href}
                       onAddToCart={() => {
-                        // ✅ match /jewelry behavior:
-                        // Rings go to PDP (for size/options); others quick add
                         if (isRingCategory(p.category)) {
                           return router.push(href);
                         }
@@ -329,6 +327,14 @@ export default function SubcategoryPage({
           </div>
         </div>
       </section>
-    </>
+
+      {/* 🔧 Page-scoped override: make the inner image wrapper 2:3 like 219×339 */}
+      <style jsx global>{`
+        /* Only affect cards on this subcategory page */
+        .subcategory-page .aspect-square {
+          aspect-ratio: 2 / 3 !important; /* ≈ 219x339 */
+        }
+      `}</style>
+    </div>
   );
 }
