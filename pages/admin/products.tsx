@@ -107,7 +107,7 @@ export default function AdminProductsPage() {
   // 📋 Add form state
   const [formState, setFormState] = useState({
     name: "",
-    description: "",
+    description: "", // now optional
     price: "",
     salePrice: "",
     category: (JEWELRY_CATEGORIES[0] as Category) || ("rings" as Category),
@@ -115,13 +115,13 @@ export default function AdminProductsPage() {
     subcategoryCustom: "",
     featured: false,
     gender: "unisex" as "unisex" | "him" | "her",
-    imageFile: null as File | null,
+    imageFile: null as File | null, // optional
   });
 
   // 📋 Edit form state
   const [editForm, setEditForm] = useState({
     name: "",
-    description: "",
+    description: "", // now optional
     price: "",
     salePrice: "",
     category: (JEWELRY_CATEGORIES[0] as Category) || ("rings" as Category),
@@ -129,7 +129,7 @@ export default function AdminProductsPage() {
     subcategoryCustom: "",
     featured: false,
     gender: "unisex" as "unisex" | "him" | "her",
-    imageFile: null as File | null,
+    imageFile: null as File | null, // optional
     imageRemoved: false,
   });
 
@@ -298,7 +298,9 @@ export default function AdminProductsPage() {
     try {
       const formData = new FormData();
       formData.append("name", formState.name);
-      formData.append("description", formState.description);
+      // description optional
+      if (formState.description)
+        formData.append("description", formState.description);
       formData.append("price", formState.price);
       if (formState.salePrice)
         formData.append("salePrice", formState.salePrice);
@@ -312,6 +314,7 @@ export default function AdminProductsPage() {
       );
       formData.append("featured", formState.featured ? "true" : "false");
       formData.append("gender", formState.gender);
+      // image optional
       if (formState.imageFile) formData.append("image", formState.imageFile);
 
       const res = await fetch("/api/admin/products", {
@@ -369,7 +372,7 @@ export default function AdminProductsPage() {
 
     setEditForm({
       name: product.name,
-      description: product.description,
+      description: product.description || "",
       price: (product.price ?? 0).toString(),
       salePrice: product.salePrice?.toString() || "",
       category: product.category,
@@ -426,7 +429,9 @@ export default function AdminProductsPage() {
     try {
       const formData = new FormData();
       formData.append("name", editForm.name);
-      formData.append("description", editForm.description);
+      // description optional
+      if (editForm.description)
+        formData.append("description", editForm.description);
       formData.append("price", editForm.price);
       if (editForm.salePrice) formData.append("salePrice", editForm.salePrice);
       formData.append("category", editForm.category);
@@ -440,6 +445,7 @@ export default function AdminProductsPage() {
       formData.append("featured", editForm.featured ? "true" : "false");
       formData.append("gender", editForm.gender);
       formData.append("imageRemoved", editForm.imageRemoved ? "true" : "false");
+      // image optional
       if (editForm.imageFile) formData.append("image", editForm.imageFile);
 
       const res = await fetch(`/api/admin/products/${editingProduct!._id}`, {
@@ -714,7 +720,6 @@ export default function AdminProductsPage() {
             <label>
               📝 Description
               <textarea
-                required
                 value={editForm.description}
                 onChange={(e) =>
                   setEditForm((f) => ({ ...f, description: e.target.value }))
@@ -916,11 +921,10 @@ export default function AdminProductsPage() {
               />
             </label>
 
-            {/* 📝 Description */}
+            {/* 📝 Description (optional) */}
             <label>
               📝 Description
               <textarea
-                required
                 value={formState.description}
                 onChange={(e) => handleInput("description", e.target.value)}
                 className="mt-1 w-full border rounded p-2"
