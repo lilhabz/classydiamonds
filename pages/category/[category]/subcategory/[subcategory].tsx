@@ -93,19 +93,16 @@ export const getServerSideProps: GetServerSideProps<PageProps> = async (
       ? ctx.query.metal.map((m) => String(m).toLowerCase())
       : [String(ctx.query.metal).toLowerCase()]
     : [];
-
   const stone = ctx.query.stone
     ? Array.isArray(ctx.query.stone)
       ? ctx.query.stone.map((s) => String(s).toLowerCase())
       : [String(ctx.query.stone).toLowerCase()]
     : [];
-
   const shape = ctx.query.shape
     ? Array.isArray(ctx.query.shape)
       ? ctx.query.shape.map((s) => String(s).toLowerCase())
       : [String(ctx.query.shape).toLowerCase()]
     : [];
-
   const priceMin = ctx.query.priceMin ? Number(ctx.query.priceMin) : undefined;
   const priceMax = ctx.query.priceMax ? Number(ctx.query.priceMax) : undefined;
   const caratMin = ctx.query.caratMin ? Number(ctx.query.caratMin) : undefined;
@@ -222,7 +219,7 @@ export default function SubcategoryPage({
   useEffect(() => setVisibleCount(8), [categorySlug, subcategoryLabel]);
 
   return (
-    <>
+    <div className="subcategory-page">
       <Head>
         <title>
           {subcategoryLabel}
@@ -265,16 +262,16 @@ export default function SubcategoryPage({
             <FiltersSidebar />
           </div>
 
+          {/* ⬇️ FIXED-CARD GRID: exact 219px columns + exact 339px card height */}
           <div>
             {products.length === 0 ? (
               <p className="text-white/80">No products found.</p>
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
+              <div className="fixed-card-grid">
                 {products.slice(0, visibleCount).map((p) => {
                   const href = `/category/${encodeURIComponent(
                     categorySlug
                   )}/${encodeURIComponent(p.slug)}`;
-
                   return (
                     <ProductCard
                       key={p._id || p.id || p.slug}
@@ -285,9 +282,8 @@ export default function SubcategoryPage({
                       salePrice={p.salePrice ?? null}
                       href={href}
                       onAddToCart={() => {
-                        if (isRingCategory(p.category)) {
+                        if (isRingCategory(p.category))
                           return router.push(href);
-                        }
                         addToCart({
                           id: p._id || p.id || p.slug,
                           slug: p.slug,
@@ -317,6 +313,35 @@ export default function SubcategoryPage({
           </div>
         </div>
       </section>
-    </>
+
+      {/* 🔧 Page-scoped, exact sizing for subcategory product cards */}
+      <style jsx global>{`
+        /* 1) Make columns exactly 219px wide and auto-fill */
+        .subcategory-page .fixed-card-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, 219px);
+          gap: 1.5rem; /* Tailwind gap-6 */
+          justify-content: center;
+        }
+        @media (min-width: 640px) {
+          .subcategory-page .fixed-card-grid {
+            justify-content: start;
+          }
+        }
+
+        /* 2) Force each card to 219x339, and hide overflow so it doesn't spill */
+        .subcategory-page .fixed-card-grid > .group {
+          width: 219px !important;
+          height: 339px !important;
+          overflow: hidden;
+        }
+
+        /* 3) Keep the image wrapper square inside the fixed-size card */
+        .subcategory-page .fixed-card-grid > .group .aspect-square {
+          width: 219px !important;
+          height: 219px !important; /* square image area */
+        }
+      `}</style>
+    </div>
   );
 }
