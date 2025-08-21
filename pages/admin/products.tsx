@@ -20,6 +20,12 @@ import {
   isJewelry,
 } from "@/data/taxonomy";
 
+// 🧷 Helper: show nice labels, keep slug values stored
+const prettyLabel = (s: string) => {
+  if (s === NONE_OPTION || s === CUSTOM_OPTION) return s;
+  return s.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+};
+
 // 🛠️ Product type (mirrors collection; includes optional subcategory)
 interface AdminProduct {
   _id: string;
@@ -747,6 +753,13 @@ export default function AdminProductsPage() {
                   setEditForm((f) => ({
                     ...f,
                     category: e.target.value as Category,
+                    // when switching category away from rings, clear subcat
+                    ...(e.target.value !== "rings"
+                      ? {
+                          subcategorySelect: NONE_OPTION,
+                          subcategoryCustom: "",
+                        }
+                      : {}),
                   }))
                 }
                 className="mt-1 w-full border rounded p-2 bg-[var(--bg-page)] text-[var(--foreground)]"
@@ -765,48 +778,52 @@ export default function AdminProductsPage() {
               </select>
             </label>
 
-            {/* 🔽 Subcategory (dependent) */}
-            <label>
-              🔽 Subcategory
-              <select
-                value={editForm.subcategorySelect}
-                onChange={(e) =>
-                  setEditForm((f) => ({
-                    ...f,
-                    subcategorySelect: e.target.value,
-                    subcategoryCustom:
-                      e.target.value === CUSTOM_OPTION
-                        ? f.subcategoryCustom
-                        : "",
-                  }))
-                }
-                className="mt-1 w-full border rounded p-2 bg-[var(--bg-page)] text-[var(--foreground)]"
-              >
-                {subcategoryOptionsFor(editForm.category).map((opt) => (
-                  <option key={opt} value={opt}>
-                    {opt}
-                  </option>
-                ))}
-              </select>
-            </label>
+            {/* 🔽 Subcategory (only for Rings) */}
+            {editForm.category === "rings" && (
+              <>
+                <label>
+                  🔽 Subcategory
+                  <select
+                    value={editForm.subcategorySelect}
+                    onChange={(e) =>
+                      setEditForm((f) => ({
+                        ...f,
+                        subcategorySelect: e.target.value,
+                        subcategoryCustom:
+                          e.target.value === CUSTOM_OPTION
+                            ? f.subcategoryCustom
+                            : "",
+                      }))
+                    }
+                    className="mt-1 w-full border rounded p-2 bg-[var(--bg-page)] text-[var(--foreground)]"
+                  >
+                    {subcategoryOptionsFor(editForm.category).map((opt) => (
+                      <option key={opt} value={opt}>
+                        {prettyLabel(opt)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
 
-            {/* 📝 Custom subcategory (only when Custom… chosen) */}
-            {editForm.subcategorySelect === CUSTOM_OPTION && (
-              <label className="md:col-span-2">
-                📝 Custom Subcategory
-                <input
-                  type="text"
-                  placeholder="e.g., engagement-rings, tennis-bracelets, etc."
-                  value={editForm.subcategoryCustom}
-                  onChange={(e) =>
-                    setEditForm((f) => ({
-                      ...f,
-                      subcategoryCustom: e.target.value,
-                    }))
-                  }
-                  className="mt-1 w-full border rounded p-2"
-                />
-              </label>
+                {/* 📝 Custom subcategory (only when Custom… chosen) */}
+                {editForm.subcategorySelect === CUSTOM_OPTION && (
+                  <label className="md:col-span-2">
+                    📝 Custom Subcategory
+                    <input
+                      type="text"
+                      placeholder="e.g., engagement-rings"
+                      value={editForm.subcategoryCustom}
+                      onChange={(e) =>
+                        setEditForm((f) => ({
+                          ...f,
+                          subcategoryCustom: e.target.value,
+                        }))
+                      }
+                      className="mt-1 w-full border rounded p-2"
+                    />
+                  </label>
+                )}
+              </>
             )}
 
             {/* 🏷️ Gender */}
@@ -952,38 +969,42 @@ export default function AdminProductsPage() {
               </select>
             </label>
 
-            {/* 🔽 Subcategory (dependent) */}
-            <label>
-              🔽 Subcategory
-              <select
-                value={formState.subcategorySelect}
-                onChange={(e) =>
-                  handleInput("subcategorySelect", e.target.value)
-                }
-                className="mt-1 w-full border rounded p-2 bg-[var(--bg-nav)] text-[var(--foreground)]"
-              >
-                {subcategoryOptionsFor(formState.category).map((opt) => (
-                  <option key={opt} value={opt}>
-                    {opt}
-                  </option>
-                ))}
-              </select>
-            </label>
+            {/* 🔽 Subcategory (only for Rings) */}
+            {formState.category === "rings" && (
+              <>
+                <label>
+                  🔽 Subcategory
+                  <select
+                    value={formState.subcategorySelect}
+                    onChange={(e) =>
+                      handleInput("subcategorySelect", e.target.value)
+                    }
+                    className="mt-1 w-full border rounded p-2 bg-[var(--bg-nav)] text-[var(--foreground)]"
+                  >
+                    {subcategoryOptionsFor(formState.category).map((opt) => (
+                      <option key={opt} value={opt}>
+                        {prettyLabel(opt)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
 
-            {/* 📝 Custom Subcategory */}
-            {formState.subcategorySelect === CUSTOM_OPTION && (
-              <label className="md:col-span-2">
-                📝 Custom Subcategory
-                <input
-                  type="text"
-                  placeholder="e.g., engagement-rings, tennis-bracelets, etc."
-                  value={formState.subcategoryCustom}
-                  onChange={(e) =>
-                    handleInput("subcategoryCustom", e.target.value)
-                  }
-                  className="mt-1 w-full border rounded p-2"
-                />
-              </label>
+                {/* 📝 Custom Subcategory */}
+                {formState.subcategorySelect === CUSTOM_OPTION && (
+                  <label className="md:col-span-2">
+                    📝 Custom Subcategory
+                    <input
+                      type="text"
+                      placeholder="e.g., engagement-rings"
+                      value={formState.subcategoryCustom}
+                      onChange={(e) =>
+                        handleInput("subcategoryCustom", e.target.value)
+                      }
+                      className="mt-1 w-full border rounded p-2"
+                    />
+                  </label>
+                )}
+              </>
             )}
 
             {/* 🏷️ Gender */}
@@ -1190,7 +1211,9 @@ export default function AdminProductsPage() {
                           {CATEGORY_LABELS[p.category]}
                         </td>
                         <td className="p-2">
-                          {p.subcategory || (
+                          {p.subcategory ? (
+                            prettyLabel(p.subcategory)
+                          ) : (
                             <span className="opacity-60">—</span>
                           )}
                         </td>
