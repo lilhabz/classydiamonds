@@ -14,6 +14,15 @@ export default function Breadcrumbs({
   const pathOnly = router.asPath.split("?")[0];
   const isCategoryRoute = pathOnly.startsWith("/category/");
 
+  // ✅ Canonical landing pages for top-level categories
+  const CATEGORY_CANONICAL: Record<string, string> = {
+    rings: "/category/rings",
+    earrings: "/category/earrings",
+    bracelets: "/category/bracelets",
+    necklaces: "/category/necklaces",
+    // add any others you support, e.g. watches: "/category/watches"
+  };
+
   // Split once so we can both (1) render labels without "subcategory" and
   // (2) still build correct hrefs for subcategory pages.
   const originalSegments = pathOnly.split("/").filter(Boolean);
@@ -28,8 +37,7 @@ export default function Breadcrumbs({
       ? "for-him"
       : router.query.gender === "her"
       ? "for-her"
-      : router.query.category === "for-him" ||
-        router.query.category === "for-her"
+      : router.query.category === "for-him" || router.query.category === "for-her"
       ? (router.query.category as string)
       : null;
 
@@ -50,34 +58,28 @@ export default function Breadcrumbs({
   // Build hrefs that point to the correct pages, even though we hid "subcategory"
   const buildHref = (index: number) => {
     const seg = filteredSegments[index];
-    const segLower = seg?.toLowerCase();
 
-    // Custom path override wins
+    // 0) Developer-specified override wins
     if (seg && customPaths[seg]) return customPaths[seg];
 
-    // Product page: first crumb goes back to Jewelry category filter
-    if (isProductPage && index === 0) {
-      return `/jewelry?category=${encodeURIComponent(seg)}&scroll=true`;
+    // 1) If the segment is a known top-level category, use its canonical page
+    if (seg && CATEGORY_CANONICAL[seg]) {
+      // • On PDP (product page), first crumb should go to canonical category
+      // • On /category/... routes, first visible crumb should also go to canonical
+      if (isProductPage && index === 0) return CATEGORY_CANONICAL[seg];
+      if (isCategoryRoute && index === 0) return CATEGORY_CANONICAL[seg];
     }
 
-    // Category collection routes
-    if (isCategoryRoute) {
-      // If we’re at the first visible segment, it's the category (e.g., "rings")
-      if (index === 0) {
-        return `/jewelry?category=${encodeURIComponent(seg)}&scroll=true`;
-      }
-
-      // If we’re at the second visible segment, it's the subcategory (e.g., "engagement")
-      // Build: /category/{category}/subcategory/{subcategory}
-      if (index === 1) {
-        const categorySeg = filteredSegments[0];
-        return `/category/${encodeURIComponent(
-          categorySeg
-        )}/subcategory/${encodeURIComponent(seg)}`;
-      }
+    // 2) Category collection routes: second visible segment is the subcategory
+    // Build: /category/{category}/subcategory/{subcategory}
+    if (isCategoryRoute && index === 1) {
+      const categorySeg = filteredSegments[0];
+      return `/category/${encodeURIComponent(
+        categorySeg
+      )}/subcategory/${encodeURIComponent(seg!)}`;
     }
 
-    // Fallback: join the *display* segments we’re showing
+    // 3) Fallback: join the *display* segments we’re showing
     return "/" + filteredSegments.slice(0, index + 1).join("/");
   };
 
@@ -109,9 +111,7 @@ export default function Breadcrumbs({
           <li className="flex items-center">
             <span className="mx-1">›</span>
             <Link
-              href={`/jewelry?gender=${
-                genderParam === "for-him" ? "him" : "her"
-              }&scroll=true`}
+              href={`/jewelry?gender=${genderParam === "for-him" ? "him" : "her"}&scroll=true`}
               className="hover:text-white text-white/70 capitalize"
             >
               {genderParam === "for-him" ? "For Him" : "For Her"}
@@ -122,7 +122,7 @@ export default function Breadcrumbs({
         {/* Category / Subcategory / Product label crumbs */}
         {filteredSegments.map((seg, i) => {
           const href = buildHref(i);
-          // Disable automatic scroll for the category crumb on PDP (keeps your behavior)
+          // Keep your "don’t auto-scroll" behavior for the category crumb on PDP
           const disableScroll = isProductPage && i === 0;
           const label = formatLabel(seg);
 
