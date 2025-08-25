@@ -20,6 +20,7 @@ type ProductType = {
   image?: string; // can be local path or remote (Cloudinary)
   slug: string;
   category: string;
+  subcategory?: string | null; // ✅ optional; safe if absent
 };
 
 const PLACEHOLDER = "/gray-placeholder.jpg"; // must exist in /public
@@ -62,12 +63,30 @@ function resolveImageSrc(product: ProductType) {
   return normalizeLocalPath(chosen);
 }
 
+// ✅ Robust detector: triggers for all ring categories/subcategories, never “earrings”
+function isRingish(category?: string | null, subcategory?: string | null) {
+  const c = (category || "").toLowerCase();
+  const s = (subcategory || "").toLowerCase();
+  const ringWord = /\brings?\b/; // whole-word ring/rings only
+  if (ringWord.test(c) || ringWord.test(s)) return true;
+
+  // Common ring families (extend any time without UI changes)
+  const families =
+    /\b(engagement|wedding-?bands?|promise|signet|stack(?:ing)?|anniversary)\b/;
+
+  return families.test(c) || families.test(s);
+}
+
 export default function ProductPage({ product }: { product: ProductType }) {
   const { addToCart } = useCart();
   const [ringSize, setRingSize] = useState("");
   const [imgSrc, setImgSrc] = useState<string>("");
 
-  const needsRingSize = /ring|engagement/i.test(product.category);
+  // 🔒 Only rings (incl. ring subcategories) need size
+  const needsRingSize = useMemo(
+    () => isRingish(product.category, product.subcategory),
+    [product.category, product.subcategory]
+  );
 
   const capitalizedCategory = useMemo(
     () =>
@@ -98,7 +117,7 @@ export default function ProductPage({ product }: { product: ProductType }) {
       discountedPrice: product.salePrice ?? undefined,
       image: imgSrc || PLACEHOLDER,
       quantity: 1,
-      size: needsRingSize ? ringSize.trim() : undefined,
+      size: needsRingSize ? ringSize.trim() : undefined, // ✅ only attach for rings
     });
   };
 
@@ -235,6 +254,7 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
     image: p.imageUrl || p.image || "", // can be local path or remote URL
     slug: p.slug,
     category: String(p.category || "").toLowerCase(),
+    subcategory: p.subcategory ? String(p.subcategory).toLowerCase() : null, // ✅ optional
   };
 
   return { props: { product } };
