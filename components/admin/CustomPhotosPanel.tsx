@@ -1,27 +1,18 @@
-// 📄 pages/admin/custom-photos.tsx
-// 🖼 Manage Custom Creations — now linked tightly with the unified /admin tabs
+// 📄 components/admin/CustomPhotosPanel.tsx
+// 🖼 Custom Photos panel for the unified Admin page.
+// NOTE: No visual overhaul; same upload/delete UX.
+
+"use client";
 
 import { useEffect, useRef, useState } from "react";
-import Head from "next/head";
-import Link from "next/link";
-import { getSession } from "next-auth/react";
-import Breadcrumbs from "@/components/Breadcrumbs";
 
-interface CustomPhoto {
+type CustomPhoto = {
   _id: string;
   imageUrl: string;
   createdAt: string;
-}
+};
 
-export async function getServerSideProps(context: any) {
-  const session = await getSession(context);
-  if (!session || !session.user?.isAdmin) {
-    return { redirect: { destination: "/", permanent: false } };
-  }
-  return { props: {} };
-}
-
-export default function AdminCustomPhotosPage() {
+export default function CustomPhotosPanel() {
   const [photos, setPhotos] = useState<CustomPhoto[]>([]);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -47,7 +38,7 @@ export default function AdminCustomPhotosPage() {
       const res = await fetch("/api/custom-photos");
       const data = await res.json();
       setPhotos(data.photos || []);
-    } catch (e) {
+    } catch {
       setStatus({ loading: false, error: "Failed to load photos.", success: "" });
     }
   };
@@ -120,67 +111,9 @@ export default function AdminCustomPhotosPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[var(--bg-page)] text-[var(--foreground)] p-6">
-      <Head>
-        <title>Admin Custom Photos | Classy Diamonds</title>
-      </Head>
-
-      {/* Breadcrumbs */}
-      <div className="pl-2 pr-2 sm:pl-4 sm:pr-4 mb-6 -mt-2">
-        <Breadcrumbs />
-      </div>
-
-      <h1 className="text-3xl font-serif font-bold tracking-wide mb-4">🖼 Manage Custom Creations</h1>
-
-      {/* 🔗 Match the unified /admin top nav (deep links to tabs + external sections) */}
-      <nav
-        aria-label="Admin navigation"
-        className="flex flex-wrap items-center gap-2 sm:gap-4 mb-8 text-sm font-semibold border-b border-[var(--bg-nav)] pb-3"
-      >
-        {/* Deep links back into the unified dashboard tabs */}
-        <Link
-          href={{ pathname: "/admin", query: { tab: "orders" } }}
-          className="hover:text-yellow-300"
-        >
-          📦 Orders
-        </Link>
-        <Link
-          href={{ pathname: "/admin", query: { tab: "shipped" } }}
-          className="hover:text-yellow-300"
-        >
-          ✅ Shipped
-        </Link>
-        <Link
-          href={{ pathname: "/admin", query: { tab: "delivered" } }}
-          className="hover:text-yellow-300"
-        >
-          📬 Delivered
-        </Link>
-        <Link
-          href={{ pathname: "/admin", query: { tab: "archived" } }}
-          className="hover:text-yellow-300"
-        >
-          🗂 Archived
-        </Link>
-
-        <span className="opacity-50 mx-2">|</span>
-
-        {/* External admin sections (current page highlighted) */}
-        <Link href="/admin/products" className="hover:text-yellow-300">
-          🛠 Products
-        </Link>
-        <span className="text-yellow-400">🖼 Custom</span>
-        <Link href="/admin/logs" className="hover:text-yellow-300">
-          📝 Logs
-        </Link>
-      </nav>
-
-      {status.error && <p className="text-red-500 mb-4">❌ {status.error}</p>}
-      {status.success && <p className="text-green-500 mb-4">✅ {status.success}</p>}
-
+    <div>
       {/* Upload Form */}
       <form onSubmit={handleSubmit} className="mb-8 space-y-4" aria-label="Upload custom photo">
-        {/* Hidden input */}
         <input
           ref={fileInputRef}
           type="file"
@@ -189,7 +122,6 @@ export default function AdminCustomPhotosPage() {
           onChange={handleInputChange}
         />
 
-        {/* Drag & Drop / Button */}
         <div
           onDragEnter={handleDrag}
           onDragOver={handleDrag}
@@ -212,10 +144,7 @@ export default function AdminCustomPhotosPage() {
 
           {imageFile && (
             <div className="mt-3 text-xs text-gray-300">
-              Selected:{" "}
-              <span className="font-medium" title={imageFile.name}>
-                {imageFile.name}
-              </span>
+              Selected: <span className="font-medium">{imageFile.name}</span>
             </div>
           )}
 
@@ -245,6 +174,9 @@ export default function AdminCustomPhotosPage() {
             </button>
           )}
         </div>
+
+        {status.error && <p className="text-red-500">❌ {status.error}</p>}
+        {status.success && <p className="text-green-500">✅ {status.success}</p>}
       </form>
 
       {/* Photo Grid */}
@@ -256,8 +188,6 @@ export default function AdminCustomPhotosPage() {
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={p.imageUrl} alt="Custom creation" className="object-cover w-full h-full" />
-
-            {/* Delete overlay */}
             <button
               onClick={() => deletePhoto(p._id)}
               className="absolute top-2 right-2 px-2 py-1 text-xs rounded-lg bg-red-600/90 hover:bg-red-700 text-white shadow opacity-0 group-hover:opacity-100 transition"
@@ -269,14 +199,6 @@ export default function AdminCustomPhotosPage() {
           </div>
         ))}
       </div>
-
-      {/* Exit */}
-      <button
-        onClick={() => (window.location.href = "/")}
-        className="mt-8 text-sm text-red-300 underline"
-      >
-        Exit Admin Panel 🔒
-      </button>
     </div>
   );
 }

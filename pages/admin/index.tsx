@@ -1,13 +1,26 @@
-// pages/admin/index.tsx
-// 🧭 Unified Admin Dashboard (single page, tabbed) – uses your existing APIs + RefundDialog
+// 📄 pages/admin/index.tsx
+// 🧭 Unified Admin Dashboard (single page, tabbed) – now with Custom & Logs tabs
+// NOTE: Visuals/UX preserved. Only changed dynamic import paths to relative.
 
 import { useEffect, useMemo, useState } from "react";
 import Head from "next/head";
 import Link from "next/link";
 import Image from "next/image";
 import { useSession } from "next-auth/react";
+import { useRouter } from "next/router";
+import dynamic from "next/dynamic";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import RefundDialog from "@/components/RefundDialog";
+
+// ⬇️ Use RELATIVE paths so we don't depend on the @ alias
+const CustomPhotosPanel = dynamic(
+  () => import("../../components/admin/CustomPhotosPanel"),
+  { ssr: false }
+);
+const LogsPanel = dynamic(
+  () => import("../../components/admin/LogsPanel"),
+  { ssr: false }
+);
 
 /* ----------------------------- helpers ----------------------------- */
 const safeStr = (v: unknown, fallback = ""): string =>
@@ -24,14 +37,14 @@ const n = (v: unknown, d = 0): number => {
   return d;
 };
 
-type Stage = "orders" | "shipped" | "delivered" | "archived";
+// 🔴 includes new tabs "custom" and "logs"
+type Stage = "orders" | "shipped" | "delivered" | "archived" | "custom" | "logs";
 
 interface BaseItem {
   name?: string;
   quantity?: number | string;
   image?: string | null;
   size?: string;
-  // price shape
   unitPrice?: number | string;
   salePrice?: number | string;
   discountedPrice?: number | string;
@@ -67,16 +80,38 @@ export default function AdminUnifiedPage() {
   // tabs
   const [tab, setTab] = useState<Stage>("orders");
 
-  // data
+  // ✅ Router + URL sync for tabs
+  const router = useRouter();
+  useEffect(() => {
+    const q = router.query.tab;
+    if (
+      q === "orders" ||
+      q === "shipped" ||
+      q === "delivered" ||
+      q === "archived" ||
+      q === "custom" ||
+      q === "logs"
+    ) {
+      setTab(q as Stage);
+    }
+  }, [router.query.tab]);
+
+  // helper to change tabs + update URL (use on in-page tab buttons)
+  const changeTab = (t: Stage) => {
+    setTab(t);
+    router.replace({ pathname: "/admin", query: { tab: t } }, undefined, { shallow: true });
+  };
+
+  // data (orders-related tabs only)
   const [orders, setOrders] = useState<BaseOrder[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // filters
+  // filters (orders-related tabs only)
   const [search, setSearch] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
 
-  // paging
+  // paging (orders-related tabs only)
   const [page, setPage] = useState(1);
   const itemsPerPage = 5;
 
@@ -85,9 +120,7 @@ export default function AdminUnifiedPage() {
     Record<string, { trackingNumber: string; carrier: string }>
   >({});
   const [savedTracking, setSavedTracking] = useState<Record<string, string>>({});
-  const [savingTracking, setSavingTracking] = useState<Record<string, boolean>>(
-    {}
-  );
+  const [savingTracking, setSavingTracking] = useState<Record<string, boolean>>({});
 
   // refunds
   const [refundTarget, setRefundTarget] = useState<{
@@ -95,9 +128,15 @@ export default function AdminUnifiedPage() {
     maxCents: number;
   } | null>(null);
 
-  // load per tab
+  // Only load data for the order-like tabs
   useEffect(() => {
     if (!session?.user?.isAdmin) return;
+
+    if (tab === "custom" || tab === "logs") {
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     setPage(1); // reset paging on tab change
     (async () => {
@@ -112,7 +151,6 @@ export default function AdminUnifiedPage() {
         const list: BaseOrder[] = Array.isArray(data.orders) ? data.orders : [];
         setOrders(list);
 
-        // prep tracking saved map (for shipped only)
         if (tab === "shipped") {
           const map: Record<string, string> = {};
           list.forEach((o: BaseOrder) => {
@@ -195,8 +233,7 @@ export default function AdminUnifiedPage() {
     const ok = res.ok;
     const json = await res.json().catch(() => ({}));
     if (!ok) return alert("❌ " + (json?.error || "Failed"));
-    // after restore, jump back to Orders tab
-    setTab("orders");
+    changeTab("orders");
   }
 
   async function saveTracking(sessionId: string) {
@@ -205,7 +242,7 @@ export default function AdminUnifiedPage() {
     if (savedTracking[sessionId] === input.trackingNumber) return;
 
     try {
-      setSavingTracking((p: Record<string, boolean>) => ({ ...p, [sessionId]: true }));
+      setSavingTracking((p) => ({ ...p, [sessionId]: true }));
       const res = await fetch("/api/tracking", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -218,11 +255,11 @@ export default function AdminUnifiedPage() {
       });
       const json = await res.json();
       if (!res.ok) return alert("❌ " + (json?.error || "Failed"));
-      setSavedTracking((prev: Record<string, string>) => ({ ...prev, [sessionId]: input.trackingNumber }));
+      setSavedTracking((prev) => ({ ...prev, [sessionId]: input.trackingNumber }));
       alert("✅ Tracking saved" + (json?.emailSent ? " and email sent." : "."));
       reload();
     } finally {
-      setSavingTracking((p: Record<string, boolean>) => ({ ...p, [sessionId]: false }));
+      setSavingTracking((p) => ({ ...p, [sessionId]: false }));
     }
   }
 
@@ -237,19 +274,18 @@ export default function AdminUnifiedPage() {
   }
 
   function reload() {
-    // trivial way: re-trigger tab effect
     setLoading(true);
-    setTimeout(() => setTab((t: Stage) => t), 0);
+    setTimeout(() => setTab((t) => t), 0);
   }
 
   /* --------------------------- filtering/paging ---------------------- */
   const filtered = useMemo(() => {
+    if (tab === "custom" || tab === "logs") return [];
     const q = search.toLowerCase();
     const start = startDate ? new Date(startDate) : null;
     const end = endDate ? new Date(endDate) : null;
 
     return (orders || []).filter((o: BaseOrder) => {
-      // Per-tab visibility (server already filters a lot, but keep client-side guard)
       if (tab === "orders" && (o.archived || o.shipped)) return false;
       if (tab === "shipped" && (o.archived || o.delivered)) return false;
       if (tab === "delivered" && o.archived) return false;
@@ -260,7 +296,6 @@ export default function AdminUnifiedPage() {
       const sess = safeStr(o.stripeSessionId).toLowerCase();
       const matchQ = !q || name.includes(q) || email.includes(q) || sess.includes(q);
 
-      // date field per tab
       let dateStr =
         tab === "shipped"
           ? o.shippedAt
@@ -276,8 +311,14 @@ export default function AdminUnifiedPage() {
     });
   }, [orders, search, startDate, endDate, tab]);
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / Math.max(1, itemsPerPage)));
-  const pageData = filtered.slice((page - 1) * itemsPerPage, page * itemsPerPage);
+  const totalPages =
+    tab === "custom" || tab === "logs"
+      ? 1
+      : Math.max(1, Math.ceil(filtered.length / Math.max(1, itemsPerPage)));
+  const pageData =
+    tab === "custom" || tab === "logs"
+      ? []
+      : filtered.slice((page - 1) * itemsPerPage, page * itemsPerPage);
 
   if (status === "loading") return <div className="p-6">Checking access…</div>;
   if (!session?.user?.isAdmin)
@@ -295,72 +336,93 @@ export default function AdminUnifiedPage() {
 
       <h1 className="text-3xl font-serif font-bold tracking-wide mb-4">🛠️ Admin Dashboard</h1>
 
-      {/* Top nav: internal tabs + external sections */}
+      {/* Top nav: in-page tabs + external section */}
       <div className="flex flex-wrap items-center gap-2 sm:gap-4 mb-6 text-sm font-semibold border-b border-[var(--bg-nav)] pb-3">
-        {/* tabs */}
-        <button
+        {/* In-page tabs */}
+        <Link
+          href={{ pathname: "/admin", query: { tab: "orders" } }}
+          onClick={(e) => { e.preventDefault(); changeTab("orders"); }}
           className={tab === "orders" ? "text-yellow-400" : "hover:text-yellow-300"}
-          onClick={() => setTab("orders")}
         >
           📦 Orders
-        </button>
-        <button
+        </Link>
+        <Link
+          href={{ pathname: "/admin", query: { tab: "shipped" } }}
+          onClick={(e) => { e.preventDefault(); changeTab("shipped"); }}
           className={tab === "shipped" ? "text-yellow-400" : "hover:text-yellow-300"}
-          onClick={() => setTab("shipped")}
         >
           ✅ Shipped
-        </button>
-        <button
+        </Link>
+        <Link
+          href={{ pathname: "/admin", query: { tab: "delivered" } }}
+          onClick={(e) => { e.preventDefault(); changeTab("delivered"); }}
           className={tab === "delivered" ? "text-yellow-400" : "hover:text-yellow-300"}
-          onClick={() => setTab("delivered")}
         >
           📬 Delivered
-        </button>
-        <button
+        </Link>
+        <Link
+          href={{ pathname: "/admin", query: { tab: "archived" } }}
+          onClick={(e) => { e.preventDefault(); changeTab("archived"); }}
           className={tab === "archived" ? "text-yellow-400" : "hover:text-yellow-300"}
-          onClick={() => setTab("archived")}
         >
           🗂 Archived
-        </button>
+        </Link>
 
-        {/* external sections you already have */}
+        {/* NEW TABS */}
+        <Link
+          href={{ pathname: "/admin", query: { tab: "custom" } }}
+          onClick={(e) => { e.preventDefault(); changeTab("custom"); }}
+          className={tab === "custom" ? "text-yellow-400" : "hover:text-yellow-300"}
+        >
+          🖼 Custom
+        </Link>
+        <Link
+          href={{ pathname: "/admin", query: { tab: "logs" } }}
+          onClick={(e) => { e.preventDefault(); changeTab("logs"); }}
+          className={tab === "logs" ? "text-yellow-400" : "hover:text-yellow-300"}
+        >
+          📝 Logs
+        </Link>
+
         <span className="opacity-50 mx-2">|</span>
+
+        {/* External heavy section stays separate */}
         <Link href="/admin/products" className="hover:text-yellow-300">
           🛠 Products
         </Link>
-        <Link href="/admin/custom-photos" className="hover:text-yellow-300">
-          🖼 Custom
-        </Link>
-        <Link href="/admin/logs" className="hover:text-yellow-300">
-          📝 Logs
-        </Link>
       </div>
 
-      {/* filters */}
-      <div className="flex flex-col sm:flex-row gap-3 mb-6">
-        <input
-          type="text"
-          placeholder="Search by name, email, or ID…"
-          className="px-4 py-2 rounded bg-[var(--bg-nav)] text-white flex-1"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
-        <input
-          type="date"
-          className="px-2 py-1 rounded bg-[var(--bg-nav)] text-white"
-          value={startDate}
-          onChange={(e) => setStartDate(e.target.value)}
-        />
-        <input
-          type="date"
-          className="px-2 py-1 rounded bg-[var(--bg-nav)] text-white"
-          value={endDate}
-          onChange={(e) => setEndDate(e.target.value)}
-        />
-      </div>
+      {/* Filters (only for order-like tabs) */}
+      {!(tab === "custom" || tab === "logs") && (
+        <div className="flex flex-col sm:flex-row gap-3 mb-6">
+          <input
+            type="text"
+            placeholder="Search by name, email, or ID…"
+            className="px-4 py-2 rounded bg-[var(--bg-nav)] text-white flex-1"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+          <input
+            type="date"
+            className="px-2 py-1 rounded bg-[var(--bg-nav)] text-white"
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
+          />
+          <input
+            type="date"
+            className="px-2 py-1 rounded bg-[var(--bg-nav)] text-white"
+            value={endDate}
+            onChange={(e) => setEndDate(e.target.value)}
+          />
+        </div>
+      )}
 
-      {/* lists */}
-      {loading ? (
+      {/* CONTENT AREA */}
+      {tab === "custom" ? (
+        <CustomPhotosPanel />
+      ) : tab === "logs" ? (
+        <LogsPanel />
+      ) : loading ? (
         <p>Loading {tab}…</p>
       ) : pageData.length === 0 ? (
         <p>No matching orders found.</p>
@@ -386,13 +448,11 @@ export default function AdminUnifiedPage() {
                 </p>
 
                 <p className="mb-4 text-sm">
-                  {tab === "shipped" ? (
-                    <>🧾 Shipped: {o.shippedAt ? new Date(o.shippedAt).toLocaleString() : "—"}</>
-                  ) : tab === "delivered" ? (
-                    <>🧾 Delivered: {o.deliveredAt ? new Date(o.deliveredAt).toLocaleString() : "—"}</>
-                  ) : (
-                    <>🧾 Date: {o.createdAt ? new Date(o.createdAt).toLocaleString() : "—"}</>
-                  )}
+                  {tab === "shipped"
+                    ? <>🧾 Shipped: {o.shippedAt ? new Date(o.shippedAt).toLocaleString() : "—"}</>
+                    : tab === "delivered"
+                    ? <>🧾 Delivered: {o.deliveredAt ? new Date(o.deliveredAt).toLocaleString() : "—"}</>
+                    : <>🧾 Date: {o.createdAt ? new Date(o.createdAt).toLocaleString() : "—"}</>}
                 </p>
 
                 {/* tracking on shipped */}
@@ -408,7 +468,7 @@ export default function AdminUnifiedPage() {
                         <select
                           value={trackingInputs[sid]?.carrier || "USPS"}
                           onChange={(e) =>
-                            setTrackingInputs((prev: Record<string, { trackingNumber: string; carrier: string }>) => ({
+                            setTrackingInputs((prev) => ({
                               ...prev,
                               [sid]: {
                                 ...(prev[sid] || { trackingNumber: "", carrier: "USPS" }),
@@ -428,7 +488,7 @@ export default function AdminUnifiedPage() {
                           placeholder="Tracking #"
                           value={trackingInputs[sid]?.trackingNumber || ""}
                           onChange={(e) =>
-                            setTrackingInputs((prev: Record<string, { trackingNumber: string; carrier: string }>) => ({
+                            setTrackingInputs((prev) => ({
                               ...prev,
                               [sid]: {
                                 ...(prev[sid] || { trackingNumber: "", carrier: "USPS" }),
@@ -533,19 +593,21 @@ export default function AdminUnifiedPage() {
                       <span className="bg-blue-600 px-4 py-2 rounded text-sm cursor-pointer">View 🔍</span>
                     </Link>
 
-                    {/* per-tab controls */}
                     {tab === "orders" && (
                       <>
                         <button
                           onClick={() => openRefund(o)}
                           className="bg-indigo-600 px-4 py-2 rounded text-sm disabled:opacity-60"
-                          disabled={refundableCents <= 0 || !sid}
+                          disabled={
+                            Math.max(0, Math.round(n(o.amount, 0) * 100) - Math.max(0, Math.round(n(o.refundedTotal, 0)))) <= 0 || !sid
+                          }
                           title={
                             !sid
                               ? "Missing Stripe session id"
-                              : refundableCents <= 0
-                              ? "Nothing left to refund"
-                              : `Refund up to $${(refundableCents / 100).toFixed(2)}`
+                              : `Refund up to $${(
+                                  (Math.max(0, Math.round(n(o.amount, 0) * 100)) -
+                                    Math.max(0, Math.round(n(o.refundedTotal, 0)))) / 100
+                                ).toFixed(2)}`
                           }
                         >
                           Refund 💳
@@ -564,12 +626,10 @@ export default function AdminUnifiedPage() {
                         <button
                           onClick={() => openRefund(o)}
                           className="bg-indigo-600 px-4 py-2 rounded text-sm disabled:opacity-60"
-                          disabled={refundableCents <= 0}
-                          title={
-                            refundableCents <= 0
-                              ? "Nothing left to refund"
-                              : `Refund up to $${(refundableCents / 100).toFixed(2)}`
+                          disabled={
+                            Math.max(0, Math.round(n(o.amount, 0) * 100) - Math.max(0, Math.round(n(o.refundedTotal, 0)))) <= 0
                           }
+                          title="Refund this order"
                         >
                           Refund 💳
                         </button>
@@ -606,9 +666,9 @@ export default function AdminUnifiedPage() {
       )}
 
       {/* pagination */}
-      {totalPages > 1 && (
+      {!(tab === "custom" || tab === "logs") && totalPages > 1 && (
         <div className="flex justify-center mt-8 space-x-2">
-          {Array.from({ length: totalPages }).map((_: unknown, i: number) => (
+          {Array.from({ length: totalPages }).map((_, i) => (
             <button
               key={i}
               onClick={() => setPage(i + 1)}

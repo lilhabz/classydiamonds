@@ -576,15 +576,10 @@ export default function AdminProductsPage() {
         <Link href="/admin" className="hover:text-yellow-300">
           📦 Orders
         </Link>
-        <Link href="/admin/completed" className="hover:text-yellow-300">
-          ✅ Shipped
-        </Link>
-        <Link href="/admin/delivered" className="hover:text-yellow-300">
-          📬 Delivered
-        </Link>
-        <Link href="/admin/archived" className="hover:text-yellow-300">
-          🗂 Archived
-        </Link>
+        <Link href={{ pathname: "/admin", query: { tab: "shipped" } }}>✅ Shipped</Link>
+<Link href={{ pathname: "/admin", query: { tab: "delivered" } }}>📬 Delivered</Link>
+<Link href={{ pathname: "/admin", query: { tab: "archived" } }}>🗂 Archived</Link>
+
         <Link href="/admin/products" className="text-yellow-400">
           🛠 Products
         </Link>

@@ -87,7 +87,7 @@ export default function AdminLogsPage() {
 
       const grouped: Record<string, AdminLog[]> = {};
       (data.logs || []).forEach((log: AdminLog) => {
-        const key = log.orderId; // may be _id or sessionId; server normalization optional
+        const key = log.orderId;
         if (!grouped[key]) grouped[key] = [];
         grouped[key].push(log);
       });
@@ -100,7 +100,6 @@ export default function AdminLogsPage() {
               new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
           ),
         }))
-        // newest first (removed accidental .reverse())
         .sort(
           (a, b) =>
             new Date(b.logs[0].timestamp).getTime() -
@@ -116,7 +115,6 @@ export default function AdminLogsPage() {
   };
 
   const fetchOrderDetails = async (orderId: string) => {
-    // collapse if already expanded
     if (expandedOrders[orderId]) {
       const updated = { ...expandedOrders };
       delete updated[orderId];
@@ -124,16 +122,12 @@ export default function AdminLogsPage() {
       return;
     }
     try {
-      // Our /api/admin/order should accept either sessionId OR Mongo _id (see note above)
       const res = await fetch(`/api/admin/order?orderId=${orderId}`);
       const data = await res.json();
       if (res.ok) {
         setExpandedOrders((prev) => ({ ...prev, [orderId]: data }));
       } else {
-        console.warn(
-          "⚠️ Order details fetch failed:",
-          data?.error || res.status
-        );
+        console.warn("⚠️ Order details fetch failed:", data?.error || res.status);
       }
     } catch (err) {
       console.error("❌ Failed to fetch order details:", err);
@@ -227,7 +221,7 @@ export default function AdminLogsPage() {
       case "delete_order":
         return "text-red-400";
       default:
-        return "text-yellow-300"; // archive or unknown
+        return "text-yellow-300";
     }
   };
 
@@ -245,17 +239,18 @@ export default function AdminLogsPage() {
         🛠️ Admin Dashboard
       </h1>
 
+      {/* 🔗 Updated nav using unified /admin?tab=... */}
       <nav className="flex flex-wrap justify-center sm:justify-start gap-2 sm:space-x-6 mb-8 border-b border-[var(--bg-nav)] pb-4 text-[var(--foreground)] text-sm font-semibold">
-        <Link href="/admin" className="hover:text-yellow-300">
+        <Link href={{ pathname: "/admin", query: { tab: "orders" } }} className="hover:text-yellow-300">
           📦 Orders
         </Link>
-        <Link href="/admin/completed" className="hover:text-yellow-300">
+        <Link href={{ pathname: "/admin", query: { tab: "shipped" } }} className="hover:text-yellow-300">
           ✅ Shipped
         </Link>
-        <Link href="/admin/delivered" className="hover:text-yellow-300">
+        <Link href={{ pathname: "/admin", query: { tab: "delivered" } }} className="hover:text-yellow-300">
           📬 Delivered
         </Link>
-        <Link href="/admin/archived" className="hover:text-yellow-300">
+        <Link href={{ pathname: "/admin", query: { tab: "archived" } }} className="hover:text-yellow-300">
           🗂 Archived
         </Link>
         <Link href="/admin/products" className="hover:text-yellow-300">
@@ -352,10 +347,7 @@ export default function AdminLogsPage() {
                       onClick={() => fetchOrderDetails(orderId)}
                       title="Click to expand details"
                     >
-                      <td
-                        className="py-2 px-4"
-                        onClick={(e) => e.stopPropagation()}
-                      >
+                      <td className="py-2 px-4" onClick={(e) => e.stopPropagation()}>
                         <input
                           type="checkbox"
                           checked={!!selected[orderId]}
@@ -365,11 +357,7 @@ export default function AdminLogsPage() {
                       <td className="py-2 px-4 text-blue-300 hover:text-blue-400">
                         {orderId.slice(-8)}
                       </td>
-                      <td
-                        className={`py-2 px-4 capitalize ${colorFor(
-                          latest.action
-                        )}`}
-                      >
+                      <td className={`py-2 px-4 capitalize ${colorFor(latest.action)}`}>
                         {latest.action}
                       </td>
                       <td className="py-2 px-4 text-sm">
@@ -383,51 +371,33 @@ export default function AdminLogsPage() {
                       <tr className="bg-[#2a374f]">
                         <td colSpan={5} className="px-6 py-4">
                           <p className="mb-2 text-sm">
-                            🔢 Order #:{" "}
-                            {expandedOrders[orderId].orderNumber ?? "N/A"}
+                            🔢 Order #: {expandedOrders[orderId].orderNumber ?? "N/A"}
                           </p>
                           <p className="mb-2 text-sm">
-                            📍 Address:{" "}
-                            {formatAddress(
-                              expandedOrders[orderId].customerAddress
-                            )}
+                            📍 Address: {formatAddress(expandedOrders[orderId].customerAddress)}
                           </p>
                           <p className="mb-2 text-sm">
                             🧾 Order Date:{" "}
-                            {new Date(
-                              expandedOrders[orderId].createdAt
-                            ).toLocaleString()}
+                            {new Date(expandedOrders[orderId].createdAt).toLocaleString()}
                           </p>
 
                           <ul className="pl-4 list-disc text-sm mb-2">
                             {expandedOrders[orderId].items.map((item, i) => {
-                              const qty = Math.max(
-                                1,
-                                Math.round(num(item.quantity, 1))
-                              );
-
-                              // Prefer unit price → sale/discount → original/price
+                              const qty = Math.max(1, Math.round(num(item.quantity, 1)));
                               const unit =
                                 num(item.unitPrice) ||
                                 num(item.salePrice) ||
                                 num(item.discountedPrice) ||
                                 num(item.originalPrice) ||
                                 num(item.price);
-
                               const base =
-                                num(item.originalPrice) ||
-                                num(item.price) ||
-                                unit;
-
+                                num(item.originalPrice) || num(item.price) || unit;
                               const lineOrig = base * qty;
                               const lineSale = unit * qty;
-
                               return (
                                 <li key={i}>
                                   {qty}× {item.name}
-                                  {item.size
-                                    ? ` (Size ${item.size})`
-                                    : ""} –{" "}
+                                  {item.size ? ` (Size ${item.size})` : ""} –{" "}
                                   {unit < base ? (
                                     <>
                                       <span className="line-through mr-1">
@@ -446,8 +416,7 @@ export default function AdminLogsPage() {
                           </ul>
 
                           <p className="font-semibold mb-2">
-                            💰 Total: $
-                            {num(expandedOrders[orderId].amount).toFixed(2)}
+                            💰 Total: ${num(expandedOrders[orderId].amount).toFixed(2)}
                           </p>
 
                           <div className="text-sm mt-4">
@@ -456,11 +425,7 @@ export default function AdminLogsPage() {
                               {logs.map((l) => (
                                 <li key={l._id}>
                                   {new Date(l.timestamp).toLocaleString()} –{" "}
-                                  <span
-                                    className={`capitalize ${colorFor(
-                                      l.action
-                                    )}`}
-                                  >
+                                  <span className={`capitalize ${colorFor(l.action)}`}>
                                     {l.action}
                                   </span>{" "}
                                   by {l.performedBy}
