@@ -1,202 +1,142 @@
-// ✅ pages/admin/index.tsx – Admin Orders (refund-ready, hardened) 🔐🛠️
+// ================================
+// pages/admin/orders.tsx
+// One-page admin with tabs that reuse AdminOrderCard
+// ================================
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Head from "next/head";
 import Link from "next/link";
-import Image from "next/image";
+import { useRouter } from "next/router";
 import { useSession } from "next-auth/react";
 import Breadcrumbs from "@/components/Breadcrumbs";
-import RefundDialog from "@/components/RefundDialog";
+import AdminOrderCard, { AdminOrder, CardContext } from "@/components/AdminOrderCard";
 
-/* ---------- Safe helpers ---------- */
-const safeStr = (v: unknown, fallback = ""): string =>
-  typeof v === "string" ? v : v == null ? fallback : String(v);
+const TABS = [
+  { key: "orders", label: "📦 Orders" },
+  { key: "shipped", label: "✅ Shipped" },
+  { key: "delivered", label: "📬 Delivered" },
+  { key: "archived", label: "🗂 Archived" },
+] as const;
 
-const safeSlice = (v: unknown, start?: number, end?: number): string =>
-  safeStr(v).slice(start, end);
+type TabKey = typeof TABS[number]["key"];
 
-const safeArray = <T,>(v: unknown): T[] => (Array.isArray(v) ? (v as T[]) : []);
-
-const n = (v: unknown, d = 0): number => {
-  const num = typeof v === "string" ? Number(v) : (v as number);
-  return Number.isFinite(num) ? num : d;
-};
-
-/* ---------- Types (tolerate string numbers from DB) ---------- */
-interface OrderItem {
-  name?: string;
-  quantity?: number | string;
-  price?: number | string;
-  discountedPrice?: number | string;
-  salePrice?: number | string;
-  originalPrice?: number | string;
-  image?: string | null;
-  size?: string;
-  unitPrice?: number | string;
+function isTab(v: string | string[] | undefined): v is TabKey {
+  const s = typeof v === "string" ? v : v?.[0] || "";
+  return TABS.some((t) => t.key === s);
 }
 
-interface Order {
-  _id?: string;
-  customerName?: string;
-  customerEmail?: string;
-  customerAddress?: string;
-  shipping_address?: {
-    street?: string;
-    line2?: string;
-    city?: string;
-    state?: string;
-    zip?: string;
-    country?: string;
-  } | null;
-  shipping_address_string?: string;
-  addressSource?: "Stripe" | "Account" | "Unknown";
-  items?: OrderItem[];
-  amount?: number | string; // dollars (may be string)
-  refundedTotal?: number | string; // cents (older orders may omit)
-  createdAt?: string | Date;
-  stripeSessionId?: string;
-  orderNumber?: number | null;
-  shipped?: boolean;
-  archived?: boolean;
-  currency?: string;
-  paymentStatus?: string;
-}
-
-export default function AdminOrdersPage() {
+export default function UnifiedOrdersPage() {
+  const router = useRouter();
   const { data: session, status } = useSession();
-  const [orders, setOrders] = useState<Order[]>([]);
+
+  const tabParam = router.query.tab;
+  const activeTab: TabKey = isTab(tabParam) ? (tabParam as TabKey) : "orders";
+
   const [loading, setLoading] = useState(true);
+  const [orders, setOrders] = useState<AdminOrder[]>([]); // active/unshipped
+  const [shipped, setShipped] = useState<AdminOrder[]>([]);
+  const [delivered, setDelivered] = useState<AdminOrder[]>([]);
+  const [archived, setArchived] = useState<AdminOrder[]>([]);
+
   const [searchQuery, setSearchQuery] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const [refundTarget, setRefundTarget] = useState<{
-    sessionId: string;
-    maxCents: number;
-  } | null>(null);
   const itemsPerPage = 5;
 
-  useEffect(() => {
-    if (session?.user?.isAdmin) fetchOrders();
-  }, [session]);
+  const adminName =
+    (session?.user as any)?.firstName ||
+    (session?.user?.name ? session.user.name.split(" ")[0] : "Admin");
 
-  async function fetchOrders() {
+  const fetchAll = async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/admin/orders");
-      if (!res.ok) throw new Error(`Status ${res.status}`);
-      const json = (await res.json()) as { orders?: Order[]; error?: string };
-      setOrders(safeArray<Order>(json.orders));
-    } catch (err) {
-      console.error("❌ Failed to fetch orders:", err);
+      // We reuse your existing endpoints (avoids changing /api/admin/orders shape)
+      const [resAll, resShipped, resDelivered, resArchived] = await Promise.all([
+        fetch("/api/admin/orders"),
+        fetch("/api/admin/completed"),
+        fetch("/api/admin/delivered"),
+        fetch("/api/admin/archived"),
+      ]);
+      const [allJson, shipJson, delivJson, archJson] = await Promise.all([
+        resAll.json(),
+        resShipped.json(),
+        resDelivered.json(),
+        resArchived.json(),
+      ]);
+
+      const allOrders: AdminOrder[] = Array.isArray(allJson.orders)
+        ? allJson.orders
+        : [];
+
+      // Active/unshipped for the first tab
+      const active = allOrders.filter((o) => !o.shipped && !o.archived);
+
+      setOrders(active);
+      setShipped(Array.isArray(shipJson.orders) ? shipJson.orders : []);
+      setDelivered(Array.isArray(delivJson.orders) ? delivJson.orders : []);
+      setArchived(Array.isArray(archJson.orders) ? archJson.orders : []);
+    } catch (e) {
+      console.error("❌ Failed to fetch orders:", e);
       setOrders([]);
+      setShipped([]);
+      setDelivered([]);
+      setArchived([]);
     } finally {
       setLoading(false);
     }
-  }
+  };
 
-  // 🚚 Mark as shipped
-  async function confirmAndShip(orderStripeSessionId?: string) {
-    const id = safeStr(orderStripeSessionId);
-    if (!id) return alert("Missing order id");
-    if (!confirm(`📦 Mark order ${id.slice(-8)} as shipped?`)) return;
-    const adminName =
-      (session?.user as any)?.firstName ||
-      safeStr(session?.user?.name).split(" ")[0] ||
-      "Admin";
-    const res = await fetch("/api/shipped", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ orderId: id, adminName }),
-    });
-    if (res.ok) fetchOrders();
-    else {
-      const { error } = await res.json();
-      alert("❌ " + error);
-    }
-  }
+  useEffect(() => {
+    if (session?.user?.isAdmin) fetchAll();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.user?.isAdmin]);
 
-  // 🗂 Archive order
-  async function archiveOrder(orderStripeSessionId?: string) {
-    const id = safeStr(orderStripeSessionId);
-    if (!id) return alert("Missing order id");
-    if (!confirm(`🗂 Archive order ${id.slice(-8)}?`)) return;
-    const adminName =
-      (session?.user as any)?.firstName ||
-      safeStr(session?.user?.name).split(" ")[0] ||
-      "Admin";
-    const res = await fetch("/api/admin/archived", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ orderId: id, adminName }),
-    });
-    if (res.ok) fetchOrders();
-    else {
-      const { error } = await res.json();
-      alert("❌ " + error);
-    }
-  }
+  // Search + date filter per tab
+  const source = activeTab === "orders" ? orders : activeTab === "shipped" ? shipped : activeTab === "delivered" ? delivered : archived;
 
-  // 💳 Open refund modal for an order (uses Stripe sessionId)
-  function openRefund(o: Order) {
-    const sessionId = safeStr(o.stripeSessionId);
-    if (!sessionId) {
-      alert("❌ Missing Stripe session id on this order.");
-      return;
-    }
-    const totalCents = Math.max(0, Math.round(n(o.amount, 0) * 100));
-    const refundedCents = Math.max(0, Math.round(n(o.refundedTotal, 0))); // already cents
-    const maxCents = Math.max(0, totalCents - refundedCents);
-    if (maxCents <= 0) {
-      alert("Nothing left to refund for this order.");
-      return;
-    }
-    setRefundTarget({ sessionId, maxCents });
-  }
-
-  // 🔍 Filter & paginate
   const filtered = useMemo(() => {
     const q = searchQuery.toLowerCase();
     const start = startDate ? new Date(startDate) : null;
     const end = endDate ? new Date(endDate) : null;
 
-    return safeArray<Order>(orders).filter((o) => {
-      // Hide shipped/archived here (this page is "Active/Unshipped")
-      if (o.archived || o.shipped) return false;
+    return (source || []).filter((o) => {
+      const name = String(o.customerName || "").toLowerCase();
+      const email = String(o.customerEmail || "").toLowerCase();
+      const sess = String(o.stripeSessionId || "").toLowerCase();
+      const matchQ = !q || name.includes(q) || email.includes(q) || sess.includes(q);
 
-      // Hide junk: missing BOTH orderNumber and stripeSessionId
-      if (
-        (o.orderNumber == null || o.orderNumber === (null as any)) &&
-        !safeStr(o.stripeSessionId)
-      ) {
-        return false;
-      }
-
-      const name = safeStr(o.customerName).toLowerCase();
-      const email = safeStr(o.customerEmail).toLowerCase();
-      const sess = safeStr(o.stripeSessionId).toLowerCase();
-      const matchQ =
-        !q || name.includes(q) || email.includes(q) || sess.includes(q);
-
-      const created = o.createdAt ? new Date(o.createdAt) : new Date(0);
-      const after = start ? created >= start : true;
-      const before = end ? created <= end : true;
-
+      // choose which timestamp to filter on per tab
+      const ts =
+        activeTab === "orders"
+          ? o.createdAt
+          : activeTab === "shipped"
+          ? o.shippedAt
+          : activeTab === "delivered"
+          ? o.deliveredAt
+          : o.archivedAt;
+      const d = ts ? new Date(ts) : new Date(0);
+      const after = start ? d >= start : true;
+      const before = end ? d <= end : true;
       return matchQ && after && before;
     });
-  }, [orders, searchQuery, startDate, endDate]);
+  }, [source, searchQuery, startDate, endDate, activeTab]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / itemsPerPage));
-  const pageData = filtered.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+  const pageData = filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+  const switchTab = (key: TabKey) => {
+    setSearchQuery("");
+    setStartDate("");
+    setEndDate("");
+    setCurrentPage(1);
+    const url = { pathname: "/admin/orders", query: { tab: key } } as const;
+    router.replace(url, undefined, { shallow: true });
+  };
 
   if (status === "loading") return <div className="p-6">Checking access…</div>;
   if (!session?.user?.isAdmin)
-    return (
-      <div className="p-6 text-red-300 font-semibold">❌ Unauthorized</div>
-    );
+    return <div className="p-6 text-red-300 font-semibold">❌ Unauthorized</div>;
 
   return (
     <div className="min-h-screen bg-[var(--bg-page)] text-[var(--foreground)] p-6">
@@ -204,34 +144,28 @@ export default function AdminOrdersPage() {
         <title>Admin Orders | Classy Diamonds</title>
       </Head>
       <Breadcrumbs />
-      <h1 className="text-3xl font-serif font-bold mb-6">🛠 Admin Dashboard</h1>
+      <h1 className="text-3xl font-serif font-bold mb-6">🛠 Unified Orders</h1>
 
-      {/* 📂 Navigation */}
+      {/* Tabs */}
       <nav className="flex flex-wrap justify-center sm:justify-start gap-2 sm:space-x-6 mb-8 border-b border-[var(--bg-nav)] pb-4 text-[var(--foreground)] text-sm font-semibold">
-        <Link href="/admin" className="text-yellow-400">
-          📦 Orders
-        </Link>
-        <Link href="/admin/completed" className="hover:text-yellow-300">
-          ✅ Shipped
-        </Link>
-        <Link href="/admin/delivered" className="hover:text-yellow-300">
-          📬 Delivered
-        </Link>
-        <Link href="/admin/archived" className="hover:text-yellow-300">
-          🗂 Archived
-        </Link>
-        <Link href="/admin/products" className="hover:text-yellow-300">
-          🛠 Products
-        </Link>
-        <Link href="/admin/custom-photos" className="hover:text-yellow-300">
-          🖼 Custom
-        </Link>
-        <Link href="/admin/logs" className="hover:text-yellow-300">
-          📝 Logs
-        </Link>
+        {TABS.map((t) => (
+          <button
+            key={t.key}
+            onClick={() => switchTab(t.key)}
+            className={
+              "px-3 py-1 rounded " + (activeTab === t.key ? "text-yellow-400" : "hover:text-yellow-300")
+            }
+          >
+            {t.label}
+          </button>
+        ))}
+        {/* Keep your other admin links */}
+        <Link href="/admin/products" className="hover:text-yellow-300">🛠 Products</Link>
+        <Link href="/admin/custom-photos" className="hover:text-yellow-300">🖼 Custom</Link>
+        <Link href="/admin/logs" className="hover:text-yellow-300">📝 Logs</Link>
       </nav>
 
-      {/* 🔍 Filters */}
+      {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-4 mb-6">
         <input
           type="text"
@@ -240,210 +174,31 @@ export default function AdminOrdersPage() {
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
         />
-        <input
-          type="date"
-          className="px-2 py-1 rounded bg-[var(--bg-nav)] text-white"
-          value={startDate}
-          onChange={(e) => setStartDate(e.target.value)}
-        />
-        <input
-          type="date"
-          className="px-2 py-1 rounded bg-[var(--bg-nav)] text-white"
-          value={endDate}
-          onChange={(e) => setEndDate(e.target.value)}
-        />
+        <input type="date" className="px-2 py-1 rounded bg-[var(--bg-nav)] text-white" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+        <input type="date" className="px-2 py-1 rounded bg-[var(--bg-nav)] text-white" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
       </div>
 
-      {/* 📦 Orders list */}
-      <div id="print-area" className="space-y-8">
-        {pageData.map((o) => {
-          const orderId = safeStr(o._id);
-          const customerName = safeStr(o.customerName, "Customer");
-          const customerEmail = safeStr(o.customerEmail, "—");
-          const shortSess = safeSlice(o.stripeSessionId, -8) || "—";
-          const orderNo =
-            typeof o.orderNumber === "number" ? o.orderNumber : null;
+      {/* Lists */}
+      {loading ? (
+        <p>Loading orders…</p>
+      ) : pageData.length === 0 ? (
+        <p>No matching orders found.</p>
+      ) : (
+        <div className="space-y-8">
+          {pageData.map((o, idx) => (
+            <AdminOrderCard key={(o._id || o.stripeSessionId || idx).toString()} order={o} context={activeTab as CardContext} adminName={adminName} onRefresh={fetchAll} />
+          ))}
+        </div>
+      )}
 
-          // Address string
-          const addrStr = o?.shipping_address
-            ? `${safeStr(o.shipping_address.street)}${
-                safeStr(o.shipping_address.line2)
-                  ? `, ${safeStr(o.shipping_address.line2)}`
-                  : ""
-              }, ${safeStr(o.shipping_address.city)}, ${safeStr(
-                o.shipping_address.state
-              )} ${safeStr(o.shipping_address.zip)}, ${safeStr(
-                o.shipping_address.country
-              )}`
-            : safeStr(o.shipping_address_string) || safeStr(o.customerAddress);
-
-          // Created date
-          const created = o.createdAt ? new Date(o.createdAt) : new Date();
-          const createdLabel = isNaN(created as any)
-            ? ""
-            : created.toLocaleString();
-
-          const list = safeArray<OrderItem>(o.items);
-
-          // Refund math
-          const totalCents = Math.max(0, Math.round(n(o.amount, 0) * 100));
-          const refundedCents = Math.max(0, Math.round(n(o.refundedTotal, 0)));
-          const refundableCents = Math.max(0, totalCents - refundedCents);
-
-          return (
-            <div
-              key={orderId || shortSess}
-              className="bg-[var(--bg-nav)] p-6 rounded-xl shadow"
-            >
-              <h2 className="text-xl font-semibold mb-1">
-                {customerName} ({customerEmail})
-              </h2>
-
-              <p className="text-sm text-gray-300 mb-2">
-                🔢 Order #: {orderNo ?? "N/A"} | 🆔 {shortSess}
-              </p>
-
-              <p className="mb-2">📍 {addrStr}</p>
-              {o.addressSource && (
-                <p className="text-xs text-gray-400 italic">
-                  (Address Source: {o.addressSource})
-                </p>
-              )}
-
-              <p className="mb-4">🧾 Date: {createdLabel}</p>
-
-              <ul className="mb-4 list-disc pl-4 text-sm">
-                {list.map((i, idx) => {
-                  const qty = Math.max(1, Math.round(n(i?.quantity, 1)));
-
-                  // Unit price we display (coerced)
-                  const unit =
-                    n(i?.salePrice) ||
-                    n(i?.discountedPrice) ||
-                    n(i?.unitPrice) ||
-                    n(i?.originalPrice) ||
-                    n(i?.price);
-
-                  const base = n(i?.originalPrice) || n(i?.price) || unit;
-
-                  const lineOrig = base * qty;
-                  const lineSale = unit * qty;
-
-                  const imgSrc = safeStr(i?.image, "");
-                  const hasImg = imgSrc.trim().length > 0;
-
-                  return (
-                    <li key={idx} className="flex items-center gap-2">
-                      {hasImg ? (
-                        <Image
-                          src={imgSrc}
-                          alt={safeStr(i?.name, "Item")}
-                          width={48}
-                          height={48}
-                          className="rounded object-cover"
-                          unoptimized
-                        />
-                      ) : (
-                        <div className="w-12 h-12 rounded bg-[#1f2a44] border border-[#364763] text-[10px] flex items-center justify-center">
-                          No photo
-                        </div>
-                      )}
-
-                      {/* 👉 Unit price shown NEXT TO the picture */}
-                      <div className="flex flex-col">
-                        <div className="font-normal">
-                          {safeStr(i?.name, "Item")}
-                          {i?.size && (
-                            <span className="ml-2 text-xs px-2 py-0.5 rounded-full bg-[#364763] text-white align-middle">
-                              Size: {i.size}
-                            </span>
-                          )}
-                        </div>
-                        <div className="text-xs text-gray-300 mt-0.5">
-                          Unit: ${unit.toFixed(2)}
-                        </div>
-                      </div>
-
-                      <span className="ml-2">
-                        – x{qty} –{" "}
-                        {unit < base ? (
-                          <>
-                            <span className="line-through text-gray-400 mr-1">
-                              ${lineOrig.toFixed(2)}
-                            </span>
-                            <span className="text-green-400 font-semibold">
-                              ${lineSale.toFixed(2)}
-                            </span>
-                          </>
-                        ) : (
-                          <span>${lineSale.toFixed(2)}</span>
-                        )}
-                      </span>
-                    </li>
-                  );
-                })}
-              </ul>
-
-              <div className="flex justify-between items-center">
-                <span className="text-lg font-semibold">
-                  💰 Total: ${n(o.amount, 0).toFixed(2)}
-                  {refundedCents > 0 && (
-                    <span className="ml-2 text-sm text-gray-300">
-                      • Refunded ${(refundedCents / 100).toFixed(2)}
-                    </span>
-                  )}
-                </span>
-                <div className="space-x-2">
-                  <Link href={`/admin/order/${o.stripeSessionId}`}>
-                    <span className="bg-blue-600 px-4 py-2 rounded text-sm cursor-pointer">
-                      View 🔍
-                    </span>
-                  </Link>
-                  <button
-                    onClick={() => openRefund(o)}
-                    className="bg-indigo-600 px-4 py-2 rounded text-sm disabled:opacity-60"
-                    disabled={refundableCents <= 0 || !o.stripeSessionId}
-                    title={
-                      !o.stripeSessionId
-                        ? "Missing Stripe session id"
-                        : refundableCents <= 0
-                        ? "Nothing left to refund"
-                        : `Refund up to $${(refundableCents / 100).toFixed(2)}`
-                    }
-                  >
-                    Refund 💳
-                  </button>
-                  <button
-                    onClick={() => confirmAndShip(o.stripeSessionId)}
-                    className="bg-green-600 px-4 py-2 rounded text-sm"
-                  >
-                    Mark as Shipped 🚚
-                  </button>
-                  <button
-                    onClick={() => archiveOrder(o.stripeSessionId)}
-                    className="bg-yellow-600 px-4 py-2 rounded text-sm"
-                  >
-                    Archive 🗂
-                  </button>
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* 📄 Pagination */}
+      {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex justify-center mt-8 space-x-2">
           {Array.from({ length: totalPages }).map((_, i) => (
             <button
               key={i}
               onClick={() => setCurrentPage(i + 1)}
-              className={`px-3 py-1 rounded ${
-                currentPage === i + 1
-                  ? "bg-blue-600"
-                  : "bg-[var(--bg-nav)] hover:bg-blue-500"
-              }`}
+              className={`px-3 py-1 rounded ${currentPage === i + 1 ? "bg-blue-600" : "bg-[var(--bg-nav)] hover:bg-blue-500"}`}
             >
               {i + 1}
             </button>
@@ -451,26 +206,7 @@ export default function AdminOrdersPage() {
         </div>
       )}
 
-      <button
-        onClick={() => (window.location.href = "/")}
-        className="mt-8 text-sm text-red-300 underline"
-      >
-        Exit Admin Panel 🔒
-      </button>
-
-      {/* 💳 Refund modal */}
-      {refundTarget && (
-        <RefundDialog
-          orderId={refundTarget.sessionId} // backend accepts sessionId or _id
-          sessionId={refundTarget.sessionId} // Stripe Checkout session id
-          maxCents={refundTarget.maxCents}
-          onClose={() => setRefundTarget(null)}
-          onSuccess={async () => {
-            setRefundTarget(null);
-            await fetchOrders(); // refresh to reflect refundedTotal
-          }}
-        />
-      )}
+      <button onClick={() => (window.location.href = "/")} className="mt-8 text-sm text-red-300 underline">Exit Admin Panel 🔒</button>
     </div>
   );
 }
