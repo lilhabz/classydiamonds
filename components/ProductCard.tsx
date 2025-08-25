@@ -1,4 +1,4 @@
-// components/ProductCard.tsx
+// components/ProductCard.tsx – Fixed sizes + Animations restored
 "use client";
 
 import Image from "next/image";
@@ -67,19 +67,17 @@ export default function ProductCard({
   const displayPrice = salePrice ?? price;
 
   return (
-    // 🔒 OUTER CARD: 219 x 339 EXACT
     <div
-      className="rounded-2xl bg-[#25304f] shadow-lg hover:shadow-xl transition"
+      className="rounded-2xl bg-[#25304f] shadow-lg transition hover:shadow-xl"
       style={{ width: 219, height: 339 }}
     >
-      {/* 🔒 ANCHOR AREA: 195 x 259 EXACT */}
       <Link
         href={link}
         aria-label={name}
-        className="block mx-auto"
+        className="block mx-auto group"
         style={{ width: 195, height: 259 }}
       >
-        {/* 🔒 IMAGE: 195 x 195 EXACT */}
+        {/* 🔒 IMAGE with hover scale */}
         <div
           className="overflow-hidden rounded-xl"
           style={{ width: 195, height: 195 }}
@@ -89,16 +87,14 @@ export default function ProductCard({
             alt={name}
             width={195}
             height={195}
-            className="object-cover"
+            className="object-cover transform transition-transform duration-300 group-hover:scale-105"
             unoptimized={unoptimized}
             onError={handleImgError}
           />
         </div>
 
-        {/* 🔒 Spacer: 16px to hit 259 total height */}
         <div style={{ width: 195, height: 16 }} />
 
-        {/* 🔒 H3: 195 x 24 EXACT */}
         <h3
           className="font-medium text-white leading-[24px] truncate"
           style={{ width: 195, height: 24, fontSize: 14 }}
@@ -107,7 +103,6 @@ export default function ProductCard({
           {name}
         </h3>
 
-        {/* 🔒 P: 195 x 24 EXACT */}
         <p
           className="text-gray-200 leading-[24px] truncate"
           style={{ width: 195, height: 24, fontSize: 14 }}
@@ -134,11 +129,11 @@ export default function ProductCard({
         </p>
       </Link>
 
-      {/* 🔒 BUTTON: 195 x 44 EXACT */}
       <div className="w-full flex justify-center">
         <button
           onClick={onAddToCart}
-          className="rounded-xl text-white font-semibold hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-white/40"
+          className="rounded-xl text-white font-semibold focus:outline-none focus:ring-2 focus:ring-white/40
+                     transition-colors duration-200 hover:bg-white/20"
           style={{
             width: 195,
             height: 44,
