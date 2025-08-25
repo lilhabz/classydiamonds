@@ -1,6 +1,5 @@
 // 📄 pages/admin/index.tsx
-// 🧭 Unified Admin Dashboard (single page, tabbed) – now with Custom & Logs tabs
-// NOTE: Visuals/UX preserved. Only changed dynamic import paths to relative.
+// 🧭 Unified Admin Dashboard (single page, tabbed) – now shows the latest admin + action per order
 
 import { useEffect, useMemo, useState } from "react";
 import Head from "next/head";
@@ -12,7 +11,7 @@ import dynamic from "next/dynamic";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import RefundDialog from "@/components/RefundDialog";
 
-// ⬇️ Use RELATIVE paths so we don't depend on the @ alias
+// use RELATIVE dynamic imports (keeps working without @ alias)
 const CustomPhotosPanel = dynamic(
   () => import("../../components/admin/CustomPhotosPanel"),
   { ssr: false }
@@ -37,8 +36,29 @@ const n = (v: unknown, d = 0): number => {
   return d;
 };
 
-// 🔴 includes new tabs "custom" and "logs"
+// tabs
 type Stage = "orders" | "shipped" | "delivered" | "archived" | "custom" | "logs";
+
+// Admin log (matches your logs page)
+type AdminAction =
+  | "archive"
+  | "restore"
+  | "shipped"
+  | "delivered"
+  | "tracking"
+  | "refund"
+  | "delete_order";
+type AdminLog = {
+  _id: string;
+  orderId: string;         // may be stripeSessionId OR mongo _id
+  action: AdminAction;
+  timestamp: string;
+  performedBy: string;
+  amount?: number;
+  refundId?: string;
+  provider?: string;
+  note?: string;
+};
 
 interface BaseItem {
   name?: string;
@@ -96,26 +116,25 @@ export default function AdminUnifiedPage() {
     }
   }, [router.query.tab]);
 
-  // helper to change tabs + update URL (use on in-page tab buttons)
   const changeTab = (t: Stage) => {
     setTab(t);
     router.replace({ pathname: "/admin", query: { tab: t } }, undefined, { shallow: true });
   };
 
-  // data (orders-related tabs only)
+  // orders data (for order tabs)
   const [orders, setOrders] = useState<BaseOrder[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // filters (orders-related tabs only)
+  // filters (orders tabs)
   const [search, setSearch] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
 
-  // paging (orders-related tabs only)
+  // paging (orders tabs)
   const [page, setPage] = useState(1);
   const itemsPerPage = 5;
 
-  // tracking (for shipped tab)
+  // tracking (shipped tab)
   const [trackingInputs, setTrackingInputs] = useState<
     Record<string, { trackingNumber: string; carrier: string }>
   >({});
@@ -128,7 +147,12 @@ export default function AdminUnifiedPage() {
     maxCents: number;
   } | null>(null);
 
-  // Only load data for the order-like tabs
+  // 🆕 latest admin log per order (who did what latest)
+  const [latestLogByOrder, setLatestLogByOrder] = useState<
+    Record<string, AdminLog>
+  >({});
+
+  // fetch orders (per tab)
   useEffect(() => {
     if (!session?.user?.isAdmin) return;
 
@@ -138,7 +162,7 @@ export default function AdminUnifiedPage() {
     }
 
     setLoading(true);
-    setPage(1); // reset paging on tab change
+    setPage(1);
     (async () => {
       try {
         let endpoint = "/api/admin/orders";
@@ -166,6 +190,34 @@ export default function AdminUnifiedPage() {
         setOrders([]);
       } finally {
         setLoading(false);
+      }
+    })();
+  }, [tab, session?.user?.isAdmin]);
+
+  // fetch logs ONCE per visit to any orders-like tab; map latest log per orderId
+  useEffect(() => {
+    if (!session?.user?.isAdmin) return;
+    if (tab === "custom" || tab === "logs") return;
+
+    (async () => {
+      try {
+        const res = await fetch("/api/admin/logs");
+        const data = await res.json();
+        const logs: AdminLog[] = Array.isArray(data?.logs) ? data.logs : Array.isArray(data) ? data : [];
+
+        // Build map of latest log per orderId (also index by possible stripeSessionId)
+        const map: Record<string, AdminLog> = {};
+        logs.forEach((l) => {
+          const key = l.orderId;
+          const prev = map[key];
+          if (!prev || new Date(l.timestamp).getTime() > new Date(prev.timestamp).getTime()) {
+            map[key] = l;
+          }
+        });
+        setLatestLogByOrder(map);
+      } catch (e) {
+        console.warn("⚠️ Could not load admin logs for badges:", e);
+        setLatestLogByOrder({});
       }
     })();
   }, [tab, session?.user?.isAdmin]);
@@ -336,63 +388,34 @@ export default function AdminUnifiedPage() {
 
       <h1 className="text-3xl font-serif font-bold tracking-wide mb-4">🛠️ Admin Dashboard</h1>
 
-      {/* Top nav: in-page tabs + external section */}
+      {/* Top nav */}
       <div className="flex flex-wrap items-center gap-2 sm:gap-4 mb-6 text-sm font-semibold border-b border-[var(--bg-nav)] pb-3">
-        {/* In-page tabs */}
-        <Link
-          href={{ pathname: "/admin", query: { tab: "orders" } }}
-          onClick={(e) => { e.preventDefault(); changeTab("orders"); }}
-          className={tab === "orders" ? "text-yellow-400" : "hover:text-yellow-300"}
-        >
+        <Link href={{ pathname: "/admin", query: { tab: "orders" } }} onClick={(e) => { e.preventDefault(); changeTab("orders"); }} className={tab === "orders" ? "text-yellow-400" : "hover:text-yellow-300"}>
           📦 Orders
         </Link>
-        <Link
-          href={{ pathname: "/admin", query: { tab: "shipped" } }}
-          onClick={(e) => { e.preventDefault(); changeTab("shipped"); }}
-          className={tab === "shipped" ? "text-yellow-400" : "hover:text-yellow-300"}
-        >
+        <Link href={{ pathname: "/admin", query: { tab: "shipped" } }} onClick={(e) => { e.preventDefault(); changeTab("shipped"); }} className={tab === "shipped" ? "text-yellow-400" : "hover:text-yellow-300"}>
           ✅ Shipped
         </Link>
-        <Link
-          href={{ pathname: "/admin", query: { tab: "delivered" } }}
-          onClick={(e) => { e.preventDefault(); changeTab("delivered"); }}
-          className={tab === "delivered" ? "text-yellow-400" : "hover:text-yellow-300"}
-        >
+        <Link href={{ pathname: "/admin", query: { tab: "delivered" } }} onClick={(e) => { e.preventDefault(); changeTab("delivered"); }} className={tab === "delivered" ? "text-yellow-400" : "hover:text-yellow-300"}>
           📬 Delivered
         </Link>
-        <Link
-          href={{ pathname: "/admin", query: { tab: "archived" } }}
-          onClick={(e) => { e.preventDefault(); changeTab("archived"); }}
-          className={tab === "archived" ? "text-yellow-400" : "hover:text-yellow-300"}
-        >
+        <Link href={{ pathname: "/admin", query: { tab: "archived" } }} onClick={(e) => { e.preventDefault(); changeTab("archived"); }} className={tab === "archived" ? "text-yellow-400" : "hover:text-yellow-300"}>
           🗂 Archived
         </Link>
-
-        {/* NEW TABS */}
-        <Link
-          href={{ pathname: "/admin", query: { tab: "custom" } }}
-          onClick={(e) => { e.preventDefault(); changeTab("custom"); }}
-          className={tab === "custom" ? "text-yellow-400" : "hover:text-yellow-300"}
-        >
+        <Link href={{ pathname: "/admin", query: { tab: "custom" } }} onClick={(e) => { e.preventDefault(); changeTab("custom"); }} className={tab === "custom" ? "text-yellow-400" : "hover:text-yellow-300"}>
           🖼 Custom
         </Link>
-        <Link
-          href={{ pathname: "/admin", query: { tab: "logs" } }}
-          onClick={(e) => { e.preventDefault(); changeTab("logs"); }}
-          className={tab === "logs" ? "text-yellow-400" : "hover:text-yellow-300"}
-        >
+        <Link href={{ pathname: "/admin", query: { tab: "logs" } }} onClick={(e) => { e.preventDefault(); changeTab("logs"); }} className={tab === "logs" ? "text-yellow-400" : "hover:text-yellow-300"}>
           📝 Logs
         </Link>
 
         <span className="opacity-50 mx-2">|</span>
-
-        {/* External heavy section stays separate */}
         <Link href="/admin/products" className="hover:text-yellow-300">
           🛠 Products
         </Link>
       </div>
 
-      {/* Filters (only for order-like tabs) */}
+      {/* Filters (order tabs only) */}
       {!(tab === "custom" || tab === "logs") && (
         <div className="flex flex-col sm:flex-row gap-3 mb-6">
           <input
@@ -417,7 +440,7 @@ export default function AdminUnifiedPage() {
         </div>
       )}
 
-      {/* CONTENT AREA */}
+      {/* CONTENT */}
       {tab === "custom" ? (
         <CustomPhotosPanel />
       ) : tab === "logs" ? (
@@ -434,14 +457,31 @@ export default function AdminUnifiedPage() {
             const totalCents = Math.max(0, Math.round(n(o.amount, 0) * 100));
             const refundableCents = Math.max(0, totalCents - refundedCents);
 
+            // 🆕 pick latest log by either stripeSessionId or mongo _id (logs may use either)
+            const lastLog =
+              (sid && latestLogByOrder[sid]) ||
+              (o._id && latestLogByOrder[o._id]) ||
+              undefined;
+
             return (
               <div key={o._id || sid} className="bg-[var(--bg-nav)] p-6 rounded-xl shadow">
                 <h2 className="text-xl font-semibold mb-1">
                   {safeStr(o.customerName, "Customer")} ({safeStr(o.customerEmail, "—")})
                 </h2>
                 <p className="text-sm text-gray-300 mb-2">
-                  🔢 Order #: {o.orderNumber ?? "N/A"} | 🆔 {sid ? sid.slice(-8) : "—"}
+                  🔢 Order #: {o.orderNumber ?? "N/A"} | 🆔 {sid ? sid.slice(-8) : (o._id ? o._id.slice(-8) : "—")}
                 </p>
+
+                {/* 🆕 Who did what (latest) */}
+                {lastLog ? (
+                  <p className="text-xs mb-2 opacity-90">
+                    👤 <span className="font-medium">{lastLog.performedBy || "—"}</span> •{" "}
+                    <span className="capitalize">{lastLog.action}</span> •{" "}
+                    {new Date(lastLog.timestamp).toLocaleString()}
+                  </p>
+                ) : (
+                  <p className="text-xs mb-2 opacity-60">👤 No admin activity logged yet</p>
+                )}
 
                 <p className="mb-2 text-sm">
                   📍 {safeStr(o.customerAddress) || safeStr(o.shipping_address_string) || "—"}
@@ -598,16 +638,11 @@ export default function AdminUnifiedPage() {
                         <button
                           onClick={() => openRefund(o)}
                           className="bg-indigo-600 px-4 py-2 rounded text-sm disabled:opacity-60"
-                          disabled={
-                            Math.max(0, Math.round(n(o.amount, 0) * 100) - Math.max(0, Math.round(n(o.refundedTotal, 0)))) <= 0 || !sid
-                          }
+                          disabled={refundableCents <= 0 || !sid}
                           title={
                             !sid
                               ? "Missing Stripe session id"
-                              : `Refund up to $${(
-                                  (Math.max(0, Math.round(n(o.amount, 0) * 100)) -
-                                    Math.max(0, Math.round(n(o.refundedTotal, 0)))) / 100
-                                ).toFixed(2)}`
+                              : `Refund up to $${(refundableCents / 100).toFixed(2)}`
                           }
                         >
                           Refund 💳
@@ -626,10 +661,12 @@ export default function AdminUnifiedPage() {
                         <button
                           onClick={() => openRefund(o)}
                           className="bg-indigo-600 px-4 py-2 rounded text-sm disabled:opacity-60"
-                          disabled={
-                            Math.max(0, Math.round(n(o.amount, 0) * 100) - Math.max(0, Math.round(n(o.refundedTotal, 0)))) <= 0
+                          disabled={refundableCents <= 0}
+                          title={
+                            refundableCents <= 0
+                              ? "Nothing left to refund"
+                              : `Refund up to $${(refundableCents / 100).toFixed(2)}`
                           }
-                          title="Refund this order"
                         >
                           Refund 💳
                         </button>
