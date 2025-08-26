@@ -1,5 +1,5 @@
 // 📄 pages/admin/index.tsx
-// 🧭 Unified Admin Dashboard (single page, tabbed) – now shows the latest admin + action per order
+// 🧭 Unified Admin Dashboard with Custom & Logs tabs, "who did what", and Force Delete 🗑
 
 import { useEffect, useMemo, useState } from "react";
 import Head from "next/head";
@@ -11,7 +11,7 @@ import dynamic from "next/dynamic";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import RefundDialog from "@/components/RefundDialog";
 
-// use RELATIVE dynamic imports (keeps working without @ alias)
+// Use RELATIVE dynamic imports so we don't depend on an alias
 const CustomPhotosPanel = dynamic(
   () => import("../../components/admin/CustomPhotosPanel"),
   { ssr: false }
@@ -36,10 +36,9 @@ const n = (v: unknown, d = 0): number => {
   return d;
 };
 
-// tabs
 type Stage = "orders" | "shipped" | "delivered" | "archived" | "custom" | "logs";
 
-// Admin log (matches your logs page)
+// Matches your logs API
 type AdminAction =
   | "archive"
   | "restore"
@@ -47,7 +46,8 @@ type AdminAction =
   | "delivered"
   | "tracking"
   | "refund"
-  | "delete_order";
+  | "delete_order"
+  | "delete_order_bulk_junk";
 type AdminLog = {
   _id: string;
   orderId: string;         // may be stripeSessionId OR mongo _id
@@ -97,7 +97,6 @@ interface BaseOrder {
 export default function AdminUnifiedPage() {
   const { data: session, status } = useSession();
 
-  // tabs
   const [tab, setTab] = useState<Stage>("orders");
 
   // ✅ Router + URL sync for tabs
@@ -152,7 +151,7 @@ export default function AdminUnifiedPage() {
     Record<string, AdminLog>
   >({});
 
-  // fetch orders (per tab)
+  // fetch orders per tab
   useEffect(() => {
     if (!session?.user?.isAdmin) return;
 
@@ -205,7 +204,6 @@ export default function AdminUnifiedPage() {
         const data = await res.json();
         const logs: AdminLog[] = Array.isArray(data?.logs) ? data.logs : Array.isArray(data) ? data : [];
 
-        // Build map of latest log per orderId (also index by possible stripeSessionId)
         const map: Record<string, AdminLog> = {};
         logs.forEach((l) => {
           const key = l.orderId;
@@ -288,30 +286,62 @@ export default function AdminUnifiedPage() {
     changeTab("orders");
   }
 
-  async function saveTracking(sessionId: string) {
-    const input = trackingInputs[sessionId];
-    if (!input?.trackingNumber) return alert("❌ Please enter a tracking number.");
-    if (savedTracking[sessionId] === input.trackingNumber) return;
+  // Save tracking number + carrier for a shipped order
+async function saveTracking(sessionId: string) {
+  const input = trackingInputs[sessionId];
+  if (!input?.trackingNumber) return alert("❌ Please enter a tracking number.");
+  if (savedTracking[sessionId] === input.trackingNumber) return; // nothing to do
+
+  try {
+    setSavingTracking((p) => ({ ...p, [sessionId]: true }));
+    const res = await fetch("/api/tracking", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        orderId: sessionId,
+        trackingNumber: input.trackingNumber,
+        carrier: input.carrier,
+        adminName, // shows who did it in your logs
+      }),
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(json?.error || "Failed to save tracking");
+
+    // cache the last saved value so button shows "✅ Saved"
+    setSavedTracking((prev) => ({ ...prev, [sessionId]: input.trackingNumber }));
+    alert("✅ Tracking saved" + (json?.emailSent ? " and email sent." : "."));
+    reload();
+  } catch (e: any) {
+    alert("❌ " + (e?.message || "Failed to save tracking"));
+  } finally {
+    setSavingTracking((p) => ({ ...p, [sessionId]: false }));
+  }
+}
+
+
+  // 🗑 Force delete via your /api/admin/delete-order (POST)
+  async function forceDeleteOrder(opts: { mongoId?: string; sessionId?: string; note?: string }) {
+    const { mongoId, sessionId, note } = opts;
+    if (!mongoId && !sessionId) return alert("Missing identifier (mongoId or sessionId).");
+    if (!confirm("⚠️ Permanently delete this order? A backup will be stored in orders_deleted.")) return;
 
     try {
-      setSavingTracking((p) => ({ ...p, [sessionId]: true }));
-      const res = await fetch("/api/tracking", {
+      const res = await fetch("/api/admin/delete-order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          orderId: sessionId,
-          trackingNumber: input.trackingNumber,
-          carrier: input.carrier,
-          adminName,
+          orderId: mongoId,
+          sessionId,
+          force: true, // allow delete even if not archived/junk
+          note: note || "manual force delete from admin UI",
         }),
       });
-      const json = await res.json();
-      if (!res.ok) return alert("❌ " + (json?.error || "Failed"));
-      setSavedTracking((prev) => ({ ...prev, [sessionId]: input.trackingNumber }));
-      alert("✅ Tracking saved" + (json?.emailSent ? " and email sent." : "."));
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Delete failed");
+      alert("✅ Order removed");
       reload();
-    } finally {
-      setSavingTracking((p) => ({ ...p, [sessionId]: false }));
+    } catch (e: any) {
+      alert("❌ " + e.message);
     }
   }
 
@@ -472,7 +502,7 @@ export default function AdminUnifiedPage() {
                   🔢 Order #: {o.orderNumber ?? "N/A"} | 🆔 {sid ? sid.slice(-8) : (o._id ? o._id.slice(-8) : "—")}
                 </p>
 
-                {/* 🆕 Who did what (latest) */}
+                {/* Who did what (latest) */}
                 {lastLog ? (
                   <p className="text-xs mb-2 opacity-90">
                     👤 <span className="font-medium">{lastLog.performedBy || "—"}</span> •{" "}
@@ -620,7 +650,7 @@ export default function AdminUnifiedPage() {
                 </div>
 
                 {/* footer actions */}
-                <div className="flex justify-between items-center mt-4">
+                <div className="flex flex-wrap gap-2 justify-between items-center mt-4">
                   <span className="text-lg font-semibold">
                     💰 Total: ${n(o.amount, 0).toFixed(2)}
                     {refundedCents > 0 && (
@@ -629,7 +659,7 @@ export default function AdminUnifiedPage() {
                   </span>
 
                   <div className="space-x-2">
-                    <Link href={`/admin/order/${sid}`}>
+                    <Link href={`/admin/order/${sid || o._id || ""}`}>
                       <span className="bg-blue-600 px-4 py-2 rounded text-sm cursor-pointer">View 🔍</span>
                     </Link>
 
@@ -682,7 +712,7 @@ export default function AdminUnifiedPage() {
                     {tab === "delivered" && (
                       <>
                         <button onClick={() => archive(sid)} className="bg-yellow-600 px-4 py-2 rounded text-sm">
-                          Archive 🗂
+                        Archive 🗂
                         </button>
                       </>
                     )}
@@ -693,6 +723,28 @@ export default function AdminUnifiedPage() {
                           Restore ♻️
                         </button>
                       </>
+                    )}
+
+                    {/* 🗑 Force Delete for orphans (no stripeSessionId but has _id) */}
+                    {!sid && o._id && (
+                      <button
+                        onClick={() => forceDeleteOrder({ mongoId: o._id, note: "orphan (no stripeSessionId)" })}
+                        className="bg-red-600 px-4 py-2 rounded text-sm"
+                        title="Permanently remove this orphan order"
+                      >
+                        Force Delete 🗑
+                      </button>
+                    )}
+
+                    {/* Optional: allow delete of ARCHIVED orders even if they have a session id */}
+                    {sid && o.archived && (
+                      <button
+                        onClick={() => forceDeleteOrder({ sessionId: sid, note: "archived-delete from admin UI" })}
+                        className="bg-red-700 px-4 py-2 rounded text-sm"
+                        title="Permanently delete archived order (backed up first)"
+                      >
+                        Delete (Archived) 🗑
+                      </button>
                     )}
                   </div>
                 </div>
