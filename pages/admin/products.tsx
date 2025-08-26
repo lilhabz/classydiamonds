@@ -1,7 +1,6 @@
 // 📄 pages/admin/products.tsx – Admin Product Management with Category → Subcategory (all jewelry) & Watches Split 🛠️💎
 
 import { useState, useEffect, useRef, useMemo } from "react";
-import { useRouter } from "next/router";
 import { getSession } from "next-auth/react";
 import Image from "next/image";
 import Head from "next/head";
@@ -43,34 +42,74 @@ interface AdminProduct {
   featured: boolean;
   gender?: "unisex" | "him" | "her";
   tags?: string[];
-  department?: "jewelry" | "watch"; // ✅ added so we can include legacy rows
+  department?: "jewelry" | "watch"; // ensure legacy rows show under correct tab
 }
 
-// 🛡️ Server-side guard: only admins
+// 🛡️ Server-side guard + fetch products via your legacy lib (same as storefront)
 export async function getServerSideProps(context: any) {
   const session = await getSession(context);
   if (!session || !session.user?.isAdmin) {
     return { redirect: { destination: "/", permanent: false } };
   }
-  return { props: {} };
+
+  const { listProducts } = await import("@/lib/products");
+  const raw = await listProducts({}, { sort: { createdAt: -1 }, limit: 500 });
+
+  // Map legacy Product -> AdminProduct expected by this page
+  const initialProducts: AdminProduct[] = raw.map((p: any) => ({
+    _id: String(p._id),
+    skuNumber: p.skuNumber ?? undefined,
+    name: p.name ?? p.title ?? "",
+    slug: p.slug ?? undefined,
+    description: p.description ?? "",
+    price: Number(p.price ?? p.unitPrice ?? 0),
+    salePrice: p.salePrice ?? undefined,
+    category: p.category,
+    subcategory: p.subCategory ?? p.subcategory ?? undefined,
+    subCategory: p.subCategory ?? p.subcategory ?? undefined,
+    imageUrl:
+      Array.isArray(p.images) && p.images.length
+        ? p.images[0]
+        : p.imageUrl ?? "",
+    images: Array.isArray(p.images) ? p.images : [],
+    featured: Boolean(p.featured),
+    gender:
+      p.audience && p.audience[0]
+        ? (p.audience[0] as any)
+        : p.gender ?? "unisex",
+    tags: Array.isArray(p.tags) ? p.tags : [],
+    department: p.department ?? "jewelry",
+  }));
+
+  return { props: { initialProducts } };
 }
 
-export default function AdminProductsPage() {
-  const router = useRouter();
-
+export default function AdminProductsPage({
+  initialProducts,
+}: {
+  initialProducts: AdminProduct[];
+}) {
   // View toggle: keep Watches separate from Jewelry
   const [catalogView, setCatalogView] = useState<"jewelry" | "watches">(
     "jewelry"
   );
 
-  // 🔥 Products from DB
-  const [products, setProducts] = useState<AdminProduct[]>([]);
-  const [loadingList, setLoadingList] = useState(false);
+  // 🔥 Products from SSR (no client fetch needed to list)
+  const [products, setProducts] = useState<AdminProduct[]>(
+    () => initialProducts || []
+  );
+  const [loadingList] = useState(false);
 
   // 💾 Local edits for batch save (featured)
   const [rowEdits, setRowEdits] = useState<
     Record<string, { featured: boolean }>
-  >({});
+  >(() => {
+    const init: Record<string, { featured: boolean }> = {};
+    (initialProducts || []).forEach(
+      (p) => (init[p._id] = { featured: p.featured })
+    );
+    return init;
+  });
 
   // ✏️ Active edit
   const [editingProduct, setEditingProduct] = useState<AdminProduct | null>(
@@ -110,7 +149,7 @@ export default function AdminProductsPage() {
   // 📋 Add form state
   const [formState, setFormState] = useState({
     name: "",
-    description: "", // now optional
+    description: "",
     price: "",
     salePrice: "",
     category: (JEWELRY_CATEGORIES[0] as Category) || ("rings" as Category),
@@ -118,13 +157,13 @@ export default function AdminProductsPage() {
     subcategoryCustom: "",
     featured: false,
     gender: "unisex" as "unisex" | "him" | "her",
-    imageFile: null as File | null, // optional
+    imageFile: null as File | null,
   });
 
   // 📋 Edit form state
   const [editForm, setEditForm] = useState({
     name: "",
-    description: "", // now optional
+    description: "",
     price: "",
     salePrice: "",
     category: (JEWELRY_CATEGORIES[0] as Category) || ("rings" as Category),
@@ -132,7 +171,7 @@ export default function AdminProductsPage() {
     subcategoryCustom: "",
     featured: false,
     gender: "unisex" as "unisex" | "him" | "her",
-    imageFile: null as File | null, // optional
+    imageFile: null as File | null,
     imageRemoved: false,
   });
 
@@ -142,7 +181,6 @@ export default function AdminProductsPage() {
   // Helper: Does this category have subcategories to show?
   const hasSubcatsFor = (cat: Category) => {
     const opts = subcategoryOptionsFor(cat);
-    // show picker if there are real options between NONE and CUSTOM
     return (
       opts.filter((o) => o !== NONE_OPTION && o !== CUSTOM_OPTION).length > 0
     );
@@ -167,36 +205,8 @@ export default function AdminProductsPage() {
             subcategoryCustom: "",
           };
     });
-    // also reset table category filter when switching views
     setCategoryFilter("all");
   }, [catalogView]);
-
-  // 🚚 Load products
-  useEffect(() => {
-    async function load() {
-      setLoadingList(true);
-      try {
-        const res = await fetch("/api/admin/products");
-        const data = await res.json();
-        const list: AdminProduct[] = (data.products || []).map((p: any) => ({
-          ...p,
-          // normalize for UI safety
-          subcategory: p.subcategory ?? p.subCategory,
-        }));
-        setProducts(list);
-        const edits: Record<string, { featured: boolean }> = {};
-        list.forEach((p) => {
-          edits[p._id] = { featured: p.featured };
-        });
-        setRowEdits(edits);
-      } catch (err) {
-        console.error("Failed to load products:", err);
-      } finally {
-        setLoadingList(false);
-      }
-    }
-    load();
-  }, []);
 
   // 🚚 Scroll to edit form when editing product
   useEffect(() => {
@@ -369,8 +379,7 @@ export default function AdminProductsPage() {
   const handleEditClick = (product: AdminProduct) => {
     setEditingProduct(product);
 
-    const cat = product.category;
-    const opts = subcategoryOptionsFor(cat).filter(
+    const opts = subcategoryOptionsFor(product.category).filter(
       (o) => o !== NONE_OPTION && o !== CUSTOM_OPTION
     );
 
@@ -984,7 +993,7 @@ export default function AdminProductsPage() {
               />
             </label>
 
-            {/* 🔖 Sale Price */}
+            {/* 🔖 Sale Price (USD) */}
             <label>
               🔖 Sale Price (USD)
               <input
@@ -1153,7 +1162,6 @@ export default function AdminProductsPage() {
               </p>
             )}
 
-            {/* Full width table; no horizontal scroll on desktop */}
             <div className="w-full">
               <table className="w-full table-auto border-collapse">
                 <thead>
