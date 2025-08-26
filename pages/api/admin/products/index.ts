@@ -28,85 +28,78 @@ function parseForm(
   });
 }
 
-// Build a tolerant filter for legacy docs; safe to pass into listProducts()
-function buildFilterFromQuery(query: NextApiRequest["query"]) {
-  const { department, category, subCategory, q, audience, specs } = query;
-  const filter: any = {};
-
-  if (typeof department === "string" && department) {
-    filter.$or = [
-      ...(filter.$or || []),
-      { department: department.toLowerCase() },
-      { category: department.toLowerCase() }, // legacy
-    ];
-  }
-
-  if (typeof category === "string" && category) {
-    filter.category = category.toLowerCase();
-  }
-
-  if (typeof subCategory === "string" && subCategory) {
-    filter.$or = [
-      ...(filter.$or || []),
-      { subCategory: subCategory.toLowerCase() },
-      { subcategory: subCategory.toLowerCase() }, // legacy spelling
-    ];
-  }
-
-  if (typeof q === "string" && q.trim()) {
-    const rx = { $regex: q.trim(), $options: "i" };
-    filter.$or = [
-      ...(filter.$or || []),
-      { title: rx },
-      { name: rx },
-      { description: rx },
-      { tags: rx },
-    ];
-  }
-
-  if (typeof audience === "string" && audience) {
-    const a = audience
-      .split(",")
-      .map((s) => s.trim().toLowerCase())
-      .filter(Boolean);
-    if (a.length) {
-      filter.$expr = {
-        $gt: [
-          {
-            $size: {
-              $setIntersection: [{ $ifNull: ["$audience", ["unisex"]] }, a],
-            },
-          },
-          0,
-        ],
-      };
-    }
-  }
-
-  if (typeof specs === "string" && specs) {
-    try {
-      const wanted = JSON.parse(specs);
-      const and: any[] = [];
-      for (const [k, v] of Object.entries(wanted)) {
-        and.push({ [`specs.${k}`]: v });
-      }
-      if (and.length) filter.$and = [...(filter.$and || []), ...and];
-    } catch {
-      // ignore
-    }
-  }
-
-  return filter;
-}
-
 // Normalize for admin UI expectations
 const toAdminRow = (p: any) => ({
   ...p,
-  id: p._id, // some UIs key off "id"
+  id: p._id,
   name: p.title || p.name || "",
   imageUrl: Array.isArray(p.images) && p.images.length ? p.images[0] : "",
   price: p.salePrice ?? p.discountedPrice ?? p.unitPrice ?? p.price ?? 0,
 });
+
+/** Apply filters AFTER normalization so legacy docs also match */
+function applyAdminFilters(products: any[], query: NextApiRequest["query"]) {
+  const str = (v: any) => (typeof v === "string" ? v.toLowerCase().trim() : "");
+  const arr = (v: any): string[] =>
+    Array.isArray(v) ? v.map((x) => String(x).toLowerCase().trim()) : [];
+
+  const q = str(query.q);
+  const department = str(query.department);
+  const category = str(query.category);
+  const subCategory = str(query.subCategory);
+  const audienceList = str(query.audience)
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  // specs is optional JSON
+  let specsWanted: Record<string, any> | null = null;
+  if (typeof query.specs === "string" && query.specs) {
+    try {
+      specsWanted = JSON.parse(query.specs);
+    } catch {
+      specsWanted = null;
+    }
+  }
+
+  return products.filter((p) => {
+    const pDept = str(
+      p.department || (p.category === "watch" ? "watch" : "jewelry")
+    );
+    const pCat = str(p.category);
+    const pSub = str(p.subCategory);
+    const pAud = arr(p.audience);
+    const pTitle = (p.title || p.name || "").toString().toLowerCase();
+    const pDesc = (p.description || "").toString().toLowerCase();
+    const pTags = arr(p.tags);
+
+    if (department && pDept !== department) return false;
+    if (category && pCat !== category) return false;
+    if (subCategory && pSub !== subCategory) return false;
+
+    if (audienceList.length) {
+      const set = new Set(pAud.length ? pAud : ["unisex"]);
+      const anyMatch = audienceList.some((a) => set.has(a));
+      if (!anyMatch) return false;
+    }
+
+    if (specsWanted && typeof p.specs === "object" && p.specs) {
+      for (const [k, v] of Object.entries(specsWanted)) {
+        if ((p.specs as any)[k] !== v) return false;
+      }
+    }
+
+    if (q) {
+      const hit =
+        pTitle.includes(q) ||
+        pDesc.includes(q) ||
+        pTags.some((t) => t.includes(q));
+      if (!hit) return false;
+    }
+
+    return true;
+  });
+}
 
 export default async function handler(
   req: NextApiRequest,
@@ -117,24 +110,23 @@ export default async function handler(
     return res.status(403).json({ error: "Forbidden" });
   }
 
+  // -------- GET: fetch normalized, then filter in-memory so legacy docs work --------
   if (req.method === "GET") {
     try {
-      const filter = buildFilterFromQuery(req.query);
-      const products = await listProducts(filter, {
-        limit: 500,
-        sort: { createdAt: -1 },
-      });
-
-      // If you want to verify quickly, uncomment:
-      // console.log("[admin/products] count=", products.length, "sample=", products[0]);
-
-      return res.status(200).json({ products: products.map(toAdminRow) });
+      // Pull a generous page and filter locally (fast enough for admin use)
+      const all = await listProducts(
+        {},
+        { limit: 1000, sort: { createdAt: -1 } }
+      );
+      const filtered = applyAdminFilters(all, req.query);
+      return res.status(200).json({ products: filtered.map(toAdminRow) });
     } catch (e) {
       console.error("GET products error", e);
       return res.status(500).json({ error: "Failed to load products" });
     }
   }
 
+  // ----------------- POST (Cloudinary + normalized create) -----------------
   if (req.method === "POST") {
     try {
       const { fields, files } = await parseForm(req);
