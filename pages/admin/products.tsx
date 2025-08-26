@@ -827,7 +827,7 @@ export default function AdminProductsPage({
                     if (editingProduct) allowed.add(editingProduct.category);
                     return Array.from(allowed).map((cat) => (
                       <option key={cat} value={cat}>
-                        {CATEGORY_LABELS[cat]}
+                        {prettyLabel(CATEGORY_LABELS[cat])}
                       </option>
                     ));
                   })()}
@@ -1018,7 +1018,7 @@ export default function AdminProductsPage({
               >
                 {allowedCategoriesForView(catalogView).map((cat) => (
                   <option key={cat} value={cat}>
-                    {CATEGORY_LABELS[cat]}
+                    {prettyLabel(CATEGORY_LABELS[cat])}
                   </option>
                 ))}
               </select>
@@ -1192,7 +1192,7 @@ export default function AdminProductsPage({
                         <option value="all">All</option>
                         {allowedCategoriesForView(catalogView).map((c) => (
                           <option key={c} value={c}>
-                            {CATEGORY_LABELS[c]}
+                            {prettyLabel(CATEGORY_LABELS[c])}
                           </option>
                         ))}
                       </select>
@@ -1269,7 +1269,7 @@ export default function AdminProductsPage({
                         </td>
 
                         <td className="p-2 capitalize whitespace-normal break-words">
-                          {CATEGORY_LABELS[p.category]}
+                          {prettyLabel(CATEGORY_LABELS[p.category])}
                         </td>
                         <td className="p-2 whitespace-normal break-words">
                           {p.subcategory ? (
@@ -1281,7 +1281,7 @@ export default function AdminProductsPage({
                           )}
                         </td>
                         <td className="p-2 capitalize whitespace-normal break-words">
-                          {p.gender ?? "unisex"}
+                          {p.gender ? prettyLabel(p.gender) : "Unisex"}
                         </td>
 
                         <td className="p-2 text-center">
