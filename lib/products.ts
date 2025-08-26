@@ -35,7 +35,9 @@ function fromDb(doc: WithId<Document> | DbProduct): Product {
   const title = anyDoc.title ?? anyDoc.name ?? "";
   const images: string[] = Array.isArray(anyDoc.images)
     ? anyDoc.images
-    : (anyDoc.image ? [String(anyDoc.image)] : []);
+    : anyDoc.image
+    ? [String(anyDoc.image)]
+    : [];
 
   // department (already normalized in pipeline below, but keep a final guard)
   const rawDept: string =
@@ -44,7 +46,7 @@ function fromDb(doc: WithId<Document> | DbProduct): Product {
       ? String(anyDoc.category).toLowerCase()
       : "jewelry");
 
-  const department = (rawDept as Department);
+  const department = rawDept as Department;
 
   const out: Product = {
     _id: String(anyDoc._id),
@@ -65,7 +67,10 @@ function fromDb(doc: WithId<Document> | DbProduct): Product {
     images,
     description: anyDoc.description ? String(anyDoc.description) : "",
     tags: Array.isArray(anyDoc.tags) ? anyDoc.tags : [],
-    specs: (anyDoc.specs && typeof anyDoc.specs === "object") ? anyDoc.specs : undefined,
+    specs:
+      anyDoc.specs && typeof anyDoc.specs === "object"
+        ? anyDoc.specs
+        : undefined,
     createdAt: anyDoc.createdAt ? String(anyDoc.createdAt) : undefined,
     updatedAt: anyDoc.updatedAt ? String(anyDoc.updatedAt) : undefined,
   };
@@ -77,7 +82,9 @@ function normalizeProductInput(p: Partial<Product>): Omit<Product, "_id"> {
   const now = new Date().toISOString();
 
   const images = Array.isArray(p.images)
-    ? p.images.filter((u: unknown): u is string => typeof u === "string" && u.trim() !== "")
+    ? p.images.filter(
+        (u: unknown): u is string => typeof u === "string" && u.trim() !== ""
+      )
     : [];
 
   const audience: Audience[] =
@@ -96,7 +103,7 @@ function normalizeProductInput(p: Partial<Product>): Omit<Product, "_id"> {
     toNumber(p.originalPrice) ||
     toNumber(p.price);
 
-  const specs = (p.specs && typeof p.specs === "object") ? p.specs : undefined;
+  const specs = p.specs && typeof p.specs === "object" ? p.specs : undefined;
 
   const out: Omit<Product, "_id"> = {
     title: (p.title || "").toString(),
@@ -186,7 +193,11 @@ export async function getProductById(id: string) {
   const doc = await Products.findOne({ _id: new ObjectId(id) });
   if (!doc) return null;
 
-  if (!doc.audience || !Array.isArray(doc.audience) || doc.audience.length === 0) {
+  if (
+    !doc.audience ||
+    !Array.isArray(doc.audience) ||
+    doc.audience.length === 0
+  ) {
     (doc as any).audience = ["unisex"];
   }
 
