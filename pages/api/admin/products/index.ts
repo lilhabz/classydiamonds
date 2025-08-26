@@ -1,23 +1,17 @@
-// pages/api/admin/products/index.ts
+// pages/api/admin/products/[id].ts
 import type { NextApiRequest, NextApiResponse } from "next";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../../auth/[...nextauth]";
-import formidable, { File as FormidableFile, Fields, Files } from "formidable";
+import formidable, { File as FormidableFile } from "formidable";
 import { v2 as cloudinary } from "cloudinary";
-import { getDb } from "@/lib/products";
+import { ObjectId } from "mongodb";
 
-// Try to import storefront helpers (optional, runtime-safe)
-let storefrontNormalizeProduct: ((doc: any) => any) | null = null;
-let storefrontListProducts: ((opts?: any) => Promise<any[]>) | null = null;
-try {
-  // These may or may not exist; we guard their usage below.
-  // If your lib exports different names, you can alias here.
-  const lib = require("@/lib/products");
-  storefrontNormalizeProduct = lib.normalizeProduct || null;
-  storefrontListProducts = lib.listProducts || null;
-} catch {
-  // ignore
-}
+import {
+  getDb,
+  getProductById,
+  updateProduct,
+  deleteProduct as deleteProductLib,
+} from "@/lib/products";
 
 export const config = { api: { bodyParser: false } };
 
@@ -27,236 +21,182 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET as string,
 });
 
-function parseForm(
-  req: NextApiRequest
-): Promise<{ fields: Fields; files: Files }> {
+function parseForm(req: NextApiRequest) {
   const form = formidable({
     multiples: false,
     keepExtensions: true,
     maxFileSize: 25 * 1024 * 1024,
   });
-  return new Promise((resolve, reject) => {
-    form.parse(req, (err, fields, files) =>
-      err ? reject(err) : resolve({ fields, files })
-    );
-  });
-}
-
-/** ---------------- Fallback normalizer (matches your storefront assumptions) ---------------- */
-function inferDepartment(doc: any): "jewelry" | "watch" {
-  const d = String(doc?.department || "").toLowerCase();
-  if (d === "watch") return "watch";
-  const cat = String(doc?.category || "").toLowerCase();
-  if (cat === "watch" || cat === "watches") return "watch";
-  return "jewelry";
-}
-function firstImage(doc: any): string {
-  if (doc?.imageUrl) return String(doc.imageUrl);
-  if (Array.isArray(doc?.images) && doc.images.length)
-    return String(doc.images[0]);
-  if (doc?.image) return String(doc.image);
-  return "";
-}
-function fallbackNormalizeProduct(doc: any) {
-  const subCategory = doc?.subCategory ?? doc?.subcategory ?? undefined;
-  const name = doc?.name ?? doc?.title ?? "";
-  return {
-    ...doc,
-    name,
-    department: inferDepartment(doc),
-    subCategory,
-    imageUrl: firstImage(doc),
-  };
-}
-const normalizeProduct = (doc: any) =>
-  (storefrontNormalizeProduct ? storefrontNormalizeProduct(doc) : null) ||
-  fallbackNormalizeProduct(doc);
-
-/** Build a Mongo filter that’s tolerant of legacy fields */
-function buildFilterFromQuery(query: NextApiRequest["query"]) {
-  const { department, category, subCategory, q, audience, specs } = query;
-  const filter: any = {};
-
-  // Department can live in different fields historically
-  if (typeof department === "string" && department) {
-    filter.$or = [
-      ...(filter.$or || []),
-      { department },
-      { category: department }, // some legacy put it in 'category'
-    ];
-  }
-
-  if (typeof category === "string" && category) {
-    filter.category = category;
-  }
-
-  if (typeof subCategory === "string" && subCategory) {
-    filter.$or = [
-      ...(filter.$or || []),
-      { subCategory },
-      { subcategory: subCategory }, // legacy spelling
-    ];
-  }
-
-  if (typeof q === "string" && q.trim()) {
-    filter.$or = [
-      ...(filter.$or || []),
-      { name: { $regex: q, $options: "i" } },
-      { title: { $regex: q, $options: "i" } },
-      { description: { $regex: q, $options: "i" } },
-      { tags: { $regex: q, $options: "i" } },
-    ];
-  }
-
-  if (typeof audience === "string" && audience) {
-    const a = audience
-      .split(",")
-      .map((s) => s.trim())
-      .filter(Boolean);
-    if (a.length) {
-      filter.$expr = {
-        $gt: [
-          {
-            $size: {
-              $setIntersection: [{ $ifNull: ["$audience", ["unisex"]] }, a],
-            },
-          },
-          0,
-        ],
-      };
+  return new Promise<{ fields: formidable.Fields; files: formidable.Files }>(
+    (resolve, reject) => {
+      form.parse(req, (err, fields, files) =>
+        err ? reject(err) : resolve({ fields, files })
+      );
     }
-  }
-
-  if (typeof specs === "string" && specs) {
-    try {
-      const wanted = JSON.parse(specs);
-      const and: any[] = [];
-      for (const [k, v] of Object.entries(wanted)) {
-        and.push({ [`specs.${k}`]: v });
-      }
-      if (and.length) filter.$and = [...(filter.$and || []), ...and];
-    } catch {
-      // ignore invalid JSON
-    }
-  }
-
-  return filter;
+  );
 }
+
+// Extract Cloudinary public_id from a secure URL (for cleanup)
+function publicIdFromUrl(url?: string | null) {
+  if (!url) return null;
+  try {
+    const u = new URL(url);
+    // look for ".../upload/v12345/<folders>/<name>.ext"
+    const ix = u.pathname.indexOf("/upload/");
+    if (ix === -1) return null;
+    const after = u.pathname.slice(ix + "/upload/".length);
+    const noVersion = after.replace(/^v\d+\//, "");
+    return noVersion.replace(/\.[a-z0-9]+$/i, "");
+  } catch {
+    return null;
+  }
+}
+
+const withThumb = (p: any) => ({
+  ...p,
+  imageUrl: Array.isArray(p.images) && p.images.length ? p.images[0] : "",
+});
 
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
   const session = (await getServerSession(req, res, authOptions as any)) as any;
-  if (!session?.user || !session.user.isAdmin) {
+  if (!session?.user || !session.user.isAdmin)
     return res.status(403).json({ error: "Forbidden" });
-  }
 
-  // ----------------- GET: Prefer storefront listProducts(), else manual query + normalize -----------------
+  const { id } = req.query;
+  if (typeof id !== "string" || !ObjectId.isValid(id))
+    return res.status(400).json({ error: "Invalid id" });
+
+  // ---------- GET one (normalize via lib) ----------
   if (req.method === "GET") {
-    try {
-      // If the storefront's listProducts exists, use it so we perfectly match storefront behavior.
-      if (storefrontListProducts) {
-        // Map admin query params to something listProducts can use.
-        // If your listProducts accepts a different shape, update this args object accordingly.
-        const args: any = {
-          limit: 500,
-          sort: { createdAt: -1 },
-          // Pass original query for internal handling (filters/search)
-          query: req.query,
-          includeDrafts: true, // if your lib supports it; harmless if ignored
-        };
-
-        const list = await storefrontListProducts(args);
-        // Some listProducts already returns normalized. If not, we normalize here.
-        const products = Array.isArray(list)
-          ? list.map((p) => normalizeProduct(p))
-          : [];
-
-        return res.status(200).json({ products });
-      }
-
-      // Fallback: manual query + same normalization as storefront
-      const db = await getDb();
-      const filter = buildFilterFromQuery(req.query);
-      const raw = await db
-        .collection("products")
-        .find(Object.keys(filter).length ? filter : {})
-        .sort({ createdAt: -1 })
-        .limit(500)
-        .toArray();
-
-      const products = raw.map(normalizeProduct);
-      return res.status(200).json({ products });
-    } catch (e: any) {
-      console.error("GET products error", e);
-      return res.status(500).json({ error: "Failed to load products" });
-    }
+    const product = await getProductById(id);
+    if (!product) return res.status(404).json({ error: "Not found" });
+    return res.status(200).json({ product: withThumb(product) });
   }
 
-  // ----------------- POST: create (multipart + Cloudinary) -----------------
-  if (req.method === "POST") {
+  // ---------- PUT: update (optional Cloudinary replace/remove) ----------
+  if (req.method === "PUT") {
     try {
-      const db = await getDb();
+      // Load current product so we can manage Cloudinary deletion if replacing image
+      const current = await getProductById(id);
+      if (!current) return res.status(404).json({ error: "Not found" });
+
       const { fields, files } = await parseForm(req);
 
-      const name = String(fields.name || "").trim();
-      const description = String(fields.description || "");
-      const price = String(fields.price || "");
-      const salePrice = String(fields.salePrice || "");
-      const category = String(fields.category || "");
-      const subcategoryIn = String(fields.subcategory || ""); // incoming form key
-      const subCategory = subcategoryIn || "";
-      const featured = String(fields.featured || "") === "true";
-      const gender = String(fields.gender || "unisex") as
-        | "unisex"
-        | "him"
-        | "her";
+      const patch: any = {};
 
-      if (!name || !price || !category)
-        return res
-          .status(400)
-          .json({ error: "Missing required fields (name, price, category)" });
+      // Map admin form fields → storefront/lib fields
+      if (fields.name !== undefined || fields.title !== undefined) {
+        patch.title = String(fields.name ?? fields.title).trim();
+      }
+      if (fields.description !== undefined)
+        patch.description = String(fields.description);
+      if (fields.price !== undefined) patch.price = Number(fields.price);
+      if (fields.salePrice !== undefined) {
+        const v = String(fields.salePrice);
+        patch.salePrice = v === "" ? undefined : Number(v);
+      }
+      if (fields.category !== undefined)
+        patch.category = String(fields.category).toLowerCase();
+      if (fields.subcategory !== undefined)
+        patch.subCategory =
+          String(fields.subcategory).toLowerCase() || undefined;
+      if (fields.featured !== undefined)
+        patch.tags = Array.isArray(current.tags) ? current.tags : []; // keep as-is; you can store featured in specs/tags if desired
+      if (fields.gender !== undefined) {
+        const g = String(fields.gender).toLowerCase();
+        patch.audience = [g]; // lib will default to ["unisex"] if invalid/empty
+      }
 
-      const department =
-        category === "watches" || category === "watch" ? "watch" : "jewelry";
+      // Keep department consistent with watch categories for legacy docs
+      if (patch.category) {
+        patch.department =
+          patch.category === "watch" || patch.category === "watches"
+            ? "watch"
+            : "jewelry";
+      }
 
-      let imageUrl: string | undefined;
+      const imageRemoved = String(fields.imageRemoved || "") === "true";
       const imageFile = files.image as FormidableFile | undefined;
+
+      // Handle image removals/replacements
+      const currentUrl =
+        Array.isArray(current.images) && current.images.length
+          ? current.images[0]
+          : "";
+
+      // Remove existing image if asked and no new upload
+      if (imageRemoved && !imageFile) {
+        const pub = publicIdFromUrl(currentUrl);
+        if (pub) {
+          try {
+            await cloudinary.uploader.destroy(pub);
+          } catch (e) {
+            console.warn("Cloudinary destroy (remove) failed", e);
+          }
+        }
+        patch.images = [];
+      }
+
+      // Replace with new upload
       if (imageFile?.filepath) {
+        const pub = publicIdFromUrl(currentUrl);
+        if (pub) {
+          try {
+            await cloudinary.uploader.destroy(pub);
+          } catch (e) {
+            console.warn("Cloudinary destroy (replace) failed", e);
+          }
+        }
         const upload = await cloudinary.uploader.upload(imageFile.filepath, {
           folder: "classy-diamonds/products",
           resource_type: "image",
         });
-        imageUrl = upload.secure_url;
+        patch.images = [upload.secure_url];
       }
 
-      const now = new Date();
-      const doc: any = {
-        department,
-        name,
-        title: name, // keep legacy compatibility
-        description,
-        price: Number(price),
-        salePrice: salePrice ? Number(salePrice) : undefined,
-        category,
-        subCategory: subCategory || undefined, // store with capital C (your current pattern)
-        featured,
-        gender,
-        imageUrl,
-        images: imageUrl ? [imageUrl] : [], // mirror for legacy array readers
-        createdAt: now,
-        updatedAt: now,
-      };
+      // If nothing changed, return current
+      if (Object.keys(patch).length === 0) {
+        const fresh = await getProductById(id);
+        return res.status(200).json({ product: withThumb(fresh) });
+      }
 
-      const result = await db.collection("products").insertOne(doc);
-      const created = await db
-        .collection("products")
-        .findOne({ _id: result.insertedId });
-      return res.status(201).json({ product: normalizeProduct(created) });
+      const saved = await updateProduct(id, patch);
+      if (!saved) return res.status(404).json({ error: "Not found" });
+      return res.status(200).json({ product: withThumb(saved) });
     } catch (e: any) {
-      console.error("POST create product error", e);
-      return res.status(400).json({ error: e?.message || "Create failed" });
+      console.error("update product error", e);
+      return res.status(400).json({ error: e?.message || "Update failed" });
+    }
+  }
+
+  // ---------- DELETE (remove Cloudinary asset too) ----------
+  if (req.method === "DELETE") {
+    try {
+      const toDelete = await getProductById(id);
+      if (!toDelete) return res.status(404).json({ error: "Not found" });
+
+      const first =
+        Array.isArray(toDelete.images) && toDelete.images.length
+          ? toDelete.images[0]
+          : "";
+      const pub = publicIdFromUrl(first);
+      if (pub) {
+        try {
+          await cloudinary.uploader.destroy(pub);
+        } catch (e) {
+          console.warn("Cloudinary destroy (delete) failed", e);
+        }
+      }
+
+      const ok = await deleteProductLib(id);
+      if (!ok) return res.status(400).json({ error: "Delete failed" });
+      return res.status(200).json({ ok: true });
+    } catch (e: any) {
+      console.error("delete product error", e);
+      return res.status(400).json({ error: e?.message || "Delete failed" });
     }
   }
 
