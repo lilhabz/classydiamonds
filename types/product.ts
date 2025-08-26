@@ -1,21 +1,26 @@
 // types/product.ts
 export type Audience = "women" | "men" | "unisex" | "kids";
+export type Department = "jewelry" | "watch";
+
+/** spec fields vary by department/category/subCategory */
+export type SpecValue = string | number | boolean;
+export type Specs = Record<string, SpecValue>;
 
 export interface Product {
   _id?: string;
 
-  // basics
+  // naming
   title: string;
   slug?: string;
 
   // taxonomy
-  category: "jewelry" | "watch";
-  subCategory?: string;
+  department: Department;       // ← Jewelry or Watch (top-level tab)
+  category?: string;            // ← rings, bracelets, pendants, watch straps, etc.
+  subCategory?: string;         // ← e.g., engagement, tennis, link, etc.
 
-  // replaces gender
-  audience?: Audience[]; // default ["unisex"]
+  audience?: Audience[];        // default ["unisex"]
 
-  // pricing (tolerant to legacy)
+  // pricing (legacy tolerant)
   price?: number | string;
   originalPrice?: number | string;
   salePrice?: number | string;
@@ -25,9 +30,12 @@ export interface Product {
   // media
   images?: string[];
 
-  // misc
+  // details
   description?: string;
   tags?: string[];
+
+  // structured filters (category/subCategory-specific)
+  specs?: Specs;
 
   // system
   createdAt?: string;

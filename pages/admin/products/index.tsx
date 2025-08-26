@@ -4,9 +4,10 @@ import Head from "next/head";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import Breadcrumbs from "@/components/Breadcrumbs";
-import type { Product } from "@/types/product";
+import type { Product, Department } from "@/types/product";
+import { DEPARTMENTS, getCategories, getSubCategories, getSpecFields } from "@/lib/taxonomy";
 
-type SortKey = "createdAt" | "title" | "unitPrice";
+type SortKey = "createdAt" | "title" | "unitPrice" | "subCategory" | "category";
 type SortDir = "asc" | "desc";
 
 const toNum = (v: unknown, d = 0) => {
@@ -22,43 +23,83 @@ const toNum = (v: unknown, d = 0) => {
 export default function AdminProductsList() {
   const { data: session, status } = useSession();
   const [products, setProducts] = useState<Product[]>([]);
-  const [q, setQ] = useState("");
-  const [aud, setAud] = useState<string>("");
+
+  // top-level tabs
+  const [dept, setDept] = useState<Department>("jewelry");
+
+  // cascading filters
   const [cat, setCat] = useState<string>("");
+  const [sub, setSub] = useState<string>("");
+
+  // text & sort
+  const [q, setQ] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("createdAt");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
+
+  // spec filters
+  const specFields = getSpecFields(dept, cat, sub);
+  const [specFilter, setSpecFilter] = useState<Record<string, any>>({});
+
+  // paging
   const [page, setPage] = useState(1);
   const pageSize = 12;
+
   const [deleting, setDeleting] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     if (!session?.user?.isAdmin) return;
     load();
-  }, [session, q, aud, cat]);
+  }, [session, dept, cat, sub, q, specFilter]);
 
   async function load() {
     const params = new URLSearchParams();
-    if (q) params.set("q", q);
-    if (aud) params.set("audience", aud);
+    params.set("department", dept);
     if (cat) params.set("category", cat);
+    if (sub) params.set("subCategory", sub);
+    if (q) params.set("q", q);
+
+    // encode spec filter as JSON if any
+    const activeSpecs = Object.fromEntries(Object.entries(specFilter).filter(([, v]) => v !== "" && v != null));
+    if (Object.keys(activeSpecs).length) {
+      params.set("specs", JSON.stringify(activeSpecs));
+    }
+
     const res = await fetch("/api/admin/products?" + params.toString());
     const data = await res.json();
     setProducts(Array.isArray(data.products) ? data.products : []);
     setPage(1);
   }
 
+  useEffect(() => {
+    // reset when changing department
+    setCat("");
+    setSub("");
+    setSpecFilter({});
+  }, [dept]);
+
+  useEffect(() => {
+    setSub("");
+    setSpecFilter({});
+  }, [cat]);
+
   function sortProducts(list: Product[]): Product[] {
     const dir = sortDir === "asc" ? 1 : -1;
     return [...list].sort((a, b) => {
       if (sortKey === "title") {
-        return a.title.localeCompare(b.title) * dir;
+        return (a.title || "").localeCompare(b.title || "") * dir;
       }
       if (sortKey === "unitPrice") {
         const ap = toNum((a as any).unitPrice ?? (a as any).price);
         const bp = toNum((b as any).unitPrice ?? (b as any).price);
         return (ap - bp) * dir;
       }
-      // createdAt
+      if (sortKey === "subCategory") {
+        return (a.subCategory || "").localeCompare(b.subCategory || "") * dir;
+      }
+      if (sortKey === "category") {
+        return (a.category || "").localeCompare(b.category || "") * dir;
+      }
+      // createdAt default
       const at = a.createdAt ? new Date(a.createdAt).getTime() : 0;
       const bt = b.createdAt ? new Date(b.createdAt).getTime() : 0;
       return (at - bt) * dir;
@@ -101,26 +142,45 @@ export default function AdminProductsList() {
         <Link href="/admin/products/new" className="bg-blue-600 px-4 py-2 rounded">+ Add Product</Link>
       </div>
 
+      {/* Department tabs */}
+      <div className="flex gap-2 mb-4">
+        {DEPARTMENTS.map((d) => {
+          const active = dept === d;
+          return (
+            <button
+              key={d}
+              onClick={() => setDept(d)}
+              className={`px-3 py-1 rounded-full text-sm border ${active ? "bg-yellow-500 text-black" : "bg-[var(--bg-nav)] text-white"}`}
+            >
+              {d[0].toUpperCase() + d.slice(1)}
+            </button>
+          );
+        })}
+      </div>
+
       {/* Filters */}
       <div className="flex flex-wrap gap-3 mb-4 items-center">
+        <select value={cat} onChange={(e) => setCat(e.target.value)} className="px-3 py-2 rounded bg-[var(--bg-nav)]">
+          <option value="">All Categories</option>
+          {getCategories(dept).map((c) => <option key={c} value={c}>{c}</option>)}
+        </select>
+
+        <select
+          value={sub}
+          onChange={(e) => setSub(e.target.value)}
+          className="px-3 py-2 rounded bg-[var(--bg-nav)]"
+          disabled={!cat}
+        >
+          <option value="">All Sub-categories</option>
+          {getSubCategories(dept, cat).map((s) => <option key={s} value={s}>{s}</option>)}
+        </select>
+
         <input
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder="Search title/desc/tags…"
           className="px-3 py-2 rounded bg-[var(--bg-nav)]"
         />
-        <select value={cat} onChange={(e) => setCat(e.target.value)} className="px-3 py-2 rounded bg-[var(--bg-nav)]">
-          <option value="">All Categories</option>
-          <option value="jewelry">Jewelry</option>
-          <option value="watch">Watch</option>
-        </select>
-        <select value={aud} onChange={(e) => setAud(e.target.value)} className="px-3 py-2 rounded bg-[var(--bg-nav)]">
-          <option value="">For: All</option>
-          <option value="women,unisex">Women (incl. Unisex)</option>
-          <option value="men,unisex">Men (incl. Unisex)</option>
-          <option value="unisex">Unisex</option>
-          <option value="kids">Kids</option>
-        </select>
 
         <span className="opacity-50 mx-2">|</span>
 
@@ -129,12 +189,76 @@ export default function AdminProductsList() {
           <option value="createdAt">Created</option>
           <option value="title">Title</option>
           <option value="unitPrice">Price</option>
+          <option value="category">Category</option>
+          <option value="subCategory">Sub-Category</option>
         </select>
         <select value={sortDir} onChange={(e) => setSortDir(e.target.value as SortDir)} className="px-3 py-2 rounded bg-[var(--bg-nav)]">
           <option value="desc">Desc</option>
           <option value="asc">Asc</option>
         </select>
       </div>
+
+      {/* Spec filters (dynamic) */}
+      {specFields.length > 0 && (
+        <div className="mb-4">
+          <div className="flex flex-wrap gap-3">
+            {specFields.map(([key, def]) => {
+              const v = specFilter[key] ?? "";
+              if (def.type === "select") {
+                return (
+                  <div key={key}>
+                    <label className="block text-xs opacity-75 mb-1">{key}</label>
+                    <select
+                      value={String(v)}
+                      onChange={(e) => setSpecFilter((m) => ({ ...m, [key]: e.target.value }))}
+                      className="px-3 py-2 rounded bg-[var(--bg-nav)] text-white"
+                    >
+                      <option value="">Any</option>
+                      {def.options.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
+                    </select>
+                  </div>
+                );
+              }
+              if (def.type === "number") {
+                return (
+                  <div key={key}>
+                    <label className="block text-xs opacity-75 mb-1">{key}{def.unit ? ` (${def.unit})` : ""}</label>
+                    <input
+                      type="number"
+                      step={def.step ?? 1}
+                      value={v === "" ? "" : Number(v)}
+                      onChange={(e) => setSpecFilter((m) => ({ ...m, [key]: e.target.value === "" ? "" : Number(e.target.value) }))}
+                      className="px-3 py-2 rounded bg-[var(--bg-nav)] text-white"
+                    />
+                  </div>
+                );
+              }
+              if (def.type === "boolean") {
+                return (
+                  <label key={key} className="inline-flex items-center gap-2 px-3 py-2 rounded bg-[var(--bg-nav)]">
+                    <input
+                      type="checkbox"
+                      checked={!!v}
+                      onChange={(e) => setSpecFilter((m) => ({ ...m, [key]: e.target.checked }))}
+                    />
+                    <span className="text-sm">{def.label || key}</span>
+                  </label>
+                );
+              }
+              return (
+                <div key={key}>
+                  <label className="block text-xs opacity-75 mb-1">{key}</label>
+                  <input
+                    value={String(v)}
+                    onChange={(e) => setSpecFilter((m) => ({ ...m, [key]: e.target.value }))}
+                    className="px-3 py-2 rounded bg-[var(--bg-nav)] text-white"
+                  />
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Table */}
       <div className="overflow-auto rounded-xl border border-[var(--bg-nav)]">
@@ -144,6 +268,7 @@ export default function AdminProductsList() {
               <th className="py-2 px-3">Item</th>
               <th className="py-2 px-3">Title</th>
               <th className="py-2 px-3">Category</th>
+              <th className="py-2 px-3">Sub-Category</th>
               <th className="py-2 px-3">Audience</th>
               <th className="py-2 px-3">Price</th>
               <th className="py-2 px-3">Created</th>
@@ -152,25 +277,32 @@ export default function AdminProductsList() {
           </thead>
           <tbody>
             {current.length === 0 ? (
-              <tr><td colSpan={7} className="py-6 text-center">No products.</td></tr>
+              <tr><td colSpan={8} className="py-6 text-center">No products.</td></tr>
             ) : current.map((p) => {
+              const title = (p as any).title || (p as any).name || "(untitled)";
+              const img =
+                (Array.isArray(p.images) && p.images[0]) ||
+                (p as any).image ||
+                "/products/gray-placeholder.jpg";
               const price = toNum((p as any).unitPrice ?? (p as any).price);
-              const img = Array.isArray(p.images) && p.images[0] ? p.images[0] : "/products/gray-placeholder.jpg";
+
               return (
                 <tr key={p._id} className="border-b border-[var(--bg-nav)]">
                   <td className="py-2 px-3">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={img} alt={p.title} className="w-14 h-14 object-cover rounded" />
+                    <img src={img} alt={title} className="w-14 h-14 object-cover rounded bg-[#1d2740]" />
                   </td>
                   <td className="py-2 px-3">
-                    <div className="font-medium">{p.title}</div>
-                    <div className="text-xs opacity-70">{p.subCategory || "-"}</div>
+                    <div className="font-medium">{title}</div>
                   </td>
-                  <td className="py-2 px-3">{p.category}</td>
+                  <td className="py-2 px-3">{p.category || "-"}</td>
+                  <td className="py-2 px-3">{p.subCategory || "-"}</td>
                   <td className="py-2 px-3">
                     <div className="flex flex-wrap gap-1">
                       {(p.audience?.length ? p.audience : ["unisex"]).map((a) => (
-                        <span key={a} className="text-xs px-2 py-0.5 rounded-full bg-[#364763]">{a}</span>
+                        <span key={a} className="text-xs px-2 py-0.5 rounded-full bg-[#364763]">
+                          {a}
+                        </span>
                       ))}
                     </div>
                   </td>

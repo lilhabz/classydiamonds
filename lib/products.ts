@@ -6,7 +6,8 @@ import {
   type Document,
   type OptionalUnlessRequiredId,
 } from "mongodb";
-import type { Product, Audience } from "@/types/product";
+import type { Product, Audience, Department } from "@/types/product";
+import { DEPARTMENTS } from "@/lib/taxonomy";
 
 /** Robust number parse */
 const toNumber = (v: unknown, d = 0): number => {
@@ -27,14 +28,34 @@ export async function getDb() {
 /** DB representation: _id is ObjectId */
 type DbProduct = Omit<Product, "_id"> & { _id: ObjectId };
 
-/** Convert DB doc -> API Product (string _id) */
+/** Convert DB doc -> API Product (string _id), with legacy fallbacks */
 function fromDb(doc: WithId<Document> | DbProduct): Product {
   const anyDoc = doc as any;
+
+  // title/image legacy
+  const title = anyDoc.title ?? anyDoc.name ?? "";
+  const images: string[] = Array.isArray(anyDoc.images)
+    ? anyDoc.images
+    : (anyDoc.image ? [String(anyDoc.image)] : []);
+
+  // department legacy: old `category` field may have been "jewelry" | "watch"
+  let department: Department = "jewelry";
+  if (DEPARTMENTS.includes((anyDoc.department || anyDoc.category)?.toLowerCase())) {
+    department = (anyDoc.department || anyDoc.category).toLowerCase();
+  } else if (anyDoc.department) {
+    department = anyDoc.department;
+  }
+
+  // if category was used as dept, move detailed category into `category` (may be empty)
+  const category =
+    !DEPARTMENTS.includes((anyDoc.category || "").toLowerCase()) ? anyDoc.category : anyDoc.category2 || anyDoc.cat || anyDoc.type;
+
   const out: Product = {
     _id: String(anyDoc._id),
-    title: String(anyDoc.title ?? ""),
+    title: String(title),
     slug: anyDoc.slug ? String(anyDoc.slug) : undefined,
-    category: (anyDoc.category || "jewelry") as Product["category"],
+    department,
+    category: category ? String(category) : undefined,
     subCategory: anyDoc.subCategory ? String(anyDoc.subCategory) : undefined,
     audience:
       Array.isArray(anyDoc.audience) && anyDoc.audience.length > 0
@@ -45,9 +66,10 @@ function fromDb(doc: WithId<Document> | DbProduct): Product {
     salePrice: anyDoc.salePrice,
     discountedPrice: anyDoc.discountedPrice,
     unitPrice: anyDoc.unitPrice,
-    images: Array.isArray(anyDoc.images) ? anyDoc.images : [],
+    images,
     description: anyDoc.description ? String(anyDoc.description) : "",
     tags: Array.isArray(anyDoc.tags) ? anyDoc.tags : [],
+    specs: (anyDoc.specs && typeof anyDoc.specs === "object") ? anyDoc.specs : undefined,
     createdAt: anyDoc.createdAt ? String(anyDoc.createdAt) : undefined,
     updatedAt: anyDoc.updatedAt ? String(anyDoc.updatedAt) : undefined,
   };
@@ -67,7 +89,10 @@ function normalizeProductInput(p: Partial<Product>): Omit<Product, "_id"> {
       ? (Array.from(new Set(p.audience)) as Audience[])
       : ["unisex"];
 
-  // prefer unitPrice; fallbacks tolerated
+  const department = (p.department || "jewelry") as Product["department"];
+  const category = (p.category || "").toString() || undefined;
+  const subCategory = (p.subCategory || "").toString() || undefined;
+
   const unit =
     toNumber(p.unitPrice) ||
     toNumber(p.salePrice) ||
@@ -75,11 +100,14 @@ function normalizeProductInput(p: Partial<Product>): Omit<Product, "_id"> {
     toNumber(p.originalPrice) ||
     toNumber(p.price);
 
+  const specs = (p.specs && typeof p.specs === "object") ? p.specs : undefined;
+
   const out: Omit<Product, "_id"> = {
     title: (p.title || "").toString(),
     slug: (p.slug || "").toString().trim() || undefined,
-    category: (p.category || "jewelry") as Product["category"],
-    subCategory: (p.subCategory || "").toString() || undefined,
+    department,
+    category,
+    subCategory,
     audience,
     unitPrice: unit,
     price: p.price ?? unit,
@@ -89,6 +117,7 @@ function normalizeProductInput(p: Partial<Product>): Omit<Product, "_id"> {
     images,
     description: (p.description || "").toString(),
     tags: Array.isArray(p.tags) ? p.tags.map(String) : [],
+    specs,
     createdAt: (p as any).createdAt || now,
     updatedAt: now,
   };
@@ -103,7 +132,7 @@ export async function listProducts(
   const db = await getDb();
   const Products = db.collection<DbProduct>("products");
 
-  // Treat missing audience as ["unisex"] at read time (in agg pipeline)
+  // Ensure audience default at read time
   const audienceFix = {
     $addFields: {
       audience: {
@@ -142,7 +171,6 @@ export async function createProduct(p: Partial<Product>) {
   const db = await getDb();
   const Products = db.collection<DbProduct>("products");
 
-  // Normalize and insert WITHOUT _id (Mongo will generate ObjectId)
   const toInsert: OptionalUnlessRequiredId<DbProduct> = {
     ...(normalizeProductInput(p) as Omit<DbProduct, "_id">),
   } as any;
@@ -162,14 +190,13 @@ export async function updateProduct(id: string, p: Partial<Product>) {
   const existing = await Products.findOne({ _id: new ObjectId(id) });
   if (!existing) return null;
 
-  // ❗ strip _id before passing into normalizeProductInput (ObjectId would violate Partial<Product> typing)
   const { _id: _ignore, ...existingNoId } = existing as any;
 
   const normalized = normalizeProductInput({ ...existingNoId, ...p });
   const merged: DbProduct = {
     ...existing,
     ...normalized,
-    _id: existing._id, // keep original _id
+    _id: existing._id,
     updatedAt: new Date().toISOString(),
   };
 
