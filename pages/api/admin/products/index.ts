@@ -4,7 +4,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "../../auth/[...nextauth]";
 import formidable, { File as FormidableFile, Fields, Files } from "formidable";
 import { v2 as cloudinary } from "cloudinary";
-import { getDb } from "@/lib/products"; // ⬅️ use your helper
+import { getDb } from "@/lib/products"; // use your existing db helper
 
 export const config = { api: { bodyParser: false } };
 
@@ -29,6 +29,36 @@ function parseForm(
   });
 }
 
+// ---- helpers to normalize legacy docs so your UI always has what it needs ----
+function inferDepartment(doc: any): "jewelry" | "watch" {
+  if (doc?.department)
+    return String(doc.department).toLowerCase() === "watch"
+      ? "watch"
+      : "jewelry";
+  const cat = String(doc?.category || "").toLowerCase();
+  if (cat === "watch" || cat === "watches") return "watch";
+  return "jewelry";
+}
+
+function firstImage(doc: any): string {
+  if (doc?.imageUrl) return String(doc.imageUrl);
+  if (Array.isArray(doc?.images) && doc.images.length)
+    return String(doc.images[0]);
+  if (doc?.image) return String(doc.image);
+  return "";
+}
+
+function normalizeDoc(doc: any) {
+  const subCategory = doc?.subCategory ?? doc?.subcategory ?? undefined;
+
+  return {
+    ...doc,
+    department: inferDepartment(doc),
+    subCategory,
+    imageUrl: firstImage(doc), // ✅ ensures your admin UI sees an image
+  };
+}
+
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
@@ -37,7 +67,7 @@ export default async function handler(
   if (!session?.user || !session.user.isAdmin)
     return res.status(403).json({ error: "Forbidden" });
 
-  // ---------- GET ----------
+  // ----------------- GET: tolerant of legacy docs -----------------
   if (req.method === "GET") {
     try {
       const db = await getDb();
@@ -45,14 +75,26 @@ export default async function handler(
         req.query;
 
       const filter: any = {};
-      filter.department =
-        typeof department === "string" && department ? department : "jewelry";
+
+      // IMPORTANT: don't require department for legacy docs; only filter if provided
+      if (typeof department === "string" && department) {
+        filter.department = department;
+      }
+
       if (typeof category === "string" && category) filter.category = category;
-      if (typeof subCategory === "string" && subCategory)
-        filter.subCategory = subCategory; // ⬅️ capital C
+
+      // accept either subCategory or subcategory in DB; we normalize after fetch anyway
+      if (typeof subCategory === "string" && subCategory) {
+        filter.$or = [
+          ...(filter.$or || []),
+          { subCategory },
+          { subcategory: subCategory },
+        ];
+      }
 
       if (typeof q === "string" && q.trim()) {
         filter.$or = [
+          ...(filter.$or || []),
           { name: { $regex: q, $options: "i" } },
           { title: { $regex: q, $options: "i" } },
           { description: { $regex: q, $options: "i" } },
@@ -86,23 +128,28 @@ export default async function handler(
           for (const [k, v] of Object.entries(wanted))
             and.push({ [`specs.${k}`]: v });
           if (and.length) filter.$and = [...(filter.$and || []), ...and];
-        } catch {}
+        } catch {
+          // ignore invalid JSON
+        }
       }
 
-      const items = await db
+      const raw = await db
         .collection("products")
-        .find(filter)
+        .find(Object.keys(filter).length ? filter : {})
         .sort({ createdAt: -1 })
         .limit(500)
         .toArray();
-      return res.status(200).json({ products: items });
+
+      const products = raw.map(normalizeDoc);
+
+      return res.status(200).json({ products });
     } catch (e: any) {
       console.error("GET products error", e);
       return res.status(500).json({ error: "Failed to load products" });
     }
   }
 
-  // ---------- POST (multipart + Cloudinary) ----------
+  // ----------------- POST: create (multipart + Cloudinary) -----------------
   if (req.method === "POST") {
     try {
       const db = await getDb();
@@ -113,8 +160,8 @@ export default async function handler(
       const price = String(fields.price || "");
       const salePrice = String(fields.salePrice || "");
       const category = String(fields.category || "");
-      const subcategoryIn = String(fields.subcategory || ""); // form uses "subcategory"
-      const subCategory = subcategoryIn || ""; // store as "subCategory"
+      const subcategoryIn = String(fields.subcategory || ""); // incoming form key
+      const subCategory = subcategoryIn || "";
       const featured = String(fields.featured || "") === "true";
       const gender = String(fields.gender || "unisex") as
         | "unisex"
@@ -148,11 +195,11 @@ export default async function handler(
         price: Number(price),
         salePrice: salePrice ? Number(salePrice) : undefined,
         category,
-        subCategory: subCategory || undefined, // ⬅️ capital C in DB
+        subCategory: subCategory || undefined, // store with capital C
         featured,
         gender,
-        imageUrl, // ⬅️ for your admin UI
-        images: imageUrl ? [imageUrl] : [], // ⬅️ mirror into images[] for the rest of the site
+        imageUrl,
+        images: imageUrl ? [imageUrl] : [], // mirror so legacy code also sees it
         createdAt: now,
         updatedAt: now,
       };
@@ -161,7 +208,8 @@ export default async function handler(
       const created = await db
         .collection("products")
         .findOne({ _id: result.insertedId });
-      return res.status(201).json({ product: created });
+      // normalize on the way out so UI is consistent
+      return res.status(201).json({ product: normalizeDoc(created) });
     } catch (e: any) {
       console.error("POST create product error", e);
       return res.status(400).json({ error: e?.message || "Create failed" });
