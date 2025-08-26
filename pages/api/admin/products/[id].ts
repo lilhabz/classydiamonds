@@ -2,37 +2,181 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../../auth/[...nextauth]";
-import { getProductById, updateProduct, deleteProduct } from "@/lib/products";
+import formidable, { File as FormidableFile } from "formidable";
+import { v2 as cloudinary } from "cloudinary";
+import { ObjectId } from "mongodb";
+import { getDb } from "@/lib/products"; // ⬅️ use your helper
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  const session = (await getServerSession(req, res, authOptions as any)) as any;
-  if (!session?.user || !session.user.isAdmin) {
-    return res.status(403).json({ error: "Forbidden" });
+export const config = { api: { bodyParser: false } };
+
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME as string,
+  api_key: process.env.CLOUDINARY_API_KEY as string,
+  api_secret: process.env.CLOUDINARY_API_SECRET as string,
+});
+
+function parseForm(req: NextApiRequest) {
+  const form = formidable({
+    multiples: false,
+    keepExtensions: true,
+    maxFileSize: 25 * 1024 * 1024,
+  });
+  return new Promise<{ fields: formidable.Fields; files: formidable.Files }>(
+    (resolve, reject) => {
+      form.parse(req, (err, fields, files) =>
+        err ? reject(err) : resolve({ fields, files })
+      );
+    }
+  );
+}
+
+function publicIdFromUrl(url?: string | null) {
+  if (!url) return null;
+  try {
+    const u = new URL(url);
+    const after = u.pathname.split("/upload/")[1]; // v123/.../folder/name.jpg
+    if (!after) return null;
+    const noVersion = after.replace(/^v\d+\//, "");
+    return noVersion.replace(/\.[a-z0-9]+$/i, ""); // folder/name
+  } catch {
+    return null;
   }
+}
+
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse
+) {
+  const session = (await getServerSession(req, res, authOptions as any)) as any;
+  if (!session?.user || !session.user.isAdmin)
+    return res.status(403).json({ error: "Forbidden" });
 
   const { id } = req.query;
-  if (typeof id !== "string") return res.status(400).json({ error: "Invalid id" });
+  if (typeof id !== "string" || !ObjectId.isValid(id)) {
+    return res.status(400).json({ error: "Invalid id" });
+  }
 
+  const db = await getDb();
+  const products = db.collection("products");
+  const _id = new ObjectId(id);
+
+  // ---------- GET ----------
   if (req.method === "GET") {
-    const product = await getProductById(id);
+    const product = await products.findOne({ _id });
     if (!product) return res.status(404).json({ error: "Not found" });
     return res.status(200).json({ product });
   }
 
+  // ---------- PUT ----------
   if (req.method === "PUT") {
     try {
-      const updated = await updateProduct(id, req.body);
-      if (!updated) return res.status(404).json({ error: "Not found" });
-      return res.status(200).json({ product: updated });
+      const existing = await products.findOne({ _id });
+      if (!existing) return res.status(404).json({ error: "Not found" });
+
+      const { fields, files } = await parseForm(req);
+
+      const update: any = {};
+      if (fields.name !== undefined) {
+        update.name = String(fields.name).trim();
+        update.title = update.name;
+      }
+      if (fields.description !== undefined)
+        update.description = String(fields.description);
+      if (fields.price !== undefined) update.price = Number(fields.price);
+      if (fields.salePrice !== undefined && String(fields.salePrice) !== "")
+        update.salePrice = Number(fields.salePrice);
+      if (fields.salePrice !== undefined && String(fields.salePrice) === "")
+        update.salePrice = undefined;
+      if (fields.category !== undefined)
+        update.category = String(fields.category);
+      if (fields.subcategory !== undefined) {
+        // from form
+        const s = String(fields.subcategory).trim();
+        update.subCategory = s || undefined; // ⬅️ store as subCategory
+      }
+      if (fields.featured !== undefined)
+        update.featured = String(fields.featured) === "true";
+      if (fields.gender !== undefined)
+        update.gender = String(fields.gender) as "unisex" | "him" | "her";
+
+      if (update.category) {
+        update.department =
+          update.category === "watches" || update.category === "watch"
+            ? "watch"
+            : "jewelry";
+      }
+
+      const imageRemoved = String(fields.imageRemoved || "") === "true";
+      const imageFile = files.image as FormidableFile | undefined;
+
+      // remove current image
+      if (imageRemoved && !imageFile) {
+        const pub = publicIdFromUrl(existing.imageUrl);
+        if (pub) {
+          try {
+            await cloudinary.uploader.destroy(pub);
+          } catch (e) {
+            console.warn("destroy (remove) failed", e);
+          }
+        }
+        update.imageUrl = "";
+        update.images = [];
+      }
+
+      // replace image
+      if (imageFile?.filepath) {
+        const pub = publicIdFromUrl(existing.imageUrl);
+        if (pub) {
+          try {
+            await cloudinary.uploader.destroy(pub);
+          } catch (e) {
+            console.warn("destroy (replace) failed", e);
+          }
+        }
+        const upload = await cloudinary.uploader.upload(imageFile.filepath, {
+          folder: "classy-diamonds/products",
+          resource_type: "image",
+        });
+        update.imageUrl = upload.secure_url;
+        update.images = [upload.secure_url];
+      }
+
+      if (Object.keys(update).length === 0) {
+        const fresh = await products.findOne({ _id });
+        return res.status(200).json({ product: fresh });
+      }
+
+      update.updatedAt = new Date();
+      await products.updateOne({ _id }, { $set: update });
+      const saved = await products.findOne({ _id });
+      return res.status(200).json({ product: saved });
     } catch (e: any) {
       console.error("update product error", e);
       return res.status(400).json({ error: e?.message || "Update failed" });
     }
   }
 
+  // ---------- DELETE ----------
   if (req.method === "DELETE") {
-    const ok = await deleteProduct(id);
-    return res.status(200).json({ ok });
+    try {
+      const doc = await products.findOne({ _id });
+      if (!doc) return res.status(404).json({ error: "Not found" });
+
+      const pub = publicIdFromUrl(doc.imageUrl);
+      if (pub) {
+        try {
+          await cloudinary.uploader.destroy(pub);
+        } catch (e) {
+          console.warn("destroy (delete) failed", e);
+        }
+      }
+
+      await products.deleteOne({ _id });
+      return res.status(200).json({ ok: true });
+    } catch (e: any) {
+      console.error("delete product error", e);
+      return res.status(400).json({ error: e?.message || "Delete failed" });
+    }
   }
 
   return res.status(405).json({ error: "Method not allowed" });

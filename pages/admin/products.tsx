@@ -40,7 +40,7 @@ interface AdminProduct {
   imageUrl?: string;
   featured: boolean;
   gender?: "unisex" | "him" | "her";
-  tags?: string[];
+  tags?: string[]; // optional; you can ignore if Specifications covers this
 }
 
 // 🛡️ Server-side guard: only admins
@@ -393,6 +393,14 @@ export default function AdminProductsPage() {
     }, 100);
   };
 
+  // 🔁 When picking a new file in EDIT form, update the on-page preview immediately
+  useEffect(() => {
+    if (!editForm.imageFile) return;
+    const url = URL.createObjectURL(editForm.imageFile);
+    setPreviewImage(url);
+    return () => URL.revokeObjectURL(url);
+  }, [editForm.imageFile]);
+
   // Reset subcategory when Edit form category changes
   useEffect(() => {
     if (!editingProduct) return;
@@ -576,9 +584,15 @@ export default function AdminProductsPage() {
         <Link href="/admin" className="hover:text-yellow-300">
           📦 Orders
         </Link>
-        <Link href={{ pathname: "/admin", query: { tab: "shipped" } }}>✅ Shipped</Link>
-<Link href={{ pathname: "/admin", query: { tab: "delivered" } }}>📬 Delivered</Link>
-<Link href={{ pathname: "/admin", query: { tab: "archived" } }}>🗂 Archived</Link>
+        <Link href={{ pathname: "/admin", query: { tab: "shipped" } }}>
+          ✅ Shipped
+        </Link>
+        <Link href={{ pathname: "/admin", query: { tab: "delivered" } }}>
+          📬 Delivered
+        </Link>
+        <Link href={{ pathname: "/admin", query: { tab: "archived" } }}>
+          🗂 Archived
+        </Link>
 
         <Link href="/admin/products" className="text-yellow-400">
           🛠 Products
@@ -635,261 +649,285 @@ export default function AdminProductsPage() {
 
         {/* ✏️ Edit Product Form */}
         {editingProduct && (
-          <form
-            ref={editFormRef}
-            onSubmit={handleUpdate}
-            style={{ scrollMarginTop: "120px" }}
-            className="grid grid-cols-1 md:grid-cols-2 gap-4 border p-6 rounded-lg bg-[var(--bg-nav)] shadow-lg"
-          >
-            <h3 className="col-span-full text-xl font-bold text-yellow-400 mb-2">
-              ✏️ Editing: {editingProduct.name} (Item Number{" "}
-              {String(editingProduct.skuNumber ?? 0).padStart(5, "0")})
-            </h3>
-
-            {/* 🖼 Current Image Preview */}
-            <div className="col-span-full flex flex-col items-center mb-2">
-              {previewImage ? (
-                <Image
-                  src={previewImage}
-                  alt={editForm.name || "Product Image"}
-                  width={150}
-                  height={150}
-                  className="object-cover rounded shadow"
-                />
-              ) : (
-                <div className="w-36 h-36 bg-gray-500/40 rounded flex items-center justify-center text-white text-sm">
-                  No Image
-                </div>
-              )}
+          <>
+            {/* Inline breadcrumb trail for edit context (shows product name, not numbers) */}
+            <div className="text-sm text-white/80 -mt-2">
+              <div className="flex items-center gap-1 mb-2">
+                <Link href="/admin" className="hover:text-yellow-300 underline">
+                  Admin
+                </Link>
+                <span>/</span>
+                <Link
+                  href="/admin/products"
+                  className="hover:text-yellow-300 underline"
+                >
+                  Products
+                </Link>
+                <span>/</span>
+                <span className="opacity-90">Edit</span>
+                <span>/</span>
+                <span className="text-yellow-300 font-semibold">
+                  {editingProduct.name}
+                </span>
+              </div>
             </div>
 
-            {/* 📂 Replace Image */}
-            <label className="col-span-full">
-              🖼 Replace Image
-              <input
-                type="file"
-                accept="image/*"
-                onChange={(e) =>
-                  setEditForm((f) => ({
-                    ...f,
-                    imageFile: e.target.files?.[0] || null,
-                    imageRemoved: false,
-                  }))
-                }
-                className="mt-1 w-full border rounded p-2 bg-[var(--bg-page)]"
-              />
-            </label>
-
-            {/* ❌ Remove Image */}
-            <button
-              type="button"
-              onClick={() => {
-                setEditForm((f) => ({
-                  ...f,
-                  imageFile: null,
-                  imageRemoved: true,
-                }));
-                setPreviewImage("");
-                setEditingProduct((prev) =>
-                  prev ? { ...prev, imageUrl: "" } : prev
-                );
-              }}
-              className="col-span-full mt-2 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+            <form
+              ref={editFormRef}
+              onSubmit={handleUpdate}
+              style={{ scrollMarginTop: "120px" }}
+              className="grid grid-cols-1 md:grid-cols-2 gap-4 border p-6 rounded-lg bg-[var(--bg-nav)] shadow-lg"
             >
-              🗑 Remove Image
-            </button>
+              <h3 className="col-span-full text-xl font-bold text-yellow-400 mb-2">
+                ✏️ Editing: {editingProduct.name} (Item Number{" "}
+                {String(editingProduct.skuNumber ?? 0).padStart(5, "0")})
+              </h3>
 
-            <label>
-              📦 Name
-              <input
-                type="text"
-                required
-                value={editForm.name}
-                onChange={(e) =>
-                  setEditForm((f) => ({ ...f, name: e.target.value }))
-                }
-                className="mt-1 w-full border rounded p-2"
-              />
-            </label>
+              {/* 🖼 Current Image / Live Preview */}
+              <div className="col-span-full flex flex-col items-center mb-2">
+                {previewImage ? (
+                  <Image
+                    src={previewImage}
+                    alt={editForm.name || "Product Image"}
+                    width={150}
+                    height={150}
+                    className="object-cover rounded shadow"
+                  />
+                ) : (
+                  <div className="w-36 h-36 bg-gray-500/40 rounded flex items-center justify-center text-white text-sm">
+                    No Image
+                  </div>
+                )}
+              </div>
 
-            <label>
-              📝 Description
-              <textarea
-                value={editForm.description}
-                onChange={(e) =>
-                  setEditForm((f) => ({ ...f, description: e.target.value }))
-                }
-                className="mt-1 w-full border rounded p-2"
-              />
-            </label>
+              {/* 📂 Replace Image (picks from computer; updates preview immediately) */}
+              <label className="col-span-full">
+                🖼 Replace Image
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) =>
+                    setEditForm((f) => ({
+                      ...f,
+                      imageFile: e.target.files?.[0] || null,
+                      imageRemoved: false,
+                    }))
+                  }
+                  className="mt-1 w-full border rounded p-2 bg-[var(--bg-page)]"
+                />
+              </label>
 
-            <label>
-              💲 Price (USD)
-              <input
-                type="number"
-                min="0"
-                step="0.01"
-                required
-                value={editForm.price}
-                onChange={(e) =>
-                  setEditForm((f) => ({ ...f, price: e.target.value }))
-                }
-                className="mt-1 w-full border rounded p-2"
-              />
-            </label>
-
-            <label>
-              🔖 Sale Price (USD)
-              <input
-                type="number"
-                min="0"
-                step="0.01"
-                value={editForm.salePrice}
-                onChange={(e) =>
-                  setEditForm((f) => ({ ...f, salePrice: e.target.value }))
-                }
-                className="mt-1 w-full border rounded p-2"
-              />
-            </label>
-
-            {/* 📂 Category */}
-            <label>
-              📂 Category
-              <select
-                value={editForm.category}
-                onChange={(e) =>
+              {/* ❌ Remove Image */}
+              <button
+                type="button"
+                onClick={() => {
                   setEditForm((f) => ({
                     ...f,
-                    category: e.target.value as Category,
-                    // when switching category, reset subcat UI
-                    subcategorySelect: NONE_OPTION,
-                    subcategoryCustom: "",
-                  }))
-                }
-                className="mt-1 w-full border rounded p-2 bg-[var(--bg-page)] text-[var(--foreground)]"
-              >
-                {(() => {
-                  const allowed = new Set<Category>(
-                    allowedCategoriesForView(catalogView)
+                    imageFile: null,
+                    imageRemoved: true,
+                  }));
+                  setPreviewImage("");
+                  setEditingProduct((prev) =>
+                    prev ? { ...prev, imageUrl: "" } : prev
                   );
-                  if (editingProduct) allowed.add(editingProduct.category);
-                  return Array.from(allowed).map((cat) => (
-                    <option key={cat} value={cat}>
-                      {CATEGORY_LABELS[cat]}
-                    </option>
-                  ));
-                })()}
-              </select>
-            </label>
+                }}
+                className="col-span-full mt-2 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+              >
+                🗑 Remove Image
+              </button>
 
-            {/* 🔽 Subcategory (for any category that has options) */}
-            {hasSubcatsFor(editForm.category) && (
-              <>
-                <label>
-                  🔽 Subcategory
-                  <select
-                    value={editForm.subcategorySelect}
-                    onChange={(e) =>
-                      setEditForm((f) => ({
-                        ...f,
-                        subcategorySelect: e.target.value,
-                        subcategoryCustom:
-                          e.target.value === CUSTOM_OPTION
-                            ? f.subcategoryCustom
-                            : "",
-                      }))
-                    }
-                    className="mt-1 w-full border rounded p-2 bg-[var(--bg-page)] text-[var(--foreground)]"
-                  >
-                    {subcategoryOptionsFor(editForm.category).map((opt) => (
-                      <option key={opt} value={opt}>
-                        {prettyLabel(opt)}
+              <label>
+                📦 Name
+                <input
+                  type="text"
+                  required
+                  value={editForm.name}
+                  onChange={(e) =>
+                    setEditForm((f) => ({ ...f, name: e.target.value }))
+                  }
+                  className="mt-1 w-full border rounded p-2"
+                />
+              </label>
+
+              <label>
+                📝 Description
+                <textarea
+                  value={editForm.description}
+                  onChange={(e) =>
+                    setEditForm((f) => ({ ...f, description: e.target.value }))
+                  }
+                  className="mt-1 w-full border rounded p-2"
+                />
+              </label>
+
+              <label>
+                💲 Price (USD)
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  required
+                  value={editForm.price}
+                  onChange={(e) =>
+                    setEditForm((f) => ({ ...f, price: e.target.value }))
+                  }
+                  className="mt-1 w-full border rounded p-2"
+                />
+              </label>
+
+              <label>
+                🔖 Sale Price (USD)
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={editForm.salePrice}
+                  onChange={(e) =>
+                    setEditForm((f) => ({ ...f, salePrice: e.target.value }))
+                  }
+                  className="mt-1 w-full border rounded p-2"
+                />
+              </label>
+
+              {/* 📂 Category */}
+              <label>
+                📂 Category
+                <select
+                  value={editForm.category}
+                  onChange={(e) =>
+                    setEditForm((f) => ({
+                      ...f,
+                      category: e.target.value as Category,
+                      // when switching category, reset subcat UI
+                      subcategorySelect: NONE_OPTION,
+                      subcategoryCustom: "",
+                    }))
+                  }
+                  className="mt-1 w-full border rounded p-2 bg-[var(--bg-page)] text-[var(--foreground)]"
+                >
+                  {(() => {
+                    const allowed = new Set<Category>(
+                      allowedCategoriesForView(catalogView)
+                    );
+                    if (editingProduct) allowed.add(editingProduct.category);
+                    return Array.from(allowed).map((cat) => (
+                      <option key={cat} value={cat}>
+                        {CATEGORY_LABELS[cat]}
                       </option>
-                    ))}
-                  </select>
-                </label>
+                    ));
+                  })()}
+                </select>
+              </label>
 
-                {editForm.subcategorySelect === CUSTOM_OPTION && (
-                  <label className="md:col-span-2">
-                    📝 Custom Subcategory
-                    <input
-                      type="text"
-                      placeholder="e.g., engagement-rings, tennis-bracelets"
-                      value={editForm.subcategoryCustom}
+              {/* 🔽 Subcategory (for any category that has options) */}
+              {hasSubcatsFor(editForm.category) && (
+                <>
+                  <label>
+                    🔽 Subcategory
+                    <select
+                      value={editForm.subcategorySelect}
                       onChange={(e) =>
                         setEditForm((f) => ({
                           ...f,
-                          subcategoryCustom: e.target.value,
+                          subcategorySelect: e.target.value,
+                          subcategoryCustom:
+                            e.target.value === CUSTOM_OPTION
+                              ? f.subcategoryCustom
+                              : "",
                         }))
                       }
-                      className="mt-1 w-full border rounded p-2"
-                    />
+                      className="mt-1 w-full border rounded p-2 bg-[var(--bg-page)] text-[var(--foreground)]"
+                    >
+                      {subcategoryOptionsFor(editForm.category).map((opt) => (
+                        <option key={opt} value={opt}>
+                          {prettyLabel(opt)}
+                        </option>
+                      ))}
+                    </select>
                   </label>
-                )}
-              </>
-            )}
 
-            {/* 🏷️ Gender */}
-            <label>
-              🏷️ Gender
-              <select
-                value={editForm.gender}
-                onChange={(e) =>
-                  setEditForm((f) => ({
-                    ...f,
-                    gender: e.target.value as "unisex" | "him" | "her",
-                  }))
-                }
-                className="mt-1 w-full border rounded p-2 bg-[var(--bg-page)] text-[var(--foreground)]"
-              >
-                {[
-                  { v: "unisex", label: "Unisex" },
-                  { v: "him", label: "For Him" },
-                  { v: "her", label: "For Her" },
-                ].map((g) => (
-                  <option key={g.v} value={g.v}>
-                    {g.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            {/* ✨ Featured */}
-            <label className="flex items-center space-x-2">
-              <span>✨ Featured</span>
-              <input
-                type="checkbox"
-                checked={editForm.featured}
-                disabled={featuredCount >= 4 && !editForm.featured}
-                onChange={(e) =>
-                  setEditForm((f) => ({ ...f, featured: e.target.checked }))
-                }
-                className="mt-2"
-              />
-              {featuredCount >= 4 && !editForm.featured && (
-                <span className="text-yellow-400 text-sm">
-                  ⚠️ Max 4 featured reached
-                </span>
+                  {editForm.subcategorySelect === CUSTOM_OPTION && (
+                    <label className="md:col-span-2">
+                      📝 Custom Subcategory
+                      <input
+                        type="text"
+                        placeholder="e.g., engagement-rings, tennis-bracelets"
+                        value={editForm.subcategoryCustom}
+                        onChange={(e) =>
+                          setEditForm((f) => ({
+                            ...f,
+                            subcategoryCustom: e.target.value,
+                          }))
+                        }
+                        className="mt-1 w-full border rounded p-2"
+                      />
+                    </label>
+                  )}
+                </>
               )}
-            </label>
 
-            <div className="col-span-full flex space-x-2">
-              <button
-                type="submit"
-                disabled={status.loading}
-                className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
-              >
-                {status.loading ? "Saving..." : "Save Changes"}
-              </button>
-              <button
-                type="button"
-                onClick={cancelEdit}
-                className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
-              >
-                Cancel
-              </button>
-            </div>
-          </form>
+              {/* 🏷️ Gender */}
+              <label>
+                🏷️ Gender
+                <select
+                  value={editForm.gender}
+                  onChange={(e) =>
+                    setEditForm((f) => ({
+                      ...f,
+                      gender: e.target.value as "unisex" | "him" | "her",
+                    }))
+                  }
+                  className="mt-1 w-full border rounded p-2 bg-[var(--bg-page)] text-[var(--foreground)]"
+                >
+                  {[
+                    { v: "unisex", label: "Unisex" },
+                    { v: "him", label: "For Him" },
+                    { v: "her", label: "For Her" },
+                  ].map((g) => (
+                    <option key={g.v} value={g.v}>
+                      {g.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              {/* ✨ Featured */}
+              <label className="flex items-center space-x-2">
+                <span>✨ Featured</span>
+                <input
+                  type="checkbox"
+                  checked={editForm.featured}
+                  disabled={featuredCount >= 4 && !editForm.featured}
+                  onChange={(e) =>
+                    setEditForm((f) => ({ ...f, featured: e.target.checked }))
+                  }
+                  className="mt-2"
+                />
+                {featuredCount >= 4 && !editForm.featured && (
+                  <span className="text-yellow-400 text-sm">
+                    ⚠️ Max 4 featured reached
+                  </span>
+                )}
+              </label>
+
+              <div className="col-span-full flex space-x-2">
+                <button
+                  type="submit"
+                  disabled={status.loading}
+                  className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+                >
+                  {status.loading ? "Saving..." : "Save Changes"}
+                </button>
+                <button
+                  type="button"
+                  onClick={cancelEdit}
+                  className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </>
         )}
 
         {/* 🆕 Add New Product Form (Animated Collapsible) */}
