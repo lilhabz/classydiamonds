@@ -36,11 +36,14 @@ interface AdminProduct {
   price: number;
   salePrice?: number;
   category: Category;
-  subcategory?: string;
+  subcategory?: string; // UI name
+  subCategory?: string; // allow legacy/api casing
   imageUrl?: string;
+  images?: string[]; // legacy array
   featured: boolean;
   gender?: "unisex" | "him" | "her";
-  tags?: string[]; // optional; you can ignore if Specifications covers this
+  tags?: string[];
+  department?: "jewelry" | "watch"; // ✅ added so we can include legacy rows
 }
 
 // 🛡️ Server-side guard: only admins
@@ -168,6 +171,33 @@ export default function AdminProductsPage() {
     setCategoryFilter("all");
   }, [catalogView]);
 
+  // 🚚 Load products
+  useEffect(() => {
+    async function load() {
+      setLoadingList(true);
+      try {
+        const res = await fetch("/api/admin/products");
+        const data = await res.json();
+        const list: AdminProduct[] = (data.products || []).map((p: any) => ({
+          ...p,
+          // normalize for UI safety
+          subcategory: p.subcategory ?? p.subCategory,
+        }));
+        setProducts(list);
+        const edits: Record<string, { featured: boolean }> = {};
+        list.forEach((p) => {
+          edits[p._id] = { featured: p.featured };
+        });
+        setRowEdits(edits);
+      } catch (err) {
+        console.error("Failed to load products:", err);
+      } finally {
+        setLoadingList(false);
+      }
+    }
+    load();
+  }, []);
+
   // 🚚 Scroll to edit form when editing product
   useEffect(() => {
     if (editingProduct && editFormRef.current) {
@@ -180,38 +210,20 @@ export default function AdminProductsPage() {
     }
   }, [editingProduct]);
 
-  // ==================== LOAD PRODUCTS ====================
-  useEffect(() => {
-    async function load() {
-      setLoadingList(true);
-      try {
-        const res = await fetch("/api/admin/products");
-        const data = await res.json();
-        setProducts(data.products);
-        const edits: Record<string, { featured: boolean }> = {};
-        (data.products as AdminProduct[]).forEach((p) => {
-          edits[p._id] = { featured: p.featured };
-        });
-        setRowEdits(edits);
-      } catch (err: any) {
-        console.error("Failed to load products:", err);
-      } finally {
-        setLoadingList(false);
-      }
-    }
-    load();
-  }, []);
-
   // ==================== DERIVED LISTS ====================
   const featuredCount = useMemo(
     () => Object.values(rowEdits).filter((e) => e.featured).length,
     [rowEdits]
   );
 
+  // ✅ Include legacy rows by falling back to department
   const viewFiltered = useMemo(() => {
-    return products.filter((p) =>
-      catalogView === "jewelry" ? isJewelry(p.category) : isWatch(p.category)
-    );
+    return products.filter((p) => {
+      const dept = (p as any).department;
+      return catalogView === "jewelry"
+        ? dept === "jewelry" || isJewelry(p.category)
+        : dept === "watch" || isWatch(p.category);
+    });
   }, [products, catalogView]);
 
   const filteredProducts = useMemo(() => {
@@ -298,7 +310,6 @@ export default function AdminProductsPage() {
     try {
       const formData = new FormData();
       formData.append("name", formState.name);
-      // description optional
       if (formState.description)
         formData.append("description", formState.description);
       formData.append("price", formState.price);
@@ -314,7 +325,6 @@ export default function AdminProductsPage() {
       );
       formData.append("featured", formState.featured ? "true" : "false");
       formData.append("gender", formState.gender);
-      // image optional
       if (formState.imageFile) formData.append("image", formState.imageFile);
 
       const res = await fetch("/api/admin/products", {
@@ -322,15 +332,19 @@ export default function AdminProductsPage() {
         body: formData,
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Failed to add product");
+      if (!res.ok) throw new Error(data.error || "Failed to add product");
 
-      setProducts((p) => [data.product, ...p]);
+      const newProduct: AdminProduct = {
+        ...data.product,
+        subcategory: data.product.subcategory ?? data.product.subCategory,
+      };
+
+      setProducts((p) => [newProduct, ...p]);
       setRowEdits((e) => ({
         ...e,
-        [data.product._id]: { featured: data.product.featured },
+        [newProduct._id]: { featured: newProduct.featured },
       }));
 
-      // Reset Add form
       const allowed = allowedCategoriesForView(catalogView);
       setFormState({
         name: "",
@@ -355,18 +369,20 @@ export default function AdminProductsPage() {
   const handleEditClick = (product: AdminProduct) => {
     setEditingProduct(product);
 
-    // prefill subcategory UI (for any category that has options)
-    const opts = subcategoryOptionsFor(product.category).filter(
+    const cat = product.category;
+    const opts = subcategoryOptionsFor(cat).filter(
       (o) => o !== NONE_OPTION && o !== CUSTOM_OPTION
     );
+
+    const currentSub = product.subcategory ?? product.subCategory ?? "";
     let subcategorySelect = NONE_OPTION;
     let subcategoryCustom = "";
-    if (product.subcategory && product.subcategory.trim()) {
-      if (opts.includes(product.subcategory)) {
-        subcategorySelect = product.subcategory;
+    if (currentSub && currentSub.trim()) {
+      if (opts.includes(currentSub)) {
+        subcategorySelect = currentSub;
       } else {
         subcategorySelect = CUSTOM_OPTION;
-        subcategoryCustom = product.subcategory;
+        subcategoryCustom = currentSub;
       }
     }
 
@@ -384,7 +400,11 @@ export default function AdminProductsPage() {
       imageRemoved: false,
     });
 
-    setPreviewImage(product.imageUrl || "");
+    setPreviewImage(
+      product.imageUrl ||
+        (Array.isArray(product.images) ? product.images[0] : "") ||
+        ""
+    );
     setTimeout(() => {
       editFormRef.current?.scrollIntoView({
         behavior: "smooth",
@@ -393,7 +413,7 @@ export default function AdminProductsPage() {
     }, 100);
   };
 
-  // 🔁 When picking a new file in EDIT form, update the on-page preview immediately
+  // Live preview if picking a new file in edit
   useEffect(() => {
     if (!editForm.imageFile) return;
     const url = URL.createObjectURL(editForm.imageFile);
@@ -412,7 +432,6 @@ export default function AdminProductsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editForm.category]);
 
-  // Allow editing a product category even if not in current view (include its current category)
   const editAllowedCats: Category[] = useMemo(() => {
     if (!editingProduct) return allowedCategoriesForView(catalogView);
     const base = new Set<Category>(allowedCategoriesForView(catalogView));
@@ -437,7 +456,6 @@ export default function AdminProductsPage() {
     try {
       const formData = new FormData();
       formData.append("name", editForm.name);
-      // description optional
       if (editForm.description)
         formData.append("description", editForm.description);
       formData.append("price", editForm.price);
@@ -453,7 +471,6 @@ export default function AdminProductsPage() {
       formData.append("featured", editForm.featured ? "true" : "false");
       formData.append("gender", editForm.gender);
       formData.append("imageRemoved", editForm.imageRemoved ? "true" : "false");
-      // image optional
       if (editForm.imageFile) formData.append("image", editForm.imageFile);
 
       const res = await fetch(`/api/admin/products/${editingProduct!._id}`, {
@@ -462,14 +479,19 @@ export default function AdminProductsPage() {
       });
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Failed to update product");
+      if (!res.ok) throw new Error(data.error || "Failed to update product");
+
+      const updated: AdminProduct = {
+        ...data.product,
+        subcategory: data.product.subcategory ?? data.product.subCategory,
+      };
 
       setProducts((p) =>
-        p.map((prod) => (prod._id === data.product._id ? data.product : prod))
+        p.map((prod) => (prod._id === updated._id ? updated : prod))
       );
       setRowEdits((r) => ({
         ...r,
-        [data.product._id]: { featured: data.product.featured },
+        [updated._id]: { featured: updated.featured },
       }));
 
       setEditingProduct(null);
@@ -529,21 +551,6 @@ export default function AdminProductsPage() {
       setStatus({ loading: false, error: "", success: "All changes saved 💾" });
     } catch (err: any) {
       setStatus({ loading: false, error: err.message, success: "" });
-    }
-  };
-
-  // ==================== DELETE ====================
-  const handleDelete = async (id: string) => {
-    if (!confirm("Delete this product?")) return;
-    const res = await fetch(`/api/admin/products/${id}`, { method: "DELETE" });
-    if (res.ok) {
-      setProducts((p) => p.filter((x) => x._id !== id));
-      setRowEdits((r) => {
-        const next = { ...r };
-        delete next[id];
-        return next;
-      });
-      setStatus({ loading: false, error: "", success: "Product deleted 🗑️" });
     }
   };
 
@@ -650,7 +657,7 @@ export default function AdminProductsPage() {
         {/* ✏️ Edit Product Form */}
         {editingProduct && (
           <>
-            {/* Inline breadcrumb trail for edit context (shows product name, not numbers) */}
+            {/* Inline breadcrumb context */}
             <div className="text-sm text-white/80 -mt-2">
               <div className="flex items-center gap-1 mb-2">
                 <Link href="/admin" className="hover:text-yellow-300 underline">
@@ -700,7 +707,7 @@ export default function AdminProductsPage() {
                 )}
               </div>
 
-              {/* 📂 Replace Image (picks from computer; updates preview immediately) */}
+              {/* 📂 Replace Image */}
               <label className="col-span-full">
                 🖼 Replace Image
                 <input
@@ -798,7 +805,6 @@ export default function AdminProductsPage() {
                     setEditForm((f) => ({
                       ...f,
                       category: e.target.value as Category,
-                      // when switching category, reset subcat UI
                       subcategorySelect: NONE_OPTION,
                       subcategoryCustom: "",
                     }))
@@ -819,7 +825,7 @@ export default function AdminProductsPage() {
                 </select>
               </label>
 
-              {/* 🔽 Subcategory (for any category that has options) */}
+              {/* 🔽 Subcategory */}
               {hasSubcatsFor(editForm.category) && (
                 <>
                   <label>
@@ -1009,7 +1015,7 @@ export default function AdminProductsPage() {
               </select>
             </label>
 
-            {/* 🔽 Subcategory (for any category that has options) */}
+            {/* 🔽 Subcategory */}
             {hasSubcatsFor(formState.category) && (
               <>
                 <label>
@@ -1212,6 +1218,12 @@ export default function AdminProductsPage() {
                 <tbody>
                   {sortedProducts.map((p) => {
                     const edit = rowEdits[p._id];
+                    const displayImage =
+                      p.imageUrl ||
+                      (Array.isArray(p.images) && p.images.length
+                        ? p.images[0]
+                        : "");
+
                     return (
                       <tr key={p._id} className="border-t align-top">
                         <td className="p-2 whitespace-normal break-words">
@@ -1220,9 +1232,9 @@ export default function AdminProductsPage() {
 
                         <td className="p-2 w-24 h-24">
                           <div className="relative w-24 h-24">
-                            {p.imageUrl ? (
+                            {displayImage ? (
                               <Image
-                                src={p.imageUrl}
+                                src={displayImage}
                                 alt={p.name}
                                 fill
                                 className="object-cover rounded"
@@ -1254,6 +1266,8 @@ export default function AdminProductsPage() {
                         <td className="p-2 whitespace-normal break-words">
                           {p.subcategory ? (
                             prettyLabel(p.subcategory)
+                          ) : p.subCategory ? (
+                            prettyLabel(p.subCategory)
                           ) : (
                             <span className="opacity-60">—</span>
                           )}
@@ -1287,7 +1301,28 @@ export default function AdminProductsPage() {
                             ✏️ Edit
                           </button>
                           <button
-                            onClick={() => handleDelete(p._id)}
+                            onClick={() => {
+                              if (!confirm("Delete this product?")) return;
+                              fetch(`/api/admin/products/${p._id}`, {
+                                method: "DELETE",
+                              }).then((r) => {
+                                if (r.ok) {
+                                  setProducts((prev) =>
+                                    prev.filter((x) => x._id !== p._id)
+                                  );
+                                  setRowEdits((r2) => {
+                                    const next = { ...r2 };
+                                    delete next[p._id];
+                                    return next;
+                                  });
+                                  setStatus({
+                                    loading: false,
+                                    error: "",
+                                    success: "Product deleted 🗑️",
+                                  });
+                                }
+                              });
+                            }}
                             className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700"
                           >
                             🗑️ Delete

@@ -5,7 +5,7 @@ import { authOptions } from "../../auth/[...nextauth]";
 import formidable, { File as FormidableFile } from "formidable";
 import { v2 as cloudinary } from "cloudinary";
 import { ObjectId } from "mongodb";
-import { getDb } from "@/lib/products"; // ⬅️ use your helper
+import { getDb } from "@/lib/products";
 
 export const config = { api: { bodyParser: false } };
 
@@ -30,6 +30,33 @@ function parseForm(req: NextApiRequest) {
   );
 }
 
+// normalization (same as index)
+function inferDepartment(doc: any): "jewelry" | "watch" {
+  const d = String(doc?.department || "").toLowerCase();
+  if (d === "watch") return "watch";
+  const cat = String(doc?.category || "").toLowerCase();
+  if (cat === "watch" || cat === "watches") return "watch";
+  return "jewelry";
+}
+function firstImage(doc: any): string {
+  if (doc?.imageUrl) return String(doc.imageUrl);
+  if (Array.isArray(doc?.images) && doc.images.length)
+    return String(doc.images[0]);
+  if (doc?.image) return String(doc.image);
+  return "";
+}
+function normalizeDoc(doc: any) {
+  const subCategory = doc?.subCategory ?? doc?.subcategory ?? undefined;
+  const name = doc?.name ?? doc?.title ?? "";
+  return {
+    ...doc,
+    name,
+    department: inferDepartment(doc),
+    subCategory,
+    imageUrl: firstImage(doc),
+  };
+}
+
 function publicIdFromUrl(url?: string | null) {
   if (!url) return null;
   try {
@@ -52,22 +79,21 @@ export default async function handler(
     return res.status(403).json({ error: "Forbidden" });
 
   const { id } = req.query;
-  if (typeof id !== "string" || !ObjectId.isValid(id)) {
+  if (typeof id !== "string" || !ObjectId.isValid(id))
     return res.status(400).json({ error: "Invalid id" });
-  }
 
   const db = await getDb();
   const products = db.collection("products");
   const _id = new ObjectId(id);
 
-  // ---------- GET ----------
+  // ---------- GET one (normalized) ----------
   if (req.method === "GET") {
-    const product = await products.findOne({ _id });
-    if (!product) return res.status(404).json({ error: "Not found" });
-    return res.status(200).json({ product });
+    const doc = await products.findOne({ _id });
+    if (!doc) return res.status(404).json({ error: "Not found" });
+    return res.status(200).json({ product: normalizeDoc(doc) });
   }
 
-  // ---------- PUT ----------
+  // ---------- PUT: update (multipart + Cloudinary) ----------
   if (req.method === "PUT") {
     try {
       const existing = await products.findOne({ _id });
@@ -90,9 +116,8 @@ export default async function handler(
       if (fields.category !== undefined)
         update.category = String(fields.category);
       if (fields.subcategory !== undefined) {
-        // from form
         const s = String(fields.subcategory).trim();
-        update.subCategory = s || undefined; // ⬅️ store as subCategory
+        update.subCategory = s || undefined; // store as subCategory
       }
       if (fields.featured !== undefined)
         update.featured = String(fields.featured) === "true";
@@ -109,7 +134,7 @@ export default async function handler(
       const imageRemoved = String(fields.imageRemoved || "") === "true";
       const imageFile = files.image as FormidableFile | undefined;
 
-      // remove current image
+      // remove existing image if requested
       if (imageRemoved && !imageFile) {
         const pub = publicIdFromUrl(existing.imageUrl);
         if (pub) {
@@ -123,7 +148,7 @@ export default async function handler(
         update.images = [];
       }
 
-      // replace image
+      // replace with new upload
       if (imageFile?.filepath) {
         const pub = publicIdFromUrl(existing.imageUrl);
         if (pub) {
@@ -143,13 +168,13 @@ export default async function handler(
 
       if (Object.keys(update).length === 0) {
         const fresh = await products.findOne({ _id });
-        return res.status(200).json({ product: fresh });
+        return res.status(200).json({ product: normalizeDoc(fresh) });
       }
 
       update.updatedAt = new Date();
       await products.updateOne({ _id }, { $set: update });
       const saved = await products.findOne({ _id });
-      return res.status(200).json({ product: saved });
+      return res.status(200).json({ product: normalizeDoc(saved) });
     } catch (e: any) {
       console.error("update product error", e);
       return res.status(400).json({ error: e?.message || "Update failed" });
@@ -181,4 +206,3 @@ export default async function handler(
 
   return res.status(405).json({ error: "Method not allowed" });
 }
-//11111

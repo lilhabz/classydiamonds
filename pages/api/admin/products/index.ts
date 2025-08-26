@@ -29,12 +29,10 @@ function parseForm(
   });
 }
 
-// ---- helpers to normalize legacy docs so your UI always has what it needs ----
+// ---------- legacy normalization helpers ----------
 function inferDepartment(doc: any): "jewelry" | "watch" {
-  if (doc?.department)
-    return String(doc.department).toLowerCase() === "watch"
-      ? "watch"
-      : "jewelry";
+  const d = String(doc?.department || "").toLowerCase();
+  if (d === "watch") return "watch";
   const cat = String(doc?.category || "").toLowerCase();
   if (cat === "watch" || cat === "watches") return "watch";
   return "jewelry";
@@ -51,11 +49,14 @@ function firstImage(doc: any): string {
 function normalizeDoc(doc: any) {
   const subCategory = doc?.subCategory ?? doc?.subcategory ?? undefined;
 
+  const name = doc?.name ?? doc?.title ?? "";
+
   return {
     ...doc,
+    name,
     department: inferDepartment(doc),
     subCategory,
-    imageUrl: firstImage(doc), // ✅ ensures your admin UI sees an image
+    imageUrl: firstImage(doc),
   };
 }
 
@@ -76,14 +77,18 @@ export default async function handler(
 
       const filter: any = {};
 
-      // IMPORTANT: don't require department for legacy docs; only filter if provided
+      // Only filter by department if provided; legacy docs might not have it
       if (typeof department === "string" && department) {
-        filter.department = department;
+        filter.$or = [
+          ...(filter.$or || []),
+          { department },
+          // also match legacy that stored department inside category
+          { category: department },
+        ];
       }
 
       if (typeof category === "string" && category) filter.category = category;
 
-      // accept either subCategory or subcategory in DB; we normalize after fetch anyway
       if (typeof subCategory === "string" && subCategory) {
         filter.$or = [
           ...(filter.$or || []),
@@ -141,7 +146,6 @@ export default async function handler(
         .toArray();
 
       const products = raw.map(normalizeDoc);
-
       return res.status(200).json({ products });
     } catch (e: any) {
       console.error("GET products error", e);
@@ -208,7 +212,6 @@ export default async function handler(
       const created = await db
         .collection("products")
         .findOne({ _id: result.insertedId });
-      // normalize on the way out so UI is consistent
       return res.status(201).json({ product: normalizeDoc(created) });
     } catch (e: any) {
       console.error("POST create product error", e);
