@@ -7,6 +7,11 @@ import {
   type OptionalUnlessRequiredId,
 } from "mongodb";
 import type { Product, Audience, Department } from "@/types/product";
+import {
+  CATEGORIES,
+  getSubCategories,
+  normalizeJewelryCategoryPair,
+} from "@/lib/taxonomy";
 
 /** Robust number parse */
 const toNumber = (v: unknown, d = 0): number => {
@@ -27,7 +32,7 @@ export async function getDb() {
 /** DB representation: _id is ObjectId */
 type DbProduct = Omit<Product, "_id"> & { _id: ObjectId };
 
-/** Convert DB doc -> API Product (string _id), with legacy fallbacks */
+/** Convert DB doc -> API Product (string _id), with legacy + taxonomy normalization */
 function fromDb(doc: WithId<Document> | DbProduct): Product {
   const anyDoc = doc as any;
 
@@ -39,22 +44,39 @@ function fromDb(doc: WithId<Document> | DbProduct): Product {
     ? [String(anyDoc.image)]
     : [];
 
-  // department (already normalized in pipeline below, but keep a final guard)
-  const rawDept: string =
-    anyDoc.department ||
-    (["jewelry", "watch"].includes(String(anyDoc.category || "").toLowerCase())
-      ? String(anyDoc.category).toLowerCase()
-      : "jewelry");
+  // 1) Department normalization (legacy: some used category as "jewelry"/"watch")
+  const rawCat = (anyDoc.category || "").toString().toLowerCase();
+  let department: Department =
+    (anyDoc.department as Department) ||
+    ((rawCat === "jewelry" || rawCat === "watch"
+      ? rawCat
+      : "jewelry") as Department);
 
-  const department = rawDept as Department;
+  // 2) Category/Sub-category normalization (especially for jewelry)
+  let category = (anyDoc.category || "").toString().toLowerCase();
+  let subCategory = (anyDoc.subCategory || "").toString().toLowerCase();
+
+  if (department === "jewelry") {
+    const fixed = normalizeJewelryCategoryPair(category, subCategory);
+    category = fixed.category || "";
+    subCategory = fixed.subCategory || "";
+  } else {
+    // For non-jewelry (watches): ensure category is one of configured or leave blank
+    const validCats = CATEGORIES.watch;
+    if (!validCats.includes(category as any)) {
+      // keep as-is if you want, or blank it out:
+      // category = "";
+    }
+    // subcategory validity is loose for now (keep whatever is stored)
+  }
 
   const out: Product = {
     _id: String(anyDoc._id),
     title: String(title),
     slug: anyDoc.slug ? String(anyDoc.slug) : undefined,
     department,
-    category: anyDoc.category ? String(anyDoc.category) : undefined,
-    subCategory: anyDoc.subCategory ? String(anyDoc.subCategory) : undefined,
+    category: category || undefined,
+    subCategory: subCategory || undefined,
     audience:
       Array.isArray(anyDoc.audience) && anyDoc.audience.length > 0
         ? anyDoc.audience
@@ -92,9 +114,15 @@ function normalizeProductInput(p: Partial<Product>): Omit<Product, "_id"> {
       ? (Array.from(new Set(p.audience)) as Audience[])
       : ["unisex"];
 
-  const department = (p.department || "jewelry") as Product["department"];
-  const category = (p.category || "").toString() || undefined;
-  const subCategory = (p.subCategory || "").toString() || undefined;
+  let department = (p.department || "jewelry") as Product["department"];
+  let category = (p.category || "").toString().toLowerCase() || undefined;
+  let subCategory = (p.subCategory || "").toString().toLowerCase() || undefined;
+
+  if (department === "jewelry") {
+    const fixed = normalizeJewelryCategoryPair(category, subCategory);
+    category = fixed.category || undefined;
+    subCategory = fixed.subCategory || undefined;
+  }
 
   const unit =
     toNumber(p.unitPrice) ||
@@ -148,8 +176,7 @@ export async function listProducts(
     },
   };
 
-  // 🔑 Department normalization (LEGACY SUPPORT)
-  // department := department || (category if 'jewelry' | 'watch') || 'jewelry'
+  // Department normalization in pipeline for legacy docs:
   const departmentFix = {
     $addFields: {
       department: {
@@ -175,7 +202,6 @@ export async function listProducts(
 
   const pipeline: any[] = [audienceFix, departmentFix];
 
-  // Apply filter AFTER normalization
   if (filter && Object.keys(filter).length) {
     pipeline.push({ $match: filter });
   }
@@ -201,7 +227,7 @@ export async function getProductById(id: string) {
     (doc as any).audience = ["unisex"];
   }
 
-  // mimic the same normalization as in listProducts for a single doc
+  // Do same normalization as listProducts → fromDb handles the rest
   const normalized = {
     ...doc,
     department:

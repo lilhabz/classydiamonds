@@ -2,85 +2,91 @@
 import type { Department } from "@/types/product";
 
 /**
- * Authoritative taxonomy & filter configuration.
- * Add/rename here only — UI & API read from this file.
+ * Authoritative taxonomy and helpers.
+ * Jewelry categories + subcategories are exactly per your spec.
+ * "Necklaces & pendants" is represented as "necklace-pendant".
  */
 
 export const DEPARTMENTS: Department[] = ["jewelry", "watch"];
 
-/** Map department -> categories */
+// Top-level categories per department
 export const CATEGORIES: Record<Department, string[]> = {
-  jewelry: ["ring", "bracelet", "necklace", "earring", "pendant", "anklet", "grillz"],
-  watch: ["watch", "strap", "accessory"],
+  jewelry: ["ring", "earring", "bracelet", "necklace-pendant"],
+  watch: ["watch", "strap", "accessory"], // keep for future
 };
 
-/** Map department.category -> subcategories */
+// Subcategories per (dept:category)
 export const SUBCATEGORIES: Record<string, string[]> = {
-  "jewelry:ring": ["engagement", "wedding band", "fashion", "signet", "promise"],
-  "jewelry:bracelet": ["tennis", "bangle", "link", "cuff"],
-  "jewelry:necklace": ["chain", "tennis", "charm"],
-  "jewelry:earring": ["stud", "hoop", "drop", "huggie"],
-  "jewelry:pendant": ["initial", "religious", "custom photo", "stone"],
-  "jewelry:anklet": ["chain", "tennis"],
-  "jewelry:grillz": ["single", "set", "custom"],
+  // RINGS
+  "jewelry:ring": [
+    "engagement",
+    "wedding",
+    "promise",
+    "eternity",
+    "birthstone",
+    "signet",
+    "mens",
+  ],
+  // EARRINGS
+  "jewelry:earring": ["studs", "hoops", "drops", "huggies", "climbers"],
+  // BRACELETS
+  "jewelry:bracelet": ["tennis", "bangle", "chain", "cuff"],
+  // NECKLACES & PENDANTS — you said no subcategories defined yet
+  "jewelry:necklace-pendant": [],
 
-  "watch:watch": ["dress", "sport", "diver", "chronograph", "luxury"],
-  "watch:strap": ["leather", "metal", "rubber", "nylon"],
-  "watch:accessory": ["links", "winders", "tools"],
+  // Watches (left as-is; you can edit later)
+  "watch:watch": [],
+  "watch:strap": [],
+  "watch:accessory": [],
 };
 
 /**
- * Filter specs by (department, category, subCategory).
- * Keys are field names; value is one of:
- *  - { type: "select", options: string[] }
- *  - { type: "number", unit?: string, step?: number }
- *  - { type: "text" }
- *  - { type: "boolean", label?: string }
+ * Inverse map: subcategory -> its parent category
+ * (only for jewelry; extend for watches later if needed)
+ * Includes some common singular/plural variants for robustness.
  */
-type SpecField =
-  | { type: "select"; options: string[] }
-  | { type: "number"; unit?: string; step?: number }
-  | { type: "text" }
-  | { type: "boolean"; label?: string };
+const JEWELRY_SUB_TO_PARENT: Record<
+  string,
+  "ring" | "earring" | "bracelet" | "necklace-pendant"
+> = (() => {
+  const map: Record<string, any> = {};
 
-export const BASE_SPECS: Record<string, SpecField> = {
-  metal: { type: "select", options: ["gold", "white gold", "rose gold", "platinum", "silver", "stainless steel", "titanium"] },
-  karat: { type: "select", options: ["10k", "14k", "18k", "22k", "24k"] },
-  gemstone: { type: "select", options: ["diamond", "moissanite", "lab diamond", "emerald", "ruby", "sapphire", "none"] },
-  carat: { type: "number", unit: "ct", step: 0.01 },
-  size: { type: "text" },        // ring size, chain length, etc.
-  length: { type: "number", unit: "in", step: 0.5 },
-  width: { type: "number", unit: "mm", step: 0.1 },
-  color: { type: "text" },
-  clarity: { type: "select", options: ["FL", "IF", "VVS1", "VVS2", "VS1", "VS2", "SI1", "SI2", "I1", "I2", "I3"] },
-  cut: { type: "select", options: ["Round", "Princess", "Emerald", "Asscher", "Cushion", "Marquise", "Oval", "Radiant", "Pear", "Heart"] },
-  custom: { type: "boolean", label: "Custom work" },
-};
+  // helper to add variants
+  const add = (sub: string, parent: any, variants: string[] = []) => {
+    map[sub] = parent;
+    variants.forEach((v) => (map[v] = parent));
+  };
 
-/** Map department.category(.subCategory)? -> spec subset to show */
-export const SPEC_CONFIG: Record<string, (keyof typeof BASE_SPECS)[]> = {
-  // Jewelry
-  "jewelry:ring": ["metal", "karat", "gemstone", "carat", "clarity", "cut", "size", "custom"],
-  "jewelry:bracelet": ["metal", "karat", "gemstone", "carat", "length", "width", "custom"],
-  "jewelry:necklace": ["metal", "karat", "gemstone", "carat", "length", "custom"],
-  "jewelry:earring": ["metal", "karat", "gemstone", "carat", "custom"],
-  "jewelry:pendant": ["metal", "karat", "gemstone", "carat", "custom"],
-  "jewelry:anklet": ["metal", "karat", "length", "custom"],
-  "jewelry:grillz": ["metal", "karat", "custom"],
+  // rings
+  [
+    "engagement",
+    "wedding",
+    "promise",
+    "eternity",
+    "birthstone",
+    "signet",
+    "mens",
+  ].forEach((s) => add(s, "ring"));
 
-  // Watch
-  "watch:watch": ["metal", "color", "custom"],
-  "watch:strap": ["metal", "color", "length", "width"],
-  "watch:accessory": ["color"],
-};
+  // earrings (plus singular variants)
+  add("studs", "earring", ["stud"]);
+  add("hoops", "earring", ["hoop"]);
+  add("drops", "earring", ["drop"]);
+  add("huggies", "earring", ["huggie"]);
+  add("climbers", "earring", ["climber"]);
 
-export function keyFor(dept?: string, cat?: string, sub?: string) {
-  const d = (dept || "").toLowerCase();
-  const c = (cat || "").toLowerCase();
-  const s = (sub || "").toLowerCase();
-  return s ? `${d}:${c}:${s}` : `${d}:${c}`;
-}
+  // bracelets
+  ["tennis", "bangle", "chain", "cuff"].forEach((s) => add(s, "bracelet"));
 
+  // you can add necklace/pendant future subs here
+
+  return map as Record<
+    string,
+    "ring" | "earring" | "bracelet" | "necklace-pendant"
+  >;
+})();
+
+/** Key helpers */
 export function getCategories(dept?: string): string[] {
   if (!dept) return [];
   return CATEGORIES[dept as Department] || [];
@@ -91,14 +97,49 @@ export function getSubCategories(dept?: string, cat?: string): string[] {
   return SUBCATEGORIES[`${dept}:${cat}`] || [];
 }
 
-export function getSpecFields(dept?: string, cat?: string, sub?: string): [string, SpecField][] {
-  if (!dept || !cat) return [];
-  const baseKey = `${dept}:${cat}`;
-  const subKey = `${dept}:${cat}:${sub || ""}`; // optional override
-  const keys =
-    SPEC_CONFIG[subKey] ||
-    SPEC_CONFIG[baseKey] ||
-    [];
+/** Normalize (category, subCategory) for jewelry, fixing swapped data */
+export function normalizeJewelryCategoryPair(
+  category?: string,
+  subCategory?: string
+): { category?: string; subCategory?: string } {
+  const cat = (category || "").toLowerCase().trim();
+  const sub = (subCategory || "").toLowerCase().trim();
 
-  return keys.map((k) => [k, BASE_SPECS[k]]);
+  const isValidCategory = CATEGORIES.jewelry.includes(cat as any);
+  const isValidSubForCat =
+    isValidCategory && getSubCategories("jewelry", cat).includes(sub);
+
+  // If data is already good, return as-is.
+  if (isValidCategory && (sub === "" || isValidSubForCat)) {
+    return { category: cat || undefined, subCategory: sub || undefined };
+  }
+
+  // If category is actually a known subcategory, promote parent category.
+  if (cat && JEWELRY_SUB_TO_PARENT[cat]) {
+    const parent = JEWELRY_SUB_TO_PARENT[cat];
+    // If subCategory is empty, move cat into subCategory.
+    if (!sub) {
+      return { category: parent, subCategory: cat };
+    }
+    // If sub is also valid under inferred parent, keep it; otherwise keep only promoted one.
+    const validUnderParent = getSubCategories("jewelry", parent).includes(sub);
+    return {
+      category: parent,
+      subCategory: validUnderParent ? sub : cat,
+    };
+  }
+
+  // If subCategory is valid under any jewelry parent, infer that parent.
+  if (sub && JEWELRY_SUB_TO_PARENT[sub]) {
+    const parent = JEWELRY_SUB_TO_PARENT[sub];
+    return { category: parent, subCategory: sub };
+  }
+
+  // If nothing matches, pass through category if it's at least one of the 4 jewelry categories.
+  if (isValidCategory) {
+    return { category: cat || undefined, subCategory: sub || undefined };
+  }
+
+  // Fallback: no category/subCategory
+  return { category: undefined, subCategory: undefined };
 }
