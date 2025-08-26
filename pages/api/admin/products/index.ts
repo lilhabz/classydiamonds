@@ -4,7 +4,20 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "../../auth/[...nextauth]";
 import formidable, { File as FormidableFile, Fields, Files } from "formidable";
 import { v2 as cloudinary } from "cloudinary";
-import { getDb } from "@/lib/products"; // use your existing db helper
+import { getDb } from "@/lib/products";
+
+// Try to import storefront helpers (optional, runtime-safe)
+let storefrontNormalizeProduct: ((doc: any) => any) | null = null;
+let storefrontListProducts: ((opts?: any) => Promise<any[]>) | null = null;
+try {
+  // These may or may not exist; we guard their usage below.
+  // If your lib exports different names, you can alias here.
+  const lib = require("@/lib/products");
+  storefrontNormalizeProduct = lib.normalizeProduct || null;
+  storefrontListProducts = lib.listProducts || null;
+} catch {
+  // ignore
+}
 
 export const config = { api: { bodyParser: false } };
 
@@ -29,7 +42,7 @@ function parseForm(
   });
 }
 
-// ---------- legacy normalization helpers ----------
+/** ---------------- Fallback normalizer (matches your storefront assumptions) ---------------- */
 function inferDepartment(doc: any): "jewelry" | "watch" {
   const d = String(doc?.department || "").toLowerCase();
   if (d === "watch") return "watch";
@@ -37,7 +50,6 @@ function inferDepartment(doc: any): "jewelry" | "watch" {
   if (cat === "watch" || cat === "watches") return "watch";
   return "jewelry";
 }
-
 function firstImage(doc: any): string {
   if (doc?.imageUrl) return String(doc.imageUrl);
   if (Array.isArray(doc?.images) && doc.images.length)
@@ -45,12 +57,9 @@ function firstImage(doc: any): string {
   if (doc?.image) return String(doc.image);
   return "";
 }
-
-function normalizeDoc(doc: any) {
+function fallbackNormalizeProduct(doc: any) {
   const subCategory = doc?.subCategory ?? doc?.subcategory ?? undefined;
-
   const name = doc?.name ?? doc?.title ?? "";
-
   return {
     ...doc,
     name,
@@ -59,85 +68,117 @@ function normalizeDoc(doc: any) {
     imageUrl: firstImage(doc),
   };
 }
+const normalizeProduct = (doc: any) =>
+  (storefrontNormalizeProduct ? storefrontNormalizeProduct(doc) : null) ||
+  fallbackNormalizeProduct(doc);
+
+/** Build a Mongo filter that’s tolerant of legacy fields */
+function buildFilterFromQuery(query: NextApiRequest["query"]) {
+  const { department, category, subCategory, q, audience, specs } = query;
+  const filter: any = {};
+
+  // Department can live in different fields historically
+  if (typeof department === "string" && department) {
+    filter.$or = [
+      ...(filter.$or || []),
+      { department },
+      { category: department }, // some legacy put it in 'category'
+    ];
+  }
+
+  if (typeof category === "string" && category) {
+    filter.category = category;
+  }
+
+  if (typeof subCategory === "string" && subCategory) {
+    filter.$or = [
+      ...(filter.$or || []),
+      { subCategory },
+      { subcategory: subCategory }, // legacy spelling
+    ];
+  }
+
+  if (typeof q === "string" && q.trim()) {
+    filter.$or = [
+      ...(filter.$or || []),
+      { name: { $regex: q, $options: "i" } },
+      { title: { $regex: q, $options: "i" } },
+      { description: { $regex: q, $options: "i" } },
+      { tags: { $regex: q, $options: "i" } },
+    ];
+  }
+
+  if (typeof audience === "string" && audience) {
+    const a = audience
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    if (a.length) {
+      filter.$expr = {
+        $gt: [
+          {
+            $size: {
+              $setIntersection: [{ $ifNull: ["$audience", ["unisex"]] }, a],
+            },
+          },
+          0,
+        ],
+      };
+    }
+  }
+
+  if (typeof specs === "string" && specs) {
+    try {
+      const wanted = JSON.parse(specs);
+      const and: any[] = [];
+      for (const [k, v] of Object.entries(wanted)) {
+        and.push({ [`specs.${k}`]: v });
+      }
+      if (and.length) filter.$and = [...(filter.$and || []), ...and];
+    } catch {
+      // ignore invalid JSON
+    }
+  }
+
+  return filter;
+}
 
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
   const session = (await getServerSession(req, res, authOptions as any)) as any;
-  if (!session?.user || !session.user.isAdmin)
+  if (!session?.user || !session.user.isAdmin) {
     return res.status(403).json({ error: "Forbidden" });
+  }
 
-  // ----------------- GET: tolerant of legacy docs -----------------
+  // ----------------- GET: Prefer storefront listProducts(), else manual query + normalize -----------------
   if (req.method === "GET") {
     try {
+      // If the storefront's listProducts exists, use it so we perfectly match storefront behavior.
+      if (storefrontListProducts) {
+        // Map admin query params to something listProducts can use.
+        // If your listProducts accepts a different shape, update this args object accordingly.
+        const args: any = {
+          limit: 500,
+          sort: { createdAt: -1 },
+          // Pass original query for internal handling (filters/search)
+          query: req.query,
+          includeDrafts: true, // if your lib supports it; harmless if ignored
+        };
+
+        const list = await storefrontListProducts(args);
+        // Some listProducts already returns normalized. If not, we normalize here.
+        const products = Array.isArray(list)
+          ? list.map((p) => normalizeProduct(p))
+          : [];
+
+        return res.status(200).json({ products });
+      }
+
+      // Fallback: manual query + same normalization as storefront
       const db = await getDb();
-      const { department, category, subCategory, q, audience, specs } =
-        req.query;
-
-      const filter: any = {};
-
-      // Only filter by department if provided; legacy docs might not have it
-      if (typeof department === "string" && department) {
-        filter.$or = [
-          ...(filter.$or || []),
-          { department },
-          // also match legacy that stored department inside category
-          { category: department },
-        ];
-      }
-
-      if (typeof category === "string" && category) filter.category = category;
-
-      if (typeof subCategory === "string" && subCategory) {
-        filter.$or = [
-          ...(filter.$or || []),
-          { subCategory },
-          { subcategory: subCategory },
-        ];
-      }
-
-      if (typeof q === "string" && q.trim()) {
-        filter.$or = [
-          ...(filter.$or || []),
-          { name: { $regex: q, $options: "i" } },
-          { title: { $regex: q, $options: "i" } },
-          { description: { $regex: q, $options: "i" } },
-          { tags: { $regex: q, $options: "i" } },
-        ];
-      }
-
-      if (typeof audience === "string" && audience) {
-        const a = audience
-          .split(",")
-          .map((s) => s.trim())
-          .filter(Boolean);
-        if (a.length) {
-          filter.$expr = {
-            $gt: [
-              {
-                $size: {
-                  $setIntersection: [{ $ifNull: ["$audience", ["unisex"]] }, a],
-                },
-              },
-              0,
-            ],
-          };
-        }
-      }
-
-      if (typeof specs === "string" && specs) {
-        try {
-          const wanted = JSON.parse(specs);
-          const and: any[] = [];
-          for (const [k, v] of Object.entries(wanted))
-            and.push({ [`specs.${k}`]: v });
-          if (and.length) filter.$and = [...(filter.$and || []), ...and];
-        } catch {
-          // ignore invalid JSON
-        }
-      }
-
+      const filter = buildFilterFromQuery(req.query);
       const raw = await db
         .collection("products")
         .find(Object.keys(filter).length ? filter : {})
@@ -145,7 +186,7 @@ export default async function handler(
         .limit(500)
         .toArray();
 
-      const products = raw.map(normalizeDoc);
+      const products = raw.map(normalizeProduct);
       return res.status(200).json({ products });
     } catch (e: any) {
       console.error("GET products error", e);
@@ -194,16 +235,16 @@ export default async function handler(
       const doc: any = {
         department,
         name,
-        title: name,
+        title: name, // keep legacy compatibility
         description,
         price: Number(price),
         salePrice: salePrice ? Number(salePrice) : undefined,
         category,
-        subCategory: subCategory || undefined, // store with capital C
+        subCategory: subCategory || undefined, // store with capital C (your current pattern)
         featured,
         gender,
         imageUrl,
-        images: imageUrl ? [imageUrl] : [], // mirror so legacy code also sees it
+        images: imageUrl ? [imageUrl] : [], // mirror for legacy array readers
         createdAt: now,
         updatedAt: now,
       };
@@ -212,7 +253,7 @@ export default async function handler(
       const created = await db
         .collection("products")
         .findOne({ _id: result.insertedId });
-      return res.status(201).json({ product: normalizeDoc(created) });
+      return res.status(201).json({ product: normalizeProduct(created) });
     } catch (e: any) {
       console.error("POST create product error", e);
       return res.status(400).json({ error: e?.message || "Create failed" });

@@ -7,6 +7,15 @@ import { v2 as cloudinary } from "cloudinary";
 import { ObjectId } from "mongodb";
 import { getDb } from "@/lib/products";
 
+// Try to import storefront helpers (optional, runtime-safe)
+let storefrontNormalizeProduct: ((doc: any) => any) | null = null;
+try {
+  const lib = require("@/lib/products");
+  storefrontNormalizeProduct = lib.normalizeProduct || null;
+} catch {
+  // ignore
+}
+
 export const config = { api: { bodyParser: false } };
 
 cloudinary.config({
@@ -15,22 +24,7 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET as string,
 });
 
-function parseForm(req: NextApiRequest) {
-  const form = formidable({
-    multiples: false,
-    keepExtensions: true,
-    maxFileSize: 25 * 1024 * 1024,
-  });
-  return new Promise<{ fields: formidable.Fields; files: formidable.Files }>(
-    (resolve, reject) => {
-      form.parse(req, (err, fields, files) =>
-        err ? reject(err) : resolve({ fields, files })
-      );
-    }
-  );
-}
-
-// normalization (same as index)
+/** ---------------- Fallback normalizer (same as index) ---------------- */
 function inferDepartment(doc: any): "jewelry" | "watch" {
   const d = String(doc?.department || "").toLowerCase();
   if (d === "watch") return "watch";
@@ -45,7 +39,7 @@ function firstImage(doc: any): string {
   if (doc?.image) return String(doc.image);
   return "";
 }
-function normalizeDoc(doc: any) {
+function fallbackNormalizeProduct(doc: any) {
   const subCategory = doc?.subCategory ?? doc?.subcategory ?? undefined;
   const name = doc?.name ?? doc?.title ?? "";
   return {
@@ -55,6 +49,24 @@ function normalizeDoc(doc: any) {
     subCategory,
     imageUrl: firstImage(doc),
   };
+}
+const normalizeProduct = (doc: any) =>
+  (storefrontNormalizeProduct ? storefrontNormalizeProduct(doc) : null) ||
+  fallbackNormalizeProduct(doc);
+
+function parseForm(req: NextApiRequest) {
+  const form = formidable({
+    multiples: false,
+    keepExtensions: true,
+    maxFileSize: 25 * 1024 * 1024,
+  });
+  return new Promise<{ fields: formidable.Fields; files: formidable.Files }>(
+    (resolve, reject) => {
+      form.parse(req, (err, fields, files) =>
+        err ? reject(err) : resolve({ fields, files })
+      );
+    }
+  );
 }
 
 function publicIdFromUrl(url?: string | null) {
@@ -90,7 +102,7 @@ export default async function handler(
   if (req.method === "GET") {
     const doc = await products.findOne({ _id });
     if (!doc) return res.status(404).json({ error: "Not found" });
-    return res.status(200).json({ product: normalizeDoc(doc) });
+    return res.status(200).json({ product: normalizeProduct(doc) });
   }
 
   // ---------- PUT: update (multipart + Cloudinary) ----------
@@ -104,7 +116,7 @@ export default async function handler(
       const update: any = {};
       if (fields.name !== undefined) {
         update.name = String(fields.name).trim();
-        update.title = update.name;
+        update.title = update.name; // keep legacy in sync
       }
       if (fields.description !== undefined)
         update.description = String(fields.description);
@@ -163,18 +175,18 @@ export default async function handler(
           resource_type: "image",
         });
         update.imageUrl = upload.secure_url;
-        update.images = [upload.secure_url];
+        update.images = [upload.secure_url]; // mirror for legacy readers
       }
 
       if (Object.keys(update).length === 0) {
         const fresh = await products.findOne({ _id });
-        return res.status(200).json({ product: normalizeDoc(fresh) });
+        return res.status(200).json({ product: normalizeProduct(fresh) });
       }
 
       update.updatedAt = new Date();
       await products.updateOne({ _id }, { $set: update });
       const saved = await products.findOne({ _id });
-      return res.status(200).json({ product: normalizeDoc(saved) });
+      return res.status(200).json({ product: normalizeProduct(saved) });
     } catch (e: any) {
       console.error("update product error", e);
       return res.status(400).json({ error: e?.message || "Update failed" });
