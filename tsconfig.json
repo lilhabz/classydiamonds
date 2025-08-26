@@ -1,11 +1,10 @@
-// 📄 tsconfig.json – Updated to ignore Speed Insights’ tsconfig error 🌐
 {
   "compilerOptions": {
     "target": "ES2017",
     "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
-    "skipLibCheck": true, // ← skip type‐checking inside node_modules
-    "skipDefaultLibCheck": true, // ← don’t load any default/third‐party tsconfig.json
+    "skipLibCheck": true,
+    "skipDefaultLibCheck": true,
     "strict": true,
     "noEmit": true,
     "esModuleInterop": true,
@@ -15,14 +14,15 @@
     "isolatedModules": true,
     "jsx": "preserve",
     "incremental": true,
+    "baseUrl": ".",
     "paths": {
-      "@/*": ["./*"]
+      "@/*": ["*"]
     },
     "typeRoots": ["./types", "./node_modules/@types"]
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", "scripts/**/*.ts"],
   "exclude": [
     "node_modules",
-    "node_modules/@vercel/speed-insights/tsconfig.json" // ← prevent TS from loading this file
+    "node_modules/@vercel/speed-insights/tsconfig.json"
   ]
 }
