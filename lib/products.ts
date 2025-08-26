@@ -7,7 +7,6 @@ import {
   type OptionalUnlessRequiredId,
 } from "mongodb";
 import type { Product, Audience, Department } from "@/types/product";
-import { DEPARTMENTS } from "@/lib/taxonomy";
 
 /** Robust number parse */
 const toNumber = (v: unknown, d = 0): number => {
@@ -38,24 +37,21 @@ function fromDb(doc: WithId<Document> | DbProduct): Product {
     ? anyDoc.images
     : (anyDoc.image ? [String(anyDoc.image)] : []);
 
-  // department legacy: old `category` field may have been "jewelry" | "watch"
-  let department: Department = "jewelry";
-  if (DEPARTMENTS.includes((anyDoc.department || anyDoc.category)?.toLowerCase())) {
-    department = (anyDoc.department || anyDoc.category).toLowerCase();
-  } else if (anyDoc.department) {
-    department = anyDoc.department;
-  }
+  // department (already normalized in pipeline below, but keep a final guard)
+  const rawDept: string =
+    anyDoc.department ||
+    (["jewelry", "watch"].includes(String(anyDoc.category || "").toLowerCase())
+      ? String(anyDoc.category).toLowerCase()
+      : "jewelry");
 
-  // if category was used as dept, move detailed category into `category` (may be empty)
-  const category =
-    !DEPARTMENTS.includes((anyDoc.category || "").toLowerCase()) ? anyDoc.category : anyDoc.category2 || anyDoc.cat || anyDoc.type;
+  const department = (rawDept as Department);
 
   const out: Product = {
     _id: String(anyDoc._id),
     title: String(title),
     slug: anyDoc.slug ? String(anyDoc.slug) : undefined,
     department,
-    category: category ? String(category) : undefined,
+    category: anyDoc.category ? String(anyDoc.category) : undefined,
     subCategory: anyDoc.subCategory ? String(anyDoc.subCategory) : undefined,
     audience:
       Array.isArray(anyDoc.audience) && anyDoc.audience.length > 0
@@ -132,7 +128,7 @@ export async function listProducts(
   const db = await getDb();
   const Products = db.collection<DbProduct>("products");
 
-  // Ensure audience default at read time
+  // Default audience at read time
   const audienceFix = {
     $addFields: {
       audience: {
@@ -145,7 +141,37 @@ export async function listProducts(
     },
   };
 
-  const pipeline: any[] = [audienceFix, { $match: filter }];
+  // 🔑 Department normalization (LEGACY SUPPORT)
+  // department := department || (category if 'jewelry' | 'watch') || 'jewelry'
+  const departmentFix = {
+    $addFields: {
+      department: {
+        $cond: [
+          { $ne: [{ $ifNull: ["$department", ""] }, ""] },
+          { $toLower: "$department" },
+          {
+            $cond: [
+              {
+                $in: [
+                  { $toLower: { $ifNull: ["$category", ""] } },
+                  ["jewelry", "watch"],
+                ],
+              },
+              { $toLower: "$category" },
+              "jewelry",
+            ],
+          },
+        ],
+      },
+    },
+  };
+
+  const pipeline: any[] = [audienceFix, departmentFix];
+
+  // Apply filter AFTER normalization
+  if (filter && Object.keys(filter).length) {
+    pipeline.push({ $match: filter });
+  }
   if (options.sort) pipeline.push({ $sort: options.sort });
   if (options.skip) pipeline.push({ $skip: options.skip });
   if (options.limit) pipeline.push({ $limit: options.limit });
@@ -164,7 +190,17 @@ export async function getProductById(id: string) {
     (doc as any).audience = ["unisex"];
   }
 
-  return fromDb(doc);
+  // mimic the same normalization as in listProducts for a single doc
+  const normalized = {
+    ...doc,
+    department:
+      doc.department ??
+      (["jewelry", "watch"].includes(String(doc.category || "").toLowerCase())
+        ? String(doc.category).toLowerCase()
+        : "jewelry"),
+  } as any;
+
+  return fromDb(normalized);
 }
 
 export async function createProduct(p: Partial<Product>) {
