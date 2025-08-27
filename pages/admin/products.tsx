@@ -1,4 +1,5 @@
 // 📄 pages/admin/products.tsx – Admin Product Management with Category → Subcategory (all jewelry) & Watches Split 🛠️💎
+// Includes: Upload Photo button + live previews in Add & Edit forms
 
 import { useState, useEffect, useRef, useMemo } from "react";
 import { getSession } from "next-auth/react";
@@ -117,7 +118,7 @@ export default function AdminProductsPage({
   );
   const editFormRef = useRef<HTMLFormElement | null>(null);
 
-  // 🖼️ Image preview for edit
+  // 🖼️ Image preview for edit (shows current or selected file)
   const [previewImage, setPreviewImage] = useState<string>("");
 
   // 🎯 Status
@@ -269,7 +270,7 @@ export default function AdminProductsPage({
     return data;
   }, [filteredProducts, sortConfig]);
 
-  // ==================== ADD FORM ====================
+  // ==================== INPUT HELPERS ====================
   const handleInput = (field: string, value: any) => {
     setFormState((s) => ({ ...s, [field]: value }));
   };
@@ -294,6 +295,14 @@ export default function AdminProductsPage({
     }
   }, [formState.imageFile]);
 
+  // Live preview if picking a new file in edit
+  useEffect(() => {
+    if (!editForm.imageFile) return;
+    const url = URL.createObjectURL(editForm.imageFile);
+    setPreviewImage(url);
+    return () => URL.revokeObjectURL(url);
+  }, [editForm.imageFile]);
+
   const resolveSubcategoryValue = (
     selectValue: string,
     customValue: string
@@ -303,6 +312,7 @@ export default function AdminProductsPage({
     return selectValue;
   };
 
+  // ==================== ADD FORM SUBMIT ====================
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -339,7 +349,7 @@ export default function AdminProductsPage({
 
       const res = await fetch("/api/admin/products", {
         method: "POST",
-        body: formData,
+        body: formData, // let browser set multipart boundary
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to add product");
@@ -409,6 +419,7 @@ export default function AdminProductsPage({
       imageRemoved: false,
     });
 
+    // Show current image initially
     setPreviewImage(
       product.imageUrl ||
         (Array.isArray(product.images) ? product.images[0] : "") ||
@@ -421,14 +432,6 @@ export default function AdminProductsPage({
       });
     }, 100);
   };
-
-  // Live preview if picking a new file in edit
-  useEffect(() => {
-    if (!editForm.imageFile) return;
-    const url = URL.createObjectURL(editForm.imageFile);
-    setPreviewImage(url);
-    return () => URL.revokeObjectURL(url);
-  }, [editForm.imageFile]);
 
   // Reset subcategory when Edit form category changes
   useEffect(() => {
@@ -484,7 +487,7 @@ export default function AdminProductsPage({
 
       const res = await fetch(`/api/admin/products/${editingProduct!._id}`, {
         method: "PUT",
-        body: formData,
+        body: formData, // multipart for Cloudinary
       });
 
       const data = await res.json();
@@ -533,6 +536,9 @@ export default function AdminProductsPage({
         if (!orig) return null;
         if (orig.featured === edits.featured) return null;
 
+        // NOTE: This path sends JSON for small flag updates only.
+        // Your /api/admin/products/[id].ts may be multipart-only; if so,
+        // you can skip this batch feature or add JSON support server-side.
         const res = await fetch(`/api/admin/products/${id}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
@@ -1099,7 +1105,7 @@ export default function AdminProductsPage({
               )}
             </label>
 
-            {/* 🖼️ Image (optional) + Live Preview */}
+            {/* 🖼 Image (optional) + Live Preview */}
             <label className="col-span-full">
               🖼 Image (optional)
               <input
