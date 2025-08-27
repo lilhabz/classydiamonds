@@ -1,9 +1,8 @@
-// 📄 pages/admin/products.tsx – Admin Product Management with Category → Subcategory (all jewelry) & Watches Split 🛠️💎
-// Includes: Upload Photo button + live previews in Add & Edit forms
+// 📄 pages/admin/products.tsx – Admin Product Management with Upload & Previews 🛠️💎
+"use client";
 
 import { useState, useEffect, useRef, useMemo } from "react";
 import { getSession } from "next-auth/react";
-import Image from "next/image";
 import Head from "next/head";
 import Link from "next/link";
 import Breadcrumbs from "@/components/Breadcrumbs";
@@ -20,13 +19,14 @@ import {
   isJewelry,
 } from "@/data/taxonomy";
 
-// 🧷 Helper: show nice labels, keep slug values stored
+// Pretty-print helper (also used for filter labels)
 const prettyLabel = (s: string) => {
+  if (!s) return "";
   if (s === NONE_OPTION || s === CUSTOM_OPTION) return s;
   return s.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 };
 
-// 🛠️ Product type (mirrors collection; includes optional subcategory)
+// Product shape expected by this page
 interface AdminProduct {
   _id: string;
   skuNumber?: number;
@@ -36,17 +36,17 @@ interface AdminProduct {
   price: number;
   salePrice?: number;
   category: Category;
-  subcategory?: string; // UI name
-  subCategory?: string; // allow legacy/api casing
+  subcategory?: string;
+  subCategory?: string;
   imageUrl?: string;
-  images?: string[]; // legacy array
+  images?: string[];
   featured: boolean;
   gender?: "unisex" | "him" | "her";
   tags?: string[];
-  department?: "jewelry" | "watch"; // ensure legacy rows show under correct tab
+  department?: "jewelry" | "watch";
 }
 
-// 🛡️ Server-side guard + fetch products via your legacy lib (same as storefront)
+// --- SSR guard + normalized list (uses your storefront lib) ---
 export async function getServerSideProps(context: any) {
   const session = await getSession(context);
   if (!session || !session.user?.isAdmin) {
@@ -56,7 +56,6 @@ export async function getServerSideProps(context: any) {
   const { listProducts } = await import("@/lib/products");
   const raw = await listProducts({}, { sort: { createdAt: -1 }, limit: 500 });
 
-  // Map legacy Product -> AdminProduct expected by this page
   const initialProducts: AdminProduct[] = raw.map((p: any) => ({
     _id: String(p._id),
     skuNumber: p.skuNumber ?? undefined,
@@ -90,18 +89,18 @@ export default function AdminProductsPage({
 }: {
   initialProducts: AdminProduct[];
 }) {
-  // View toggle: keep Watches separate from Jewelry
+  // Jewelry vs Watches tab
   const [catalogView, setCatalogView] = useState<"jewelry" | "watches">(
     "jewelry"
   );
 
-  // 🔥 Products from SSR (no client fetch needed to list)
+  // Product list (SSR → state)
   const [products, setProducts] = useState<AdminProduct[]>(
     () => initialProducts || []
   );
   const [loadingList] = useState(false);
 
-  // 💾 Local edits for batch save (featured)
+  // Row edits (featured flag)
   const [rowEdits, setRowEdits] = useState<
     Record<string, { featured: boolean }>
   >(() => {
@@ -112,26 +111,30 @@ export default function AdminProductsPage({
     return init;
   });
 
-  // ✏️ Active edit
+  // Edit form
   const [editingProduct, setEditingProduct] = useState<AdminProduct | null>(
     null
   );
   const editFormRef = useRef<HTMLFormElement | null>(null);
 
-  // 🖼️ Image preview for edit (shows current or selected file)
+  // PREVIEWS
+  const [addPreviewUrl, setAddPreviewUrl] = useState<string>("");
   const [previewImage, setPreviewImage] = useState<string>("");
 
-  // 🎯 Status
+  // Visible file inputs are hidden; we trigger them via buttons
+  const addFileInputRef = useRef<HTMLInputElement | null>(null);
+  const editFileInputRef = useRef<HTMLInputElement | null>(null);
+
+  // Status
   const [status, setStatus] = useState({
     loading: false,
     error: "",
     success: "",
   });
+  // Toggle the Add Product form open/closed
+  const [showAddForm, setShowAddForm] = useState<boolean>(false);
 
-  // 🔘 Toggle for Add Product form visibility
-  const [showAddForm, setShowAddForm] = useState(false);
-
-  // 🔍 Filters in admin table
+  // Filters & sorting
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [genderFilter, setGenderFilter] = useState<string>("all");
   const [sortConfig, setSortConfig] = useState<{
@@ -147,7 +150,7 @@ export default function AdminProductsPage({
     );
   };
 
-  // 📋 Add form state
+  // ADD form state
   const [formState, setFormState] = useState({
     name: "",
     description: "",
@@ -161,7 +164,7 @@ export default function AdminProductsPage({
     imageFile: null as File | null,
   });
 
-  // 📋 Edit form state
+  // EDIT form state
   const [editForm, setEditForm] = useState({
     name: "",
     description: "",
@@ -176,24 +179,13 @@ export default function AdminProductsPage({
     imageRemoved: false,
   });
 
-  // 🖼️ Live preview for Add form file selection
-  const [addPreviewUrl, setAddPreviewUrl] = useState<string>("");
-
-  // Helper: Does this category have subcategories to show?
-  const hasSubcatsFor = (cat: Category) => {
-    const opts = subcategoryOptionsFor(cat);
-    return (
-      opts.filter((o) => o !== NONE_OPTION && o !== CUSTOM_OPTION).length > 0
-    );
-  };
-
-  // Allowed categories for each view
+  // Allowed categories by tab
   const allowedCategoriesForView = (view: "jewelry" | "watches"): Category[] =>
     view === "jewelry"
       ? (JEWELRY_CATEGORIES as unknown as Category[])
       : [WATCHES_CATEGORY];
 
-  // Ensure Add form category always matches the active view
+  // Ensure Add form category matches active view
   useEffect(() => {
     setFormState((s) => {
       const allowed = allowedCategoriesForView(catalogView);
@@ -209,7 +201,7 @@ export default function AdminProductsPage({
     setCategoryFilter("all");
   }, [catalogView]);
 
-  // 🚚 Scroll to edit form when editing product
+  // Scroll to edit form when opening
   useEffect(() => {
     if (editingProduct && editFormRef.current) {
       const headerOffset = 120;
@@ -221,13 +213,12 @@ export default function AdminProductsPage({
     }
   }, [editingProduct]);
 
-  // ==================== DERIVED LISTS ====================
+  // Derived lists
   const featuredCount = useMemo(
     () => Object.values(rowEdits).filter((e) => e.featured).length,
     [rowEdits]
   );
 
-  // ✅ Include legacy rows by falling back to department
   const viewFiltered = useMemo(() => {
     return products.filter((p) => {
       const dept = (p as any).department;
@@ -270,7 +261,14 @@ export default function AdminProductsPage({
     return data;
   }, [filteredProducts, sortConfig]);
 
-  // ==================== INPUT HELPERS ====================
+  // Helpers
+  const hasSubcatsFor = (cat: Category) => {
+    const opts = subcategoryOptionsFor(cat);
+    return (
+      opts.filter((o) => o !== NONE_OPTION && o !== CUSTOM_OPTION).length > 0
+    );
+  };
+
   const handleInput = (field: string, value: any) => {
     setFormState((s) => ({ ...s, [field]: value }));
   };
@@ -284,18 +282,17 @@ export default function AdminProductsPage({
     }));
   }, [formState.category]);
 
-  // Blob preview for Add form
+  // ADD preview blob handling
   useEffect(() => {
     if (formState.imageFile) {
       const url = URL.createObjectURL(formState.imageFile);
       setAddPreviewUrl(url);
       return () => URL.revokeObjectURL(url);
-    } else {
-      setAddPreviewUrl("");
     }
+    setAddPreviewUrl("");
   }, [formState.imageFile]);
 
-  // Live preview if picking a new file in edit
+  // EDIT preview blob handling (for newly selected file)
   useEffect(() => {
     if (!editForm.imageFile) return;
     const url = URL.createObjectURL(editForm.imageFile);
@@ -312,7 +309,7 @@ export default function AdminProductsPage({
     return selectValue;
   };
 
-  // ==================== ADD FORM SUBMIT ====================
+  // --- ADD submit ---
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -349,7 +346,7 @@ export default function AdminProductsPage({
 
       const res = await fetch("/api/admin/products", {
         method: "POST",
-        body: formData, // let browser set multipart boundary
+        body: formData, // multipart (boundary set by browser)
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to add product");
@@ -385,7 +382,7 @@ export default function AdminProductsPage({
     }
   };
 
-  // ==================== EDIT FORM ====================
+  // --- Open edit, seed fields + current image preview ---
   const handleEditClick = (product: AdminProduct) => {
     setEditingProduct(product);
 
@@ -419,7 +416,6 @@ export default function AdminProductsPage({
       imageRemoved: false,
     });
 
-    // Show current image initially
     setPreviewImage(
       product.imageUrl ||
         (Array.isArray(product.images) ? product.images[0] : "") ||
@@ -433,7 +429,7 @@ export default function AdminProductsPage({
     }, 100);
   };
 
-  // Reset subcategory when Edit form category changes
+  // Reset subcategory when Edit category changes
   useEffect(() => {
     if (!editingProduct) return;
     setEditForm((f) => ({
@@ -451,6 +447,7 @@ export default function AdminProductsPage({
     return Array.from(base);
   }, [catalogView, editingProduct]);
 
+  // --- EDIT submit ---
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -487,7 +484,7 @@ export default function AdminProductsPage({
 
       const res = await fetch(`/api/admin/products/${editingProduct!._id}`, {
         method: "PUT",
-        body: formData, // multipart for Cloudinary
+        body: formData, // multipart for Cloudinary path
       });
 
       const data = await res.json();
@@ -518,7 +515,7 @@ export default function AdminProductsPage({
     }
   };
 
-  // ==================== BATCH SAVE (Featured) ====================
+  // --- Batch save featured (NOTE: if your PUT handler only accepts multipart, convert this to FormData) ---
   const handleSaveAll = async () => {
     if (featuredCount > 4) {
       setStatus({
@@ -536,9 +533,8 @@ export default function AdminProductsPage({
         if (!orig) return null;
         if (orig.featured === edits.featured) return null;
 
-        // NOTE: This path sends JSON for small flag updates only.
-        // Your /api/admin/products/[id].ts may be multipart-only; if so,
-        // you can skip this batch feature or add JSON support server-side.
+        // If your /api/admin/products/[id].ts only supports multipart,
+        // replace this JSON request with a FormData PUT.
         const res = await fetch(`/api/admin/products/${id}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
@@ -569,7 +565,7 @@ export default function AdminProductsPage({
     }
   };
 
-  // ==================== CANCEL EDIT ====================
+  // Cancel edit
   const cancelEdit = () => {
     setEditingProduct(null);
     setEditForm({
@@ -588,6 +584,7 @@ export default function AdminProductsPage({
     setPreviewImage("");
   };
 
+  // --- UI ---
   return (
     <div className="min-h-screen bg-[var(--bg-page)] text-[var(--foreground)] p-6">
       <Head>
@@ -656,90 +653,70 @@ export default function AdminProductsPage({
           </div>
 
           <button
-            onClick={() => setShowAddForm(!showAddForm)}
+            onClick={() => setShowAddForm((s) => !s)}
             className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
           >
             {showAddForm ? "Close Form" : "➕ Add New Product"}
           </button>
         </div>
 
-        {/* ❗ Status Messages */}
+        {/* Status */}
         {status.error && <p className="text-red-500">❌ {status.error}</p>}
         {status.success && (
           <p className="text-green-600">✅ {status.success}</p>
         )}
 
-        {/* ✏️ Edit Product Form */}
+        {/* --- EDIT FORM --- */}
         {editingProduct && (
-          <>
-            {/* Inline breadcrumb context */}
-            <div className="text-sm text-white/80 -mt-2">
-              <div className="flex items-center gap-1 mb-2">
-                <Link href="/admin" className="hover:text-yellow-300 underline">
-                  Admin
-                </Link>
-                <span>/</span>
-                <Link
-                  href="/admin/products"
-                  className="hover:text-yellow-300 underline"
-                >
-                  Products
-                </Link>
-                <span>/</span>
-                <span className="opacity-90">Edit</span>
-                <span>/</span>
-                <span className="text-yellow-300 font-semibold">
-                  {editingProduct.name}
-                </span>
-              </div>
+          <form
+            ref={editFormRef}
+            onSubmit={handleUpdate}
+            style={{ scrollMarginTop: "120px" }}
+            className="grid grid-cols-1 md:grid-cols-2 gap-4 border p-6 rounded-lg bg-[var(--bg-nav)] shadow-lg"
+          >
+            <h3 className="col-span-full text-xl font-bold text-yellow-400 mb-2">
+              ✏️ Editing: {editingProduct.name} (Item Number{" "}
+              {String(editingProduct.skuNumber ?? 0).padStart(5, "0")})
+            </h3>
+
+            {/* Current/preview image */}
+            <div className="col-span-full flex flex-col items-center mb-2">
+              {previewImage ? (
+                <img
+                  src={previewImage}
+                  alt={editForm.name || "Product Image"}
+                  className="w-40 h-40 object-cover rounded shadow"
+                />
+              ) : (
+                <div className="w-40 h-40 bg-gray-500/40 rounded flex items-center justify-center text-white text-sm">
+                  No Image
+                </div>
+              )}
             </div>
 
-            <form
-              ref={editFormRef}
-              onSubmit={handleUpdate}
-              style={{ scrollMarginTop: "120px" }}
-              className="grid grid-cols-1 md:grid-cols-2 gap-4 border p-6 rounded-lg bg-[var(--bg-nav)] shadow-lg"
-            >
-              <h3 className="col-span-full text-xl font-bold text-yellow-400 mb-2">
-                ✏️ Editing: {editingProduct.name} (Item Number{" "}
-                {String(editingProduct.skuNumber ?? 0).padStart(5, "0")})
-              </h3>
+            {/* Upload/Replace */}
+            <input
+              ref={editFileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) =>
+                setEditForm((f) => ({
+                  ...f,
+                  imageFile: e.target.files?.[0] || null,
+                  imageRemoved: false,
+                }))
+              }
+            />
+            <div className="col-span-full flex gap-2">
+              <button
+                type="button"
+                onClick={() => editFileInputRef.current?.click()}
+                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+              >
+                🖼 Upload / Replace Photo
+              </button>
 
-              {/* 🖼 Current Image / Live Preview */}
-              <div className="col-span-full flex flex-col items-center mb-2">
-                {previewImage ? (
-                  <Image
-                    src={previewImage}
-                    alt={editForm.name || "Product Image"}
-                    width={150}
-                    height={150}
-                    className="object-cover rounded shadow"
-                  />
-                ) : (
-                  <div className="w-36 h-36 bg-gray-500/40 rounded flex items-center justify-center text-white text-sm">
-                    No Image
-                  </div>
-                )}
-              </div>
-
-              {/* 📂 Replace Image */}
-              <label className="col-span-full">
-                🖼 Replace Image
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) =>
-                    setEditForm((f) => ({
-                      ...f,
-                      imageFile: e.target.files?.[0] || null,
-                      imageRemoved: false,
-                    }))
-                  }
-                  className="mt-1 w-full border rounded p-2 bg-[var(--bg-page)]"
-                />
-              </label>
-
-              {/* ❌ Remove Image */}
               <button
                 type="button"
                 onClick={() => {
@@ -753,205 +730,206 @@ export default function AdminProductsPage({
                     prev ? { ...prev, imageUrl: "" } : prev
                   );
                 }}
-                className="col-span-full mt-2 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
               >
                 🗑 Remove Image
               </button>
+            </div>
 
-              <label>
-                📦 Name
-                <input
-                  type="text"
-                  required
-                  value={editForm.name}
-                  onChange={(e) =>
-                    setEditForm((f) => ({ ...f, name: e.target.value }))
-                  }
-                  className="mt-1 w-full border rounded p-2"
-                />
-              </label>
+            {/* Fields */}
+            <label>
+              📦 Name
+              <input
+                type="text"
+                required
+                value={editForm.name}
+                onChange={(e) =>
+                  setEditForm((f) => ({ ...f, name: e.target.value }))
+                }
+                className="mt-1 w-full border rounded p-2"
+              />
+            </label>
 
-              <label>
-                📝 Description
-                <textarea
-                  value={editForm.description}
-                  onChange={(e) =>
-                    setEditForm((f) => ({ ...f, description: e.target.value }))
-                  }
-                  className="mt-1 w-full border rounded p-2"
-                />
-              </label>
+            <label>
+              📝 Description
+              <textarea
+                value={editForm.description}
+                onChange={(e) =>
+                  setEditForm((f) => ({ ...f, description: e.target.value }))
+                }
+                className="mt-1 w-full border rounded p-2"
+              />
+            </label>
 
-              <label>
-                💲 Price (USD)
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  required
-                  value={editForm.price}
-                  onChange={(e) =>
-                    setEditForm((f) => ({ ...f, price: e.target.value }))
-                  }
-                  className="mt-1 w-full border rounded p-2"
-                />
-              </label>
+            <label>
+              💲 Price (USD)
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                required
+                value={editForm.price}
+                onChange={(e) =>
+                  setEditForm((f) => ({ ...f, price: e.target.value }))
+                }
+                className="mt-1 w-full border rounded p-2"
+              />
+            </label>
 
-              <label>
-                🔖 Sale Price (USD)
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={editForm.salePrice}
-                  onChange={(e) =>
-                    setEditForm((f) => ({ ...f, salePrice: e.target.value }))
-                  }
-                  className="mt-1 w-full border rounded p-2"
-                />
-              </label>
+            <label>
+              🔖 Sale Price (USD)
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                value={editForm.salePrice}
+                onChange={(e) =>
+                  setEditForm((f) => ({ ...f, salePrice: e.target.value }))
+                }
+                className="mt-1 w-full border rounded p-2"
+              />
+            </label>
 
-              {/* 📂 Category */}
-              <label>
-                📂 Category
-                <select
-                  value={editForm.category}
-                  onChange={(e) =>
-                    setEditForm((f) => ({
-                      ...f,
-                      category: e.target.value as Category,
-                      subcategorySelect: NONE_OPTION,
-                      subcategoryCustom: "",
-                    }))
-                  }
-                  className="mt-1 w-full border rounded p-2 bg-[var(--bg-page)] text-[var(--foreground)]"
-                >
-                  {(() => {
-                    const allowed = new Set<Category>(
-                      allowedCategoriesForView(catalogView)
-                    );
-                    if (editingProduct) allowed.add(editingProduct.category);
-                    return Array.from(allowed).map((cat) => (
-                      <option key={cat} value={cat}>
-                        {prettyLabel(CATEGORY_LABELS[cat])}
+            {/* Category */}
+            <label>
+              📂 Category
+              <select
+                value={editForm.category}
+                onChange={(e) =>
+                  setEditForm((f) => ({
+                    ...f,
+                    category: e.target.value as Category,
+                    subcategorySelect: NONE_OPTION,
+                    subcategoryCustom: "",
+                  }))
+                }
+                className="mt-1 w-full border rounded p-2 bg-[var(--bg-page)] text-[var(--foreground)]"
+              >
+                {(() => {
+                  const allowed = new Set<Category>(
+                    allowedCategoriesForView(catalogView)
+                  );
+                  if (editingProduct) allowed.add(editingProduct.category);
+                  return Array.from(allowed).map((cat) => (
+                    <option key={cat} value={cat}>
+                      {prettyLabel(CATEGORY_LABELS[cat])}
+                    </option>
+                  ));
+                })()}
+              </select>
+            </label>
+
+            {/* Subcategory */}
+            {hasSubcatsFor(editForm.category) && (
+              <>
+                <label>
+                  🔽 Subcategory
+                  <select
+                    value={editForm.subcategorySelect}
+                    onChange={(e) =>
+                      setEditForm((f) => ({
+                        ...f,
+                        subcategorySelect: e.target.value,
+                        subcategoryCustom:
+                          e.target.value === CUSTOM_OPTION
+                            ? f.subcategoryCustom
+                            : "",
+                      }))
+                    }
+                    className="mt-1 w-full border rounded p-2 bg-[var(--bg-page)] text-[var(--foreground)]"
+                  >
+                    {subcategoryOptionsFor(editForm.category).map((opt) => (
+                      <option key={opt} value={opt}>
+                        {prettyLabel(opt)}
                       </option>
-                    ));
-                  })()}
-                </select>
-              </label>
+                    ))}
+                  </select>
+                </label>
 
-              {/* 🔽 Subcategory */}
-              {hasSubcatsFor(editForm.category) && (
-                <>
-                  <label>
-                    🔽 Subcategory
-                    <select
-                      value={editForm.subcategorySelect}
+                {editForm.subcategorySelect === CUSTOM_OPTION && (
+                  <label className="md:col-span-2">
+                    📝 Custom Subcategory
+                    <input
+                      type="text"
+                      placeholder="e.g., engagement-rings, tennis-bracelets"
+                      value={editForm.subcategoryCustom}
                       onChange={(e) =>
                         setEditForm((f) => ({
                           ...f,
-                          subcategorySelect: e.target.value,
-                          subcategoryCustom:
-                            e.target.value === CUSTOM_OPTION
-                              ? f.subcategoryCustom
-                              : "",
+                          subcategoryCustom: e.target.value,
                         }))
                       }
-                      className="mt-1 w-full border rounded p-2 bg-[var(--bg-page)] text-[var(--foreground)]"
-                    >
-                      {subcategoryOptionsFor(editForm.category).map((opt) => (
-                        <option key={opt} value={opt}>
-                          {prettyLabel(opt)}
-                        </option>
-                      ))}
-                    </select>
+                      className="mt-1 w-full border rounded p-2"
+                    />
                   </label>
-
-                  {editForm.subcategorySelect === CUSTOM_OPTION && (
-                    <label className="md:col-span-2">
-                      📝 Custom Subcategory
-                      <input
-                        type="text"
-                        placeholder="e.g., engagement-rings, tennis-bracelets"
-                        value={editForm.subcategoryCustom}
-                        onChange={(e) =>
-                          setEditForm((f) => ({
-                            ...f,
-                            subcategoryCustom: e.target.value,
-                          }))
-                        }
-                        className="mt-1 w-full border rounded p-2"
-                      />
-                    </label>
-                  )}
-                </>
-              )}
-
-              {/* 🏷️ Gender */}
-              <label>
-                🏷️ Gender
-                <select
-                  value={editForm.gender}
-                  onChange={(e) =>
-                    setEditForm((f) => ({
-                      ...f,
-                      gender: e.target.value as "unisex" | "him" | "her",
-                    }))
-                  }
-                  className="mt-1 w-full border rounded p-2 bg-[var(--bg-page)] text-[var(--foreground)]"
-                >
-                  {[
-                    { v: "unisex", label: "Unisex" },
-                    { v: "him", label: "For Him" },
-                    { v: "her", label: "For Her" },
-                  ].map((g) => (
-                    <option key={g.v} value={g.v}>
-                      {g.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              {/* ✨ Featured */}
-              <label className="flex items-center space-x-2">
-                <span>✨ Featured</span>
-                <input
-                  type="checkbox"
-                  checked={editForm.featured}
-                  disabled={featuredCount >= 4 && !editForm.featured}
-                  onChange={(e) =>
-                    setEditForm((f) => ({ ...f, featured: e.target.checked }))
-                  }
-                  className="mt-2"
-                />
-                {featuredCount >= 4 && !editForm.featured && (
-                  <span className="text-yellow-400 text-sm">
-                    ⚠️ Max 4 featured reached
-                  </span>
                 )}
-              </label>
+              </>
+            )}
 
-              <div className="col-span-full flex space-x-2">
-                <button
-                  type="submit"
-                  disabled={status.loading}
-                  className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
-                >
-                  {status.loading ? "Saving..." : "Save Changes"}
-                </button>
-                <button
-                  type="button"
-                  onClick={cancelEdit}
-                  className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
-          </>
+            {/* Gender */}
+            <label>
+              🏷️ Gender
+              <select
+                value={editForm.gender}
+                onChange={(e) =>
+                  setEditForm((f) => ({
+                    ...f,
+                    gender: e.target.value as "unisex" | "him" | "her",
+                  }))
+                }
+                className="mt-1 w-full border rounded p-2 bg-[var(--bg-page)] text-[var(--foreground)]"
+              >
+                {[
+                  { v: "unisex", label: "Unisex" },
+                  { v: "him", label: "For Him" },
+                  { v: "her", label: "For Her" },
+                ].map((g) => (
+                  <option key={g.v} value={g.v}>
+                    {g.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            {/* Featured */}
+            <label className="flex items-center space-x-2">
+              <span>✨ Featured</span>
+              <input
+                type="checkbox"
+                checked={editForm.featured}
+                disabled={featuredCount >= 4 && !editForm.featured}
+                onChange={(e) =>
+                  setEditForm((f) => ({ ...f, featured: e.target.checked }))
+                }
+                className="mt-2"
+              />
+              {featuredCount >= 4 && !editForm.featured && (
+                <span className="text-yellow-400 text-sm">
+                  ⚠️ Max 4 featured reached
+                </span>
+              )}
+            </label>
+
+            <div className="col-span-full flex gap-2">
+              <button
+                type="submit"
+                disabled={status.loading}
+                className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+              >
+                {status.loading ? "Saving..." : "Save Changes"}
+              </button>
+              <button
+                type="button"
+                onClick={cancelEdit}
+                className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
         )}
 
-        {/* 🆕 Add New Product Form (Animated Collapsible) */}
+        {/* --- ADD FORM (collapsible) --- */}
         <div
           className={`transition-all duration-500 ease-in-out overflow-hidden ${
             showAddForm
@@ -963,7 +941,6 @@ export default function AdminProductsPage({
             onSubmit={handleSubmit}
             className="grid grid-cols-1 md:grid-cols-2 gap-4 border rounded-lg p-4 bg-[var(--bg-nav)]"
           >
-            {/* 📦 Name */}
             <label>
               📦 Name
               <input
@@ -975,7 +952,6 @@ export default function AdminProductsPage({
               />
             </label>
 
-            {/* 📝 Description (optional) */}
             <label>
               📝 Description
               <textarea
@@ -985,7 +961,6 @@ export default function AdminProductsPage({
               />
             </label>
 
-            {/* 💲 Price */}
             <label>
               💲 Price (USD)
               <input
@@ -999,7 +974,6 @@ export default function AdminProductsPage({
               />
             </label>
 
-            {/* 🔖 Sale Price (USD) */}
             <label>
               🔖 Sale Price (USD)
               <input
@@ -1012,7 +986,7 @@ export default function AdminProductsPage({
               />
             </label>
 
-            {/* 📂 Category (restricted by view) */}
+            {/* Category */}
             <label>
               📂 Category
               <select
@@ -1030,7 +1004,7 @@ export default function AdminProductsPage({
               </select>
             </label>
 
-            {/* 🔽 Subcategory */}
+            {/* Subcategory */}
             {hasSubcatsFor(formState.category) && (
               <>
                 <label>
@@ -1050,7 +1024,6 @@ export default function AdminProductsPage({
                   </select>
                 </label>
 
-                {/* 📝 Custom Subcategory */}
                 {formState.subcategorySelect === CUSTOM_OPTION && (
                   <label className="md:col-span-2">
                     📝 Custom Subcategory
@@ -1068,7 +1041,7 @@ export default function AdminProductsPage({
               </>
             )}
 
-            {/* 🏷️ Gender */}
+            {/* Gender */}
             <label>
               🏷️ Gender
               <select
@@ -1088,7 +1061,7 @@ export default function AdminProductsPage({
               </select>
             </label>
 
-            {/* ✨ Featured */}
+            {/* Featured */}
             <label className="flex items-center space-x-2">
               <span>✨ Featured</span>
               <input
@@ -1105,20 +1078,25 @@ export default function AdminProductsPage({
               )}
             </label>
 
-            {/* 🖼 Image (optional) + Live Preview */}
-            <label className="col-span-full">
-              🖼 Image (optional)
-              <input
-                type="file"
-                accept="image/*"
-                onChange={(e) =>
-                  handleInput("imageFile", e.target.files?.[0] ?? null)
-                }
-                className="mt-1 w-full"
-              />
-            </label>
-
+            {/* Upload + Preview */}
+            <input
+              ref={addFileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) =>
+                handleInput("imageFile", e.target.files?.[0] ?? null)
+              }
+            />
             <div className="col-span-full flex items-center gap-4">
+              <button
+                type="button"
+                onClick={() => addFileInputRef.current?.click()}
+                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+              >
+                🖼 Upload Photo
+              </button>
+
               <div className="w-36 h-36 bg-gray-500/40 rounded flex items-center justify-center overflow-hidden">
                 {addPreviewUrl ? (
                   <img
@@ -1132,6 +1110,7 @@ export default function AdminProductsPage({
                   </span>
                 )}
               </div>
+
               {addPreviewUrl && (
                 <button
                   type="button"
@@ -1143,7 +1122,7 @@ export default function AdminProductsPage({
               )}
             </div>
 
-            {/* 💾 Submit */}
+            {/* Submit */}
             <button
               type="submit"
               disabled={status.loading}
@@ -1154,7 +1133,7 @@ export default function AdminProductsPage({
           </form>
         </div>
 
-        {/* 🗂️ Existing Products Table */}
+        {/* --- TABLE --- */}
         <h2 className="text-xl font-semibold mt-8">🗂️ Current Products</h2>
 
         {loadingList ? (
@@ -1245,18 +1224,17 @@ export default function AdminProductsPage({
                         </td>
 
                         <td className="p-2 w-24 h-24">
-                          <div className="relative w-24 h-24">
+                          <div className="w-24 h-24 bg-gray-500/40 rounded overflow-hidden flex items-center justify-center">
                             {displayImage ? (
-                              <Image
+                              <img
                                 src={displayImage}
                                 alt={p.name}
-                                fill
-                                className="object-cover rounded"
+                                className="w-full h-full object-cover"
                               />
                             ) : (
-                              <div className="w-full h-full bg-gray-500/40 rounded flex items-center justify-center text-xs">
+                              <span className="text-xs opacity-70">
                                 No Image
-                              </div>
+                              </span>
                             )}
                           </div>
                         </td>
@@ -1286,7 +1264,7 @@ export default function AdminProductsPage({
                             <span className="opacity-60">—</span>
                           )}
                         </td>
-                        <td className="p-2 capitalize whitespace-normal break-words">
+                        <td className="p-2 whitespace-normal break-words">
                           {p.gender ? prettyLabel(p.gender) : "Unisex"}
                         </td>
 
@@ -1351,7 +1329,7 @@ export default function AdminProductsPage({
           </>
         )}
 
-        {/* 💾 Global Save All Changes Button */}
+        {/* Save-all */}
         <div className="flex justify-end mt-4">
           <button
             onClick={handleSaveAll}
