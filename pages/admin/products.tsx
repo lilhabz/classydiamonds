@@ -1,4 +1,4 @@
-// 📄 pages/admin/products.tsx – Admin Product Management with Upload & Previews 🛠️💎
+// 📄 pages/admin/products.tsx – Admin Product Management with Uploads, Previews, and Specifications (no tags)
 "use client";
 
 import { useState, useEffect, useRef, useMemo } from "react";
@@ -19,14 +19,14 @@ import {
   isJewelry,
 } from "@/data/taxonomy";
 
-// Pretty-print helper (also used for filter labels)
+type Specs = Record<string, string>;
+
 const prettyLabel = (s: string) => {
   if (!s) return "";
   if (s === NONE_OPTION || s === CUSTOM_OPTION) return s;
   return s.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 };
 
-// Product shape expected by this page
 interface AdminProduct {
   _id: string;
   skuNumber?: number;
@@ -42,11 +42,11 @@ interface AdminProduct {
   images?: string[];
   featured: boolean;
   gender?: "unisex" | "him" | "her";
-  tags?: string[];
   department?: "jewelry" | "watch";
+  specs?: Specs;
 }
 
-// --- SSR guard + normalized list (uses your storefront lib) ---
+// ---------- SSR: fetch normalized (same as storefront) ----------
 export async function getServerSideProps(context: any) {
   const session = await getSession(context);
   if (!session || !session.user?.isAdmin) {
@@ -77,30 +77,44 @@ export async function getServerSideProps(context: any) {
       p.audience && p.audience[0]
         ? (p.audience[0] as any)
         : p.gender ?? "unisex",
-    tags: Array.isArray(p.tags) ? p.tags : [],
     department: p.department ?? "jewelry",
+    specs: p.specs && typeof p.specs === "object" ? p.specs : {},
   }));
 
   return { props: { initialProducts } };
 }
+
+// -------- Small in-file Specs editor helpers --------
+type SpecEntry = { key: string; value: string };
+const objectToEntries = (obj: Specs | undefined): SpecEntry[] =>
+  obj
+    ? Object.entries(obj).map(([key, value]) => ({
+        key,
+        value: String(value ?? ""),
+      }))
+    : [];
+const entriesToObject = (rows: SpecEntry[]): Specs =>
+  rows
+    .filter((r) => r.key.trim())
+    .reduce<Specs>((acc, r) => {
+      acc[r.key.trim()] = r.value ?? "";
+      return acc;
+    }, {});
 
 export default function AdminProductsPage({
   initialProducts,
 }: {
   initialProducts: AdminProduct[];
 }) {
-  // Jewelry vs Watches tab
   const [catalogView, setCatalogView] = useState<"jewelry" | "watches">(
     "jewelry"
   );
 
-  // Product list (SSR → state)
   const [products, setProducts] = useState<AdminProduct[]>(
     () => initialProducts || []
   );
   const [loadingList] = useState(false);
 
-  // Row edits (featured flag)
   const [rowEdits, setRowEdits] = useState<
     Record<string, { featured: boolean }>
   >(() => {
@@ -111,30 +125,27 @@ export default function AdminProductsPage({
     return init;
   });
 
-  // Edit form
   const [editingProduct, setEditingProduct] = useState<AdminProduct | null>(
     null
   );
   const editFormRef = useRef<HTMLFormElement | null>(null);
 
-  // PREVIEWS
+  // Previews + refs for file inputs
   const [addPreviewUrl, setAddPreviewUrl] = useState<string>("");
   const [previewImage, setPreviewImage] = useState<string>("");
-
-  // Visible file inputs are hidden; we trigger them via buttons
   const addFileInputRef = useRef<HTMLInputElement | null>(null);
   const editFileInputRef = useRef<HTMLInputElement | null>(null);
 
-  // Status
   const [status, setStatus] = useState({
     loading: false,
     error: "",
     success: "",
   });
-  // Toggle the Add Product form open/closed
+
+  // Toggle Add form
   const [showAddForm, setShowAddForm] = useState<boolean>(false);
 
-  // Filters & sorting
+  // Filters/sort
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [genderFilter, setGenderFilter] = useState<string>("all");
   const [sortConfig, setSortConfig] = useState<{
@@ -150,7 +161,7 @@ export default function AdminProductsPage({
     );
   };
 
-  // ADD form state
+  // ADD form state (with specs + image)
   const [formState, setFormState] = useState({
     name: "",
     description: "",
@@ -163,8 +174,9 @@ export default function AdminProductsPage({
     gender: "unisex" as "unisex" | "him" | "her",
     imageFile: null as File | null,
   });
+  const [specRows, setSpecRows] = useState<SpecEntry[]>([]);
 
-  // EDIT form state
+  // EDIT form state (with specs + image)
   const [editForm, setEditForm] = useState({
     name: "",
     description: "",
@@ -178,14 +190,13 @@ export default function AdminProductsPage({
     imageFile: null as File | null,
     imageRemoved: false,
   });
+  const [editSpecRows, setEditSpecRows] = useState<SpecEntry[]>([]);
 
-  // Allowed categories by tab
   const allowedCategoriesForView = (view: "jewelry" | "watches"): Category[] =>
     view === "jewelry"
       ? (JEWELRY_CATEGORIES as unknown as Category[])
       : [WATCHES_CATEGORY];
 
-  // Ensure Add form category matches active view
   useEffect(() => {
     setFormState((s) => {
       const allowed = allowedCategoriesForView(catalogView);
@@ -201,7 +212,6 @@ export default function AdminProductsPage({
     setCategoryFilter("all");
   }, [catalogView]);
 
-  // Scroll to edit form when opening
   useEffect(() => {
     if (editingProduct && editFormRef.current) {
       const headerOffset = 120;
@@ -213,7 +223,6 @@ export default function AdminProductsPage({
     }
   }, [editingProduct]);
 
-  // Derived lists
   const featuredCount = useMemo(
     () => Object.values(rowEdits).filter((e) => e.featured).length,
     [rowEdits]
@@ -261,7 +270,6 @@ export default function AdminProductsPage({
     return data;
   }, [filteredProducts, sortConfig]);
 
-  // Helpers
   const hasSubcatsFor = (cat: Category) => {
     const opts = subcategoryOptionsFor(cat);
     return (
@@ -273,7 +281,6 @@ export default function AdminProductsPage({
     setFormState((s) => ({ ...s, [field]: value }));
   };
 
-  // Reset subcategory when Add form category changes
   useEffect(() => {
     setFormState((s) => ({
       ...s,
@@ -282,7 +289,7 @@ export default function AdminProductsPage({
     }));
   }, [formState.category]);
 
-  // ADD preview blob handling
+  // Add preview blob
   useEffect(() => {
     if (formState.imageFile) {
       const url = URL.createObjectURL(formState.imageFile);
@@ -292,7 +299,7 @@ export default function AdminProductsPage({
     setAddPreviewUrl("");
   }, [formState.imageFile]);
 
-  // EDIT preview blob handling (for newly selected file)
+  // Edit preview blob (only when new file is chosen)
   useEffect(() => {
     if (!editForm.imageFile) return;
     const url = URL.createObjectURL(editForm.imageFile);
@@ -309,7 +316,7 @@ export default function AdminProductsPage({
     return selectValue;
   };
 
-  // --- ADD submit ---
+  // ---------- ADD SUBMIT ----------
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -342,11 +349,18 @@ export default function AdminProductsPage({
       );
       formData.append("featured", formState.featured ? "true" : "false");
       formData.append("gender", formState.gender);
+
+      // 🔧 specs -> JSON string
+      const specsObj = entriesToObject(specRows);
+      if (Object.keys(specsObj).length > 0) {
+        formData.append("specs", JSON.stringify(specsObj));
+      }
+
       if (formState.imageFile) formData.append("image", formState.imageFile);
 
       const res = await fetch("/api/admin/products", {
         method: "POST",
-        body: formData, // multipart (boundary set by browser)
+        body: formData,
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to add product");
@@ -354,6 +368,7 @@ export default function AdminProductsPage({
       const newProduct: AdminProduct = {
         ...data.product,
         subcategory: data.product.subcategory ?? data.product.subCategory,
+        specs: data.product.specs ?? {},
       };
 
       setProducts((p) => [newProduct, ...p]);
@@ -375,6 +390,7 @@ export default function AdminProductsPage({
         gender: "unisex",
         imageFile: null,
       });
+      setSpecRows([]);
       setAddPreviewUrl("");
       setStatus({ loading: false, error: "", success: "✅ Product added 🎉" });
     } catch (err: any) {
@@ -382,7 +398,7 @@ export default function AdminProductsPage({
     }
   };
 
-  // --- Open edit, seed fields + current image preview ---
+  // ---------- OPEN EDIT ----------
   const handleEditClick = (product: AdminProduct) => {
     setEditingProduct(product);
 
@@ -416,11 +432,16 @@ export default function AdminProductsPage({
       imageRemoved: false,
     });
 
+    // seed specs editor
+    setEditSpecRows(objectToEntries(product.specs));
+
+    // show current image (until replaced)
     setPreviewImage(
       product.imageUrl ||
         (Array.isArray(product.images) ? product.images[0] : "") ||
         ""
     );
+
     setTimeout(() => {
       editFormRef.current?.scrollIntoView({
         behavior: "smooth",
@@ -447,7 +468,7 @@ export default function AdminProductsPage({
     return Array.from(base);
   }, [catalogView, editingProduct]);
 
-  // --- EDIT submit ---
+  // ---------- SAVE EDIT ----------
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -480,11 +501,20 @@ export default function AdminProductsPage({
       formData.append("featured", editForm.featured ? "true" : "false");
       formData.append("gender", editForm.gender);
       formData.append("imageRemoved", editForm.imageRemoved ? "true" : "false");
+
+      const specsObj = entriesToObject(editSpecRows);
+      if (Object.keys(specsObj).length > 0) {
+        formData.append("specs", JSON.stringify(specsObj));
+      } else {
+        // send empty to clear?
+        formData.append("specs", JSON.stringify({}));
+      }
+
       if (editForm.imageFile) formData.append("image", editForm.imageFile);
 
       const res = await fetch(`/api/admin/products/${editingProduct!._id}`, {
         method: "PUT",
-        body: formData, // multipart for Cloudinary path
+        body: formData,
       });
 
       const data = await res.json();
@@ -493,6 +523,7 @@ export default function AdminProductsPage({
       const updated: AdminProduct = {
         ...data.product,
         subcategory: data.product.subcategory ?? data.product.subCategory,
+        specs: data.product.specs ?? {},
       };
 
       setProducts((p) =>
@@ -505,6 +536,7 @@ export default function AdminProductsPage({
 
       setEditingProduct(null);
       setPreviewImage("");
+      setEditSpecRows([]);
       setStatus({
         loading: false,
         error: "",
@@ -515,7 +547,7 @@ export default function AdminProductsPage({
     }
   };
 
-  // --- Batch save featured (NOTE: if your PUT handler only accepts multipart, convert this to FormData) ---
+  // ---------- BATCH SAVE FEATURED ----------
   const handleSaveAll = async () => {
     if (featuredCount > 4) {
       setStatus({
@@ -528,13 +560,12 @@ export default function AdminProductsPage({
 
     setStatus({ loading: true, error: "", success: "" });
     try {
+      // If your PUT only supports multipart, skip batch or adapt to FormData.
       const updates = Object.entries(rowEdits).map(async ([id, edits]) => {
         const orig = products.find((p) => p._id === id);
         if (!orig) return null;
         if (orig.featured === edits.featured) return null;
 
-        // If your /api/admin/products/[id].ts only supports multipart,
-        // replace this JSON request with a FormData PUT.
         const res = await fetch(`/api/admin/products/${id}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
@@ -565,7 +596,6 @@ export default function AdminProductsPage({
     }
   };
 
-  // Cancel edit
   const cancelEdit = () => {
     setEditingProduct(null);
     setEditForm({
@@ -581,10 +611,11 @@ export default function AdminProductsPage({
       imageFile: null,
       imageRemoved: false,
     });
+    setEditSpecRows([]);
     setPreviewImage("");
   };
 
-  // --- UI ---
+  // ---------- UI ----------
   return (
     <div className="min-h-screen bg-[var(--bg-page)] text-[var(--foreground)] p-6">
       <Head>
@@ -625,7 +656,7 @@ export default function AdminProductsPage({
       </nav>
 
       <div className="max-w-7xl mx-auto space-y-6">
-        {/* View toggle + Add button */}
+        {/* Toggle + Add button */}
         <div className="flex items-center justify-between">
           <div className="inline-flex rounded overflow-hidden border">
             <button
@@ -653,7 +684,7 @@ export default function AdminProductsPage({
           </div>
 
           <button
-            onClick={() => setShowAddForm((s) => !s)}
+            onClick={() => setShowAddForm((prev) => !prev)}
             className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
           >
             {showAddForm ? "Close Form" : "➕ Add New Product"}
@@ -666,7 +697,7 @@ export default function AdminProductsPage({
           <p className="text-green-600">✅ {status.success}</p>
         )}
 
-        {/* --- EDIT FORM --- */}
+        {/* ---------- EDIT FORM ---------- */}
         {editingProduct && (
           <form
             ref={editFormRef}
@@ -679,61 +710,57 @@ export default function AdminProductsPage({
               {String(editingProduct.skuNumber ?? 0).padStart(5, "0")})
             </h3>
 
-            {/* Current/preview image */}
-            <div className="col-span-full flex flex-col items-center mb-2">
-              {previewImage ? (
-                <img
-                  src={previewImage}
-                  alt={editForm.name || "Product Image"}
-                  className="w-40 h-40 object-cover rounded shadow"
-                />
-              ) : (
-                <div className="w-40 h-40 bg-gray-500/40 rounded flex items-center justify-center text-white text-sm">
-                  No Image
-                </div>
-              )}
-            </div>
+            {/* Image preview */}
+            <div className="col-span-full flex items-center gap-4">
+              <div className="w-40 h-40 bg-gray-500/40 rounded flex items-center justify-center overflow-hidden">
+                {previewImage ? (
+                  <img
+                    src={previewImage}
+                    alt={editForm.name || "Product Image"}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <span className="text-xs opacity-80">No Image</span>
+                )}
+              </div>
 
-            {/* Upload/Replace */}
-            <input
-              ref={editFileInputRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={(e) =>
-                setEditForm((f) => ({
-                  ...f,
-                  imageFile: e.target.files?.[0] || null,
-                  imageRemoved: false,
-                }))
-              }
-            />
-            <div className="col-span-full flex gap-2">
-              <button
-                type="button"
-                onClick={() => editFileInputRef.current?.click()}
-                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-              >
-                🖼 Upload / Replace Photo
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
+              {/* Hidden input + action buttons */}
+              <input
+                ref={editFileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) =>
                   setEditForm((f) => ({
                     ...f,
-                    imageFile: null,
-                    imageRemoved: true,
-                  }));
-                  setPreviewImage("");
-                  setEditingProduct((prev) =>
-                    prev ? { ...prev, imageUrl: "" } : prev
-                  );
-                }}
-                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
-              >
-                🗑 Remove Image
-              </button>
+                    imageFile: e.target.files?.[0] || null,
+                    imageRemoved: false,
+                  }))
+                }
+              />
+              <div className="flex flex-col gap-2">
+                <button
+                  type="button"
+                  onClick={() => editFileInputRef.current?.click()}
+                  className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                >
+                  🖼 Upload / Replace Photo
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditForm((f) => ({
+                      ...f,
+                      imageFile: null,
+                      imageRemoved: true,
+                    }));
+                    setPreviewImage("");
+                  }}
+                  className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+                >
+                  🗑 Remove Image
+                </button>
+              </div>
             </div>
 
             {/* Fields */}
@@ -790,7 +817,6 @@ export default function AdminProductsPage({
               />
             </label>
 
-            {/* Category */}
             <label>
               📂 Category
               <select
@@ -819,7 +845,6 @@ export default function AdminProductsPage({
               </select>
             </label>
 
-            {/* Subcategory */}
             {hasSubcatsFor(editForm.category) && (
               <>
                 <label>
@@ -866,7 +891,6 @@ export default function AdminProductsPage({
               </>
             )}
 
-            {/* Gender */}
             <label>
               🏷️ Gender
               <select
@@ -891,7 +915,73 @@ export default function AdminProductsPage({
               </select>
             </label>
 
-            {/* Featured */}
+            {/* SPECS EDITOR (Edit) */}
+            <div className="md:col-span-2 border rounded p-3">
+              <div className="flex items-center justify-between mb-2">
+                <h4 className="font-semibold">Specifications</h4>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setEditSpecRows((rows) => [...rows, { key: "", value: "" }])
+                  }
+                  className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
+                >
+                  + Add Row
+                </button>
+              </div>
+
+              <div className="space-y-2">
+                {editSpecRows.length === 0 && (
+                  <p className="text-sm opacity-70">
+                    No specifications yet. Add rows like: Metal = 14k Gold,
+                    Stone = Diamond, etc.
+                  </p>
+                )}
+
+                {editSpecRows.map((row, idx) => (
+                  <div key={idx} className="grid grid-cols-12 gap-2">
+                    <input
+                      className="col-span-5 border rounded p-2"
+                      placeholder="Key (e.g., metal)"
+                      value={row.key}
+                      onChange={(e) =>
+                        setEditSpecRows((rows) =>
+                          rows.map((r, i) =>
+                            i === idx ? { ...r, key: e.target.value } : r
+                          )
+                        )
+                      }
+                    />
+                    <input
+                      className="col-span-6 border rounded p-2"
+                      placeholder="Value (e.g., 14k gold)"
+                      value={row.value}
+                      onChange={(e) =>
+                        setEditSpecRows((rows) =>
+                          rows.map((r, i) =>
+                            i === idx ? { ...r, value: e.target.value } : r
+                          )
+                        )
+                      }
+                    />
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setEditSpecRows((rows) =>
+                          rows.filter((_, i) => i !== idx)
+                        )
+                      }
+                      className="col-span-1 px-2 bg-red-600 text-white rounded"
+                      title="Remove"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Featured & Actions */}
             <label className="flex items-center space-x-2">
               <span>✨ Featured</span>
               <input
@@ -929,11 +1019,11 @@ export default function AdminProductsPage({
           </form>
         )}
 
-        {/* --- ADD FORM (collapsible) --- */}
+        {/* ---------- ADD FORM (collapsible) ---------- */}
         <div
           className={`transition-all duration-500 ease-in-out overflow-hidden ${
             showAddForm
-              ? "max-h-[1600px] opacity-100 mt-4"
+              ? "max-h-[2000px] opacity-100 mt-4"
               : "max-h-0 opacity-0 mt-0"
           }`}
         >
@@ -986,7 +1076,6 @@ export default function AdminProductsPage({
               />
             </label>
 
-            {/* Category */}
             <label>
               📂 Category
               <select
@@ -1004,7 +1093,6 @@ export default function AdminProductsPage({
               </select>
             </label>
 
-            {/* Subcategory */}
             {hasSubcatsFor(formState.category) && (
               <>
                 <label>
@@ -1041,7 +1129,6 @@ export default function AdminProductsPage({
               </>
             )}
 
-            {/* Gender */}
             <label>
               🏷️ Gender
               <select
@@ -1061,24 +1148,71 @@ export default function AdminProductsPage({
               </select>
             </label>
 
-            {/* Featured */}
-            <label className="flex items-center space-x-2">
-              <span>✨ Featured</span>
-              <input
-                type="checkbox"
-                checked={formState.featured}
-                disabled={featuredCount >= 4}
-                onChange={(e) => handleInput("featured", e.target.checked)}
-                className="mt-2"
-              />
-              {featuredCount >= 4 && (
-                <span className="text-yellow-400 text-sm">
-                  ⚠️ Max 4 featured reached
-                </span>
-              )}
-            </label>
+            {/* SPECS EDITOR (Add) */}
+            <div className="md:col-span-2 border rounded p-3">
+              <div className="flex items-center justify-between mb-2">
+                <h4 className="font-semibold">Specifications</h4>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setSpecRows((rows) => [...rows, { key: "", value: "" }])
+                  }
+                  className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
+                >
+                  + Add Row
+                </button>
+              </div>
 
-            {/* Upload + Preview */}
+              <div className="space-y-2">
+                {specRows.length === 0 && (
+                  <p className="text-sm opacity-70">
+                    Add rows like: Metal = 14k Gold, Stone = Diamond, Length =
+                    18&quot;.
+                  </p>
+                )}
+
+                {specRows.map((row, idx) => (
+                  <div key={idx} className="grid grid-cols-12 gap-2">
+                    <input
+                      className="col-span-5 border rounded p-2"
+                      placeholder="Key (e.g., metal)"
+                      value={row.key}
+                      onChange={(e) =>
+                        setSpecRows((rows) =>
+                          rows.map((r, i) =>
+                            i === idx ? { ...r, key: e.target.value } : r
+                          )
+                        )
+                      }
+                    />
+                    <input
+                      className="col-span-6 border rounded p-2"
+                      placeholder="Value (e.g., 14k gold)"
+                      value={row.value}
+                      onChange={(e) =>
+                        setSpecRows((rows) =>
+                          rows.map((r, i) =>
+                            i === idx ? { ...r, value: e.target.value } : r
+                          )
+                        )
+                      }
+                    />
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setSpecRows((rows) => rows.filter((_, i) => i !== idx))
+                      }
+                      className="col-span-1 px-2 bg-red-600 text-white rounded"
+                      title="Remove"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Upload + Preview (Add) */}
             <input
               ref={addFileInputRef}
               type="file"
@@ -1088,7 +1222,7 @@ export default function AdminProductsPage({
                 handleInput("imageFile", e.target.files?.[0] ?? null)
               }
             />
-            <div className="col-span-full flex items-center gap-4">
+            <div className="md:col-span-2 flex items-center gap-4">
               <button
                 type="button"
                 onClick={() => addFileInputRef.current?.click()}
@@ -1126,14 +1260,14 @@ export default function AdminProductsPage({
             <button
               type="submit"
               disabled={status.loading}
-              className="col-span-full bg-blue-600 text-white rounded py-2 hover:bg-blue-700"
+              className="md:col-span-2 bg-blue-600 text-white rounded py-2 hover:bg-blue-700"
             >
               {status.loading ? "Saving..." : "Add Product"}
             </button>
           </form>
         </div>
 
-        {/* --- TABLE --- */}
+        {/* ---------- TABLE ---------- */}
         <h2 className="text-xl font-semibold mt-8">🗂️ Current Products</h2>
 
         {loadingList ? (
@@ -1256,13 +1390,11 @@ export default function AdminProductsPage({
                           {prettyLabel(CATEGORY_LABELS[p.category])}
                         </td>
                         <td className="p-2 whitespace-normal break-words">
-                          {p.subcategory ? (
-                            prettyLabel(p.subcategory)
-                          ) : p.subCategory ? (
-                            prettyLabel(p.subCategory)
-                          ) : (
-                            <span className="opacity-60">—</span>
-                          )}
+                          {p.subcategory
+                            ? prettyLabel(p.subcategory)
+                            : p.subCategory
+                            ? prettyLabel(p.subCategory)
+                            : "—"}
                         </td>
                         <td className="p-2 whitespace-normal break-words">
                           {p.gender ? prettyLabel(p.gender) : "Unisex"}

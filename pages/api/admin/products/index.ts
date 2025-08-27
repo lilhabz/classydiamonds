@@ -1,9 +1,10 @@
+// pages/api/admin/products/index.ts
 import type { NextApiRequest, NextApiResponse } from "next";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../../auth/[...nextauth]";
 import formidable, { File as FormidableFile, Fields, Files } from "formidable";
 import { v2 as cloudinary } from "cloudinary";
-import { listProducts, createProduct } from "@/lib/products";
+import { getDb } from "@/lib/products";
 
 export const config = { api: { bodyParser: false } };
 
@@ -28,77 +29,31 @@ function parseForm(
   });
 }
 
-// Normalize for admin UI expectations
-const toAdminRow = (p: any) => ({
-  ...p,
-  id: p._id,
-  name: p.title || p.name || "",
-  imageUrl: Array.isArray(p.images) && p.images.length ? p.images[0] : "",
-  price: p.salePrice ?? p.discountedPrice ?? p.unitPrice ?? p.price ?? 0,
-});
-
-/** Apply filters AFTER normalization so legacy docs also match */
-function applyAdminFilters(products: any[], query: NextApiRequest["query"]) {
-  const str = (v: any) => (typeof v === "string" ? v.toLowerCase().trim() : "");
-  const arr = (v: any): string[] =>
-    Array.isArray(v) ? v.map((x) => String(x).toLowerCase().trim()) : [];
-
-  const q = str(query.q);
-  const department = str(query.department);
-  const category = str(query.category);
-  const subCategory = str(query.subCategory);
-  const audienceList = str(query.audience)
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean);
-
-  // specs is optional JSON
-  let specsWanted: Record<string, any> | null = null;
-  if (typeof query.specs === "string" && query.specs) {
-    try {
-      specsWanted = JSON.parse(query.specs);
-    } catch {
-      specsWanted = null;
-    }
-  }
-
-  return products.filter((p) => {
-    const pDept = str(
-      p.department || (p.category === "watch" ? "watch" : "jewelry")
-    );
-    const pCat = str(p.category);
-    const pSub = str(p.subCategory);
-    const pAud = arr(p.audience);
-    const pTitle = (p.title || p.name || "").toString().toLowerCase();
-    const pDesc = (p.description || "").toString().toLowerCase();
-    const pTags = arr(p.tags);
-
-    if (department && pDept !== department) return false;
-    if (category && pCat !== category) return false;
-    if (subCategory && pSub !== subCategory) return false;
-
-    if (audienceList.length) {
-      const set = new Set(pAud.length ? pAud : ["unisex"]);
-      const anyMatch = audienceList.some((a) => set.has(a));
-      if (!anyMatch) return false;
-    }
-
-    if (specsWanted && typeof p.specs === "object" && p.specs) {
-      for (const [k, v] of Object.entries(specsWanted)) {
-        if ((p.specs as any)[k] !== v) return false;
-      }
-    }
-
-    if (q) {
-      const hit =
-        pTitle.includes(q) ||
-        pDesc.includes(q) ||
-        pTags.some((t) => t.includes(q));
-      if (!hit) return false;
-    }
-
-    return true;
-  });
+// ---------- legacy normalization helpers ----------
+function inferDepartment(doc: any): "jewelry" | "watch" {
+  const d = String(doc?.department || "").toLowerCase();
+  if (d === "watch") return "watch";
+  const cat = String(doc?.category || "").toLowerCase();
+  if (cat === "watch" || cat === "watches") return "watch";
+  return "jewelry";
+}
+function firstImage(doc: any): string {
+  if (doc?.imageUrl) return String(doc.imageUrl);
+  if (Array.isArray(doc?.images) && doc.images.length)
+    return String(doc.images[0]);
+  if (doc?.image) return String(doc.image);
+  return "";
+}
+function normalizeDoc(doc: any) {
+  const subCategory = doc?.subCategory ?? doc?.subcategory ?? undefined;
+  const name = doc?.name ?? doc?.title ?? "";
+  return {
+    ...doc,
+    name,
+    department: inferDepartment(doc),
+    subCategory,
+    imageUrl: firstImage(doc),
+  };
 }
 
 export default async function handler(
@@ -106,74 +61,167 @@ export default async function handler(
   res: NextApiResponse
 ) {
   const session = (await getServerSession(req, res, authOptions as any)) as any;
-  if (!session?.user || !session.user.isAdmin) {
+  if (!session?.user || !session.user.isAdmin)
     return res.status(403).json({ error: "Forbidden" });
-  }
 
-  // -------- GET: fetch normalized, then filter in-memory so legacy docs work --------
+  // ----------------- GET -----------------
   if (req.method === "GET") {
     try {
-      // Pull a generous page and filter locally (fast enough for admin use)
-      const all = await listProducts(
-        {},
-        { limit: 1000, sort: { createdAt: -1 } }
-      );
-      const filtered = applyAdminFilters(all, req.query);
-      return res.status(200).json({ products: filtered.map(toAdminRow) });
-    } catch (e) {
+      const db = await getDb();
+      const { department, category, subCategory, q, audience, specs } =
+        req.query;
+
+      const filter: any = {};
+
+      if (typeof department === "string" && department) {
+        filter.$or = [
+          ...(filter.$or || []),
+          { department },
+          { category: department }, // legacy
+        ];
+      }
+      if (typeof category === "string" && category) filter.category = category;
+
+      if (typeof subCategory === "string" && subCategory) {
+        filter.$or = [
+          ...(filter.$or || []),
+          { subCategory },
+          { subcategory: subCategory }, // legacy casing
+        ];
+      }
+
+      if (typeof q === "string" && q.trim()) {
+        filter.$or = [
+          ...(filter.$or || []),
+          { name: { $regex: q, $options: "i" } },
+          { title: { $regex: q, $options: "i" } },
+          { description: { $regex: q, $options: "i" } },
+          { tags: { $regex: q, $options: "i" } }, // tolerate legacy "tags"
+        ];
+      }
+
+      if (typeof audience === "string" && audience) {
+        const a = audience
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean);
+        if (a.length) {
+          filter.$expr = {
+            $gt: [
+              {
+                $size: {
+                  $setIntersection: [{ $ifNull: ["$audience", ["unisex"]] }, a],
+                },
+              },
+              0,
+            ],
+          };
+        }
+      }
+
+      if (typeof specs === "string" && specs) {
+        try {
+          const wanted = JSON.parse(specs);
+          const and: any[] = [];
+          for (const [k, v] of Object.entries(wanted)) {
+            and.push({ [`specs.${k}`]: v });
+          }
+          if (and.length) filter.$and = [...(filter.$and || []), ...and];
+        } catch {
+          // ignore bad JSON
+        }
+      }
+
+      const raw = await db
+        .collection("products")
+        .find(Object.keys(filter).length ? filter : {})
+        .sort({ createdAt: -1 })
+        .limit(500)
+        .toArray();
+
+      const products = raw.map(normalizeDoc);
+      return res.status(200).json({ products });
+    } catch (e: any) {
       console.error("GET products error", e);
       return res.status(500).json({ error: "Failed to load products" });
     }
   }
 
-  // ----------------- POST (Cloudinary + normalized create) -----------------
+  // ----------------- POST: create (multipart + Cloudinary) -----------------
   if (req.method === "POST") {
     try {
+      const db = await getDb();
       const { fields, files } = await parseForm(req);
 
-      const title = String(fields.name || fields.title || "").trim();
+      const name = String(fields.name || "").trim();
       const description = String(fields.description || "");
-      const priceStr = String(fields.price || "");
-      const salePriceStr = String(fields.salePrice || "");
-      const category = String(fields.category || "").toLowerCase();
-      const subCategory = String(fields.subcategory || "").toLowerCase();
-      const gender = String(fields.gender || "unisex").toLowerCase();
+      const price = String(fields.price || "");
+      const salePrice = String(fields.salePrice || "");
+      const category = String(fields.category || "");
+      const subcategoryIn = String(fields.subcategory || ""); // incoming key
+      const subCategory = subcategoryIn || "";
+      const featured = String(fields.featured || "") === "true";
+      const gender = String(fields.gender || "unisex") as
+        | "unisex"
+        | "him"
+        | "her";
 
-      if (!title || !priceStr || !category) {
+      if (!name || !price || !category)
         return res
           .status(400)
-          .json({
-            error: "Missing required fields (title/name, price, category)",
-          });
+          .json({ error: "Missing required fields (name, price, category)" });
+
+      const department =
+        category === "watches" || category === "watch" ? "watch" : "jewelry";
+
+      // ✔ robust parse for specs (string | string[] | undefined)
+      let parsedSpecs: any = undefined;
+      const specsField = Array.isArray(fields.specs)
+        ? fields.specs[0]
+        : (fields.specs as string | undefined);
+      if (typeof specsField === "string" && specsField.trim()) {
+        try {
+          const obj = JSON.parse(specsField);
+          if (obj && typeof obj === "object") parsedSpecs = obj;
+        } catch {
+          // ignore bad JSON
+        }
       }
 
-      let uploadedUrl: string | undefined;
+      let imageUrl: string | undefined;
       const imageFile = files.image as FormidableFile | undefined;
       if (imageFile?.filepath) {
         const upload = await cloudinary.uploader.upload(imageFile.filepath, {
           folder: "classy-diamonds/products",
           resource_type: "image",
         });
-        uploadedUrl = upload.secure_url;
+        imageUrl = upload.secure_url;
       }
 
-      const department =
-        category === "watch" || category === "watches" ? "watch" : "jewelry";
-
-      const created = await createProduct({
-        title,
+      const now = new Date();
+      const doc: any = {
+        department,
+        name,
+        title: name,
+        description,
+        price: Number(price),
+        salePrice: salePrice ? Number(salePrice) : undefined,
         category,
         subCategory: subCategory || undefined,
-        department,
-        price: Number(priceStr),
-        salePrice: salePriceStr ? Number(salePriceStr) : undefined,
-        images: uploadedUrl ? [uploadedUrl] : [],
-        description,
-        audience: [gender as any],
-        tags: [],
-      });
+        featured,
+        gender,
+        imageUrl,
+        images: imageUrl ? [imageUrl] : [], // keep legacy readers happy
+        specs: parsedSpecs,
+        createdAt: now,
+        updatedAt: now,
+      };
 
-      return res.status(201).json({ product: toAdminRow(created) });
+      const result = await db.collection("products").insertOne(doc);
+      const created = await db
+        .collection("products")
+        .findOne({ _id: result.insertedId });
+      return res.status(201).json({ product: normalizeDoc(created) });
     } catch (e: any) {
       console.error("POST create product error", e);
       return res.status(400).json({ error: e?.message || "Create failed" });

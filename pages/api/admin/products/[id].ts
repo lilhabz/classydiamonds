@@ -1,15 +1,11 @@
+// pages/api/admin/products/[id].ts
 import type { NextApiRequest, NextApiResponse } from "next";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../../auth/[...nextauth]";
 import formidable, { File as FormidableFile } from "formidable";
 import { v2 as cloudinary } from "cloudinary";
 import { ObjectId } from "mongodb";
-
-import {
-  getProductById,
-  updateProduct,
-  deleteProduct as deleteProductLib,
-} from "@/lib/products";
+import { getDb } from "@/lib/products";
 
 export const config = { api: { bodyParser: false } };
 
@@ -34,27 +30,45 @@ function parseForm(req: NextApiRequest) {
   );
 }
 
+// normalization (same as index)
+function inferDepartment(doc: any): "jewelry" | "watch" {
+  const d = String(doc?.department || "").toLowerCase();
+  if (d === "watch") return "watch";
+  const cat = String(doc?.category || "").toLowerCase();
+  if (cat === "watch" || cat === "watches") return "watch";
+  return "jewelry";
+}
+function firstImage(doc: any): string {
+  if (doc?.imageUrl) return String(doc.imageUrl);
+  if (Array.isArray(doc?.images) && doc.images.length)
+    return String(doc.images[0]);
+  if (doc?.image) return String(doc.image);
+  return "";
+}
+function normalizeDoc(doc: any) {
+  const subCategory = doc?.subCategory ?? doc?.subcategory ?? undefined;
+  const name = doc?.name ?? doc?.title ?? "";
+  return {
+    ...doc,
+    name,
+    department: inferDepartment(doc),
+    subCategory,
+    imageUrl: firstImage(doc),
+  };
+}
+
 function publicIdFromUrl(url?: string | null) {
   if (!url) return null;
   try {
     const u = new URL(url);
-    const ix = u.pathname.indexOf("/upload/");
-    if (ix === -1) return null;
-    const after = u.pathname.slice(ix + "/upload/".length);
+    const after = u.pathname.split("/upload/")[1];
+    if (!after) return null;
     const noVersion = after.replace(/^v\d+\//, "");
     return noVersion.replace(/\.[a-z0-9]+$/i, "");
   } catch {
     return null;
   }
 }
-
-const toAdminRow = (p: any) => ({
-  ...p,
-  id: p._id,
-  name: p.title || p.name || "",
-  imageUrl: Array.isArray(p.images) && p.images.length ? p.images[0] : "",
-  price: p.salePrice ?? p.discountedPrice ?? p.unitPrice ?? p.price ?? 0,
-});
 
 export default async function handler(
   req: NextApiRequest,
@@ -68,39 +82,83 @@ export default async function handler(
   if (typeof id !== "string" || !ObjectId.isValid(id))
     return res.status(400).json({ error: "Invalid id" });
 
+  const db = await getDb();
+  const products = db.collection("products");
+  const _id = new ObjectId(id);
+
+  // ---------- GET one ----------
   if (req.method === "GET") {
-    const product = await getProductById(id);
-    if (!product) return res.status(404).json({ error: "Not found" });
-    return res.status(200).json({ product: toAdminRow(product) });
+    const doc = await products.findOne({ _id });
+    if (!doc) return res.status(404).json({ error: "Not found" });
+    return res.status(200).json({ product: normalizeDoc(doc) });
   }
 
+  // ---------- PUT: update (multipart + Cloudinary) ----------
   if (req.method === "PUT") {
     try {
-      const current = await getProductById(id);
-      if (!current) return res.status(404).json({ error: "Not found" });
+      const existing = await products.findOne({ _id });
+      if (!existing) return res.status(404).json({ error: "Not found" });
 
+      // If the request is JSON (batch featured), handle it quickly
+      if (req.headers["content-type"]?.includes("application/json")) {
+        let body = "";
+        await new Promise<void>((resolve) => {
+          req.on("data", (chunk) => (body += chunk));
+          req.on("end", () => resolve());
+        });
+        const patch = JSON.parse(body || "{}");
+        const update: any = {};
+        if (typeof patch.featured === "boolean")
+          update.featured = patch.featured;
+        if (Object.keys(update).length === 0) {
+          const fresh = await products.findOne({ _id });
+          return res.status(200).json({ product: normalizeDoc(fresh) });
+        }
+        update.updatedAt = new Date();
+        await products.updateOne({ _id }, { $set: update });
+        const saved = await products.findOne({ _id });
+        return res.status(200).json({ product: normalizeDoc(saved) });
+      }
+
+      // Otherwise, multipart update
       const { fields, files } = await parseForm(req);
-      const patch: any = {};
 
-      if (fields.name !== undefined || fields.title !== undefined) {
-        patch.title = String(fields.name ?? fields.title).trim();
+      const update: any = {};
+      if (fields.name !== undefined) {
+        update.name = String(fields.name).trim();
+        update.title = update.name;
       }
       if (fields.description !== undefined)
-        patch.description = String(fields.description);
-      if (fields.price !== undefined) patch.price = Number(fields.price);
-      if (fields.salePrice !== undefined) {
-        const v = String(fields.salePrice);
-        patch.salePrice = v === "" ? undefined : Number(v);
-      }
+        update.description = String(fields.description);
+      if (fields.price !== undefined) update.price = Number(fields.price);
+      if (fields.salePrice !== undefined && String(fields.salePrice) !== "")
+        update.salePrice = Number(fields.salePrice);
+      if (fields.salePrice !== undefined && String(fields.salePrice) === "")
+        update.salePrice = undefined;
       if (fields.category !== undefined)
-        patch.category = String(fields.category).toLowerCase();
-      if (fields.subcategory !== undefined)
-        patch.subCategory =
-          String(fields.subcategory).toLowerCase() || undefined;
+        update.category = String(fields.category);
+      if (fields.subcategory !== undefined) {
+        const s = String(fields.subcategory).trim();
+        update.subCategory = s || undefined;
+      }
+      if (fields.featured !== undefined)
+        update.featured = String(fields.featured) === "true";
+      if (fields.gender !== undefined)
+        update.gender = String(fields.gender) as "unisex" | "him" | "her";
 
-      if (patch.category) {
-        patch.department =
-          patch.category === "watch" || patch.category === "watches"
+      // NEW: specs JSON
+      if (typeof fields.specs === "string") {
+        try {
+          const obj = JSON.parse(fields.specs);
+          update.specs = obj && typeof obj === "object" ? obj : {};
+        } catch {
+          update.specs = {};
+        }
+      }
+
+      if (update.category) {
+        update.department =
+          update.category === "watches" || update.category === "watch"
             ? "watch"
             : "jewelry";
       }
@@ -108,73 +166,67 @@ export default async function handler(
       const imageRemoved = String(fields.imageRemoved || "") === "true";
       const imageFile = files.image as FormidableFile | undefined;
 
-      const currentUrl =
-        Array.isArray(current.images) && current.images.length
-          ? current.images[0]
-          : "";
-
       if (imageRemoved && !imageFile) {
-        const pub = publicIdFromUrl(currentUrl);
+        const pub = publicIdFromUrl(existing.imageUrl);
         if (pub) {
           try {
             await cloudinary.uploader.destroy(pub);
           } catch (e) {
-            console.warn("Cloudinary destroy (remove) failed", e);
+            console.warn("destroy (remove) failed", e);
           }
         }
-        patch.images = [];
+        update.imageUrl = "";
+        update.images = [];
       }
 
       if (imageFile?.filepath) {
-        const pub = publicIdFromUrl(currentUrl);
+        const pub = publicIdFromUrl(existing.imageUrl);
         if (pub) {
           try {
             await cloudinary.uploader.destroy(pub);
           } catch (e) {
-            console.warn("Cloudinary destroy (replace) failed", e);
+            console.warn("destroy (replace) failed", e);
           }
         }
         const upload = await cloudinary.uploader.upload(imageFile.filepath, {
           folder: "classy-diamonds/products",
           resource_type: "image",
         });
-        patch.images = [upload.secure_url];
+        update.imageUrl = upload.secure_url;
+        update.images = [upload.secure_url];
       }
 
-      if (Object.keys(patch).length === 0) {
-        const fresh = await getProductById(id);
-        return res.status(200).json({ product: toAdminRow(fresh) });
+      if (Object.keys(update).length === 0) {
+        const fresh = await products.findOne({ _id });
+        return res.status(200).json({ product: normalizeDoc(fresh) });
       }
 
-      const saved = await updateProduct(id, patch);
-      if (!saved) return res.status(404).json({ error: "Not found" });
-      return res.status(200).json({ product: toAdminRow(saved) });
+      update.updatedAt = new Date();
+      await products.updateOne({ _id }, { $set: update });
+      const saved = await products.findOne({ _id });
+      return res.status(200).json({ product: normalizeDoc(saved) });
     } catch (e: any) {
       console.error("update product error", e);
       return res.status(400).json({ error: e?.message || "Update failed" });
     }
   }
 
+  // ---------- DELETE ----------
   if (req.method === "DELETE") {
     try {
-      const toDelete = await getProductById(id);
-      if (!toDelete) return res.status(404).json({ error: "Not found" });
+      const doc = await products.findOne({ _id });
+      if (!doc) return res.status(404).json({ error: "Not found" });
 
-      const first =
-        Array.isArray(toDelete.images) && toDelete.images.length
-          ? toDelete.images[0]
-          : "";
-      const pub = publicIdFromUrl(first);
+      const pub = publicIdFromUrl(doc.imageUrl);
       if (pub) {
         try {
           await cloudinary.uploader.destroy(pub);
         } catch (e) {
-          console.warn("Cloudinary destroy (delete) failed", e);
+          console.warn("destroy (delete) failed", e);
         }
       }
 
-      const ok = await deleteProductLib(id);
-      if (!ok) return res.status(400).json({ error: "Delete failed" });
+      await products.deleteOne({ _id });
       return res.status(200).json({ ok: true });
     } catch (e: any) {
       console.error("delete product error", e);
