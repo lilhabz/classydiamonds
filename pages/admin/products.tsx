@@ -710,8 +710,8 @@ export default function AdminProductsPage({
               {String(editingProduct.skuNumber ?? 0).padStart(5, "0")})
             </h3>
 
-            {/* Image preview */}
-            <div className="col-span-full flex items-center gap-4">
+            {/* Image preview + visible picker */}
+            <div className="col-span-full flex flex-col md:flex-row md:items-center gap-4">
               <div className="w-40 h-40 bg-gray-500/40 rounded flex items-center justify-center overflow-hidden">
                 {previewImage ? (
                   <img
@@ -724,42 +724,49 @@ export default function AdminProductsPage({
                 )}
               </div>
 
-              {/* Hidden input + action buttons */}
-              <input
-                ref={editFileInputRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={(e) =>
-                  setEditForm((f) => ({
-                    ...f,
-                    imageFile: e.target.files?.[0] || null,
-                    imageRemoved: false,
-                  }))
-                }
-              />
               <div className="flex flex-col gap-2">
-                <button
-                  type="button"
-                  onClick={() => editFileInputRef.current?.click()}
-                  className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-                >
-                  🖼 Upload / Replace Photo
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setEditForm((f) => ({
-                      ...f,
-                      imageFile: null,
-                      imageRemoved: true,
-                    }));
-                    setPreviewImage("");
-                  }}
-                  className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
-                >
-                  🗑 Remove Image
-                </button>
+                {/* Visible file input */}
+                <label className="text-sm font-medium">
+                  Product Photo
+                  <input
+                    ref={editFileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) =>
+                      setEditForm((f) => ({
+                        ...f,
+                        imageFile: e.target.files?.[0] || null,
+                        imageRemoved: false,
+                      }))
+                    }
+                    className="mt-1 block w-72 text-sm file:mr-3 file:py-2 file:px-3 file:rounded file:border-0 file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer bg-[var(--bg-page)] text-[var(--foreground)] border rounded p-1"
+                  />
+                </label>
+
+                {/* Optional button for users who prefer clicking a button */}
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => editFileInputRef.current?.click()}
+                    className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                  >
+                    🖼 Upload / Replace Photo
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditForm((f) => ({
+                        ...f,
+                        imageFile: null,
+                        imageRemoved: true,
+                      }));
+                      setPreviewImage("");
+                    }}
+                    className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+                  >
+                    🗑 Remove Image
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -1213,24 +1220,7 @@ export default function AdminProductsPage({
             </div>
 
             {/* Upload + Preview (Add) */}
-            <input
-              ref={addFileInputRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={(e) =>
-                handleInput("imageFile", e.target.files?.[0] ?? null)
-              }
-            />
-            <div className="md:col-span-2 flex items-center gap-4">
-              <button
-                type="button"
-                onClick={() => addFileInputRef.current?.click()}
-                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-              >
-                🖼 Upload Photo
-              </button>
-
+            <div className="md:col-span-2 flex flex-col md:flex-row md:items-center gap-4">
               <div className="w-36 h-36 bg-gray-500/40 rounded flex items-center justify-center overflow-hidden">
                 {addPreviewUrl ? (
                   <img
@@ -1239,21 +1229,46 @@ export default function AdminProductsPage({
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <span className="text-xs text-white/80">
-                    No Image Selected
-                  </span>
+                  <span className="text-xs text-white/80">No Image Selected</span>
                 )}
               </div>
 
-              {addPreviewUrl && (
-                <button
-                  type="button"
-                  onClick={() => handleInput("imageFile", null)}
-                  className="px-3 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
-                >
-                  Clear Selected Image
-                </button>
-              )}
+              <div className="flex flex-col gap-2">
+                {/* Visible file input */}
+                <label className="text-sm font-medium">
+                  Product Photo
+                  <input
+                    ref={addFileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) =>
+                      handleInput("imageFile", e.target.files?.[0] ?? null)
+                    }
+                    className="mt-1 block w-72 text-sm file:mr-3 file:py-2 file:px-3 file:rounded file:border-0 file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer bg-[var(--bg-page)] text-[var(--foreground)] border rounded p-1"
+                  />
+                </label>
+
+                {/* Optional button as well */}
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => addFileInputRef.current?.click()}
+                    className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                  >
+                    🖼 Upload Photo
+                  </button>
+
+                  {addPreviewUrl && (
+                    <button
+                      type="button"
+                      onClick={() => handleInput("imageFile", null)}
+                      className="px-3 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
+                    >
+                      Clear Selected Image
+                    </button>
+                  )}
+                </div>
+              </div>
             </div>
 
             {/* Submit */}
