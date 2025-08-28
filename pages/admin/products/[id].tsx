@@ -21,7 +21,9 @@ export default function AdminProductEdit() {
       try {
         const res = await fetch(`/api/admin/products/${id}`);
         const data = await res.json();
-        setProduct(data.product || null);
+        // tolerate either shape: {ok,item} or {product}
+        const p = data.item || data.product || null;
+        setProduct(p);
       } finally {
         setLoading(false);
       }
@@ -29,15 +31,22 @@ export default function AdminProductEdit() {
   }, [id]);
 
   if (status === "loading") return <div className="p-6">Checking access…</div>;
-  if (!session?.user?.isAdmin) return <div className="p-6 text-red-300">❌ Unauthorized</div>;
+  if (!session?.user?.isAdmin)
+    return <div className="p-6 text-red-300">❌ Unauthorized</div>;
 
   return (
     <div className="p-6 min-h-screen bg-[var(--bg-page)] text-[var(--foreground)]">
-      <Head><title>Edit Product | Admin</title></Head>
-      <div className="pl-2 pr-2 sm:pl-4 sm:pr-4 -mt-2 mb-6"><Breadcrumbs /></div>
+      <Head>
+        <title>Edit Product | Admin</title>
+      </Head>
+      <div className="pl-2 pr-2 sm:pl-4 sm:pr-4 -mt-2 mb-6">
+        <Breadcrumbs />
+      </div>
 
       <div className="mb-4 flex items-center gap-3">
-        <Link href="/admin/products" className="text-sm underline">← Back to Products</Link>
+        <Link href="/admin/products" className="text-sm underline">
+          ← Back to Products
+        </Link>
         <h1 className="text-2xl font-serif font-bold">Edit Product</h1>
       </div>
 
@@ -51,6 +60,7 @@ export default function AdminProductEdit() {
           initial={product}
           onSaved={() => {
             alert("✅ Saved");
+            // Reload to reflect latest server data (thumbnail etc.)
             window.location.reload();
           }}
         />

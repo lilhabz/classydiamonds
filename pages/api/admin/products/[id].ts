@@ -8,61 +8,46 @@ import {
   deleteDbProductById,
 } from "@/lib/productAdapter";
 
-// IMPORTANT:
-// - This route is JSON-only (no multipart uploads, no bodyParser override).
-// - Keep uploads (Cloudinary/formidable) in a SEPARATE route like
-//   /api/admin/products/upload.ts if you need that functionality.
-
+// JSON-only handler (no bodyParser override)
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
-  // Admin auth
   const session = (await getServerSession(req, res, authOptions as any)) as any;
-  if (!session?.user || !session.user.isAdmin) {
+  if (!session?.user?.isAdmin)
     return res.status(403).json({ ok: false, error: "Forbidden" });
-  }
 
   const { id } = req.query as { id?: string };
-  if (!id) {
-    return res.status(400).json({ ok: false, error: "Missing id" });
-  }
+  if (!id) return res.status(400).json({ ok: false, error: "Missing id" });
 
   try {
     if (req.method === "GET") {
       const item = await getDbProductById(id);
       if (!item) {
-        // If user requested a legacy (array-based) product id, it won't exist in DB.
         return res.status(404).json({
           ok: false,
           error:
-            "Not found. If this was a legacy product from static arrays, migrate it into the database from the Admin list.",
+            "Not found. If this was a legacy product, migrate it into the database from the Admin list.",
         });
       }
       return res.status(200).json({ ok: true, item });
     }
 
     if (req.method === "PATCH") {
-      // JSON patch only
       const patch = (req.body ?? {}) as Record<string, unknown>;
       const updated = await updateDbProductById(id, patch);
       if (!updated) {
-        return res.status(404).json({
-          ok: false,
-          error:
-            "Not found for update. Legacy products must be migrated to DB before editing.",
-        });
+        return res
+          .status(404)
+          .json({ ok: false, error: "Not found (or legacy). Migrate first." });
       }
       return res.status(200).json({ ok: true, item: updated });
     }
 
     if (req.method === "DELETE") {
       const removed = await deleteDbProductById(id);
-      if (!removed) {
-        return res
-          .status(404)
-          .json({ ok: false, error: "Not found for delete." });
-      }
+      if (!removed)
+        return res.status(404).json({ ok: false, error: "Not found" });
       return res.status(200).json({ ok: true, item: removed });
     }
 

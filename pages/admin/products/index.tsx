@@ -4,7 +4,6 @@ import Head from "next/head";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import Breadcrumbs from "@/components/Breadcrumbs";
-// Keep using your taxonomy helpers for dropdowns
 import {
   DEPARTMENTS,
   getCategories,
@@ -12,10 +11,9 @@ import {
   getSpecFields,
 } from "@/lib/taxonomy";
 
-// Local type aligned with merged adapter payload
 type AdminProduct = {
-  _id?: string; // DB id when present
-  id?: string; // legacy id when present
+  _id?: string;
+  id?: string;
   slug: string;
   name?: string;
   title?: string;
@@ -23,9 +21,9 @@ type AdminProduct = {
   price?: number;
   unitPrice?: number;
   salePrice?: number | null;
-  category?: string; // rings | earrings | bracelets | necklaces | watches | jewelry
-  subcategory?: string | null; // normalized in adapter
-  subCategory?: string | null; // tolerate legacy casing
+  category?: string;
+  subcategory?: string | null;
+  subCategory?: string | null;
   imageUrl?: string | null;
   image?: string | null;
   images?: string[] | null;
@@ -35,6 +33,7 @@ type AdminProduct = {
   archived?: boolean;
   createdAt?: string;
   department?: "jewelry" | "watch";
+  skuNumber?: number;
 };
 
 type Department = "jewelry" | "watch";
@@ -74,19 +73,13 @@ export default function AdminProductsList() {
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string>("");
 
-  // top-level tabs
+  // tabs / filters
   const [dept, setDept] = useState<Department>("jewelry");
-
-  // cascading filters
   const [cat, setCat] = useState<string>("");
   const [sub, setSub] = useState<string>("");
-
-  // text & sort
   const [q, setQ] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("createdAt");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
-
-  // spec filters
   const specFields = getSpecFields(dept, cat, sub);
   const [specFilter, setSpecFilter] = useState<Record<string, any>>({});
 
@@ -102,7 +95,6 @@ export default function AdminProductsList() {
       try {
         setLoading(true);
         setErr("");
-        // New merged endpoint shape: { ok, items }
         const res = await fetch("/api/admin/products");
         const data = await res.json();
         if (!res.ok || !data?.ok)
@@ -119,7 +111,6 @@ export default function AdminProductsList() {
     })();
   }, [session]);
 
-  // reset cascades when dept/cat changes
   useEffect(() => {
     setCat("");
     setSub("");
@@ -133,7 +124,7 @@ export default function AdminProductsList() {
     setPage(1);
   }, [cat]);
 
-  // Client-side filtering so it works even if API ignores params
+  // client filtering
   const filtered = useMemo(() => {
     const needle = q.trim().toLowerCase();
     const wantedSpecs = Object.fromEntries(
@@ -141,25 +132,17 @@ export default function AdminProductsList() {
     );
 
     const list = allItems.filter((p) => {
-      // dept
       if (inferDept(p) !== dept) return false;
-
-      // category
       if (cat && (p.category || "").toLowerCase() !== cat.toLowerCase())
         return false;
-
-      // subcategory (support subcategory/subCategory)
       const pSub = (p.subcategory ?? p.subCategory ?? "") as string;
       if (sub && pSub.toLowerCase() !== sub.toLowerCase()) return false;
 
-      // text search over title/name/description (and allow tags/specs values)
       if (needle) {
         const hay = `${p.title ?? ""} ${p.name ?? ""} ${p.description ?? ""} ${
           p.category ?? ""
         } ${pSub ?? ""}`.toLowerCase();
         let hit = hay.includes(needle);
-
-        // quick scan specs values
         if (!hit && p.specs && typeof p.specs === "object") {
           hit = Object.values(p.specs).some((v) =>
             String(v ?? "")
@@ -170,7 +153,6 @@ export default function AdminProductsList() {
         if (!hit) return false;
       }
 
-      // specs exact match
       if (Object.keys(wantedSpecs).length) {
         const pv = p.specs || {};
         for (const [k, v] of Object.entries(wantedSpecs)) {
@@ -178,11 +160,9 @@ export default function AdminProductsList() {
           if (pv[k] !== v) return false;
         }
       }
-
       return true;
     });
 
-    // sort
     const dir = sortDir === "asc" ? 1 : -1;
     return [...list].sort((a, b) => {
       if (sortKey === "title") {
@@ -207,7 +187,6 @@ export default function AdminProductsList() {
             .localeCompare((b.category ?? "").toString()) * dir
         );
       }
-      // createdAt default
       const at = a.createdAt ? new Date(a.createdAt).getTime() : 0;
       const bt = b.createdAt ? new Date(b.createdAt).getTime() : 0;
       return (at - bt) * dir;
@@ -220,9 +199,7 @@ export default function AdminProductsList() {
   async function onDelete(id?: string, source?: "db" | "legacy") {
     if (!id) return;
     if (source === "legacy") {
-      alert(
-        "Legacy items are read-only here. Click “Migrate to DB” to convert, then you can delete."
-      );
+      alert("Legacy items are read-only. Use “Migrate to DB” first.");
       return;
     }
     if (!confirm("Delete this product permanently?")) return;
@@ -257,12 +234,13 @@ export default function AdminProductsList() {
           subcategory: (p.subcategory ?? p.subCategory) || null,
           imageUrl: pickImage(p),
           archived: Boolean(p.archived),
+          specs: p.specs ?? {},
+          audience: p.audience ?? ["unisex"],
         }),
       });
       const data = await res.json();
       if (!res.ok || !data?.ok)
         throw new Error(data?.error || "Migration failed");
-      // Reload merged list after migration
       const reload = await fetch("/api/admin/products").then((r) => r.json());
       setAllItems(
         Array.isArray(reload.items) ? (reload.items as AdminProduct[]) : []
@@ -282,7 +260,6 @@ export default function AdminProductsList() {
       <Head>
         <title>Products | Admin</title>
       </Head>
-
       <div className="pl-2 pr-2 sm:pl-4 sm:pr-4 -mt-2 mb-6">
         <Breadcrumbs />
       </div>
@@ -349,7 +326,7 @@ export default function AdminProductsList() {
         <input
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder="Search title/desc/tags…"
+          placeholder="Search…"
           className="px-3 py-2 rounded bg-[var(--bg-nav)]"
         />
 
@@ -377,92 +354,104 @@ export default function AdminProductsList() {
         </select>
       </div>
 
-      {/* Spec filters (dynamic) */}
+      {/* Spec filters dropdown for less clutter */}
       {specFields.length > 0 && (
         <div className="mb-4">
-          <div className="flex flex-wrap gap-3">
-            {specFields.map(([key, def]) => {
-              const v = specFilter[key] ?? "";
-              if (def.type === "select") {
+          <details className="rounded border border-[var(--bg-nav)]">
+            <summary className="cursor-pointer px-3 py-2 bg-[var(--bg-nav)]">
+              Specifications (filters)
+            </summary>
+            <div className="p-3 flex flex-wrap gap-3">
+              {specFields.map(([key, def]) => {
+                const v = specFilter[key] ?? "";
+                if (def.type === "select") {
+                  return (
+                    <div key={key}>
+                      <label className="block text-xs opacity-75 mb-1">
+                        {key}
+                      </label>
+                      <select
+                        value={String(v)}
+                        onChange={(e) =>
+                          setSpecFilter((m) => ({
+                            ...m,
+                            [key]: e.target.value,
+                          }))
+                        }
+                        className="px-3 py-2 rounded bg-[var(--bg-nav)] text-white"
+                      >
+                        <option value="">Any</option>
+                        {def.options.map((opt: string) => (
+                          <option key={opt} value={opt}>
+                            {opt}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  );
+                }
+                if (def.type === "number") {
+                  return (
+                    <div key={key}>
+                      <label className="block text-xs opacity-75 mb-1">
+                        {key}
+                        {def.unit ? ` (${def.unit})` : ""}
+                      </label>
+                      <input
+                        type="number"
+                        step={def.step ?? 1}
+                        value={v === "" ? "" : Number(v)}
+                        onChange={(e) =>
+                          setSpecFilter((m) => ({
+                            ...m,
+                            [key]:
+                              e.target.value === ""
+                                ? ""
+                                : Number(e.target.value),
+                          }))
+                        }
+                        className="px-3 py-2 rounded bg-[var(--bg-nav)] text-white"
+                      />
+                    </div>
+                  );
+                }
+                if (def.type === "boolean") {
+                  return (
+                    <label
+                      key={key}
+                      className="inline-flex items-center gap-2 px-3 py-2 rounded bg-[var(--bg-nav)]"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={!!v}
+                        onChange={(e) =>
+                          setSpecFilter((m) => ({
+                            ...m,
+                            [key]: e.target.checked,
+                          }))
+                        }
+                      />
+                      <span className="text-sm">{def.label || key}</span>
+                    </label>
+                  );
+                }
                 return (
                   <div key={key}>
                     <label className="block text-xs opacity-75 mb-1">
                       {key}
                     </label>
-                    <select
+                    <input
                       value={String(v)}
                       onChange={(e) =>
                         setSpecFilter((m) => ({ ...m, [key]: e.target.value }))
                       }
                       className="px-3 py-2 rounded bg-[var(--bg-nav)] text-white"
-                    >
-                      <option value="">Any</option>
-                      {def.options.map((opt: string) => (
-                        <option key={opt} value={opt}>
-                          {opt}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                );
-              }
-              if (def.type === "number") {
-                return (
-                  <div key={key}>
-                    <label className="block text-xs opacity-75 mb-1">
-                      {key}
-                      {def.unit ? ` (${def.unit})` : ""}
-                    </label>
-                    <input
-                      type="number"
-                      step={def.step ?? 1}
-                      value={v === "" ? "" : Number(v)}
-                      onChange={(e) =>
-                        setSpecFilter((m) => ({
-                          ...m,
-                          [key]:
-                            e.target.value === "" ? "" : Number(e.target.value),
-                        }))
-                      }
-                      className="px-3 py-2 rounded bg-[var(--bg-nav)] text-white"
                     />
                   </div>
                 );
-              }
-              if (def.type === "boolean") {
-                return (
-                  <label
-                    key={key}
-                    className="inline-flex items-center gap-2 px-3 py-2 rounded bg-[var(--bg-nav)]"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={!!v}
-                      onChange={(e) =>
-                        setSpecFilter((m) => ({
-                          ...m,
-                          [key]: e.target.checked,
-                        }))
-                      }
-                    />
-                    <span className="text-sm">{def.label || key}</span>
-                  </label>
-                );
-              }
-              return (
-                <div key={key}>
-                  <label className="block text-xs opacity-75 mb-1">{key}</label>
-                  <input
-                    value={String(v)}
-                    onChange={(e) =>
-                      setSpecFilter((m) => ({ ...m, [key]: e.target.value }))
-                    }
-                    className="px-3 py-2 rounded bg-[var(--bg-nav)] text-white"
-                  />
-                </div>
-              );
-            })}
-          </div>
+              })}
+            </div>
+          </details>
         </div>
       )}
 
@@ -471,6 +460,7 @@ export default function AdminProductsList() {
         <table className="min-w-full text-left">
           <thead className="bg-[var(--bg-nav)] text-sm">
             <tr>
+              <th className="py-2 px-3">ID</th>
               <th className="py-2 px-3">Item</th>
               <th className="py-2 px-3">Title</th>
               <th className="py-2 px-3">Category</th>
@@ -484,19 +474,19 @@ export default function AdminProductsList() {
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={8} className="py-6 text-center">
+                <td colSpan={9} className="py-6 text-center">
                   Loading…
                 </td>
               </tr>
             ) : err ? (
               <tr>
-                <td colSpan={8} className="py-6 text-center text-red-300">
+                <td colSpan={9} className="py-6 text-center text-red-300">
                   Error: {err}
                 </td>
               </tr>
             ) : current.length === 0 ? (
               <tr>
-                <td colSpan={8} className="py-6 text-center">
+                <td colSpan={9} className="py-6 text-center">
                   No products.
                 </td>
               </tr>
@@ -507,9 +497,20 @@ export default function AdminProductsList() {
                 const price = toNum(p.unitPrice ?? p.price);
                 const subCat = (p.subCategory ?? p.subcategory ?? "") as string;
                 const key = p._id ?? p.id ?? p.slug;
+                const sku =
+                  typeof p.skuNumber === "number"
+                    ? String(p.skuNumber).padStart(5, "0")
+                    : null;
+                const shortId =
+                  (p._id || "").slice(-6) ||
+                  (p.id || "").slice(-6) ||
+                  (p.slug || "").slice(-6);
 
                 return (
                   <tr key={key} className="border-b border-[var(--bg-nav)]">
+                    <td className="py-2 px-3 font-mono text-xs opacity-80">
+                      {sku ?? shortId}
+                    </td>
                     <td className="py-2 px-3">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img

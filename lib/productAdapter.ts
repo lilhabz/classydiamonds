@@ -2,22 +2,24 @@
 import clientPromise from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
 import { productsData as legacyA } from "@/data/productsData";
-// If you have other legacy arrays, import and add them here:
-// import { jewelryData as legacyB } from "@/data/jewelryData";
+// If you have more legacy arrays, import and include them in getLegacyProducts()
 
 export type AdminProduct = {
-  _id?: string; // DB id when present
-  id?: string; // legacy id when present
+  _id?: string;
+  id?: string; // legacy id if present
   slug: string;
   name: string;
   price: number;
   salePrice?: number | null;
-  category: string; // rings | earrings | bracelets | necklaces | watches | jewelry
-  subcategory?: string | null;
+  category: string;
+  subcategory?: string | null; // normalized to "subcategory"
   imageUrl?: string | null;
   source: "db" | "legacy";
   archived?: boolean;
   createdAt?: string;
+  department?: "jewelry" | "watch";
+  specs?: Record<string, any>;
+  audience?: string[];
 };
 
 function kebabCase(input: string) {
@@ -27,45 +29,64 @@ function kebabCase(input: string) {
     .replace(/(^-|-$)+/g, "");
 }
 
+function inferDepartment(doc: any): "jewelry" | "watch" {
+  const d = String(doc?.department || "").toLowerCase();
+  if (d === "watch") return "watch";
+  const cat = String(doc?.category || "").toLowerCase();
+  if (cat === "watch" || cat === "watches") return "watch";
+  return "jewelry";
+}
+
+function pickImage(doc: any): string | null {
+  if (doc?.imageUrl) return String(doc.imageUrl);
+  if (Array.isArray(doc?.images) && doc.images.length)
+    return String(doc.images[0]);
+  if (doc?.image) return String(doc.image);
+  return "/gray-placeholder.jpg";
+}
+
 function normalizeOne(p: any, source: "db" | "legacy"): AdminProduct {
   const name = p?.name ?? p?.title ?? "Untitled";
-  const rawSlug =
-    p?.slug ??
-    kebabCase(
-      `${name}-${p?._id ?? p?.id ?? (source === "legacy" ? "legacy" : "db")}`
-    );
-  const imageUrl =
-    p?.image ??
-    p?.imageUrl ??
-    (Array.isArray(p?.images) ? p.images[0] : null) ??
-    "/gray-placeholder.jpg";
+  const slug = p?.slug ?? kebabCase(`${name}-${p?._id ?? p?.id ?? source}`);
   const category = p?.category ?? p?.department ?? "jewelry";
+  const subcategory = p?.subcategory ?? p?.subCategory ?? null;
 
   return {
     _id: p?._id ? String(p._id) : undefined,
     id: p?.id ? String(p.id) : undefined,
-    slug: rawSlug,
+    slug,
     name,
-    price: typeof p?.price === "number" ? p.price : Number(p?.price ?? 0),
+    price:
+      typeof p?.price === "number"
+        ? p.price
+        : Number(p?.price ?? p?.unitPrice ?? 0),
     salePrice: p?.salePrice ?? null,
     category,
-    subcategory: p?.subcategory ?? p?.subCategory ?? null,
-    imageUrl,
+    subcategory,
+    imageUrl: pickImage(p),
     source,
     archived: Boolean(p?.archived),
     createdAt: p?.createdAt ? new Date(p.createdAt).toISOString() : undefined,
+    department: inferDepartment(p),
+    specs: p?.specs && typeof p.specs === "object" ? p.specs : undefined,
+    audience: Array.isArray(p?.audience) ? p.audience : undefined,
   };
 }
 
 export async function getDbProducts(): Promise<AdminProduct[]> {
   const client = await clientPromise;
   const db = client.db();
-  const docs = await db.collection("products").find({}).toArray();
+  const docs = await db
+    .collection("products")
+    .find({})
+    .sort({ createdAt: -1 })
+    .limit(500)
+    .toArray();
   return docs.map((d) => normalizeOne(d, "db"));
 }
 
 export function getLegacyProducts(): AdminProduct[] {
-  const merged = [...(legacyA ?? []) /*, ...(legacyB ?? [])*/];
+  const merged = [...(legacyA ?? [])];
   return merged.map((d) => normalizeOne(d, "legacy"));
 }
 
@@ -74,33 +95,31 @@ export async function getAllMergedProducts(): Promise<AdminProduct[]> {
     getDbProducts(),
     Promise.resolve(getLegacyProducts()),
   ]);
-
-  // If a DB item & legacy item share a slug, keep the DB item (source of truth)
   const bySlug = new Map<string, AdminProduct>();
   for (const item of legacyItems) bySlug.set(item.slug, item);
-  for (const item of dbItems) bySlug.set(item.slug, item); // overwrites legacy with db
+  for (const item of dbItems) bySlug.set(item.slug, item); // DB overwrites legacy
   return Array.from(bySlug.values());
 }
 
 export async function createDbProduct(payload: Partial<AdminProduct>) {
   const client = await clientPromise;
   const db = client.db();
-  const insert = {
+  const doc = {
     name: payload.name ?? "Untitled",
     slug: payload.slug ?? kebabCase(payload.name ?? "untitled"),
-    price:
-      typeof payload.price === "number"
-        ? payload.price
-        : Number(payload.price ?? 0),
+    price: Number(payload.price ?? 0),
     salePrice: payload.salePrice ?? null,
     category: payload.category ?? "jewelry",
     subcategory: payload.subcategory ?? null,
     imageUrl: payload.imageUrl ?? "/gray-placeholder.jpg",
     archived: Boolean(payload.archived),
     createdAt: new Date(),
+    department: inferDepartment({ category: payload.category }),
+    specs: payload.specs ?? {},
+    audience: payload.audience ?? ["unisex"],
   };
-  const result = await db.collection("products").insertOne(insert);
-  return { ...insert, _id: String(result.insertedId), source: "db" as const };
+  const res = await db.collection("products").insertOne(doc);
+  return normalizeOne({ ...doc, _id: res.insertedId }, "db");
 }
 
 export async function getDbProductById(id: string) {
@@ -120,22 +139,27 @@ export async function updateDbProductById(
   const client = await clientPromise;
   const db = client.db();
   if (!ObjectId.isValid(id)) return null;
-  const update: any = {};
-  if (patch.name !== undefined) update.name = patch.name;
-  if (patch.slug !== undefined) update.slug = patch.slug;
-  if (patch.price !== undefined) update.price = Number(patch.price);
-  if (patch.salePrice !== undefined) update.salePrice = patch.salePrice;
-  if (patch.category !== undefined) update.category = patch.category;
+
+  const set: any = {};
+  if (patch.name !== undefined) set.name = patch.name;
+  if (patch.slug !== undefined) set.slug = patch.slug;
+  if (patch.price !== undefined) set.price = Number(patch.price);
+  if (patch.salePrice !== undefined) set.salePrice = patch.salePrice;
+  if (patch.category !== undefined) set.category = patch.category;
   if (patch.subcategory !== undefined)
-    update.subcategory = patch.subcategory ?? null;
-  if (patch.imageUrl !== undefined) update.imageUrl = patch.imageUrl;
-  if (patch.archived !== undefined) update.archived = Boolean(patch.archived);
+    set.subcategory = patch.subcategory ?? null;
+  if (patch.imageUrl !== undefined)
+    set.imageUrl = patch.imageUrl ?? "/gray-placeholder.jpg";
+  if (patch.archived !== undefined) set.archived = Boolean(patch.archived);
+  if (patch.specs !== undefined) set.specs = patch.specs ?? {};
+  if (patch.audience !== undefined) set.audience = patch.audience ?? ["unisex"];
+  set.updatedAt = new Date();
 
   const res = await db
     .collection("products")
     .findOneAndUpdate(
       { _id: new ObjectId(id) },
-      { $set: update },
+      { $set: set },
       { returnDocument: "after" }
     );
   return res.value ? normalizeOne(res.value, "db") : null;

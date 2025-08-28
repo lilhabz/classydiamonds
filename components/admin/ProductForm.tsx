@@ -7,173 +7,16 @@ import {
   DEPARTMENTS,
   getCategories,
   getSubCategories,
-  getSpecFields, // your current dynamic spec source
+  getSpecFields, // dynamic spec fields from your taxonomy
 } from "@/lib/taxonomy";
 
-/**
- * Keep these facet values in sync with components/FiltersSidebar.tsx.
- * These slugs MUST match your query param filters so storefront filtering works.
- */
-const METALS = ["yellow-gold", "white-gold", "rose-gold", "platinum"] as const;
-const STONES = ["diamond", "lab-grown", "moissanite", "gemstone"] as const;
-const SHAPES = ["round", "oval", "princess", "emerald", "cushion", "pear"] as const;
-
-type StringTuple = readonly string[];
-
-type SpecDef =
-  | { type: "select"; options: StringTuple; label?: string }
-  | { type: "number"; step?: number; unit?: string; label?: string }
-  | { type: "boolean"; label?: string }
-  | { type: "text"; label?: string };
-
-// ---- Expanded spec library (optional, merged with getSpecFields) ----
-/**
- * We use simple, universal keys (kebab-case). Feel free to add/remove.
- * Nothing here is required; your API will receive only what the user sets.
- */
-const COMMON_SPECS: Record<string, SpecDef> = {
-  // Must align with FiltersSidebar facets:
-  metal: { type: "select", options: METALS, label: "Metal" },
-  stone: { type: "select", options: STONES, label: "Stone" },
-  shape: { type: "select", options: SHAPES, label: "Stone Shape" },
-
-  // Price is not a spec (you already have price field)
-  // Carat ranges are filters; we expose total/center/side carat weights:
-  "carat-total": { type: "number", step: 0.01, label: "Total Carat" },
-  "carat-center": { type: "number", step: 0.01, label: "Center Carat" },
-  "carat-side": { type: "number", step: 0.01, label: "Side Stones Carat" },
-
-  // Metal details
-  "metal-purity": {
-    type: "select",
-    options: ["10k", "14k", "18k", "22k", "24k", "platinum-950", "platinum-900"],
-    label: "Metal Purity",
-  },
-  // Style/Setting
-  style: {
-    type: "select",
-    options: [
-      "solitaire",
-      "halo",
-      "three-stone",
-      "eternity",
-      "tennis",
-      "pave",
-      "channel",
-      "bezel",
-      "tension",
-      "hoop",
-      "stud",
-      "pendant",
-      "chain",
-      "bangle",
-      "cuff",
-      "charm",
-    ],
-    label: "Style",
-  },
-  setting: {
-    type: "select",
-    options: ["prong", "bezel", "channel", "pave", "halo", "tension", "bar", "flush"],
-    label: "Setting",
-  },
-
-  // Sizes & lengths
-  "ring-size": { type: "text", label: "Ring Size (e.g., 6, 6.5, 7)" },
-  "bracelet-length-in": { type: "number", step: 0.5, unit: "in", label: "Bracelet Length" },
-  "necklace-length-in": { type: "number", step: 1, unit: "in", label: "Necklace Length" },
-  "chain-type": {
-    type: "select",
-    options: ["cable", "curb", "rope", "figaro", "box", "wheat", "paperclip", "snake"],
-    label: "Chain Type",
-  },
-  "clasp-type": {
-    type: "select",
-    options: ["lobster", "spring-ring", "toggle", "box", "fold-over", "magnetic"],
-    label: "Clasp",
-  },
-
-  // Stone details
-  "stone-color": {
-    type: "select",
-    options: [
-      "colorless",
-      "near-colorless",
-      "fancy-yellow",
-      "fancy-pink",
-      "fancy-blue",
-      "ruby-red",
-      "emerald-green",
-      "sapphire-blue",
-      "amethyst-purple",
-      "citrine",
-      "topaz",
-      "opal",
-      "pearl",
-    ],
-    label: "Stone Color",
-  },
-  "stone-clarity": {
-    type: "select",
-    options: ["fl", "if", "vvs1", "vvs2", "vs1", "vs2", "si1", "si2", "i1", "i2"],
-    label: "Clarity",
-  },
-  "stone-cut-grade": {
-    type: "select",
-    options: ["excellent", "very-good", "good", "fair"],
-    label: "Cut Grade",
-  },
-  "stone-treatment": {
-    type: "select",
-    options: ["none", "heat", "hpht", "cvd", "fracture-fill", "irradiation", "oil"],
-    label: "Treatment",
-  },
-  certification: {
-    type: "select",
-    options: ["gia", "igi", "gcal", "ags", "none"],
-    label: "Certification",
-  },
-
-  // Finishing
-  "finish": {
-    type: "select",
-    options: ["high-polish", "matte", "satin", "brushed", "hammered"],
-    label: "Finish",
-  },
-
-  // Misc
-  "engraving-available": { type: "boolean", label: "Engraving Available" },
+type Props = {
+  initial?: Partial<Product>;
+  onSaved?: (p: Product) => void;
+  mode: "create" | "edit";
 };
 
-// Watch-specific (if you ever expand watches)
-const WATCH_SPECS: Record<string, SpecDef> = {
-  "watch-brand": { type: "text", label: "Brand" },
-  "watch-movement": {
-    type: "select",
-    options: ["automatic", "manual", "quartz", "solar"],
-    label: "Movement",
-  },
-  "watch-case-size-mm": { type: "number", step: 1, unit: "mm", label: "Case Size" },
-  "watch-case-material": {
-    type: "select",
-    options: ["steel", "titanium", "gold", "ceramic", "two-tone", "platinum"],
-    label: "Case Material",
-  },
-  "watch-band-material": {
-    type: "select",
-    options: ["steel", "titanium", "gold", "rubber", "leather", "nylon", "ceramic"],
-    label: "Band Material",
-  },
-  "watch-water-resistance-m": { type: "number", step: 10, unit: "m", label: "Water Resistance" },
-  "watch-glass": { type: "select", options: ["sapphire", "mineral", "acrylic"], label: "Crystal" },
-  "watch-complications": {
-    type: "select",
-    options: ["date", "day-date", "chronograph", "gmt", "moonphase", "power-reserve"],
-    label: "Complications",
-  },
-  "watch-condition": { type: "select", options: ["new", "pre-owned"], label: "Condition" },
-  "watch-warranty": { type: "text", label: "Warranty" },
-};
+const ALL_AUDIENCE: Audience[] = ["women", "men", "unisex", "kids"];
 
 const toNum = (v: unknown, d = 0) => {
   if (v == null || v === "") return d;
@@ -185,27 +28,21 @@ const toNum = (v: unknown, d = 0) => {
   return d;
 };
 
-type Props = {
-  initial?: Partial<Product>;
-  onSaved?: (p: Product) => void;
-  mode: "create" | "edit";
-};
-
-const ALL_AUDIENCE: Audience[] = ["women", "men", "unisex", "kids"];
-
 export default function ProductForm({ initial, onSaved, mode }: Props) {
   // basics
-  const [title, setTitle] = useState(initial?.title || "");
+  const [title, setTitle] = useState(initial?.title || initial?.name || "");
   const [department, setDepartment] = useState<Department>(
-    ((initial?.department as Department) || "jewelry")
+    (initial?.department as Department) || "jewelry"
   );
   const [category, setCategory] = useState<string>(initial?.category || "");
-  const [subCategory, setSubCategory] = useState<string>(initial?.subCategory || "");
+  const [subCategory, setSubCategory] = useState<string>(
+    (initial as any)?.subCategory || (initial as any)?.subcategory || ""
+  );
 
   const [audience, setAudience] = useState<Audience[]>(
-    (Array.isArray(initial?.audience) && initial!.audience!.length
+    Array.isArray(initial?.audience) && initial!.audience!.length
       ? (initial!.audience as Audience[])
-      : ["unisex"])
+      : ["unisex"]
   );
 
   const [unitPrice, setUnitPrice] = useState<string>(
@@ -213,14 +50,12 @@ export default function ProductForm({ initial, onSaved, mode }: Props) {
   );
   const [description, setDescription] = useState(initial?.description || "");
 
-  // images: URL textarea (back-compat) + file upload
-  const [images, setImages] = useState<string>((initial?.images || []).join("\n"));
-
+  // specs
   const [specs, setSpecs] = useState<Specs>(initial?.specs || {});
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState("");
 
-  // file upload state
+  // upload-only image state
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string>("");
   const [imageRemoved, setImageRemoved] = useState<boolean>(false);
@@ -234,76 +69,53 @@ export default function ProductForm({ initial, onSaved, mode }: Props) {
 
   // update when editing another product
   useEffect(() => {
-    if (initial?._id) {
-      setTitle(initial.title || "");
-      setDepartment((initial.department as Department) || "jewelry");
-      setCategory(initial.category || "");
-      setSubCategory(initial.subCategory || "");
-      setAudience(
-        (Array.isArray(initial.audience) && initial.audience.length
-          ? (initial.audience as Audience[])
-          : ["unisex"])
-      );
-      setUnitPrice(String(initial.unitPrice ?? initial.price ?? ""));
-      setDescription(initial.description || "");
-      setImages((initial.images || []).join("\n"));
-      setSpecs(initial.specs || {});
-      setImageFile(null);
-      setPreviewUrl("");
-      setImageRemoved(false);
-    }
+    if (!initial?._id) return;
+    setTitle(initial.title || (initial as any).name || "");
+    setDepartment((initial.department as Department) || "jewelry");
+    setCategory(initial.category || "");
+    setSubCategory(
+      (initial as any).subCategory || (initial as any).subcategory || ""
+    );
+    setAudience(
+      Array.isArray(initial.audience) && initial.audience.length
+        ? (initial.audience as Audience[])
+        : ["unisex"]
+    );
+    setUnitPrice(String(initial.unitPrice ?? initial.price ?? ""));
+    setDescription(initial.description || "");
+    setSpecs(initial.specs || {});
+    setImageFile(null);
+    setPreviewUrl("");
+    setImageRemoved(false);
   }, [initial?._id]);
 
   // cascade: reset category/subCategory/specs when dept changes
   useEffect(() => {
-    setCategory((prev) => (getCategories(department).includes(prev) ? prev : ""));
+    setCategory((prev) =>
+      getCategories(department).includes(prev) ? prev : ""
+    );
     setSubCategory("");
     setSpecs({});
   }, [department]);
 
-  // Merge your taxonomy fields with our expanded library (dedupe by key)
-  const mergedSpecFields = useMemo(() => {
-    const base = getSpecFields(department, category, subCategory) as Array<[string, any]>;
-
-    // Choose which extra library to merge based on department
-    const extraLib: Record<string, SpecDef> =
-      department === "watch" ? { ...COMMON_SPECS, ...WATCH_SPECS } : COMMON_SPECS;
-
-    // Start with taxonomy fields, then add any extras not already present
-    const seen = new Set(base.map(([k]) => k));
-    const extras: Array<[string, SpecDef]> = Object.entries(extraLib).filter(
-      ([k]) => !seen.has(k)
-    );
-
-    // Convert taxonomy shape to our SpecDef where possible (fallbacks to text)
-    const normalize = (def: any): SpecDef => {
-      if (!def || typeof def !== "object") return { type: "text" };
-      if (def.type === "select" && Array.isArray(def.options))
-        return { type: "select", options: def.options as StringTuple, label: def.label };
-      if (def.type === "number")
-        return { type: "number", step: def.step ?? 1, unit: def.unit, label: def.label };
-      if (def.type === "boolean") return { type: "boolean", label: def.label };
-      return { type: "text", label: def.label };
-    };
-
-    const normalizedBase: Array<[string, SpecDef]> = base.map(
-      ([k, def]: [string, any]) => [k, normalize(def)]
-    );
-
-    return [...normalizedBase, ...extras];
-  }, [department, category, subCategory]);
+  // dynamic spec fields from taxonomy
+  const specFields = useMemo(
+    () =>
+      getSpecFields(department, category, subCategory) as Array<[string, any]>,
+    [department, category, subCategory]
+  );
 
   // prune specs when the field set changes
   useEffect(() => {
     setSpecs((prev) => {
-      const allowed = new Set(mergedSpecFields.map(([k]) => k));
+      const allowed = new Set(specFields.map(([k]) => k));
       const next: Specs = {};
       for (const [k, v] of Object.entries(prev || {})) {
         if (allowed.has(k)) next[k] = v;
       }
       return next;
     });
-  }, [mergedSpecFields]);
+  }, [specFields]);
 
   const toggleAudience = (val: Audience) => {
     setAudience((prev) => {
@@ -316,10 +128,6 @@ export default function ProductForm({ initial, onSaved, mode }: Props) {
     });
   };
 
-  function setSpec(key: string, value: any) {
-    setSpecs((prev) => ({ ...(prev || {}), [key]: value }));
-  }
-
   // live preview for file
   useEffect(() => {
     if (!imageFile) {
@@ -331,12 +139,8 @@ export default function ProductForm({ initial, onSaved, mode }: Props) {
     return () => URL.revokeObjectURL(url);
   }, [imageFile]);
 
+  // Build multipart FormData (upload-only; NO URL fields)
   function buildFormData() {
-    const imageList = images
-      .split("\n")
-      .map((s) => s.trim())
-      .filter(Boolean);
-
     const fd = new FormData();
     fd.append("title", title);
     fd.append("name", title); // API compat
@@ -344,30 +148,27 @@ export default function ProductForm({ initial, onSaved, mode }: Props) {
     if (category) fd.append("category", category);
     if (subCategory) {
       fd.append("subCategory", subCategory);
-      fd.append("subcategory", subCategory);
+      fd.append("subcategory", subCategory); // tolerate legacy casing
     }
     fd.append("unitPrice", String(toNum(unitPrice)));
     fd.append("price", String(toNum(unitPrice)));
     if (description) fd.append("description", description);
 
     // arrays/objects
-    fd.append("audience", JSON.stringify(audience.length ? audience : ["unisex"]));
+    fd.append(
+      "audience",
+      JSON.stringify(audience.length ? audience : ["unisex"])
+    );
     if (Object.keys(specs || {}).length) {
       fd.append("specs", JSON.stringify(specs));
     }
 
-    // existing URL images (kept for back-compat)
-    if (imageList.length) {
-      fd.append("images", JSON.stringify(imageList));
-      fd.append("imageUrls", JSON.stringify(imageList));
-    }
-
-    // file upload (cover image)
+    // file upload (cover image only)
     if (imageFile) {
       fd.append("image", imageFile);
     }
 
-    // remove current image flag (edit)
+    // image remove flag (edit)
     if (mode === "edit") {
       fd.append("imageRemoved", imageRemoved ? "true" : "false");
     }
@@ -420,7 +221,9 @@ export default function ProductForm({ initial, onSaved, mode }: Props) {
                 type="button"
                 key={d}
                 onClick={() => setDepartment(d)}
-                className={`px-3 py-1 rounded-full text-sm border ${active ? "bg-blue-600 text-white" : "bg-[var(--bg-nav)]"}`}
+                className={`px-3 py-1 rounded-full text-sm border ${
+                  active ? "bg-blue-600 text-white" : "bg-[var(--bg-nav)]"
+                }`}
               >
                 {d[0].toUpperCase() + d.slice(1)}
               </button>
@@ -435,12 +238,17 @@ export default function ProductForm({ initial, onSaved, mode }: Props) {
           <label className="block text-sm opacity-80 mb-1">Category</label>
           <select
             value={category}
-            onChange={(e) => { setCategory(e.target.value); setSubCategory(""); }}
+            onChange={(e) => {
+              setCategory(e.target.value);
+              setSubCategory("");
+            }}
             className="w-full px-3 py-2 rounded bg-[var(--bg-nav)] text-white"
           >
             <option value="">Select…</option>
             {getCategories(department).map((c) => (
-              <option key={c} value={c}>{c}</option>
+              <option key={c} value={c}>
+                {c}
+              </option>
             ))}
           </select>
         </div>
@@ -454,7 +262,9 @@ export default function ProductForm({ initial, onSaved, mode }: Props) {
           >
             <option value="">Select…</option>
             {getSubCategories(department, category).map((s) => (
-              <option key={s} value={s}>{s}</option>
+              <option key={s} value={s}>
+                {s}
+              </option>
             ))}
           </select>
         </div>
@@ -481,7 +291,9 @@ export default function ProductForm({ initial, onSaved, mode }: Props) {
                 type="button"
                 key={a}
                 onClick={() => toggleAudience(a)}
-                className={`px-3 py-1 rounded-full text-sm border ${active ? "bg-blue-600 text-white" : "bg-[var(--bg-nav)]"}`}
+                className={`px-3 py-1 rounded-full text-sm border ${
+                  active ? "bg-blue-600 text-white" : "bg-[var(--bg-nav)]"
+                }`}
               >
                 {a[0].toUpperCase() + a.slice(1)}
               </button>
@@ -490,12 +302,14 @@ export default function ProductForm({ initial, onSaved, mode }: Props) {
         </div>
       </div>
 
-      {/* Specifications (merged & optional) */}
-      {mergedSpecFields.length > 0 && (
-        <div>
-          <label className="block text-sm opacity-80 mb-2">Specifications</label>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {mergedSpecFields.map(([key, def]) => {
+      {/* Specifications (collapsible to reduce clutter) */}
+      {specFields.length > 0 && (
+        <details className="rounded border border-[var(--bg-nav)]">
+          <summary className="cursor-pointer px-3 py-2 bg-[var(--bg-nav)]">
+            Specifications
+          </summary>
+          <div className="p-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {specFields.map(([key, def]) => {
               const v = (specs || {})[key] ?? "";
 
               if (def.type === "select") {
@@ -506,7 +320,12 @@ export default function ProductForm({ initial, onSaved, mode }: Props) {
                     </label>
                     <select
                       value={String(v)}
-                      onChange={(e) => setSpec(key, e.target.value)}
+                      onChange={(e) =>
+                        setSpecs((prev) => ({
+                          ...(prev || {}),
+                          [key]: e.target.value,
+                        }))
+                      }
                       className="w-full px-3 py-2 rounded bg-[var(--bg-nav)] text-white"
                     >
                       <option value="">—</option>
@@ -531,7 +350,13 @@ export default function ProductForm({ initial, onSaved, mode }: Props) {
                       type="number"
                       step={def.step ?? 1}
                       value={v === "" ? "" : Number(v)}
-                      onChange={(e) => setSpec(key, e.target.value === "" ? "" : Number(e.target.value))}
+                      onChange={(e) =>
+                        setSpecs((prev) => ({
+                          ...(prev || {}),
+                          [key]:
+                            e.target.value === "" ? "" : Number(e.target.value),
+                        }))
+                      }
                       className="w-full px-3 py-2 rounded bg-[var(--bg-nav)] text-white"
                     />
                   </div>
@@ -540,17 +365,26 @@ export default function ProductForm({ initial, onSaved, mode }: Props) {
 
               if (def.type === "boolean") {
                 return (
-                  <label key={key} className="inline-flex items-center gap-2 px-3 py-2 rounded bg-[var(--bg-nav)]">
+                  <label
+                    key={key}
+                    className="inline-flex items-center gap-2 px-3 py-2 rounded bg-[var(--bg-nav)]"
+                  >
                     <input
                       type="checkbox"
                       checked={!!v}
-                      onChange={(e) => setSpec(key, e.target.checked)}
+                      onChange={(e) =>
+                        setSpecs((prev) => ({
+                          ...(prev || {}),
+                          [key]: e.target.checked,
+                        }))
+                      }
                     />
                     <span className="text-sm">{def.label || key}</span>
                   </label>
                 );
               }
 
+              // default: text
               return (
                 <div key={key}>
                   <label className="block text-xs opacity-75 mb-1">
@@ -558,26 +392,41 @@ export default function ProductForm({ initial, onSaved, mode }: Props) {
                   </label>
                   <input
                     value={String(v)}
-                    onChange={(e) => setSpec(key, e.target.value)}
+                    onChange={(e) =>
+                      setSpecs((prev) => ({
+                        ...(prev || {}),
+                        [key]: e.target.value,
+                      }))
+                    }
                     className="w-full px-3 py-2 rounded bg-[var(--bg-nav)] text-white"
                   />
                 </div>
               );
             })}
           </div>
-          <p className="text-xs opacity-60 mt-2">
+          <p className="px-3 pb-3 text-xs opacity-60">
             Tip: leave any field blank to skip it — nothing here is required.
           </p>
-        </div>
+        </details>
       )}
 
-      {/* Upload + preview */}
+      {/* Upload + preview (upload-only) */}
       <div className="grid grid-cols-1 md:grid-cols-[160px,1fr] gap-4 items-start">
         <div className="w-40 h-40 bg-gray-500/40 rounded flex items-center justify-center overflow-hidden">
           {previewUrl ? (
-            <img src={previewUrl} alt="Selected preview" className="w-full h-full object-cover" />
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={previewUrl}
+              alt="Selected preview"
+              className="w-full h-full object-cover"
+            />
           ) : existingImage && !imageRemoved ? (
-            <img src={existingImage} alt="Current product" className="w-full h-full object-cover" />
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={existingImage}
+              alt="Current product"
+              className="w-full h-full object-cover"
+            />
           ) : (
             <span className="text-xs opacity-70">No Image</span>
           )}
@@ -626,19 +475,6 @@ export default function ProductForm({ initial, onSaved, mode }: Props) {
         </div>
       </div>
 
-      {/* Images (URLs) for back-compat */}
-      <div>
-        <label className="block text-sm opacity-80 mb-1">Images (one URL per line)</label>
-        <textarea
-          value={images}
-          onChange={(e) => setImages(e.target.value)}
-          rows={4}
-          className="w-full px-3 py-2 rounded bg-[var(--bg-nav)] text-white"
-          placeholder={`https://.../image1.jpg
-https://.../image2.jpg`}
-        />
-      </div>
-
       {/* Description */}
       <div>
         <label className="block text-sm opacity-80 mb-1">Description</label>
@@ -656,7 +492,11 @@ https://.../image2.jpg`}
         disabled={saving}
         className="px-5 py-2 rounded bg-green-600 disabled:opacity-50"
       >
-        {saving ? "Saving…" : mode === "create" ? "Add Product" : "Save Changes"}
+        {saving
+          ? "Saving…"
+          : mode === "create"
+          ? "Add Product"
+          : "Save Changes"}
       </button>
     </form>
   );
