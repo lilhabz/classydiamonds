@@ -60,8 +60,63 @@ function inferDept(p: AdminProduct): Department {
 
 function pickImage(p: AdminProduct): string {
   const thumb =
-    p.images?.[0] || (p.image as string) || (p.imageUrl as string) || "/gray-placeholder.jpg";
+    p.images?.[0] ||
+    (p.image as string) ||
+    (p.imageUrl as string) ||
+    "/gray-placeholder.jpg";
   return thumb;
+}
+
+type ApiProduct = {
+  _id: string;
+  name?: string;
+  slug?: string | null;
+  description?: string | null;
+  price?: number | null;
+  salePrice?: number | null;
+  category?: string | null;
+  subCategory?: string | null;
+  image?: string | null;
+  imageUrl?: string | null;
+  audience?: string | string[] | null;
+  specs?: Record<string, any> | null;
+  archived?: boolean | null;
+  createdAt?: string | null;
+  department?: "jewelry" | "watch" | null;
+  skuNumber?: number | null;
+  isLegacy: boolean;
+};
+
+function adaptApiProduct(p: ApiProduct): AdminProduct {
+  const audienceArray = Array.isArray(p.audience)
+    ? p.audience
+    : p.audience
+    ? [String(p.audience)]
+    : ["unisex"];
+
+  return {
+    _id: p._id,
+    slug: String(p.slug ?? p._id),
+    name: p.name ?? undefined,
+    title: p.name ?? undefined,
+    description: p.description ?? undefined,
+    price: p.price ?? undefined,
+    unitPrice: p.price ?? undefined,
+    salePrice: p.salePrice ?? null,
+    category: p.category ?? undefined,
+    subCategory: p.subCategory ?? undefined,
+    subcategory: p.subCategory ?? undefined,
+    imageUrl: p.imageUrl ?? p.image ?? null,
+    image: p.image ?? p.imageUrl ?? null,
+    images: null,
+    audience: audienceArray,
+    specs: p.specs ?? {},
+    source: p.isLegacy ? "legacy" : "db",
+    archived: !!p.archived,
+    createdAt: p.createdAt ?? undefined,
+    department: (p.department as any) ?? undefined,
+    skuNumber: (p.skuNumber as any) ?? undefined,
+  };
 }
 
 export default function AdminProductsList() {
@@ -92,16 +147,22 @@ export default function AdminProductsList() {
       try {
         setLoading(true);
         setErr("");
-        const res = await fetch("/api/admin/products");
+        // 🔑 includeLegacy=1 returns both new + legacy
+        const res = await fetch("/api/admin/products?includeLegacy=1");
         const data = await res.json();
         if (!res.ok || !data?.ok)
           throw new Error(data?.error || "Failed to load products");
-        setAllItems(
-          Array.isArray(data.items) ? (data.items as AdminProduct[]) : []
+
+        const list = Array.isArray(data.products) ? data.products : [];
+        // 🔄 normalize to your AdminProduct shape
+        const normalized: AdminProduct[] = list.map((p: ApiProduct) =>
+          adaptApiProduct(p)
         );
+        setAllItems(normalized);
         setPage(1);
       } catch (e: any) {
         setErr(e?.message || "Failed to load products");
+        setAllItems([]);
       } finally {
         setLoading(false);
       }

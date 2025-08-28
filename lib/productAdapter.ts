@@ -1,176 +1,106 @@
 // lib/productAdapter.ts
-import clientPromise from "@/lib/mongodb";
-import { ObjectId } from "mongodb";
-import { productsData as legacyA } from "@/data/productsData";
-// If you have more legacy arrays, import and include them in getLegacyProducts()
-
-export type AdminProduct = {
-  _id?: string;
-  id?: string; // legacy id if present
-  slug: string;
+export type CanonicalAdminProduct = {
+  _id: string;
   name: string;
-  price: number;
+  slug?: string | null;
+  category?: string | null;
+  subCategory?: string | null;
+  audience?: string | null; // e.g. "unisex", "for-him", "for-her"
+  price?: number | null;
   salePrice?: number | null;
-  category: string;
-  subcategory?: string | null; // normalized to "subcategory"
-  imageUrl?: string | null;
-  source: "db" | "legacy";
-  archived?: boolean;
-  createdAt?: string;
-  department?: "jewelry" | "watch";
-  specs?: Record<string, any>;
-  audience?: string[];
+  image?: string | null; // keep whatever your UI expects
+  imageUrl?: string | null; // some docs use imageUrl
+  department?: string | null; // some older docs used department
+  isLegacy: boolean;
+  createdAt?: string | Date | null;
+  updatedAt?: string | Date | null;
+  // add anything else your UI needs (sku, availability, etc.)
 };
 
-function kebabCase(input: string) {
-  return input
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)+/g, "");
+/** Safe string getter */
+function s(v: any): string | null {
+  return typeof v === "string" && v.trim() ? v.trim() : null;
+}
+/** Safe number getter */
+function n(v: any): number | null {
+  const num = typeof v === "number" ? v : Number(v);
+  return Number.isFinite(num) ? num : null;
 }
 
-function inferDepartment(doc: any): "jewelry" | "watch" {
-  const d = String(doc?.department || "").toLowerCase();
-  if (d === "watch") return "watch";
-  const cat = String(doc?.category || "").toLowerCase();
-  if (cat === "watch" || cat === "watches") return "watch";
-  return "jewelry";
+/** Normalize _id to string */
+function idStr(doc: any): string {
+  const raw = doc?._id;
+  // Mongo ObjectId or string:
+  if (!raw) return "";
+  if (typeof raw === "string") return raw;
+  if (typeof raw === "object" && typeof raw.toString === "function")
+    return raw.toString();
+  return String(raw);
 }
 
-function pickImage(doc: any): string | null {
-  if (doc?.imageUrl) return String(doc.imageUrl);
-  if (Array.isArray(doc?.images) && doc.images.length)
-    return String(doc.images[0]);
-  if (doc?.image) return String(doc.image);
-  return "/gray-placeholder.jpg";
-}
+/** Adapter for *legacy* docs with odd keys (e.g. 'acelet', 'cklace', etc.) */
+export function adaptLegacyProduct(doc: any): CanonicalAdminProduct {
+  // Try a few common legacy field names
+  const name =
+    s(doc?.name) ||
+    s(doc?.title) ||
+    s(doc?.productName) ||
+    s(doc?.Name) ||
+    null;
 
-function normalizeOne(p: any, source: "db" | "legacy"): AdminProduct {
-  const name = p?.name ?? p?.title ?? "Untitled";
-  const slug = p?.slug ?? kebabCase(`${name}-${p?._id ?? p?.id ?? source}`);
-  const category = p?.category ?? p?.department ?? "jewelry";
-  const subcategory = p?.subcategory ?? p?.subCategory ?? null;
+  // Legacy might have typos/short keys for category
+  const category =
+    s(doc?.category) ||
+    s(doc?.catagory) ||
+    s(doc?.cat) ||
+    s(doc?.rings) || // sometimes the category name was stored as a key
+    s(doc?.bracelets) ||
+    s(doc?.necklaces) ||
+    s(doc?.earrings) ||
+    null;
+
+  const subCategory =
+    s(doc?.subCategory) || s(doc?.subcategory) || s(doc?.subcatagory) || null;
+
+  const image = s(doc?.image) || s(doc?.img) || s(doc?.imageUrl) || null;
+
+  const price = n(doc?.price);
+  const salePrice = n(doc?.salePrice);
 
   return {
-    _id: p?._id ? String(p._id) : undefined,
-    id: p?.id ? String(p.id) : undefined,
-    slug,
-    name,
-    price:
-      typeof p?.price === "number"
-        ? p.price
-        : Number(p?.price ?? p?.unitPrice ?? 0),
-    salePrice: p?.salePrice ?? null,
+    _id: idStr(doc),
+    name: name || "Untitled (legacy)",
+    slug: s(doc?.slug) || null,
     category,
-    subcategory,
-    imageUrl: pickImage(p),
-    source,
-    archived: Boolean(p?.archived),
-    createdAt: p?.createdAt ? new Date(p.createdAt).toISOString() : undefined,
-    department: inferDepartment(p),
-    specs: p?.specs && typeof p.specs === "object" ? p.specs : undefined,
-    audience: Array.isArray(p?.audience) ? p.audience : undefined,
+    subCategory,
+    audience: s(doc?.audience) || s(doc?.gender) || "unisex",
+    price,
+    salePrice,
+    image,
+    imageUrl: s(doc?.imageUrl) || image,
+    department: s(doc?.department) || category,
+    isLegacy: true,
+    createdAt: doc?.createdAt || null,
+    updatedAt: doc?.updatedAt || null,
   };
 }
 
-export async function getDbProducts(): Promise<AdminProduct[]> {
-  const client = await clientPromise;
-  const db = client.db();
-  const docs = await db
-    .collection("products")
-    .find({})
-    .sort({ createdAt: -1 })
-    .limit(500)
-    .toArray();
-  return docs.map((d) => normalizeOne(d, "db"));
-}
-
-export function getLegacyProducts(): AdminProduct[] {
-  const merged = [...(legacyA ?? [])];
-  return merged.map((d) => normalizeOne(d, "legacy"));
-}
-
-export async function getAllMergedProducts(): Promise<AdminProduct[]> {
-  const [dbItems, legacyItems] = await Promise.all([
-    getDbProducts(),
-    Promise.resolve(getLegacyProducts()),
-  ]);
-  const bySlug = new Map<string, AdminProduct>();
-  for (const item of legacyItems) bySlug.set(item.slug, item);
-  for (const item of dbItems) bySlug.set(item.slug, item); // DB overwrites legacy
-  return Array.from(bySlug.values());
-}
-
-export async function createDbProduct(payload: Partial<AdminProduct>) {
-  const client = await clientPromise;
-  const db = client.db();
-  const doc = {
-    name: payload.name ?? "Untitled",
-    slug: payload.slug ?? kebabCase(payload.name ?? "untitled"),
-    price: Number(payload.price ?? 0),
-    salePrice: payload.salePrice ?? null,
-    category: payload.category ?? "jewelry",
-    subcategory: payload.subcategory ?? null,
-    imageUrl: payload.imageUrl ?? "/gray-placeholder.jpg",
-    archived: Boolean(payload.archived),
-    createdAt: new Date(),
-    department: inferDepartment({ category: payload.category }),
-    specs: payload.specs ?? {},
-    audience: payload.audience ?? ["unisex"],
+/** Adapter for *new/current* docs (ensure the shape is consistent) */
+export function adaptNewProduct(doc: any): CanonicalAdminProduct {
+  return {
+    _id: idStr(doc),
+    name: s(doc?.name) || "Untitled",
+    slug: s(doc?.slug) || null,
+    category: s(doc?.category) || s(doc?.department) || null,
+    subCategory: s(doc?.subCategory) || null,
+    audience: s(doc?.audience) || "unisex",
+    price: n(doc?.price),
+    salePrice: n(doc?.salePrice),
+    image: s(doc?.image) || s(doc?.imageUrl) || null,
+    imageUrl: s(doc?.imageUrl) || s(doc?.image) || null,
+    department: s(doc?.department) || null,
+    isLegacy: false,
+    createdAt: doc?.createdAt || null,
+    updatedAt: doc?.updatedAt || null,
   };
-  const res = await db.collection("products").insertOne(doc);
-  return normalizeOne({ ...doc, _id: res.insertedId }, "db");
-}
-
-export async function getDbProductById(id: string) {
-  const client = await clientPromise;
-  const db = client.db();
-  if (!ObjectId.isValid(id)) return null;
-  const doc = await db
-    .collection("products")
-    .findOne({ _id: new ObjectId(id) });
-  return doc ? normalizeOne(doc, "db") : null;
-}
-
-export async function updateDbProductById(
-  id: string,
-  patch: Partial<AdminProduct>
-) {
-  const client = await clientPromise;
-  const db = client.db();
-  if (!ObjectId.isValid(id)) return null;
-
-  const set: any = {};
-  if (patch.name !== undefined) set.name = patch.name;
-  if (patch.slug !== undefined) set.slug = patch.slug;
-  if (patch.price !== undefined) set.price = Number(patch.price);
-  if (patch.salePrice !== undefined) set.salePrice = patch.salePrice;
-  if (patch.category !== undefined) set.category = patch.category;
-  if (patch.subcategory !== undefined)
-    set.subcategory = patch.subcategory ?? null;
-  if (patch.imageUrl !== undefined)
-    set.imageUrl = patch.imageUrl ?? "/gray-placeholder.jpg";
-  if (patch.archived !== undefined) set.archived = Boolean(patch.archived);
-  if (patch.specs !== undefined) set.specs = patch.specs ?? {};
-  if (patch.audience !== undefined) set.audience = patch.audience ?? ["unisex"];
-  set.updatedAt = new Date();
-
-  const res = await db
-    .collection("products")
-    .findOneAndUpdate(
-      { _id: new ObjectId(id) },
-      { $set: set },
-      { returnDocument: "after" }
-    );
-  return res.value ? normalizeOne(res.value, "db") : null;
-}
-
-export async function deleteDbProductById(id: string) {
-  const client = await clientPromise;
-  const db = client.db();
-  if (!ObjectId.isValid(id)) return null;
-  const res = await db
-    .collection("products")
-    .findOneAndDelete({ _id: new ObjectId(id) });
-  return res.value ? normalizeOne(res.value, "db") : null;
 }
