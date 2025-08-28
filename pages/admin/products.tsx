@@ -106,8 +106,9 @@ export default function AdminProductsPage({
 }: {
   initialProducts: AdminProduct[];
 }) {
-  const [catalogView, setCatalogView] = useState<"jewelry" | "watches">(
-    "jewelry"
+  // 🔽 NEW: include "all" so you can see everything (old or new) regardless of department/category mismatches
+  const [catalogView, setCatalogView] = useState<"all" | "jewelry" | "watches">(
+    "all"
   );
 
   const [products, setProducts] = useState<AdminProduct[]>(
@@ -192,10 +193,18 @@ export default function AdminProductsPage({
   });
   const [editSpecRows, setEditSpecRows] = useState<SpecEntry[]>([]);
 
-  const allowedCategoriesForView = (view: "jewelry" | "watches"): Category[] =>
-    view === "jewelry"
+  const allowedCategoriesForView = (
+    view: "all" | "jewelry" | "watches"
+  ): Category[] =>
+    view === "watches"
+      ? [WATCHES_CATEGORY]
+      : view === "jewelry"
       ? (JEWELRY_CATEGORIES as unknown as Category[])
-      : [WATCHES_CATEGORY];
+      : // "all": allow both for the add/edit selects
+        [
+          ...(JEWELRY_CATEGORIES as unknown as Category[]),
+          WATCHES_CATEGORY as Category,
+        ];
 
   useEffect(() => {
     setFormState((s) => {
@@ -228,8 +237,10 @@ export default function AdminProductsPage({
     [rowEdits]
   );
 
+  // 🔽 When "all" is selected, show everything (prevents legacy items disappearing)
   const viewFiltered = useMemo(() => {
     return products.filter((p) => {
+      if (catalogView === "all") return true;
       const dept = (p as any).department;
       return catalogView === "jewelry"
         ? dept === "jewelry" || isJewelry(p.category)
@@ -356,6 +367,7 @@ export default function AdminProductsPage({
         formData.append("specs", JSON.stringify(specsObj));
       }
 
+      // ✅ real uploaded file
       if (formState.imageFile) formData.append("image", formState.imageFile);
 
       const res = await fetch("/api/admin/products", {
@@ -510,6 +522,7 @@ export default function AdminProductsPage({
         formData.append("specs", JSON.stringify({}));
       }
 
+      // ✅ real uploaded file
       if (editForm.imageFile) formData.append("image", editForm.imageFile);
 
       const res = await fetch(`/api/admin/products/${editingProduct!._id}`, {
@@ -658,7 +671,19 @@ export default function AdminProductsPage({
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Toggle + Add button */}
         <div className="flex items-center justify-between">
+          {/* 🔽 NEW: All/Jewelry/Watches */}
           <div className="inline-flex rounded overflow-hidden border">
+            <button
+              type="button"
+              onClick={() => setCatalogView("all")}
+              className={`px-3 py-2 ${
+                catalogView === "all"
+                  ? "bg-yellow-500 text-black"
+                  : "bg-[var(--bg-nav)]"
+              }`}
+            >
+              All
+            </button>
             <button
               type="button"
               onClick={() => setCatalogView("jewelry")}
@@ -710,7 +735,7 @@ export default function AdminProductsPage({
               {String(editingProduct.skuNumber ?? 0).padStart(5, "0")})
             </h3>
 
-            {/* Image preview + visible picker */}
+            {/* Image preview + VISIBLE picker */}
             <div className="col-span-full flex flex-col md:flex-row md:items-center gap-4">
               <div className="w-40 h-40 bg-gray-500/40 rounded flex items-center justify-center overflow-hidden">
                 {previewImage ? (
@@ -725,7 +750,6 @@ export default function AdminProductsPage({
               </div>
 
               <div className="flex flex-col gap-2">
-                {/* Visible file input */}
                 <label className="text-sm font-medium">
                   Product Photo
                   <input
@@ -743,7 +767,6 @@ export default function AdminProductsPage({
                   />
                 </label>
 
-                {/* Optional button for users who prefer clicking a button */}
                 <div className="flex gap-2">
                   <button
                     type="button"
@@ -1219,7 +1242,7 @@ export default function AdminProductsPage({
               </div>
             </div>
 
-            {/* Upload + Preview (Add) */}
+            {/* Upload + Preview (Add) – VISIBLE file input */}
             <div className="md:col-span-2 flex flex-col md:flex-row md:items-center gap-4">
               <div className="w-36 h-36 bg-gray-500/40 rounded flex items-center justify-center overflow-hidden">
                 {addPreviewUrl ? (
@@ -1234,7 +1257,6 @@ export default function AdminProductsPage({
               </div>
 
               <div className="flex flex-col gap-2">
-                {/* Visible file input */}
                 <label className="text-sm font-medium">
                   Product Photo
                   <input
@@ -1248,7 +1270,6 @@ export default function AdminProductsPage({
                   />
                 </label>
 
-                {/* Optional button as well */}
                 <div className="flex gap-2">
                   <button
                     type="button"
