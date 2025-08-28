@@ -4,13 +4,12 @@ import type { Product } from "@/types/product";
 
 let _client: MongoClient | null = null;
 let _db: Db | null = null;
+let _productsCollectionName: string | null = null;
 
 const MONGODB_URI = process.env.MONGODB_URI as string;
-if (!MONGODB_URI) {
-  throw new Error("Missing env MONGODB_URI");
-}
+if (!MONGODB_URI) throw new Error("Missing env MONGODB_URI");
 
-// Prefer explicit DB name, otherwise derive from the URI path (e.g. .../classydiamonds?...).
+// Prefer explicit DB name; otherwise derive from URI path (e.g. .../classydiamonds?...).
 function parseDbNameFromUri(uri: string): string | null {
   try {
     const m = uri.match(/^mongodb(?:\+srv)?:\/\/[^/]+\/([^?]+)/i);
@@ -24,6 +23,12 @@ const DB_NAME =
   parseDbNameFromUri(MONGODB_URI) ||
   "classydiamonds";
 
+// Optional explicit collection override
+const EXPLICIT_COLLECTION =
+  (process.env.PRODUCTS_COLLECTION as string | undefined) ||
+  (process.env.NEXT_PUBLIC_PRODUCTS_COLLECTION as string | undefined) ||
+  null;
+
 export async function getDb(): Promise<Db> {
   if (_db) return _db;
   if (!_client) {
@@ -32,6 +37,62 @@ export async function getDb(): Promise<Db> {
   }
   _db = _client.db(DB_NAME);
   return _db;
+}
+
+/** Detect and cache the actual products collection name. */
+async function resolveProductsCollectionName(db: Db): Promise<string> {
+  if (_productsCollectionName) return _productsCollectionName;
+
+  // 1) Honor an explicit env override
+  if (EXPLICIT_COLLECTION) {
+    const exists = await db
+      .listCollections({ name: EXPLICIT_COLLECTION }, { nameOnly: true })
+      .toArray();
+    if (exists.length) {
+      _productsCollectionName = EXPLICIT_COLLECTION;
+      return _productsCollectionName;
+    }
+  }
+
+  // 2) Probe common candidates
+  const candidates = [
+    "products",
+    "product",
+    "items",
+    "catalog",
+    "inventory",
+    "listings",
+    "storefront_products",
+    "merch",
+  ];
+
+  const available = await db.listCollections({}, { nameOnly: true }).toArray();
+  const names = new Set(available.map((c) => c.name));
+
+  for (const cand of candidates) {
+    if (!names.has(cand)) continue;
+    // Heuristic: look for docs with typical product fields
+    const found = await db
+      .collection(cand)
+      .findOne(
+        { $or: [{ title: { $exists: true } }, { name: { $exists: true } }] },
+        { projection: { _id: 1 } }
+      );
+    if (found) {
+      _productsCollectionName = cand;
+      return _productsCollectionName;
+    }
+  }
+
+  // 3) Fallback
+  _productsCollectionName = "products";
+  return _productsCollectionName;
+}
+
+async function getProductsCollection() {
+  const db = await getDb();
+  const name = await resolveProductsCollectionName(db);
+  return db.collection(name);
 }
 
 /** ----- Legacy normalization helpers ----- */
@@ -107,8 +168,8 @@ type ListOptions = {
 };
 
 export async function listProducts(filter: any = {}, options: ListOptions = {}) {
-  const db = await getDb();
-  const cursor = db.collection("products")
+  const col = await getProductsCollection();
+  const cursor = col
     .find(filter)
     .sort(options.sort ?? { createdAt: -1 })
     .limit(options.limit ?? 1000)
@@ -119,9 +180,9 @@ export async function listProducts(filter: any = {}, options: ListOptions = {}) 
 }
 
 export async function getProductById(id: string) {
-  const db = await getDb();
+  const col = await getProductsCollection();
   const _id = new ObjectId(id);
-  const doc = await db.collection("products").findOne({ _id });
+  const doc = await col.findOne({ _id });
   return doc ? mapDbToProduct(doc) : null;
 }
 
@@ -129,7 +190,7 @@ export async function getProductById(id: string) {
 type LegacyCreate = Omit<Product, "_id"> & { tags?: string[] };
 
 export async function createProduct(input: LegacyCreate) {
-  const db = await getDb();
+  const col = await getProductsCollection();
   const { tags: _legacyTags, ...clean } = input; // strip tags
   const now = new Date();
 
@@ -139,8 +200,8 @@ export async function createProduct(input: LegacyCreate) {
     updatedAt: now,
   });
 
-  const result = await db.collection("products").insertOne(toInsert);
-  const saved = await db.collection("products").findOne({ _id: result.insertedId });
+  const result = await col.insertOne(toInsert);
+  const saved = await col.findOne({ _id: result.insertedId });
   return saved ? mapDbToProduct(saved) : null;
 }
 
@@ -148,7 +209,7 @@ export async function createProduct(input: LegacyCreate) {
 type LegacyPatch = Partial<Product> & { tags?: string[] };
 
 export async function updateProduct(id: string, patch: LegacyPatch) {
-  const db = await getDb();
+  const col = await getProductsCollection();
   const _id = new ObjectId(id);
 
   const { tags: _legacyTags, ...clean } = patch; // strip tags
@@ -158,19 +219,19 @@ export async function updateProduct(id: string, patch: LegacyPatch) {
   });
 
   if (Object.keys(updateSet).length === 0) {
-    const fresh = await db.collection("products").findOne({ _id });
+    const fresh = await col.findOne({ _id });
     return fresh ? mapDbToProduct(fresh) : null;
   }
 
-  await db.collection("products").updateOne({ _id }, { $set: updateSet });
-  const saved = await db.collection("products").findOne({ _id });
+  await col.updateOne({ _id }, { $set: updateSet });
+  const saved = await col.findOne({ _id });
   return saved ? mapDbToProduct(saved) : null;
 }
 
 export async function deleteProduct(id: string) {
-  const db = await getDb();
+  const col = await getProductsCollection();
   const _id = new ObjectId(id);
-  await db.collection("products").deleteOne({ _id });
+  await col.deleteOne({ _id });
   return { ok: true };
 }
 
