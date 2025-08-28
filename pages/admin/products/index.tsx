@@ -4,9 +4,40 @@ import Head from "next/head";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import Breadcrumbs from "@/components/Breadcrumbs";
-import type { Product, Department } from "@/types/product";
-import { DEPARTMENTS, getCategories, getSubCategories, getSpecFields } from "@/lib/taxonomy";
+// Keep using your taxonomy helpers for dropdowns
+import {
+  DEPARTMENTS,
+  getCategories,
+  getSubCategories,
+  getSpecFields,
+} from "@/lib/taxonomy";
 
+// Local type aligned with merged adapter payload
+type AdminProduct = {
+  _id?: string; // DB id when present
+  id?: string; // legacy id when present
+  slug: string;
+  name?: string;
+  title?: string;
+  description?: string;
+  price?: number;
+  unitPrice?: number;
+  salePrice?: number | null;
+  category?: string; // rings | earrings | bracelets | necklaces | watches | jewelry
+  subcategory?: string | null; // normalized in adapter
+  subCategory?: string | null; // tolerate legacy casing
+  imageUrl?: string | null;
+  image?: string | null;
+  images?: string[] | null;
+  audience?: string[];
+  specs?: Record<string, any>;
+  source?: "db" | "legacy";
+  archived?: boolean;
+  createdAt?: string;
+  department?: "jewelry" | "watch";
+};
+
+type Department = "jewelry" | "watch";
 type SortKey = "createdAt" | "title" | "unitPrice" | "subCategory" | "category";
 type SortDir = "asc" | "desc";
 
@@ -20,9 +51,28 @@ const toNum = (v: unknown, d = 0) => {
   return d;
 };
 
+function inferDept(p: AdminProduct): Department {
+  const d = (p.department || "").toLowerCase();
+  const c = (p.category || "").toLowerCase();
+  if (d === "watch") return "watch";
+  if (c === "watch" || c === "watches") return "watch";
+  return "jewelry";
+}
+
+function pickImage(p: AdminProduct): string {
+  return (
+    (p.imageUrl as string) ||
+    (Array.isArray(p.images) && p.images[0]) ||
+    (p.image as string) ||
+    "/gray-placeholder.jpg"
+  );
+}
+
 export default function AdminProductsList() {
   const { data: session, status } = useSession();
-  const [products, setProducts] = useState<Product[]>([]);
+  const [allItems, setAllItems] = useState<AdminProduct[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [err, setErr] = useState<string>("");
 
   // top-level tabs
   const [dept, setDept] = useState<Department>("jewelry");
@@ -48,77 +98,143 @@ export default function AdminProductsList() {
 
   useEffect(() => {
     if (!session?.user?.isAdmin) return;
-    load();
-  }, [session, dept, cat, sub, q, specFilter]);
+    (async () => {
+      try {
+        setLoading(true);
+        setErr("");
+        // New merged endpoint shape: { ok, items }
+        const res = await fetch("/api/admin/products");
+        const data = await res.json();
+        if (!res.ok || !data?.ok)
+          throw new Error(data?.error || "Failed to load products");
+        setAllItems(
+          Array.isArray(data.items) ? (data.items as AdminProduct[]) : []
+        );
+        setPage(1);
+      } catch (e: any) {
+        setErr(e?.message || "Failed to load products");
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [session]);
 
-  async function load() {
-    const params = new URLSearchParams();
-    params.set("department", dept);
-    if (cat) params.set("category", cat);
-    if (sub) params.set("subCategory", sub);
-    if (q) params.set("q", q);
-
-    // encode spec filter as JSON if any
-    const activeSpecs = Object.fromEntries(Object.entries(specFilter).filter(([, v]) => v !== "" && v != null));
-    if (Object.keys(activeSpecs).length) {
-      params.set("specs", JSON.stringify(activeSpecs));
-    }
-
-    const res = await fetch("/api/admin/products?" + params.toString());
-    const data = await res.json();
-    setProducts(Array.isArray(data.products) ? data.products : []);
-    setPage(1);
-  }
-
+  // reset cascades when dept/cat changes
   useEffect(() => {
-    // reset when changing department
     setCat("");
     setSub("");
     setSpecFilter({});
+    setPage(1);
   }, [dept]);
 
   useEffect(() => {
     setSub("");
     setSpecFilter({});
+    setPage(1);
   }, [cat]);
 
-  function sortProducts(list: Product[]): Product[] {
+  // Client-side filtering so it works even if API ignores params
+  const filtered = useMemo(() => {
+    const needle = q.trim().toLowerCase();
+    const wantedSpecs = Object.fromEntries(
+      Object.entries(specFilter).filter(([, v]) => v !== "" && v != null)
+    );
+
+    const list = allItems.filter((p) => {
+      // dept
+      if (inferDept(p) !== dept) return false;
+
+      // category
+      if (cat && (p.category || "").toLowerCase() !== cat.toLowerCase())
+        return false;
+
+      // subcategory (support subcategory/subCategory)
+      const pSub = (p.subcategory ?? p.subCategory ?? "") as string;
+      if (sub && pSub.toLowerCase() !== sub.toLowerCase()) return false;
+
+      // text search over title/name/description (and allow tags/specs values)
+      if (needle) {
+        const hay = `${p.title ?? ""} ${p.name ?? ""} ${p.description ?? ""} ${
+          p.category ?? ""
+        } ${pSub ?? ""}`.toLowerCase();
+        let hit = hay.includes(needle);
+
+        // quick scan specs values
+        if (!hit && p.specs && typeof p.specs === "object") {
+          hit = Object.values(p.specs).some((v) =>
+            String(v ?? "")
+              .toLowerCase()
+              .includes(needle)
+          );
+        }
+        if (!hit) return false;
+      }
+
+      // specs exact match
+      if (Object.keys(wantedSpecs).length) {
+        const pv = p.specs || {};
+        for (const [k, v] of Object.entries(wantedSpecs)) {
+          if (pv[k] === undefined) return false;
+          if (pv[k] !== v) return false;
+        }
+      }
+
+      return true;
+    });
+
+    // sort
     const dir = sortDir === "asc" ? 1 : -1;
     return [...list].sort((a, b) => {
       if (sortKey === "title") {
-        return (a.title || "").localeCompare(b.title || "") * dir;
+        const at = (a.title ?? a.name ?? "").toString();
+        const bt = (b.title ?? b.name ?? "").toString();
+        return at.localeCompare(bt) * dir;
       }
       if (sortKey === "unitPrice") {
-        const ap = toNum((a as any).unitPrice ?? (a as any).price);
-        const bp = toNum((b as any).unitPrice ?? (b as any).price);
+        const ap = toNum(a.unitPrice ?? a.price);
+        const bp = toNum(b.unitPrice ?? b.price);
         return (ap - bp) * dir;
       }
       if (sortKey === "subCategory") {
-        return (a.subCategory || "").localeCompare(b.subCategory || "") * dir;
+        const asub = (a.subCategory ?? a.subcategory ?? "") as string;
+        const bsub = (b.subCategory ?? b.subcategory ?? "") as string;
+        return asub.localeCompare(bsub) * dir;
       }
       if (sortKey === "category") {
-        return (a.category || "").localeCompare(b.category || "") * dir;
+        return (
+          (a.category ?? "")
+            .toString()
+            .localeCompare((b.category ?? "").toString()) * dir
+        );
       }
       // createdAt default
       const at = a.createdAt ? new Date(a.createdAt).getTime() : 0;
       const bt = b.createdAt ? new Date(b.createdAt).getTime() : 0;
       return (at - bt) * dir;
     });
-  }
+  }, [allItems, dept, cat, sub, q, specFilter, sortKey, sortDir]);
 
-  const filtered = useMemo(() => sortProducts(products), [products, sortKey, sortDir]);
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const current = filtered.slice((page - 1) * pageSize, page * pageSize);
 
-  async function onDelete(id?: string) {
+  async function onDelete(id?: string, source?: "db" | "legacy") {
     if (!id) return;
+    if (source === "legacy") {
+      alert(
+        "Legacy items are read-only here. Click “Migrate to DB” to convert, then you can delete."
+      );
+      return;
+    }
     if (!confirm("Delete this product permanently?")) return;
     try {
       setDeleting((m) => ({ ...m, [id]: true }));
-      const res = await fetch(`/api/admin/products/${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/admin/products/${id}`, {
+        method: "DELETE",
+      });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok || data?.ok === false) throw new Error(data?.error || "Delete failed");
-      setProducts((prev) => prev.filter((p) => p._id !== id));
+      if (!res.ok || data?.ok === false)
+        throw new Error(data?.error || "Delete failed");
+      setAllItems((prev) => prev.filter((p) => p._id !== id));
     } catch (e: any) {
       alert("❌ " + (e?.message || "Delete failed"));
     } finally {
@@ -126,12 +242,46 @@ export default function AdminProductsList() {
     }
   }
 
+  async function onMigrate(p: AdminProduct) {
+    try {
+      const res = await fetch("/api/admin/products/migrate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: p.name ?? p.title ?? "Untitled",
+          slug: p.slug,
+          price: Number(p.unitPrice ?? p.price ?? 0),
+          salePrice: p.salePrice ?? null,
+          category:
+            p.category || (inferDept(p) === "watch" ? "watches" : "jewelry"),
+          subcategory: (p.subcategory ?? p.subCategory) || null,
+          imageUrl: pickImage(p),
+          archived: Boolean(p.archived),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data?.ok)
+        throw new Error(data?.error || "Migration failed");
+      // Reload merged list after migration
+      const reload = await fetch("/api/admin/products").then((r) => r.json());
+      setAllItems(
+        Array.isArray(reload.items) ? (reload.items as AdminProduct[]) : []
+      );
+      alert(`Migrated "${p.name ?? p.title}" into DB.`);
+    } catch (e: any) {
+      alert("❌ " + (e?.message || "Migration failed"));
+    }
+  }
+
   if (status === "loading") return <div className="p-6">Checking access…</div>;
-  if (!session?.user?.isAdmin) return <div className="p-6 text-red-300">❌ Unauthorized</div>;
+  if (!session?.user?.isAdmin)
+    return <div className="p-6 text-red-300">❌ Unauthorized</div>;
 
   return (
     <div className="p-6 min-h-screen bg-[var(--bg-page)] text-[var(--foreground)]">
-      <Head><title>Products | Admin</title></Head>
+      <Head>
+        <title>Products | Admin</title>
+      </Head>
 
       <div className="pl-2 pr-2 sm:pl-4 sm:pr-4 -mt-2 mb-6">
         <Breadcrumbs />
@@ -139,18 +289,27 @@ export default function AdminProductsList() {
 
       <div className="flex justify-between items-center mb-4">
         <h1 className="text-2xl font-serif font-bold">🛠 Products</h1>
-        <Link href="/admin/products/new" className="bg-blue-600 px-4 py-2 rounded">+ Add Product</Link>
+        <Link
+          href="/admin/products/new"
+          className="bg-blue-600 px-4 py-2 rounded"
+        >
+          + Add Product
+        </Link>
       </div>
 
       {/* Department tabs */}
       <div className="flex gap-2 mb-4">
         {DEPARTMENTS.map((d) => {
-          const active = dept === d;
+          const active = dept === (d as Department);
           return (
             <button
               key={d}
-              onClick={() => setDept(d)}
-              className={`px-3 py-1 rounded-full text-sm border ${active ? "bg-yellow-500 text-black" : "bg-[var(--bg-nav)] text-white"}`}
+              onClick={() => setDept(d as Department)}
+              className={`px-3 py-1 rounded-full text-sm border ${
+                active
+                  ? "bg-yellow-500 text-black"
+                  : "bg-[var(--bg-nav)] text-white"
+              }`}
             >
               {d[0].toUpperCase() + d.slice(1)}
             </button>
@@ -160,9 +319,17 @@ export default function AdminProductsList() {
 
       {/* Filters */}
       <div className="flex flex-wrap gap-3 mb-4 items-center">
-        <select value={cat} onChange={(e) => setCat(e.target.value)} className="px-3 py-2 rounded bg-[var(--bg-nav)]">
+        <select
+          value={cat}
+          onChange={(e) => setCat(e.target.value)}
+          className="px-3 py-2 rounded bg-[var(--bg-nav)]"
+        >
           <option value="">All Categories</option>
-          {getCategories(dept).map((c) => <option key={c} value={c}>{c}</option>)}
+          {getCategories(dept).map((c) => (
+            <option key={c} value={c}>
+              {c}
+            </option>
+          ))}
         </select>
 
         <select
@@ -172,7 +339,11 @@ export default function AdminProductsList() {
           disabled={!cat}
         >
           <option value="">All Sub-categories</option>
-          {getSubCategories(dept, cat).map((s) => <option key={s} value={s}>{s}</option>)}
+          {getSubCategories(dept, cat).map((s) => (
+            <option key={s} value={s}>
+              {s}
+            </option>
+          ))}
         </select>
 
         <input
@@ -185,14 +356,22 @@ export default function AdminProductsList() {
         <span className="opacity-50 mx-2">|</span>
 
         <label className="text-sm">Sort:</label>
-        <select value={sortKey} onChange={(e) => setSortKey(e.target.value as SortKey)} className="px-3 py-2 rounded bg-[var(--bg-nav)]">
+        <select
+          value={sortKey}
+          onChange={(e) => setSortKey(e.target.value as SortKey)}
+          className="px-3 py-2 rounded bg-[var(--bg-nav)]"
+        >
           <option value="createdAt">Created</option>
           <option value="title">Title</option>
           <option value="unitPrice">Price</option>
           <option value="category">Category</option>
           <option value="subCategory">Sub-Category</option>
         </select>
-        <select value={sortDir} onChange={(e) => setSortDir(e.target.value as SortDir)} className="px-3 py-2 rounded bg-[var(--bg-nav)]">
+        <select
+          value={sortDir}
+          onChange={(e) => setSortDir(e.target.value as SortDir)}
+          className="px-3 py-2 rounded bg-[var(--bg-nav)]"
+        >
           <option value="desc">Desc</option>
           <option value="asc">Asc</option>
         </select>
@@ -207,14 +386,22 @@ export default function AdminProductsList() {
               if (def.type === "select") {
                 return (
                   <div key={key}>
-                    <label className="block text-xs opacity-75 mb-1">{key}</label>
+                    <label className="block text-xs opacity-75 mb-1">
+                      {key}
+                    </label>
                     <select
                       value={String(v)}
-                      onChange={(e) => setSpecFilter((m) => ({ ...m, [key]: e.target.value }))}
+                      onChange={(e) =>
+                        setSpecFilter((m) => ({ ...m, [key]: e.target.value }))
+                      }
                       className="px-3 py-2 rounded bg-[var(--bg-nav)] text-white"
                     >
                       <option value="">Any</option>
-                      {def.options.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
+                      {def.options.map((opt: string) => (
+                        <option key={opt} value={opt}>
+                          {opt}
+                        </option>
+                      ))}
                     </select>
                   </div>
                 );
@@ -222,12 +409,21 @@ export default function AdminProductsList() {
               if (def.type === "number") {
                 return (
                   <div key={key}>
-                    <label className="block text-xs opacity-75 mb-1">{key}{def.unit ? ` (${def.unit})` : ""}</label>
+                    <label className="block text-xs opacity-75 mb-1">
+                      {key}
+                      {def.unit ? ` (${def.unit})` : ""}
+                    </label>
                     <input
                       type="number"
                       step={def.step ?? 1}
                       value={v === "" ? "" : Number(v)}
-                      onChange={(e) => setSpecFilter((m) => ({ ...m, [key]: e.target.value === "" ? "" : Number(e.target.value) }))}
+                      onChange={(e) =>
+                        setSpecFilter((m) => ({
+                          ...m,
+                          [key]:
+                            e.target.value === "" ? "" : Number(e.target.value),
+                        }))
+                      }
                       className="px-3 py-2 rounded bg-[var(--bg-nav)] text-white"
                     />
                   </div>
@@ -235,11 +431,19 @@ export default function AdminProductsList() {
               }
               if (def.type === "boolean") {
                 return (
-                  <label key={key} className="inline-flex items-center gap-2 px-3 py-2 rounded bg-[var(--bg-nav)]">
+                  <label
+                    key={key}
+                    className="inline-flex items-center gap-2 px-3 py-2 rounded bg-[var(--bg-nav)]"
+                  >
                     <input
                       type="checkbox"
                       checked={!!v}
-                      onChange={(e) => setSpecFilter((m) => ({ ...m, [key]: e.target.checked }))}
+                      onChange={(e) =>
+                        setSpecFilter((m) => ({
+                          ...m,
+                          [key]: e.target.checked,
+                        }))
+                      }
                     />
                     <span className="text-sm">{def.label || key}</span>
                   </label>
@@ -250,7 +454,9 @@ export default function AdminProductsList() {
                   <label className="block text-xs opacity-75 mb-1">{key}</label>
                   <input
                     value={String(v)}
-                    onChange={(e) => setSpecFilter((m) => ({ ...m, [key]: e.target.value }))}
+                    onChange={(e) =>
+                      setSpecFilter((m) => ({ ...m, [key]: e.target.value }))
+                    }
                     className="px-3 py-2 rounded bg-[var(--bg-nav)] text-white"
                   />
                 </div>
@@ -276,53 +482,106 @@ export default function AdminProductsList() {
             </tr>
           </thead>
           <tbody>
-            {current.length === 0 ? (
-              <tr><td colSpan={8} className="py-6 text-center">No products.</td></tr>
-            ) : current.map((p) => {
-              const title = (p as any).title || (p as any).name || "(untitled)";
-              const img =
-                (Array.isArray(p.images) && p.images[0]) ||
-                (p as any).image ||
-                "/products/gray-placeholder.jpg";
-              const price = toNum((p as any).unitPrice ?? (p as any).price);
+            {loading ? (
+              <tr>
+                <td colSpan={8} className="py-6 text-center">
+                  Loading…
+                </td>
+              </tr>
+            ) : err ? (
+              <tr>
+                <td colSpan={8} className="py-6 text-center text-red-300">
+                  Error: {err}
+                </td>
+              </tr>
+            ) : current.length === 0 ? (
+              <tr>
+                <td colSpan={8} className="py-6 text-center">
+                  No products.
+                </td>
+              </tr>
+            ) : (
+              current.map((p) => {
+                const title = (p.title || p.name || "(untitled)") as string;
+                const img = pickImage(p);
+                const price = toNum(p.unitPrice ?? p.price);
+                const subCat = (p.subCategory ?? p.subcategory ?? "") as string;
+                const key = p._id ?? p.id ?? p.slug;
 
-              return (
-                <tr key={p._id} className="border-b border-[var(--bg-nav)]">
-                  <td className="py-2 px-3">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={img} alt={title} className="w-14 h-14 object-cover rounded bg-[#1d2740]" />
-                  </td>
-                  <td className="py-2 px-3">
-                    <div className="font-medium">{title}</div>
-                  </td>
-                  <td className="py-2 px-3">{p.category || "-"}</td>
-                  <td className="py-2 px-3">{p.subCategory || "-"}</td>
-                  <td className="py-2 px-3">
-                    <div className="flex flex-wrap gap-1">
-                      {(p.audience?.length ? p.audience : ["unisex"]).map((a) => (
-                        <span key={a} className="text-xs px-2 py-0.5 rounded-full bg-[#364763]">
-                          {a}
-                        </span>
-                      ))}
-                    </div>
-                  </td>
-                  <td className="py-2 px-3">${price.toFixed(2)}</td>
-                  <td className="py-2 px-3 text-sm">{p.createdAt ? new Date(p.createdAt).toLocaleDateString() : "-"}</td>
-                  <td className="py-2 px-3">
-                    <div className="flex gap-2">
-                      <Link href={`/admin/products/${p._id}`} className="px-3 py-1 rounded bg-blue-600 text-sm">Edit</Link>
-                      <button
-                        onClick={() => onDelete(p._id)}
-                        disabled={deleting[p._id!]}
-                        className="px-3 py-1 rounded bg-red-600 text-sm disabled:opacity-50"
-                      >
-                        {deleting[p._id!] ? "Deleting…" : "Delete"}
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
+                return (
+                  <tr key={key} className="border-b border-[var(--bg-nav)]">
+                    <td className="py-2 px-3">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={img}
+                        alt={title}
+                        className="w-14 h-14 object-cover rounded bg-[#1d2740]"
+                      />
+                    </td>
+                    <td className="py-2 px-3">
+                      <div className="flex items-center gap-2">
+                        <div className="font-medium">{title}</div>
+                        {p.source === "legacy" && (
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-yellow-500/20 border border-yellow-500/40">
+                            LEGACY
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="py-2 px-3">{p.category || "-"}</td>
+                    <td className="py-2 px-3">{subCat || "-"}</td>
+                    <td className="py-2 px-3">
+                      <div className="flex flex-wrap gap-1">
+                        {(p.audience?.length ? p.audience : ["unisex"]).map(
+                          (a) => (
+                            <span
+                              key={a}
+                              className="text-xs px-2 py-0.5 rounded-full bg-[#364763]"
+                            >
+                              {a}
+                            </span>
+                          )
+                        )}
+                      </div>
+                    </td>
+                    <td className="py-2 px-3">${price.toFixed(2)}</td>
+                    <td className="py-2 px-3 text-sm">
+                      {p.createdAt
+                        ? new Date(p.createdAt).toLocaleDateString()
+                        : "-"}
+                    </td>
+                    <td className="py-2 px-3">
+                      <div className="flex gap-2">
+                        {p.source === "db" && p._id ? (
+                          <>
+                            <Link
+                              href={`/admin/products/${p._id}`}
+                              className="px-3 py-1 rounded bg-blue-600 text-sm"
+                            >
+                              Edit
+                            </Link>
+                            <button
+                              onClick={() => onDelete(p._id, p.source)}
+                              disabled={deleting[p._id!]}
+                              className="px-3 py-1 rounded bg-red-600 text-sm disabled:opacity-50"
+                            >
+                              {deleting[p._id!] ? "Deleting…" : "Delete"}
+                            </button>
+                          </>
+                        ) : (
+                          <button
+                            onClick={() => onMigrate(p)}
+                            className="px-3 py-1 rounded bg-emerald-600 text-sm"
+                          >
+                            Migrate to DB
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })
+            )}
           </tbody>
         </table>
       </div>
@@ -334,7 +593,11 @@ export default function AdminProductsList() {
             <button
               key={i}
               onClick={() => setPage(i + 1)}
-              className={`px-3 py-1 rounded ${page === i + 1 ? "bg-blue-600" : "bg-[var(--bg-nav)] hover:bg-blue-500"}`}
+              className={`px-3 py-1 rounded ${
+                page === i + 1
+                  ? "bg-blue-600"
+                  : "bg-[var(--bg-nav)] hover:bg-blue-500"
+              }`}
             >
               {i + 1}
             </button>
