@@ -2,7 +2,11 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../../auth/[...nextauth]";
-import { getDb } from "@/lib/products";
+import { getDb } from "@/lib/mongodb"; // ✅ unified DB helper
+import formidable, { Fields, Files } from "formidable";
+import { v2 as cloudinary } from "cloudinary";
+
+export const config = { api: { bodyParser: false } };
 
 type Source = "db" | "legacy";
 type AdminProduct = {
@@ -30,20 +34,28 @@ type AdminProduct = {
   skuNumber?: number;
 };
 
-type Ok = {
-  ok: true;
-  items: AdminProduct[];
-  counts: {
-    primary: number;
-    alsoProducts: number;
-    legacy: number;
-    totalAfterDedupe: number;
-  };
-  collectionsQueried: string[];
-};
+type Ok =
+  | {
+      ok: true;
+      items: AdminProduct[];
+      counts: {
+        primary: number;
+        alsoProducts: number;
+        legacy: number;
+        totalAfterDedupe: number;
+      };
+      collectionsQueried: string[];
+    }
+  | {
+      ok: true;
+      product: any;
+      productId: string;
+    };
+
 type Err = { ok: false; error: string };
 
-const pickCatalogName =
+// ✅ Same resolution policy everywhere
+const PRIMARY_COLLECTION =
   process.env.PRODUCTS_COLLECTION ||
   process.env.NEXT_PUBLIC_PRODUCTS_COLLECTION ||
   "products";
@@ -147,7 +159,6 @@ function adaptLegacy(doc: any): AdminProduct {
     : doc?.audience
     ? [String(doc.audience)]
     : ["unisex"];
-
   const dept =
     s(doc?.department).toLowerCase() === "watch" ||
     ["watch", "watches"].includes(cat.toLowerCase())
@@ -181,6 +192,55 @@ function adaptLegacy(doc: any): AdminProduct {
   };
 }
 
+function parseForm(
+  req: NextApiRequest
+): Promise<{ fields: Fields; files: Files }> {
+  const form = formidable({
+    multiples: false,
+    keepExtensions: true,
+    maxFileSize: 25 * 1024 * 1024,
+  });
+  return new Promise((resolve, reject) => {
+    form.parse(req, (err, fields, files) =>
+      err ? reject(err) : resolve({ fields, files })
+    );
+  });
+}
+
+function toBool(v: any) {
+  const s = String(v ?? "").toLowerCase();
+  return s === "true" || s === "1" || s === "yes";
+}
+
+function toAudience(v: any): string[] {
+  if (Array.isArray(v)) return v.map(String);
+  if (typeof v === "string") {
+    try {
+      const parsed = JSON.parse(v);
+      if (Array.isArray(parsed)) return parsed.map(String);
+    } catch {}
+    return [v];
+  }
+  return ["unisex"];
+}
+
+function toSpecs(v: any): Record<string, any> {
+  if (!v) return {};
+  if (typeof v === "object") return v;
+  try {
+    const parsed = JSON.parse(String(v));
+    return typeof parsed === "object" && parsed ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME as string,
+  api_key: process.env.CLOUDINARY_API_KEY as string,
+  api_secret: process.env.CLOUDINARY_API_SECRET as string,
+});
+
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<Ok | Err>
@@ -190,92 +250,174 @@ export default async function handler(
   if (!session?.user?.isAdmin) {
     return res.status(401).json({ ok: false, error: "Unauthorized" });
   }
-  if (req.method !== "GET") {
-    res.setHeader("Allow", "GET");
-    return res.status(405).json({ ok: false, error: "Method not allowed" });
+
+  // -------------------- LIST (GET) --------------------
+  if (req.method === "GET") {
+    const db = await getDb();
+
+    const q = typeof req.query.q === "string" ? req.query.q.trim() : "";
+    const includeLegacy =
+      String(req.query.includeLegacy ?? "1").toLowerCase() !== "0" &&
+      String(req.query.includeLegacy ?? "1").toLowerCase() !== "false";
+    const filter = buildFilter(q);
+
+    const collectionsToQuery = Array.from(
+      new Set([PRIMARY_COLLECTION, "products"])
+    );
+
+    const results: AdminProduct[] = [];
+    let primaryCount = 0;
+    let alsoProductsCount = 0;
+
+    for (const colName of collectionsToQuery) {
+      try {
+        const docs = await db.collection(colName).find(filter).toArray();
+        const mapped = docs.map(adaptDb);
+        results.push(...mapped);
+        if (colName === PRIMARY_COLLECTION) primaryCount = mapped.length;
+        if (colName === "products" && colName !== PRIMARY_COLLECTION)
+          alsoProductsCount = mapped.length;
+      } catch {
+        // collection may not exist; skip
+      }
+    }
+
+    // legacy (optional)
+    let legacy: AdminProduct[] = [];
+    let legacyCount = 0;
+    if (includeLegacy) {
+      try {
+        const legacyDocs = await db
+          .collection("legacyProducts")
+          .find(filter)
+          .toArray();
+        legacy = legacyDocs.map(adaptLegacy);
+        legacyCount = legacy.length;
+      } catch {
+        legacy = [];
+      }
+    }
+
+    // Dedup by slug, prefer DB over legacy
+    const seen = new Map<string, AdminProduct>();
+    function keyFor(p: AdminProduct) {
+      return (p.slug && p.slug.trim()) || (p._id ?? p.id ?? "");
+    }
+    for (const p of [...results, ...legacy]) {
+      const k = keyFor(p);
+      if (!k) continue;
+      if (
+        !seen.has(k) ||
+        (seen.get(k)?.source === "legacy" && p.source === "db")
+      )
+        seen.set(k, p);
+    }
+
+    const items = Array.from(seen.values()).sort((a, b) => {
+      if ((a.source === "legacy") !== (b.source === "legacy")) {
+        return a.source === "legacy" ? 1 : -1;
+      }
+      const at = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const bt = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return bt - at;
+    });
+
+    return res.status(200).json({
+      ok: true,
+      items,
+      counts: {
+        primary: primaryCount,
+        alsoProducts: alsoProductsCount,
+        legacy: legacyCount,
+        totalAfterDedupe: items.length,
+      },
+      collectionsQueried: collectionsToQuery,
+    });
   }
 
-  const db = await getDb();
-
-  const q = typeof req.query.q === "string" ? req.query.q.trim() : "";
-  const includeLegacy =
-    String(req.query.includeLegacy ?? "1").toLowerCase() !== "0" &&
-    String(req.query.includeLegacy ?? "1").toLowerCase() !== "false";
-  const filter = buildFilter(q);
-
-  // Query BOTH the env-selected catalog and the hard-coded "products" (if different),
-  // then merge+dedupe by slug or _id so you always see everything.
-  const collectionsToQuery = Array.from(new Set([pickCatalogName, "products"]));
-
-  const results: AdminProduct[] = [];
-  let primaryCount = 0;
-  let alsoProductsCount = 0;
-
-  for (const colName of collectionsToQuery) {
+  // -------------------- CREATE (POST, multipart) --------------------
+  if (req.method === "POST") {
     try {
-      const docs = await db.collection(colName).find(filter).toArray();
-      const mapped = docs.map(adaptDb);
-      results.push(...mapped);
-      if (colName === pickCatalogName) primaryCount = mapped.length;
-      if (colName === "products" && colName !== pickCatalogName)
-        alsoProductsCount = mapped.length;
-    } catch {
-      // collection may not exist; skip
+      const db = await getDb();
+      const products = db.collection(PRIMARY_COLLECTION);
+      const { fields, files } = await parseForm(req);
+
+      // Pull fields (mirror ProductForm)
+      const title = s(fields.title ?? fields.name);
+      const slug = s(fields.slug ?? fields.title ?? fields.name)
+        .trim()
+        .toLowerCase()
+        .replace(/\s+/g, "-");
+      if (!title || !slug) {
+        return res
+          .status(400)
+          .json({ ok: false, error: "Missing required: title/name and slug" });
+      }
+
+      const department = s(fields.department);
+      const category = s(fields.category) || undefined;
+      const subCategory = s(fields.subCategory || fields.subcategory) || "";
+      const price = n(fields.unitPrice ?? fields.price) ?? 0;
+      const salePrice =
+        fields.salePrice == null ? null : n(fields.salePrice) ?? null;
+      const archived = toBool(fields.archived);
+      const audience = toAudience(fields.audience);
+      const specs = toSpecs(fields.specs);
+      const description = s(fields.description);
+
+      // Optional image file
+      let imageUrl: string | null = null;
+      const file: any = (files as any)?.image;
+      if (file?.filepath) {
+        const upload = await cloudinary.uploader.upload(file.filepath, {
+          folder: "classy-products",
+          overwrite: true,
+          resource_type: "image",
+        });
+        imageUrl = upload.secure_url;
+      }
+
+      const now = new Date();
+      const doc = {
+        name: title,
+        title,
+        slug,
+        price,
+        salePrice,
+        category,
+        subCategory: subCategory || null,
+        imageUrl,
+        images: imageUrl ? [imageUrl] : undefined,
+        archived,
+        specs,
+        audience: audience.length ? audience : ["unisex"],
+        description,
+        department:
+          department === "watch" || department === "jewelry"
+            ? department
+            : undefined,
+        createdAt: now,
+        updatedAt: now,
+      };
+
+      // Upsert by slug (so repeat migrations don’t duplicate)
+      const { value } = await products.findOneAndUpdate(
+        { slug },
+        { $set: doc, $setOnInsert: { createdAt: now } },
+        { upsert: true, returnDocument: "after" }
+      );
+
+      return res
+        .status(200)
+        .json({ ok: true, productId: String(value?._id), product: value });
+    } catch (e: any) {
+      console.error("create error:", e);
+      return res
+        .status(500)
+        .json({ ok: false, error: e?.message || "Create failed" });
     }
   }
 
-  // legacy (optional)
-  let legacy: AdminProduct[] = [];
-  let legacyCount = 0;
-  if (includeLegacy) {
-    try {
-      const legacyDocs = await db
-        .collection("legacyProducts")
-        .find(filter)
-        .toArray();
-      legacy = legacyDocs.map(adaptLegacy);
-      legacyCount = legacy.length;
-    } catch {
-      legacy = [];
-    }
-  }
-
-  // Deduplicate by slug (preferred) then by _id/id
-  const seen = new Map<string, AdminProduct>();
-  function keyFor(p: AdminProduct) {
-    return (p.slug && p.slug.trim()) || (p._id ?? p.id ?? "");
-  }
-  for (const p of [...results, ...legacy]) {
-    const k = keyFor(p);
-    if (!k) continue;
-    // prefer non-legacy over legacy if a collision
-    if (
-      !seen.has(k) ||
-      (seen.get(k)?.source === "legacy" && p.source === "db")
-    ) {
-      seen.set(k, p);
-    }
-  }
-
-  // Sort: db first, then legacy; then newest createdAt
-  const items = Array.from(seen.values()).sort((a, b) => {
-    if ((a.source === "legacy") !== (b.source === "legacy")) {
-      return a.source === "legacy" ? 1 : -1;
-    }
-    const at = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-    const bt = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-    return bt - at;
-  });
-
-  return res.status(200).json({
-    ok: true,
-    items,
-    counts: {
-      primary: primaryCount,
-      alsoProducts: alsoProductsCount,
-      legacy: legacyCount,
-      totalAfterDedupe: items.length,
-    },
-    collectionsQueried: collectionsToQuery,
-  });
+  res.setHeader("Allow", "GET, POST");
+  return res.status(405).json({ ok: false, error: "Method not allowed" });
 }

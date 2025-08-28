@@ -1,98 +1,68 @@
-// lib/products.ts
-import { MongoClient, Db, ObjectId } from "mongodb";
+// 📦 lib/products.ts
+// Unifies all readers/writers on ONE Mongo client + ONE collection name.
+// - Uses getDb()/getCollection() from lib/mongodb (no duplicate clients).
+// - Deterministic catalog name (no silent "probing" divergence).
+// - Honors PRODUCTS_COLLECTION (server) or NEXT_PUBLIC_PRODUCTS_COLLECTION (fallback), else 'products'.
+
+import { ObjectId } from "mongodb";
 import type { Product } from "@/types/product";
+import { getDb, getCollection } from "@/lib/mongodb";
 
-let _client: MongoClient | null = null;
-let _db: Db | null = null;
-let _productsCollectionName: string | null = null;
-
-const MONGODB_URI = process.env.MONGODB_URI as string;
-if (!MONGODB_URI) throw new Error("Missing env MONGODB_URI");
-
-// Prefer explicit DB name; otherwise derive from URI path (e.g. .../classydiamonds?...).
-function parseDbNameFromUri(uri: string): string | null {
-  try {
-    const m = uri.match(/^mongodb(?:\+srv)?:\/\/[^/]+\/([^?]+)/i);
-    return m?.[1] || null;
-  } catch {
-    return null;
-  }
-}
-const DB_NAME =
-  (process.env.MONGODB_DB as string | undefined) ||
-  parseDbNameFromUri(MONGODB_URI) ||
-  "classydiamonds";
-
-// Optional explicit collection override
-const EXPLICIT_COLLECTION =
+const SERVER_COLLECTION =
   (process.env.PRODUCTS_COLLECTION as string | undefined) ||
   (process.env.NEXT_PUBLIC_PRODUCTS_COLLECTION as string | undefined) ||
-  null;
+  "products";
 
-export async function getDb(): Promise<Db> {
-  if (_db) return _db;
-  if (!_client) {
-    _client = new MongoClient(MONGODB_URI);
-    await _client.connect();
-  }
-  _db = _client.db(DB_NAME);
-  return _db;
-}
+// 🔎 Optional safety: if explicit collection is empty but 'products' has data, fallback.
+let _resolvedCollectionName: string | null = null;
 
-/** Detect and cache the actual products collection name. */
-async function resolveProductsCollectionName(db: Db): Promise<string> {
-  if (_productsCollectionName) return _productsCollectionName;
+async function resolveCatalogCollectionName(): Promise<string> {
+  if (_resolvedCollectionName) return _resolvedCollectionName;
 
-  // 1) Honor an explicit env override
-  if (EXPLICIT_COLLECTION) {
-    const exists = await db
-      .listCollections({ name: EXPLICIT_COLLECTION }, { nameOnly: true })
-      .toArray();
-    if (exists.length) {
-      _productsCollectionName = EXPLICIT_COLLECTION;
-      return _productsCollectionName;
-    }
+  const db = await getDb();
+  const explicit = SERVER_COLLECTION;
+
+  // If explicit is 'products', just use it.
+  if (explicit === "products") {
+    _resolvedCollectionName = "products";
+    return _resolvedCollectionName;
   }
 
-  // 2) Probe common candidates
-  const candidates = [
-    "products",
-    "product",
-    "items",
-    "catalog",
-    "inventory",
-    "listings",
-    "storefront_products",
-    "merch",
-  ];
+  // If explicit is something else, prefer it if it actually has any docs.
+  const explicitCol = db.collection(explicit);
+  const explicitHasDocs = await explicitCol.findOne(
+    {},
+    { projection: { _id: 1 } }
+  );
 
-  const available = await db.listCollections({}, { nameOnly: true }).toArray();
-  const names = new Set(available.map((c) => c.name));
-
-  for (const cand of candidates) {
-    if (!names.has(cand)) continue;
-    // Heuristic: look for docs with typical product fields
-    const found = await db
-      .collection(cand)
-      .findOne(
-        { $or: [{ title: { $exists: true } }, { name: { $exists: true } }] },
-        { projection: { _id: 1 } }
-      );
-    if (found) {
-      _productsCollectionName = cand;
-      return _productsCollectionName;
-    }
+  if (explicitHasDocs) {
+    _resolvedCollectionName = explicit;
+    return _resolvedCollectionName;
   }
 
-  // 3) Fallback
-  _productsCollectionName = "products";
-  return _productsCollectionName;
+  // If explicit exists but is empty, check 'products' to avoid empty admin views.
+  const productsCol = db.collection("products");
+  const productsHasDocs = await productsCol.findOne(
+    {},
+    { projection: { _id: 1 } }
+  );
+
+  if (productsHasDocs) {
+    console.warn(
+      `[catalog] '${explicit}' is empty; falling back to 'products'. Set PRODUCTS_COLLECTION='products' to silence this.`
+    );
+    _resolvedCollectionName = "products";
+    return _resolvedCollectionName;
+  }
+
+  // Last resort: stick with explicit (even if empty)
+  _resolvedCollectionName = explicit;
+  return _resolvedCollectionName;
 }
 
 async function getProductsCollection() {
-  const db = await getDb();
-  const name = await resolveProductsCollectionName(db);
-  return db.collection(name);
+  const name = await resolveCatalogCollectionName();
+  return getCollection(name);
 }
 
 /** ----- Legacy normalization helpers ----- */
@@ -105,7 +75,8 @@ function inferDepartment(doc: any): "jewelry" | "watch" {
 }
 function firstImage(doc: any): string {
   if (doc?.imageUrl) return String(doc.imageUrl);
-  if (Array.isArray(doc?.images) && doc.images.length) return String(doc.images[0]);
+  if (Array.isArray(doc?.images) && doc.images.length)
+    return String(doc.images[0]);
   if (doc?.image) return String(doc.image);
   return "";
 }
@@ -119,17 +90,23 @@ export function mapDbToProduct(doc: any): Product {
     department: inferDepartment(doc),
     category: doc.category,
     subCategory: doc.subCategory ?? doc.subcategory,
-    audience: Array.isArray(doc.audience) && doc.audience.length ? doc.audience : ["unisex"],
+    audience:
+      Array.isArray(doc.audience) && doc.audience.length
+        ? doc.audience
+        : ["unisex"],
     price: doc.price ?? doc.unitPrice,
     originalPrice: doc.originalPrice,
     salePrice: doc.salePrice,
     discountedPrice: doc.discountedPrice,
     unitPrice: doc.unitPrice ?? doc.price,
     imageUrl: firstImage(doc),
-    images: Array.isArray(doc.images) ? doc.images : (firstImage(doc) ? [firstImage(doc)] : []),
+    images: Array.isArray(doc.images)
+      ? doc.images
+      : firstImage(doc)
+      ? [firstImage(doc)]
+      : [],
     description: doc.description ?? "",
-    // tags intentionally omitted (legacy tolerated in DB, not in type)
-    specs: (doc.specs && typeof doc.specs === "object") ? doc.specs : undefined,
+    specs: doc.specs && typeof doc.specs === "object" ? doc.specs : undefined,
     featured: typeof doc.featured === "boolean" ? doc.featured : undefined,
     skuNumber: typeof doc.skuNumber === "number" ? doc.skuNumber : undefined,
     createdAt: doc.createdAt ? String(doc.createdAt) : undefined,
@@ -167,7 +144,10 @@ type ListOptions = {
   skip?: number;
 };
 
-export async function listProducts(filter: any = {}, options: ListOptions = {}) {
+export async function listProducts(
+  filter: any = {},
+  options: ListOptions = {}
+) {
   const col = await getProductsCollection();
   const cursor = col
     .find(filter)

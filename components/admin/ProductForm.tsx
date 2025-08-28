@@ -7,7 +7,7 @@ import {
   DEPARTMENTS,
   getCategories,
   getSubCategories,
-  getSpecFields, // dynamic spec fields from your taxonomy
+  getSpecFields,
 } from "@/lib/taxonomy";
 
 type Props = {
@@ -28,9 +28,19 @@ const toNum = (v: unknown, d = 0) => {
   return d;
 };
 
+const slugify = (s: string) =>
+  s
+    .toLowerCase()
+    .trim()
+    .replace(/['"]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+
 export default function ProductForm({ initial, onSaved, mode }: Props) {
   // basics
-  const [title, setTitle] = useState(initial?.title || initial?.name || "");
+  const [title, setTitle] = useState(
+    initial?.title || (initial as any)?.name || ""
+  );
   const [department, setDepartment] = useState<Department>(
     (initial?.department as Department) || "jewelry"
   );
@@ -139,40 +149,38 @@ export default function ProductForm({ initial, onSaved, mode }: Props) {
     return () => URL.revokeObjectURL(url);
   }, [imageFile]);
 
-  // Build multipart FormData (upload-only; NO URL fields)
-  function buildFormData() {
+  // ---------- NEW: helpers for submit flow ----------
+  async function uploadImageIfNeeded(): Promise<string | null> {
+    if (!imageFile) return imageRemoved ? null : existingImage || null;
     const fd = new FormData();
-    fd.append("title", title);
-    fd.append("name", title); // API compat
-    fd.append("department", department);
-    if (category) fd.append("category", category);
-    if (subCategory) {
-      fd.append("subCategory", subCategory);
-      fd.append("subcategory", subCategory); // tolerate legacy casing
-    }
-    fd.append("unitPrice", String(toNum(unitPrice)));
-    fd.append("price", String(toNum(unitPrice)));
-    if (description) fd.append("description", description);
+    fd.append("image", imageFile);
+    const res = await fetch("/api/admin/products/upload", {
+      method: "POST",
+      body: fd,
+    });
+    const data = await res.json();
+    if (!res.ok || !data?.ok)
+      throw new Error(data?.error || "Image upload failed");
+    return String(data.url);
+  }
 
-    // arrays/objects
-    fd.append(
-      "audience",
-      JSON.stringify(audience.length ? audience : ["unisex"])
-    );
-    if (Object.keys(specs || {}).length) {
-      fd.append("specs", JSON.stringify(specs));
-    }
-
-    // file upload (cover image only)
-    if (imageFile) {
-      fd.append("image", imageFile);
-    }
-
-    // image remove flag (edit)
-    if (mode === "edit") {
-      fd.append("imageRemoved", imageRemoved ? "true" : "false");
-    }
-    return fd;
+  function buildPayload(imageUrl: string | null) {
+    return {
+      name: title,
+      slug: (initial as any)?.slug
+        ? String((initial as any).slug)
+        : slugify(title),
+      price: toNum(unitPrice),
+      salePrice: null,
+      category: category || undefined,
+      subcategory: subCategory || null, // migrate.ts accepts 'subcategory' and maps to 'subCategory'
+      imageUrl,
+      archived: false,
+      specs: specs || {},
+      audience: audience.length ? audience : ["unisex"],
+      description,
+      department,
+    };
   }
 
   async function onSubmit(e: React.FormEvent) {
@@ -180,16 +188,54 @@ export default function ProductForm({ initial, onSaved, mode }: Props) {
     setSaving(true);
     setErr("");
     try {
-      const endpoint =
-        mode === "create"
-          ? "/api/admin/products"
-          : `/api/admin/products/${initial?._id}`;
-      const method = mode === "create" ? "POST" : "PUT";
-      const body = buildFormData();
-      const res = await fetch(endpoint, { method, body });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Save failed");
-      onSaved?.(data.product);
+      // 1) handle image
+      const finalImageUrl = await uploadImageIfNeeded();
+
+      if (mode === "create") {
+        // 2a) CREATE via migrate (JSON)
+        const payload = buildPayload(finalImageUrl);
+        const res = await fetch("/api/admin/products/migrate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        const data = await res.json();
+        if (!res.ok || !data?.ok) throw new Error(data?.error || "Save failed");
+        onSaved?.(data.product);
+      } else {
+        // 2b) EDIT via PUT to /[id] (JSON)
+        const id =
+          (initial as any)?._id ||
+          (initial as any)?.id ||
+          (initial as any)?.slug;
+        if (!id) throw new Error("Missing product id");
+        const payload = {
+          title,
+          name: title,
+          slug: (initial as any)?.slug || slugify(title),
+          price: toNum(unitPrice),
+          unitPrice: toNum(unitPrice),
+          category: category || undefined,
+          subCategory: subCategory || undefined,
+          imageUrl: imageRemoved ? null : finalImageUrl,
+          audience: audience.length ? audience : ["unisex"],
+          specs: specs || {},
+          description,
+          department,
+        };
+        const res = await fetch(
+          `/api/admin/products/${encodeURIComponent(id)}`,
+          {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          }
+        );
+        const data = await res.json();
+        if (!res.ok || data?.ok === false)
+          throw new Error(data?.error || "Save failed");
+        onSaved?.(data.product);
+      }
     } catch (e: any) {
       setErr(e?.message || "Save failed");
     } finally {
@@ -302,7 +348,7 @@ export default function ProductForm({ initial, onSaved, mode }: Props) {
         </div>
       </div>
 
-      {/* Specifications (collapsible to reduce clutter) */}
+      {/* Specifications (collapsible) */}
       {specFields.length > 0 && (
         <details className="rounded border border-[var(--bg-nav)]">
           <summary className="cursor-pointer px-3 py-2 bg-[var(--bg-nav)]">

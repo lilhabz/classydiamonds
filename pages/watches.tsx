@@ -1,14 +1,15 @@
 // 📄 pages/watches.tsx – Watches Page using the Same Card Spec as Jewelry 💎🕰️
-
 "use client";
 
 import Image from "next/image";
 import Head from "next/head";
 import { useCart } from "@/context/CartContext";
 import { GetServerSideProps } from "next";
-import clientPromise from "@/lib/mongodb";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import ProductCard from "@/components/ProductCard";
+
+// ✅ unified data source
+import { listProducts } from "@/lib/products";
 
 export type ProductType = {
   id: string;
@@ -109,24 +110,32 @@ export default function WatchesPage({ products }: WatchesProps) {
   );
 }
 
-/* 🧠 Server-side data loader — mirrors Jewelry mapping */
+/* 🧠 Server-side data loader — unified via lib/products */
 export const getServerSideProps: GetServerSideProps<
   WatchesProps
 > = async () => {
-  const client = await clientPromise;
-  const productsRaw = await client
-    .db()
-    .collection("products")
-    .find({ category: { $in: ["watches", "watch"] } }) // include "watch" just in case
-    .toArray();
+  // Pull all watch docs, regardless of legacy field names
+  const rows = await listProducts(
+    {
+      $or: [
+        { department: "watch" }, // new
+        { category: "watch" }, // legacy singular
+        { category: "watches" }, // legacy plural
+      ],
+    },
+    { sort: { createdAt: -1 }, limit: 2000 }
+  );
 
-  const products: ProductType[] = productsRaw.map((p: any) => ({
-    id: p._id.toString(),
+  const products: ProductType[] = rows.map((p: any) => ({
+    id: String(p._id),
     slug: p.slug,
-    name: p.name,
-    price: p.price,
-    salePrice: p.salePrice ?? null,
-    image: p.imageUrl || p.image,
+    name: p.title || p.name || "",
+    price: p.price ?? p.unitPrice ?? 0,
+    salePrice: p.salePrice ?? p.discountedPrice ?? null,
+    image:
+      p.imageUrl ||
+      (Array.isArray(p.images) && p.images.length ? p.images[0] : "") ||
+      "",
     category: String(p.category || "watches").toLowerCase(),
   }));
 

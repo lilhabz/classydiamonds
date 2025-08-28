@@ -7,12 +7,14 @@ import Head from "next/head";
 import { useCart } from "@/context/CartContext";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/router";
-import clientPromise from "@/lib/mongodb";
 import { GetServerSideProps } from "next";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import CategoryGrid, { CategoryItem } from "@/components/CategoryGrid";
 import FiltersSidebar from "@/components/FiltersSidebar";
 import ProductCard from "@/components/ProductCard";
+
+// 🔁 unified data source
+import { listProducts } from "@/lib/products";
 
 export type ProductType = {
   id: string;
@@ -23,10 +25,10 @@ export type ProductType = {
   image: string;
   category: string; // "rings" | "earrings" | "bracelets" | "necklaces"
   subcategory?: string; // style (halo, studs, tennis, pendants, engagement, wedding-bands)
-  metal?: string; // "yellow-gold" | "platinum" | ...
-  stone?: string; // "diamond" | "lab-grown" | "moissanite" | ...
-  shape?: string; // "round" | "oval" | ...
-  carat?: number | null; // e.g., 1.25
+  metal?: string;
+  stone?: string;
+  shape?: string;
+  carat?: number | null;
   gender?: "unisex" | "him" | "her";
   description?: string;
 };
@@ -333,7 +335,6 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
           title="Shop by Category"
           fullBleedDesktop
           desktopCols={4}
-          // 👉 send users to real category pages like /category/rings
           routeTo="/category"
         />
       </section>
@@ -464,24 +465,22 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
 
 /* ----------------------------- Server-side data ---------------------------- */
 export const getServerSideProps: GetServerSideProps = async () => {
-  const client = await clientPromise;
+  // ✅ Unified source of truth
+  const rows = await listProducts({}, { sort: { createdAt: -1 }, limit: 2000 });
 
-  // Fetch all products; client filters by category/subcat + facets
-  const productsRaw = await client
-    .db()
-    .collection("products")
-    .find({})
-    .toArray();
-
-  const products: ProductType[] = productsRaw.map((p: any) => ({
-    id: p._id.toString(),
+  // Map to this page's lightweight shape (preserve your existing keys)
+  const products: ProductType[] = rows.map((p: any) => ({
+    id: String(p._id),
     slug: p.slug,
-    name: p.name,
-    price: p.price,
-    salePrice: p.salePrice ?? null,
-    image: p.imageUrl || p.image,
+    name: p.title || p.name || "",
+    price: p.price ?? p.unitPrice ?? 0,
+    salePrice: p.salePrice ?? p.discountedPrice ?? null,
+    image:
+      p.imageUrl ||
+      (Array.isArray(p.images) && p.images.length ? p.images[0] : "") ||
+      "",
     category: (p.category || "").toLowerCase(),
-    subcategory: (p.subcategory ?? p.subCategory ?? "").toLowerCase(),
+    subcategory: (p.subCategory ?? p.subcategory ?? "").toLowerCase(),
     metal: (p.metal || "").toLowerCase(),
     stone: (p.stone || "").toLowerCase(),
     shape: (p.shape || "").toLowerCase(),

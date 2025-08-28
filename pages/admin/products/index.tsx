@@ -63,12 +63,13 @@ function pickImage(p: AdminProduct): string {
     p.images?.[0] ||
     (p.image as string) ||
     (p.imageUrl as string) ||
-    "/gray-placeholder.jpg";
+    "/products/gray-placeholder.jpg"; // fixed path
   return thumb;
 }
 
 type ApiProduct = {
-  _id: string;
+  _id?: string;
+  id?: string;
   name?: string;
   slug?: string | null;
   description?: string | null;
@@ -84,7 +85,8 @@ type ApiProduct = {
   createdAt?: string | null;
   department?: "jewelry" | "watch" | null;
   skuNumber?: number | null;
-  isLegacy: boolean;
+  isLegacy?: boolean;
+  source?: "db" | "legacy";
 };
 
 function adaptApiProduct(p: ApiProduct): AdminProduct {
@@ -94,9 +96,13 @@ function adaptApiProduct(p: ApiProduct): AdminProduct {
     ? [String(p.audience)]
     : ["unisex"];
 
+  const source: "db" | "legacy" =
+    (p.source as any) ?? ((p as any).isLegacy ? "legacy" : "db");
+
   return {
-    _id: p._id,
-    slug: String(p.slug ?? p._id),
+    _id: (p._id as string) || undefined,
+    id: (p.id as string) || undefined,
+    slug: String(p.slug ?? p._id ?? p.id ?? ""),
     name: p.name ?? undefined,
     title: p.name ?? undefined,
     description: p.description ?? undefined,
@@ -111,7 +117,7 @@ function adaptApiProduct(p: ApiProduct): AdminProduct {
     images: null,
     audience: audienceArray,
     specs: p.specs ?? {},
-    source: p.isLegacy ? "legacy" : "db",
+    source,
     archived: !!p.archived,
     createdAt: p.createdAt ?? undefined,
     department: (p.department as any) ?? undefined,
@@ -147,17 +153,13 @@ export default function AdminProductsList() {
       try {
         setLoading(true);
         setErr("");
-        // 🔑 includeLegacy=1 returns both new + legacy
         const res = await fetch("/api/admin/products?includeLegacy=1");
         const data = await res.json();
         if (!res.ok || !data?.ok)
           throw new Error(data?.error || "Failed to load products");
 
-        const list = Array.isArray(data.products) ? data.products : [];
-        // 🔄 normalize to your AdminProduct shape
-        const normalized: AdminProduct[] = list.map((p: ApiProduct) =>
-          adaptApiProduct(p)
-        );
+        const list: ApiProduct[] = Array.isArray(data.items) ? data.items : [];
+        const normalized: AdminProduct[] = list.map(adaptApiProduct);
         setAllItems(normalized);
         setPage(1);
       } catch (e: any) {
@@ -299,17 +301,25 @@ export default function AdminProductsList() {
       const data = await res.json();
       if (!res.ok || !data?.ok)
         throw new Error(data?.error || "Migration failed");
-      const reload = await fetch("/api/admin/products").then((r) => r.json());
-      setAllItems(
-        Array.isArray(reload.items) ? (reload.items as AdminProduct[]) : []
+
+      // 🔄 Reload from API (reads both collections) and normalize
+      const reload = await fetch("/api/admin/products?includeLegacy=1").then(
+        (r) => r.json()
       );
+      const reList: ApiProduct[] = Array.isArray(reload.items)
+        ? reload.items
+        : [];
+      setAllItems(reList.map(adaptApiProduct));
+
       alert(`Migrated "${p.name ?? p.title}" into DB.`);
     } catch (e: any) {
       alert("❌ " + (e?.message || "Migration failed"));
     }
   }
 
-  if (status === "loading") return <div className="p-6">Checking access…</div>;
+  const { status: authStatus } = useSession();
+  if (authStatus === "loading")
+    return <div className="p-6">Checking access…</div>;
   if (!session?.user?.isAdmin)
     return <div className="p-6 text-red-300">❌ Unauthorized</div>;
 
@@ -412,7 +422,7 @@ export default function AdminProductsList() {
         </select>
       </div>
 
-      {/* Spec filters dropdown for less clutter */}
+      {/* Spec filters dropdown */}
       {specFields.length > 0 && (
         <div className="mb-4">
           <details className="rounded border border-[var(--bg-nav)]">

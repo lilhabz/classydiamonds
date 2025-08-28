@@ -3,14 +3,23 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../../auth/[...nextauth]";
 import { ObjectId } from "mongodb";
-import { getDb } from "@/lib/products";
+import { getDb } from "@/lib/mongodb";
+import formidable from "formidable";
+import { v2 as cloudinary } from "cloudinary";
 
-const pickCatalogName =
+export const config = { api: { bodyParser: false } };
+
+const PRIMARY_COLLECTION =
   process.env.PRODUCTS_COLLECTION ||
   process.env.NEXT_PUBLIC_PRODUCTS_COLLECTION ||
   "products";
 
-/** Admin gate */
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME as string,
+  api_key: process.env.CLOUDINARY_API_KEY as string,
+  api_secret: process.env.CLOUDINARY_API_SECRET as string,
+});
+
 async function requireAdmin(req: NextApiRequest, res: NextApiResponse) {
   const session: any = await getServerSession(req, res, authOptions as any);
   if (!session?.user?.isAdmin) {
@@ -20,7 +29,6 @@ async function requireAdmin(req: NextApiRequest, res: NextApiResponse) {
   return session as any;
 }
 
-/** Build filter that matches string _id or ObjectId */
 function makeIdFilter(idParam: string | string[] | undefined) {
   const raw =
     typeof idParam === "string"
@@ -36,6 +44,54 @@ function makeIdFilter(idParam: string | string[] | undefined) {
   return ors.length === 1 ? ors[0] : { $or: ors };
 }
 
+function parseForm(req: NextApiRequest) {
+  const form = formidable({
+    multiples: false,
+    keepExtensions: true,
+    maxFileSize: 25 * 1024 * 1024,
+  });
+  return new Promise<{ fields: formidable.Fields; files: formidable.Files }>(
+    (resolve, reject) => {
+      form.parse(req, (err, fields, files) =>
+        err ? reject(err) : resolve({ fields, files })
+      );
+    }
+  );
+}
+
+const s = (v: any) => (typeof v === "string" ? v : v == null ? "" : String(v));
+const n = (v: any) => {
+  if (v == null || v === "") return undefined;
+  const num =
+    typeof v === "number" ? v : parseFloat(String(v).replace(/[^0-9.\-]/g, ""));
+  return Number.isFinite(num) ? num : undefined;
+};
+function toBool(v: any) {
+  const x = String(v ?? "").toLowerCase();
+  return x === "true" || x === "1" || x === "yes";
+}
+function toAudience(v: any): string[] {
+  if (Array.isArray(v)) return v.map(String);
+  if (typeof v === "string") {
+    try {
+      const parsed = JSON.parse(v);
+      if (Array.isArray(parsed)) return parsed.map(String);
+    } catch {}
+    return [v];
+  }
+  return ["unisex"];
+}
+function toSpecs(v: any): Record<string, any> {
+  if (!v) return {};
+  if (typeof v === "object") return v;
+  try {
+    const parsed = JSON.parse(String(v));
+    return typeof parsed === "object" && parsed ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
@@ -48,7 +104,9 @@ export default async function handler(
   if (!idFilter)
     return res.status(400).json({ ok: false, error: "Invalid id" });
 
-  const collectionsToQuery = Array.from(new Set([pickCatalogName, "products"]));
+  const collectionsToQuery = Array.from(
+    new Set([PRIMARY_COLLECTION, "products"])
+  );
 
   if (req.method === "GET") {
     for (const colName of collectionsToQuery) {
@@ -61,44 +119,109 @@ export default async function handler(
         }
       } catch {}
     }
-    // legacy fallback
     try {
       const legacy = await db
         .collection("legacyProducts")
         .findOne(idFilter as any);
       if (legacy) {
-        return res
-          .status(200)
-          .json({
-            ok: true,
-            product: legacy,
-            note: "Served from legacyProducts",
-          });
+        return res.status(200).json({
+          ok: true,
+          product: legacy,
+          note: "Served from legacyProducts",
+        });
       }
     } catch {}
     return res.status(404).json({ ok: false, error: "Product not found" });
   }
 
   if (req.method === "PUT") {
-    const update = { ...(req.body ?? {}) };
-    if ("_id" in update) delete (update as any)._id;
+    try {
+      const { fields, files } = await parseForm(req);
 
-    for (const colName of collectionsToQuery) {
-      try {
-        const { value } = await db
-          .collection(colName)
-          .findOneAndUpdate(
-            idFilter as any,
-            { $set: { ...update, updatedAt: new Date() } },
-            { returnDocument: "after" }
-          );
-        if (value)
-          return res
-            .status(200)
-            .json({ ok: true, product: value, collection: colName });
-      } catch {}
+      // Build update from fields (mirror ProductForm)
+      const patch: any = {
+        updatedAt: new Date(),
+      };
+
+      if ("title" in fields || "name" in fields) {
+        const title = s(fields.title ?? fields.name);
+        if (title) {
+          patch.title = title;
+          patch.name = title;
+        }
+      }
+      if ("department" in fields) {
+        const d = s(fields.department);
+        if (d === "watch" || d === "jewelry") patch.department = d;
+      }
+      if ("category" in fields)
+        patch.category = s(fields.category) || undefined;
+      if ("subCategory" in fields || "subcategory" in fields)
+        patch.subCategory = s(fields.subCategory ?? fields.subcategory) || null;
+
+      if ("unitPrice" in fields || "price" in fields) {
+        const price = n(fields.unitPrice ?? fields.price);
+        if (price != null) {
+          patch.price = price;
+          patch.unitPrice = price;
+        }
+      }
+      if ("salePrice" in fields) {
+        patch.salePrice =
+          fields.salePrice == null ? null : n(fields.salePrice) ?? null;
+      }
+      if ("description" in fields) {
+        patch.description = s(fields.description);
+      }
+      if ("archived" in fields) {
+        patch.archived = toBool(fields.archived);
+      }
+      if ("audience" in fields) {
+        patch.audience = toAudience(fields.audience);
+      }
+      if ("specs" in fields) {
+        patch.specs = toSpecs(fields.specs);
+      }
+
+      // Image handling
+      const file: any = (files as any)?.image;
+      const imageRemoved = toBool(fields.imageRemoved);
+      if (imageRemoved) {
+        patch.imageUrl = null;
+        patch.images = [];
+      } else if (file?.filepath) {
+        const upload = await cloudinary.uploader.upload(file.filepath, {
+          folder: "classy-products",
+          overwrite: true,
+          resource_type: "image",
+        });
+        patch.imageUrl = upload.secure_url;
+        patch.images = [upload.secure_url];
+      }
+
+      for (const colName of collectionsToQuery) {
+        try {
+          const { value } = await db
+            .collection(colName)
+            .findOneAndUpdate(
+              idFilter as any,
+              { $set: patch },
+              { returnDocument: "after" }
+            );
+          if (value) {
+            return res
+              .status(200)
+              .json({ ok: true, product: value, collection: colName });
+          }
+        } catch {}
+      }
+      return res.status(404).json({ ok: false, error: "Product not found" });
+    } catch (e: any) {
+      console.error("update error:", e);
+      return res
+        .status(500)
+        .json({ ok: false, error: e?.message || "Update failed" });
     }
-    return res.status(404).json({ ok: false, error: "Product not found" });
   }
 
   if (req.method === "DELETE") {

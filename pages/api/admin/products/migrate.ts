@@ -2,10 +2,23 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../../auth/[...nextauth]";
-import { getDb } from "@/lib/products";
+import { getDb } from "@/lib/mongodb"; // ✅ unified DB helper
 
 type Ok = { ok: true; productId: string; product?: any };
 type Err = { ok: false; error: string };
+
+// ✅ single source of truth: PRODUCTS_COLLECTION → NEXT_PUBLIC_PRODUCTS_COLLECTION → 'products'
+const PRIMARY_COLLECTION =
+  process.env.PRODUCTS_COLLECTION ||
+  process.env.NEXT_PUBLIC_PRODUCTS_COLLECTION ||
+  "products";
+
+const toNum = (v: any, d = 0) => {
+  if (v == null || v === "") return d;
+  if (typeof v === "number") return Number.isFinite(v) ? v : d;
+  const n = parseFloat(String(v).replace(/[^0-9.\-]/g, ""));
+  return Number.isFinite(n) ? n : d;
+};
 
 export default async function handler(
   req: NextApiRequest,
@@ -34,6 +47,9 @@ export default async function handler(
     archived = false,
     specs = {},
     audience = ["unisex"],
+    description = "",
+    department, // optional; if provided, keep it
+    images, // optional array
   } = req.body || {};
 
   if (!name || !slug) {
@@ -44,27 +60,38 @@ export default async function handler(
 
   try {
     const db = await getDb();
-    const products = db.collection("products");
+    const products = db.collection(PRIMARY_COLLECTION);
 
-    // Optional: if a product with this slug exists, update instead of inserting
-    const existing = await products.findOne({ slug });
+    // Normalize payload to match the rest of the app
+    const docBase = {
+      name: String(name),
+      title: String(name),
+      slug: String(slug),
+      price: toNum(price, 0),
+      salePrice: salePrice == null ? null : toNum(salePrice, 0),
+      category: category ? String(category) : undefined,
+      subCategory: subcategory ? String(subcategory) : null,
+      imageUrl: imageUrl ? String(imageUrl) : null,
+      images: Array.isArray(images) ? images.map(String) : undefined,
+      archived: !!archived,
+      specs: specs && typeof specs === "object" ? specs : {},
+      audience: Array.isArray(audience)
+        ? audience.map(String)
+        : [String(audience)],
+      description: String(description || ""),
+      department:
+        department && (department === "watch" || department === "jewelry")
+          ? department
+          : undefined,
+    };
+
+    // If a product with this slug exists in PRIMARY, update; otherwise insert
+    const existing = await products.findOne({ slug: docBase.slug });
     if (existing) {
       const { value } = await products.findOneAndUpdate(
         { _id: existing._id },
         {
-          $set: {
-            name,
-            slug,
-            price: Number(price ?? 0),
-            salePrice: salePrice == null ? null : Number(salePrice),
-            category,
-            subCategory: subcategory,
-            imageUrl,
-            archived: !!archived,
-            specs: specs || {},
-            audience: Array.isArray(audience) ? audience : [String(audience)],
-            updatedAt: new Date(),
-          },
+          $set: { ...docBase, updatedAt: new Date() },
           $setOnInsert: { createdAt: new Date() },
         },
         { returnDocument: "after", upsert: true }
@@ -75,30 +102,19 @@ export default async function handler(
         .json({ ok: true, productId: String(value?._id), product: value });
     }
 
-    // Insert new
-    const doc = {
-      name,
-      slug,
-      price: Number(price ?? 0),
-      salePrice: salePrice == null ? null : Number(salePrice),
-      category,
-      subCategory: subcategory,
-      imageUrl,
-      archived: !!archived,
-      specs: specs || {},
-      audience: Array.isArray(audience) ? audience : [String(audience)],
-      createdAt: new Date(),
-      updatedAt: new Date(),
+    const now = new Date();
+    const insertDoc = {
+      ...docBase,
+      createdAt: now,
+      updatedAt: now,
     };
 
-    const { insertedId } = await products.insertOne(doc);
-    return res
-      .status(200)
-      .json({
-        ok: true,
-        productId: String(insertedId),
-        product: { ...doc, _id: insertedId },
-      });
+    const { insertedId } = await products.insertOne(insertDoc);
+    return res.status(200).json({
+      ok: true,
+      productId: String(insertedId),
+      product: { ...insertDoc, _id: insertedId },
+    });
   } catch (e: any) {
     console.error("migrate error:", e);
     return res
