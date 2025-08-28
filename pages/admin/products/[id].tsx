@@ -56,9 +56,173 @@ export default function EditProductPage() {
     ? URL.createObjectURL(imageFile)
     : imageUrl || PLACEHOLDER;
 
-  // Spec values + hidden legacy keys preserved
   const [specValues, setSpecValues] = useState<Record<string, string>>({});
   const hiddenSpecsRef = useRef<Record<string, string>>({});
+
+  // ----- dropdown options (same as new.tsx) -----
+  const METAL_OPTIONS = [
+    "14k Yellow Gold",
+    "14k White Gold",
+    "14k Rose Gold",
+    "18k Yellow Gold",
+    "18k White Gold",
+    "18k Rose Gold",
+    "Platinum",
+    "Sterling Silver",
+    "Two-Tone",
+    "Titanium",
+    "Tungsten",
+    "Stainless Steel",
+  ];
+  const STONE_OPTIONS = [
+    "Diamond",
+    "Lab Diamond",
+    "Moissanite",
+    "Sapphire",
+    "Ruby",
+    "Emerald",
+    "Pearl",
+    "Amethyst",
+    "Aquamarine",
+    "Morganite",
+    "Topaz",
+    "Garnet",
+    "Opal",
+    "Tanzanite",
+    "Citrine",
+    "Peridot",
+    "No Stone",
+  ];
+  const COLOR_OPTIONS = [
+    "D",
+    "E",
+    "F",
+    "G",
+    "H",
+    "I",
+    "J",
+    "K",
+    "L",
+    "M",
+    "N",
+    "O–Z",
+  ];
+  const CLARITY_OPTIONS = [
+    "FL",
+    "IF",
+    "VVS1",
+    "VVS2",
+    "VS1",
+    "VS2",
+    "SI1",
+    "SI2",
+    "I1",
+    "I2",
+  ];
+  const CUT_OPTIONS = ["Excellent", "Very Good", "Good", "Fair"];
+  const SHAPE_OPTIONS = [
+    "Round",
+    "Oval",
+    "Cushion",
+    "Princess",
+    "Emerald",
+    "Radiant",
+    "Pear",
+    "Marquise",
+    "Asscher",
+    "Heart",
+  ];
+  const STYLE_OPTIONS = [
+    "Solitaire",
+    "Halo",
+    "Three-Stone",
+    "Tennis",
+    "Hoop",
+    "Stud",
+    "Pendant",
+    "Bypass",
+    "Vintage",
+    "Modern",
+  ];
+  const BACK_TYPE_OPTIONS = [
+    "Screw Back",
+    "Push Back",
+    "Latch Back",
+    "Lever Back",
+    "Omega Back",
+  ];
+  const MOVEMENT_OPTIONS = ["Automatic", "Manual", "Quartz"];
+  const CASE_MATERIAL_OPTIONS = [
+    "Stainless Steel",
+    "Gold",
+    "Titanium",
+    "Ceramic",
+    "Two-Tone",
+  ];
+  const BAND_MATERIAL_OPTIONS = [
+    "Stainless Steel",
+    "Gold",
+    "Leather",
+    "Rubber",
+    "NATO",
+    "Two-Tone",
+  ];
+  const DIAL_COLOR_OPTIONS = [
+    "Black",
+    "White",
+    "Blue",
+    "Green",
+    "Silver",
+    "Champagne",
+    "Mother of Pearl",
+  ];
+  const CRYSTAL_OPTIONS = ["Sapphire", "Mineral", "Acrylic"];
+  const CONDITION_OPTIONS = [
+    "New",
+    "Like New",
+    "Excellent",
+    "Very Good",
+    "Good",
+    "Fair",
+  ];
+  const BOX_PAPERS_OPTIONS = ["Yes", "No"];
+
+  function getDropdownOptionsForKey(key: string): string[] | null {
+    switch (key) {
+      case "metal":
+        return METAL_OPTIONS;
+      case "stone":
+        return STONE_OPTIONS;
+      case "color":
+        return COLOR_OPTIONS;
+      case "clarity":
+        return CLARITY_OPTIONS;
+      case "cut":
+        return CUT_OPTIONS;
+      case "shape":
+        return SHAPE_OPTIONS;
+      case "style":
+        return STYLE_OPTIONS;
+      case "back-type":
+        return BACK_TYPE_OPTIONS;
+      case "movement":
+        return MOVEMENT_OPTIONS;
+      case "case-material":
+        return CASE_MATERIAL_OPTIONS;
+      case "band-material":
+        return BAND_MATERIAL_OPTIONS;
+      case "dial-color":
+        return DIAL_COLOR_OPTIONS;
+      case "crystal":
+        return CRYSTAL_OPTIONS;
+      case "condition":
+        return CONDITION_OPTIONS;
+      case "box-papers":
+        return BOX_PAPERS_OPTIONS;
+      default:
+        return null;
+    }
+  }
 
   useEffect(() => {
     if (!id) return;
@@ -107,79 +271,65 @@ export default function EditProductPage() {
     [dept, category]
   );
 
-  // ---------- Spec fields (same as new) ----------
+  // Spec fields (same as new.tsx)
   const specFieldsFor = (d: Department, cat: string): SpecField[] => {
     const c = (cat || "").toLowerCase();
-
     const baseJewelry: SpecField[] = [
-      { key: "metal", label: "Metal", placeholder: "e.g., 14k Yellow Gold" },
-      { key: "stone", label: "Stone", placeholder: "e.g., Natural Diamond" },
+      { key: "metal", label: "Metal" },
+      { key: "stone", label: "Stone" },
       { key: "carat", label: "Carat", placeholder: "e.g., 1.20 ct" },
-      { key: "color", label: "Color", placeholder: "e.g., G" },
-      { key: "clarity", label: "Clarity", placeholder: "e.g., VS2" },
-      { key: "cut", label: "Cut", placeholder: "e.g., Excellent" },
-      { key: "shape", label: "Shape", placeholder: "e.g., Round" },
+      { key: "color", label: "Color" },
+      { key: "clarity", label: "Clarity" },
+      { key: "cut", label: "Cut" },
+      { key: "shape", label: "Shape" },
       { key: "size", label: "Size", placeholder: "e.g., 18 in / 7 in" },
       { key: "width", label: "Width", placeholder: "e.g., 2.0 mm" },
       { key: "length", label: "Length", placeholder: "e.g., 45 mm" },
       { key: "weight", label: "Weight", placeholder: "e.g., 3.8 g" },
       { key: "setting", label: "Setting", placeholder: "e.g., Prong" },
-      { key: "style", label: "Style", placeholder: "e.g., Solitaire" },
+      { key: "style", label: "Style" },
       { key: "certificate", label: "Certificate", placeholder: "e.g., GIA" },
     ];
-
     const ringExtras: SpecField[] = [
       { key: "ring-size", label: "Ring Size", placeholder: "e.g., 6.5" },
       { key: "band-width", label: "Band Width", placeholder: "e.g., 2.0 mm" },
       { key: "stone-size", label: "Stone Size", placeholder: "e.g., 6.8 mm" },
     ];
-
     const braceletPreset: SpecField[] = [
-      { key: "length", label: "Length", placeholder: "e.g., 7 in" },
-      { key: "metal", label: "Metal", placeholder: "e.g., 14k Yellow Gold" },
-      { key: "style", label: "Style", placeholder: "e.g., Tennis" },
-      { key: "weight", label: "Weight", placeholder: "e.g., 5.1 g" },
-      { key: "stone", label: "Stone", placeholder: "e.g., Lab Diamond" },
-      { key: "carat", label: "Carat", placeholder: "e.g., 2.00 ct" },
-      { key: "width", label: "Width", placeholder: "e.g., 3 mm" },
+      { key: "length", label: "Length" },
+      { key: "metal", label: "Metal" },
+      { key: "style", label: "Style" },
+      { key: "weight", label: "Weight" },
+      { key: "stone", label: "Stone" },
+      { key: "carat", label: "Carat" },
+      { key: "width", label: "Width" },
     ];
-
     const necklacePreset: SpecField[] = [
-      { key: "length", label: "Length", placeholder: "e.g., 18 in" },
-      { key: "metal", label: "Metal", placeholder: "e.g., 14k White Gold" },
-      { key: "style", label: "Style", placeholder: "e.g., Pendant" },
-      { key: "pendant", label: "Pendant", placeholder: "e.g., Cross" },
-      { key: "stone", label: "Stone", placeholder: "e.g., Sapphire" },
-      { key: "carat", label: "Carat", placeholder: "e.g., 1.00 ct" },
+      { key: "length", label: "Length" },
+      { key: "metal", label: "Metal" },
+      { key: "style", label: "Style" },
+      { key: "pendant", label: "Pendant" },
+      { key: "stone", label: "Stone" },
+      { key: "carat", label: "Carat" },
     ];
-
     const earringPreset: SpecField[] = [
-      { key: "style", label: "Style", placeholder: "e.g., Stud" },
-      { key: "back-type", label: "Back Type", placeholder: "e.g., Screw Back" },
-      { key: "metal", label: "Metal", placeholder: "e.g., 14k" },
-      { key: "stone", label: "Stone", placeholder: "e.g., Diamond" },
-      { key: "carat", label: "Carat", placeholder: "e.g., 0.50 ct each" },
-      { key: "length", label: "Length", placeholder: "e.g., 10 mm" },
-      { key: "width", label: "Width", placeholder: "e.g., 10 mm" },
+      { key: "style", label: "Style" },
+      { key: "back-type", label: "Back Type" },
+      { key: "metal", label: "Metal" },
+      { key: "stone", label: "Stone" },
+      { key: "carat", label: "Carat" },
+      { key: "length", label: "Length" },
+      { key: "width", label: "Width" },
     ];
-
     const watchFields: SpecField[] = [
-      { key: "brand", label: "Brand", placeholder: "e.g., Rolex" },
-      { key: "model", label: "Model", placeholder: "e.g., Datejust 36" },
-      { key: "movement", label: "Movement", placeholder: "e.g., Automatic" },
+      { key: "brand", label: "Brand" },
+      { key: "model", label: "Model" },
+      { key: "movement", label: "Movement" },
       { key: "case-size", label: "Case Size", placeholder: "e.g., 36 mm" },
-      {
-        key: "case-material",
-        label: "Case Material",
-        placeholder: "e.g., Stainless Steel",
-      },
-      {
-        key: "band-material",
-        label: "Band Material",
-        placeholder: "e.g., Oystersteel",
-      },
-      { key: "dial-color", label: "Dial Color", placeholder: "e.g., Blue" },
-      { key: "crystal", label: "Crystal", placeholder: "e.g., Sapphire" },
+      { key: "case-material", label: "Case Material" },
+      { key: "band-material", label: "Band Material" },
+      { key: "dial-color", label: "Dial Color" },
+      { key: "crystal", label: "Crystal" },
       {
         key: "water-resistance",
         label: "Water Resistance",
@@ -191,10 +341,9 @@ export default function EditProductPage() {
         placeholder: "e.g., 70 h",
       },
       { key: "year", label: "Year", placeholder: "e.g., 2021" },
-      { key: "condition", label: "Condition", placeholder: "e.g., Excellent" },
-      { key: "box-papers", label: "Box/Papers", placeholder: "e.g., Yes" },
+      { key: "condition", label: "Condition" },
+      { key: "box-papers", label: "Box/Papers" },
     ];
-
     if (d === "watch") return watchFields;
     if (c.includes("ring")) return [...ringExtras, ...baseJewelry];
     if (c.includes("bracelet")) return braceletPreset;
@@ -208,7 +357,6 @@ export default function EditProductPage() {
     [dept, category]
   );
 
-  // Prefill visible spec inputs from hidden specs
   useEffect(() => {
     setSpecValues((prev) => {
       const next: Record<string, string> = {};
@@ -246,13 +394,12 @@ export default function EditProductPage() {
       if (resetToPlaceholder) nextImageUrl = PLACEHOLDER;
       else if (imageFile) nextImageUrl = await uploadImage();
 
-      // Visible non-empty specs
+      // merge visible + hidden (keep legacy)
       const visible: Record<string, string> = {};
       for (const f of specFields) {
         const v = (specValues[f.key] ?? "").trim();
         if (v !== "") visible[f.key] = v;
       }
-      // Merge with legacy hidden
       const merged: Record<string, string> = {
         ...hiddenSpecsRef.current,
         ...visible,
@@ -286,7 +433,6 @@ export default function EditProductPage() {
       setResetToPlaceholder(false);
       setImageFile(null);
 
-      // Refresh legacy map from server
       const serverSpecs =
         p.specs && typeof p.specs === "object"
           ? (p.specs as Record<string, any>)
@@ -347,7 +493,7 @@ export default function EditProductPage() {
           onSubmit={onSave}
           className="grid grid-cols-1 md:grid-cols-2 gap-4 border border-[var(--bg-nav)] rounded-xl p-4"
         >
-          {/* Dept & Categories */}
+          {/* Department & Categories */}
           <div className="md:col-span-2 flex flex-wrap items-center gap-2">
             <div className="flex gap-2">
               {DEPARTMENTS.map((d) => (
@@ -457,10 +603,18 @@ export default function EditProductPage() {
             </div>
           </div>
 
-          {/* Button-looking upload + persistent preview + reset */}
+          {/* PREVIEW ABOVE button-looking upload + reset */}
           <div className="md:col-span-2 space-y-2">
             <label className="text-sm font-medium">Product Photo</label>
-            <div className="flex items-center gap-4">
+            <div className="mt-2 flex items-center gap-4">
+              {/* Preview first */}
+              <img
+                src={previewSrc}
+                alt="Preview"
+                className="w-32 h-32 object-cover rounded border"
+              />
+
+              {/* Button-looking upload */}
               <label className="px-4 py-2 rounded bg-blue-600 cursor-pointer inline-block">
                 Upload Image
                 <input
@@ -479,35 +633,75 @@ export default function EditProductPage() {
                 />
                 Reset to placeholder
               </label>
-
-              {/* Persistent preview (never removed) */}
-              <img
-                src={previewSrc}
-                alt="Preview"
-                className="w-32 h-32 object-cover rounded border"
-              />
             </div>
           </div>
 
-          {/* Specifications inside a dropdown; smaller text */}
+          {/* Specifications in <details>; some are dropdowns with options (and Other…) */}
           <details className="md:col-span-2 rounded border border-[var(--bg-nav)]">
             <summary className="cursor-pointer px-3 py-2 bg-[var(--bg-nav)]">
               Specifications
             </summary>
             <div className="p-3 grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-              {specFields.map((f) => (
-                <label key={f.key} className="block">
-                  {f.label}
-                  <input
-                    value={specValues[f.key] ?? ""}
-                    onChange={(e) =>
-                      setSpecValues((s) => ({ ...s, [f.key]: e.target.value }))
-                    }
-                    placeholder={f.placeholder}
-                    className="mt-1 w-full px-3 py-2 rounded bg-[var(--bg-nav)]"
-                  />
-                </label>
-              ))}
+              {specFields.map((f) => {
+                const opts = getDropdownOptionsForKey(f.key);
+                const val = specValues[f.key] ?? "";
+                const isOther = opts && val && !opts.includes(val);
+
+                return (
+                  <div key={f.key} className="space-y-1">
+                    <label className="block">{f.label}</label>
+                    {opts ? (
+                      <>
+                        <select
+                          value={isOther ? "OTHER" : val || ""}
+                          onChange={(e) => {
+                            const v = e.target.value;
+                            if (v === "OTHER") {
+                              setSpecValues((s) => ({ ...s, [f.key]: "" }));
+                            } else {
+                              setSpecValues((s) => ({ ...s, [f.key]: v }));
+                            }
+                          }}
+                          className="w-full px-3 py-2 rounded bg-[var(--bg-nav)]"
+                        >
+                          <option value="">(select)</option>
+                          {opts.map((o) => (
+                            <option key={o} value={o}>
+                              {o}
+                            </option>
+                          ))}
+                          <option value="OTHER">Other…</option>
+                        </select>
+                        {(isOther || (val === "" && "OTHER" === "OTHER")) && (
+                          <input
+                            value={val}
+                            onChange={(e) =>
+                              setSpecValues((s) => ({
+                                ...s,
+                                [f.key]: e.target.value,
+                              }))
+                            }
+                            placeholder={f.placeholder || "Custom"}
+                            className="w-full px-3 py-2 rounded bg-[var(--bg-nav)]"
+                          />
+                        )}
+                      </>
+                    ) : (
+                      <input
+                        value={val}
+                        onChange={(e) =>
+                          setSpecValues((s) => ({
+                            ...s,
+                            [f.key]: e.target.value,
+                          }))
+                        }
+                        placeholder={f.placeholder}
+                        className="w-full px-3 py-2 rounded bg-[var(--bg-nav)]"
+                      />
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </details>
 
