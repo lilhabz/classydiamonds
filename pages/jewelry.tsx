@@ -112,7 +112,7 @@ const CATEGORY_LABELS: Record<CategorySlug, string> = {
 /* ---------------------------------- Page ---------------------------------- */
 export default function JewelryPage({ products }: { products: ProductType[] }) {
   const { addToCart } = useCart();
-  const [visibleCount, setVisibleCount] = useState(8);
+  const [visibleCount, setVisibleCount] = useState(50);
 
   // When null => All Jewelry
   const [activeCategorySlug, setActiveCategorySlug] =
@@ -454,7 +454,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
             {visibleCount < totalProducts && shown.length > 0 && (
               <div className="flex justify-center mt-10">
                 <button
-                  onClick={() => setVisibleCount((v) => v + 4)}
+                  onClick={() => setVisibleCount((v) => v + 50)}
                   className="px-8 py-4 bg-[var(--foreground)] text-[var(--bg-nav)] rounded-full"
                 >
                   Load More
