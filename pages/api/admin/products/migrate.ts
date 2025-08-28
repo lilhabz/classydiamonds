@@ -2,45 +2,107 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../../auth/[...nextauth]";
-import { createDbProduct, AdminProduct } from "@/lib/productAdapter";
+import { getDb } from "@/lib/products";
+
+type Ok = { ok: true; productId: string; product?: any };
+type Err = { ok: false; error: string };
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse
+  res: NextApiResponse<Ok | Err>
 ) {
-  const session = (await getServerSession(req, res, authOptions as any)) as any;
-  if (!session?.user?.isAdmin)
-    return res.status(403).json({ ok: false, error: "Forbidden" });
+  // Auth: admin only
+  const session: any = await getServerSession(req, res, authOptions as any);
+  if (!session?.user?.isAdmin) {
+    return res.status(401).json({ ok: false, error: "Unauthorized" });
+  }
+
   if (req.method !== "POST") {
     res.setHeader("Allow", "POST");
-    return res.status(405).json({ ok: false, error: "Method Not Allowed" });
+    return res.status(405).json({ ok: false, error: "Method not allowed" });
+  }
+
+  // Expect payload from your onMigrate() call
+  const {
+    name,
+    slug,
+    price,
+    salePrice = null,
+    category,
+    subcategory = null,
+    imageUrl = null,
+    archived = false,
+    specs = {},
+    audience = ["unisex"],
+  } = req.body || {};
+
+  if (!name || !slug) {
+    return res
+      .status(400)
+      .json({ ok: false, error: "Missing required fields: name, slug" });
   }
 
   try {
-    const body = req.body as Partial<AdminProduct>;
-    const name = (body.name || "").trim();
-    const category = (body.category || "").trim();
-    const price = Number(body.price);
-    if (!name || !category || !Number.isFinite(price)) {
+    const db = await getDb();
+    const products = db.collection("products");
+
+    // Optional: if a product with this slug exists, update instead of inserting
+    const existing = await products.findOne({ slug });
+    if (existing) {
+      const { value } = await products.findOneAndUpdate(
+        { _id: existing._id },
+        {
+          $set: {
+            name,
+            slug,
+            price: Number(price ?? 0),
+            salePrice: salePrice == null ? null : Number(salePrice),
+            category,
+            subCategory: subcategory,
+            imageUrl,
+            archived: !!archived,
+            specs: specs || {},
+            audience: Array.isArray(audience) ? audience : [String(audience)],
+            updatedAt: new Date(),
+          },
+          $setOnInsert: { createdAt: new Date() },
+        },
+        { returnDocument: "after", upsert: true }
+      );
+
       return res
-        .status(400)
-        .json({ ok: false, error: "name, price, category are required" });
+        .status(200)
+        .json({ ok: true, productId: String(value?._id), product: value });
     }
-    const created = await createDbProduct({
+
+    // Insert new
+    const doc = {
       name,
-      slug: body.slug,
-      price,
-      salePrice: body.salePrice ?? null,
+      slug,
+      price: Number(price ?? 0),
+      salePrice: salePrice == null ? null : Number(salePrice),
       category,
-      subcategory: body.subcategory ?? null,
-      imageUrl: body.imageUrl ?? "/gray-placeholder.jpg",
-      archived: Boolean(body.archived),
-      specs: body.specs ?? {},
-      audience: body.audience ?? ["unisex"],
-    });
-    return res.status(201).json({ ok: true, item: created });
-  } catch (err: any) {
-    console.error("Migrate error", err);
-    return res.status(500).json({ ok: false, error: "Internal Server Error" });
+      subCategory: subcategory,
+      imageUrl,
+      archived: !!archived,
+      specs: specs || {},
+      audience: Array.isArray(audience) ? audience : [String(audience)],
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    const { insertedId } = await products.insertOne(doc);
+    return res
+      .status(200)
+      .json({
+        ok: true,
+        productId: String(insertedId),
+        product: { ...doc, _id: insertedId },
+      });
+  } catch (e: any) {
+    console.error("migrate error:", e);
+    return res
+      .status(500)
+      .json({ ok: false, error: e?.message || "Migration failed" });
   }
 }
