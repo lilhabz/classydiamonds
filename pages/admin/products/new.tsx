@@ -1,5 +1,5 @@
 // /pages/admin/products/new.tsx
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import Head from "next/head";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
@@ -7,7 +7,12 @@ import Breadcrumbs from "@/components/Breadcrumbs";
 import { DEPARTMENTS, getCategories, getSubCategories } from "@/lib/taxonomy";
 
 type Department = "jewelry" | "watch";
-type SpecRow = { key: string; value: string };
+
+type SpecField = {
+  key: string;
+  label: string;
+  placeholder?: string;
+};
 
 export default function NewProductPage() {
   const { data: session, status } = useSession();
@@ -21,13 +26,13 @@ export default function NewProductPage() {
   const [salePrice, setSalePrice] = useState<string>("");
   const [description, setDescription] = useState("");
 
-  // 👇 Bubble buttons for Audience
+  // Audience bubble
   const [audience, setAudience] = useState<string>("unisex");
 
-  // File upload only (with preview)
+  // Image upload only (with preview)
   const [imageFile, setImageFile] = useState<File | null>(null);
 
-  const [specs, setSpecs] = useState<SpecRow[]>([]);
+  // Status
   const [statusMsg, setStatusMsg] = useState<{ ok?: boolean; text?: string }>(
     {}
   );
@@ -37,87 +42,122 @@ export default function NewProductPage() {
     setSubcategory("");
   }, [dept]);
 
-  // ---------- Spec option logic ----------
-  const COMMON_JEWELRY_SPECS = [
-    "metal",
-    "stone",
-    "carat",
-    "color",
-    "clarity",
-    "cut",
-    "shape",
-    "size",
-    "width",
-    "length",
-    "weight",
-    "setting",
-    "style",
-    "certificate",
-  ];
+  // ---------- Spec fields definition (no requirements) ----------
+  const specFieldsFor = (d: Department, cat: string): SpecField[] => {
+    const c = (cat || "").toLowerCase();
 
-  const RING_ONLY = ["ring-size", "band-width", "stone-size"];
+    const baseJewelry: SpecField[] = [
+      { key: "metal", label: "Metal", placeholder: "e.g., 14k Yellow Gold" },
+      { key: "stone", label: "Stone", placeholder: "e.g., Natural Diamond" },
+      { key: "carat", label: "Carat", placeholder: "e.g., 1.20 ct" },
+      { key: "color", label: "Color", placeholder: "e.g., G" },
+      { key: "clarity", label: "Clarity", placeholder: "e.g., VS2" },
+      { key: "cut", label: "Cut", placeholder: "e.g., Excellent" },
+      { key: "shape", label: "Shape", placeholder: "e.g., Round" },
+      { key: "size", label: "Size", placeholder: "e.g., 18 in / 7 in" },
+      { key: "width", label: "Width", placeholder: "e.g., 2.0 mm" },
+      { key: "length", label: "Length", placeholder: "e.g., 45 mm" },
+      { key: "weight", label: "Weight", placeholder: "e.g., 3.8 g" },
+      { key: "setting", label: "Setting", placeholder: "e.g., Prong" },
+      { key: "style", label: "Style", placeholder: "e.g., Solitaire" },
+      { key: "certificate", label: "Certificate", placeholder: "e.g., GIA" },
+    ];
 
-  const COMMON_WATCH_SPECS = [
-    "brand",
-    "model",
-    "movement",
-    "case-size",
-    "case-material",
-    "band-material",
-    "dial-color",
-    "crystal",
-    "water-resistance",
-    "power-reserve",
-    "year",
-    "condition",
-    "box-papers",
-  ];
+    const ringExtras: SpecField[] = [
+      { key: "ring-size", label: "Ring Size", placeholder: "e.g., 6.5" },
+      { key: "band-width", label: "Band Width", placeholder: "e.g., 2.0 mm" },
+      { key: "stone-size", label: "Stone Size", placeholder: "e.g., 6.8 mm" },
+    ];
 
-  const specOptions = useMemo(() => {
-    if (dept === "watch") return COMMON_WATCH_SPECS;
-    const c = (category || "").toLowerCase();
-    if (c.includes("ring")) return [...RING_ONLY, ...COMMON_JEWELRY_SPECS];
-    if (c.includes("bracelet"))
-      return [
-        "length",
-        "metal",
-        "style",
-        "weight",
-        "stone",
-        "carat",
-        "width",
-        ...COMMON_JEWELRY_SPECS,
-      ];
-    if (c.includes("necklace"))
-      return [
-        "length",
-        "metal",
-        "style",
-        "pendant",
-        "stone",
-        "carat",
-        ...COMMON_JEWELRY_SPECS,
-      ];
-    if (c.includes("earring"))
-      return [
-        "style",
-        "back-type",
-        "metal",
-        "stone",
-        "carat",
-        "length",
-        "width",
-        ...COMMON_JEWELRY_SPECS,
-      ];
-    return COMMON_JEWELRY_SPECS;
-  }, [dept, category]);
+    const braceletPreset: SpecField[] = [
+      { key: "length", label: "Length", placeholder: "e.g., 7 in" },
+      { key: "metal", label: "Metal", placeholder: "e.g., 14k Yellow Gold" },
+      { key: "style", label: "Style", placeholder: "e.g., Tennis" },
+      { key: "weight", label: "Weight", placeholder: "e.g., 5.1 g" },
+      { key: "stone", label: "Stone", placeholder: "e.g., Lab Diamond" },
+      { key: "carat", label: "Carat", placeholder: "e.g., 2.00 ct" },
+      { key: "width", label: "Width", placeholder: "e.g., 3 mm" },
+    ];
 
-  const SPEC_KEY_OPTIONS = useMemo(
-    () => Array.from(new Set(specOptions)),
-    [specOptions]
+    const necklacePreset: SpecField[] = [
+      { key: "length", label: "Length", placeholder: "e.g., 18 in" },
+      { key: "metal", label: "Metal", placeholder: "e.g., 14k White Gold" },
+      { key: "style", label: "Style", placeholder: "e.g., Pendant" },
+      { key: "pendant", label: "Pendant", placeholder: "e.g., Cross" },
+      { key: "stone", label: "Stone", placeholder: "e.g., Sapphire" },
+      { key: "carat", label: "Carat", placeholder: "e.g., 1.00 ct" },
+    ];
+
+    const earringPreset: SpecField[] = [
+      { key: "style", label: "Style", placeholder: "e.g., Stud" },
+      { key: "back-type", label: "Back Type", placeholder: "e.g., Screw Back" },
+      { key: "metal", label: "Metal", placeholder: "e.g., 14k" },
+      { key: "stone", label: "Stone", placeholder: "e.g., Diamond" },
+      { key: "carat", label: "Carat", placeholder: "e.g., 0.50 ct each" },
+      { key: "length", label: "Length", placeholder: "e.g., 10 mm" },
+      { key: "width", label: "Width", placeholder: "e.g., 10 mm" },
+    ];
+
+    const watchFields: SpecField[] = [
+      { key: "brand", label: "Brand", placeholder: "e.g., Rolex" },
+      { key: "model", label: "Model", placeholder: "e.g., Datejust 36" },
+      { key: "movement", label: "Movement", placeholder: "e.g., Automatic" },
+      { key: "case-size", label: "Case Size", placeholder: "e.g., 36 mm" },
+      {
+        key: "case-material",
+        label: "Case Material",
+        placeholder: "e.g., Stainless Steel",
+      },
+      {
+        key: "band-material",
+        label: "Band Material",
+        placeholder: "e.g., Oystersteel",
+      },
+      { key: "dial-color", label: "Dial Color", placeholder: "e.g., Blue" },
+      { key: "crystal", label: "Crystal", placeholder: "e.g., Sapphire" },
+      {
+        key: "water-resistance",
+        label: "Water Resistance",
+        placeholder: "e.g., 100 m",
+      },
+      {
+        key: "power-reserve",
+        label: "Power Reserve",
+        placeholder: "e.g., 70 h",
+      },
+      { key: "year", label: "Year", placeholder: "e.g., 2021" },
+      { key: "condition", label: "Condition", placeholder: "e.g., Excellent" },
+      { key: "box-papers", label: "Box/Papers", placeholder: "e.g., Yes" },
+    ];
+
+    if (d === "watch") return watchFields;
+
+    if (c.includes("ring")) return [...ringExtras, ...baseJewelry];
+    if (c.includes("bracelet")) return braceletPreset;
+    if (c.includes("necklace")) return necklacePreset;
+    if (c.includes("earring")) return earringPreset;
+
+    return baseJewelry;
+  };
+
+  const specFields = useMemo(
+    () => specFieldsFor(dept, category),
+    [dept, category]
   );
 
-  // ------- Image upload -------
+  // Store spec values as a simple object keyed by spec key
+  const [specValues, setSpecValues] = useState<Record<string, string>>({});
+
+  // Reset visible spec values when the visible fields change (don’t carry over irrelevant ones)
+  useEffect(() => {
+    setSpecValues((prev) => {
+      const next: Record<string, string> = {};
+      for (const f of specFields) next[f.key] = prev[f.key] ?? "";
+      return next;
+    });
+  }, [specFields]);
+
+  // ---------- Image upload ----------
   async function uploadImage(): Promise<string | null> {
     if (!imageFile) return null;
     const fd = new FormData();
@@ -130,10 +170,9 @@ export default function NewProductPage() {
     if (!res.ok || !json?.ok) throw new Error(json?.error || "Upload failed");
     return json.url as string;
   }
-
   const previewSrc = imageFile ? URL.createObjectURL(imageFile) : "";
 
-  // ------- Submit -------
+  // ---------- Submit ----------
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     try {
@@ -141,6 +180,13 @@ export default function NewProductPage() {
 
       let finalImageUrl: string | null = "/gray-placeholder.jpg";
       if (imageFile) finalImageUrl = await uploadImage();
+
+      // Build specs from filled fields only (skip empties)
+      const specs: Record<string, string> = {};
+      for (const f of specFields) {
+        const v = (specValues[f.key] ?? "").trim();
+        if (v !== "") specs[f.key] = v;
+      }
 
       const body = {
         name,
@@ -151,10 +197,7 @@ export default function NewProductPage() {
         subcategory: subcategory || null,
         imageUrl: finalImageUrl,
         audience: [audience],
-        specs: specs.reduce(
-          (acc, r) => (r.key ? { ...acc, [r.key]: r.value } : acc),
-          {} as Record<string, any>
-        ),
+        specs,
         department: dept,
       };
 
@@ -167,13 +210,15 @@ export default function NewProductPage() {
       if (!res.ok || !json?.ok) throw new Error(json?.error || "Create failed");
 
       setStatusMsg({ ok: true, text: "✅ Product created" });
+
+      // reset (keep dept/category for faster multiple adds)
       setName("");
       setPrice("");
       setSalePrice("");
       setDescription("");
       setSubcategory("");
       setImageFile(null);
-      setSpecs([]);
+      setSpecValues({});
     } catch (err: any) {
       setStatusMsg({
         ok: false,
@@ -270,6 +315,7 @@ export default function NewProductPage() {
           </select>
         </div>
 
+        {/* Name / Desc / Prices */}
         <label>
           Name
           <input
@@ -312,7 +358,7 @@ export default function NewProductPage() {
           />
         </label>
 
-        {/* 👇 Bubble buttons for Audience */}
+        {/* Audience bubbles */}
         <div className="md:col-span-2">
           <label className="block text-sm font-medium mb-1">Audience</label>
           <div className="flex gap-2">
@@ -352,60 +398,20 @@ export default function NewProductPage() {
           </div>
         </div>
 
-        {/* Specs */}
-        <div className="md:col-span-2 rounded border border-[var(--bg-nav)] p-3">
-          <label className="block text-sm font-medium mb-2">
-            Specifications (optional)
-          </label>
-
-          {/* Dropdown to add new spec */}
-          <div className="flex items-center gap-2 mb-3">
-            <select
-              onChange={(e) => {
-                const val = e.target.value;
-                if (!val) return;
-                setSpecs((r) => [...r, { key: val, value: "" }]);
-                e.currentTarget.value = "";
-              }}
-              className="px-3 py-2 rounded bg-[var(--bg-nav)]"
-              defaultValue=""
-            >
-              <option value="">+ Add specification…</option>
-              {SPEC_KEY_OPTIONS.map((k) => (
-                <option key={k} value={k}>
-                  {k}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {specs.map((row, i) => (
-            <div key={i} className="grid grid-cols-12 gap-2 mb-2">
+        {/* Specifications — clean labeled inputs */}
+        <div className="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {specFields.map((f) => (
+            <label key={f.key} className="block">
+              {f.label}
               <input
-                className="col-span-5 px-3 py-2 rounded bg-[var(--bg-nav)]"
-                value={row.key}
-                readOnly
-              />
-              <input
-                className="col-span-6 px-3 py-2 rounded bg-[var(--bg-nav)]"
-                placeholder="Value"
-                value={row.value}
+                value={specValues[f.key] ?? ""}
                 onChange={(e) =>
-                  setSpecs((r) =>
-                    r.map((x, idx) =>
-                      idx === i ? { ...x, value: e.target.value } : x
-                    )
-                  )
+                  setSpecValues((s) => ({ ...s, [f.key]: e.target.value }))
                 }
+                placeholder={f.placeholder}
+                className="mt-1 w-full px-3 py-2 rounded bg-[var(--bg-nav)]"
               />
-              <button
-                type="button"
-                onClick={() => setSpecs((r) => r.filter((_, idx) => idx !== i))}
-                className="col-span-1 px-2 rounded bg-red-600"
-              >
-                ✕
-              </button>
-            </div>
+            </label>
           ))}
         </div>
 

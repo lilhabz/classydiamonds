@@ -1,7 +1,7 @@
 // /pages/admin/products/[id].tsx
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Head from "next/head";
 import Link from "next/link";
 import { useRouter } from "next/router";
@@ -24,6 +24,8 @@ type ProductDoc = {
   department?: Department;
 };
 
+type SpecField = { key: string; label: string; placeholder?: string };
+
 const PLACEHOLDER = "/gray-placeholder.jpg";
 
 export default function EditProductPage() {
@@ -45,20 +47,17 @@ export default function EditProductPage() {
   const [price, setPrice] = useState<string>("");
   const [salePrice, setSalePrice] = useState<string>("");
 
-  // Bubble buttons for Audience (unisex | him | her | kids)
   const [audience, setAudience] = useState<string>("unisex");
 
-  // Image upload (no URL field). We still keep current imageUrl for preview if no new file chosen.
   const [imageUrl, setImageUrl] = useState<string | null>(PLACEHOLDER);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [resetToPlaceholder, setResetToPlaceholder] = useState(false);
 
-  // Specs as rows
-  const [specRows, setSpecRows] = useState<{ key: string; value: string }[]>(
-    []
-  );
+  // Spec values keyed by field key
+  const [specValues, setSpecValues] = useState<Record<string, string>>({});
+  // Keep unknown/legacy keys so we don't lose them
+  const hiddenSpecsRef = useRef<Record<string, string>>({});
 
-  // --- Load product ---
   useEffect(() => {
     if (!id) return;
     (async () => {
@@ -68,7 +67,6 @@ export default function EditProductPage() {
         const json = await res.json();
         if (!res.ok || !json?.ok || !json.product)
           throw new Error(json?.error || "Load failed");
-
         const p: ProductDoc = json.product;
 
         setName(p.name ?? "");
@@ -80,12 +78,13 @@ export default function EditProductPage() {
         setSubcategory(p.subcategory ?? "");
         setAudience(p.audience?.[0] ?? "unisex");
 
-        const specs = p.specs && typeof p.specs === "object" ? p.specs : {};
-        setSpecRows(
-          Object.entries(specs).map(([key, value]) => ({
-            key,
-            value: String(value ?? ""),
-          }))
+        const rawSpecs =
+          p.specs && typeof p.specs === "object"
+            ? (p.specs as Record<string, any>)
+            : {};
+        // Temporarily store specs until we know fields list
+        hiddenSpecsRef.current = Object.fromEntries(
+          Object.entries(rawSpecs).map(([k, v]) => [k, String(v ?? "")])
         );
 
         setImageUrl(p.imageUrl ?? PLACEHOLDER);
@@ -107,83 +106,123 @@ export default function EditProductPage() {
     [dept, category]
   );
 
-  // ---------- Spec option logic (same as new product page) ----------
-  const COMMON_JEWELRY_SPECS = [
-    "metal",
-    "stone",
-    "carat",
-    "color",
-    "clarity",
-    "cut",
-    "shape",
-    "size",
-    "width",
-    "length",
-    "weight",
-    "setting",
-    "style",
-    "certificate",
-  ];
-  const RING_ONLY = ["ring-size", "band-width", "stone-size"];
-  const COMMON_WATCH_SPECS = [
-    "brand",
-    "model",
-    "movement",
-    "case-size",
-    "case-material",
-    "band-material",
-    "dial-color",
-    "crystal",
-    "water-resistance",
-    "power-reserve",
-    "year",
-    "condition",
-    "box-papers",
-  ];
+  // ---------- Spec fields (shared with new) ----------
+  const specFieldsFor = (d: Department, cat: string): SpecField[] => {
+    const c = (cat || "").toLowerCase();
 
-  const specOptions = useMemo(() => {
-    if (dept === "watch") return COMMON_WATCH_SPECS;
-    const c = (category || "").toLowerCase();
-    if (c.includes("ring")) return [...RING_ONLY, ...COMMON_JEWELRY_SPECS];
-    if (c.includes("bracelet"))
-      return [
-        "length",
-        "metal",
-        "style",
-        "weight",
-        "stone",
-        "carat",
-        "width",
-        ...COMMON_JEWELRY_SPECS,
-      ];
-    if (c.includes("necklace"))
-      return [
-        "length",
-        "metal",
-        "style",
-        "pendant",
-        "stone",
-        "carat",
-        ...COMMON_JEWELRY_SPECS,
-      ];
-    if (c.includes("earring"))
-      return [
-        "style",
-        "back-type",
-        "metal",
-        "stone",
-        "carat",
-        "length",
-        "width",
-        ...COMMON_JEWELRY_SPECS,
-      ];
-    return COMMON_JEWELRY_SPECS;
-  }, [dept, category]);
+    const baseJewelry: SpecField[] = [
+      { key: "metal", label: "Metal", placeholder: "e.g., 14k Yellow Gold" },
+      { key: "stone", label: "Stone", placeholder: "e.g., Natural Diamond" },
+      { key: "carat", label: "Carat", placeholder: "e.g., 1.20 ct" },
+      { key: "color", label: "Color", placeholder: "e.g., G" },
+      { key: "clarity", label: "Clarity", placeholder: "e.g., VS2" },
+      { key: "cut", label: "Cut", placeholder: "e.g., Excellent" },
+      { key: "shape", label: "Shape", placeholder: "e.g., Round" },
+      { key: "size", label: "Size", placeholder: "e.g., 18 in / 7 in" },
+      { key: "width", label: "Width", placeholder: "e.g., 2.0 mm" },
+      { key: "length", label: "Length", placeholder: "e.g., 45 mm" },
+      { key: "weight", label: "Weight", placeholder: "e.g., 3.8 g" },
+      { key: "setting", label: "Setting", placeholder: "e.g., Prong" },
+      { key: "style", label: "Style", placeholder: "e.g., Solitaire" },
+      { key: "certificate", label: "Certificate", placeholder: "e.g., GIA" },
+    ];
 
-  const SPEC_KEY_OPTIONS = useMemo(
-    () => Array.from(new Set(specOptions)),
-    [specOptions]
+    const ringExtras: SpecField[] = [
+      { key: "ring-size", label: "Ring Size", placeholder: "e.g., 6.5" },
+      { key: "band-width", label: "Band Width", placeholder: "e.g., 2.0 mm" },
+      { key: "stone-size", label: "Stone Size", placeholder: "e.g., 6.8 mm" },
+    ];
+
+    const braceletPreset: SpecField[] = [
+      { key: "length", label: "Length", placeholder: "e.g., 7 in" },
+      { key: "metal", label: "Metal", placeholder: "e.g., 14k Yellow Gold" },
+      { key: "style", label: "Style", placeholder: "e.g., Tennis" },
+      { key: "weight", label: "Weight", placeholder: "e.g., 5.1 g" },
+      { key: "stone", label: "Stone", placeholder: "e.g., Lab Diamond" },
+      { key: "carat", label: "Carat", placeholder: "e.g., 2.00 ct" },
+      { key: "width", label: "Width", placeholder: "e.g., 3 mm" },
+    ];
+
+    const necklacePreset: SpecField[] = [
+      { key: "length", label: "Length", placeholder: "e.g., 18 in" },
+      { key: "metal", label: "Metal", placeholder: "e.g., 14k White Gold" },
+      { key: "style", label: "Style", placeholder: "e.g., Pendant" },
+      { key: "pendant", label: "Pendant", placeholder: "e.g., Cross" },
+      { key: "stone", label: "Stone", placeholder: "e.g., Sapphire" },
+      { key: "carat", label: "Carat", placeholder: "e.g., 1.00 ct" },
+    ];
+
+    const earringPreset: SpecField[] = [
+      { key: "style", label: "Style", placeholder: "e.g., Stud" },
+      { key: "back-type", label: "Back Type", placeholder: "e.g., Screw Back" },
+      { key: "metal", label: "Metal", placeholder: "e.g., 14k" },
+      { key: "stone", label: "Stone", placeholder: "e.g., Diamond" },
+      { key: "carat", label: "Carat", placeholder: "e.g., 0.50 ct each" },
+      { key: "length", label: "Length", placeholder: "e.g., 10 mm" },
+      { key: "width", label: "Width", placeholder: "e.g., 10 mm" },
+    ];
+
+    const watchFields: SpecField[] = [
+      { key: "brand", label: "Brand", placeholder: "e.g., Rolex" },
+      { key: "model", label: "Model", placeholder: "e.g., Datejust 36" },
+      { key: "movement", label: "Movement", placeholder: "e.g., Automatic" },
+      { key: "case-size", label: "Case Size", placeholder: "e.g., 36 mm" },
+      {
+        key: "case-material",
+        label: "Case Material",
+        placeholder: "e.g., Stainless Steel",
+      },
+      {
+        key: "band-material",
+        label: "Band Material",
+        placeholder: "e.g., Oystersteel",
+      },
+      { key: "dial-color", label: "Dial Color", placeholder: "e.g., Blue" },
+      { key: "crystal", label: "Crystal", placeholder: "e.g., Sapphire" },
+      {
+        key: "water-resistance",
+        label: "Water Resistance",
+        placeholder: "e.g., 100 m",
+      },
+      {
+        key: "power-reserve",
+        label: "Power Reserve",
+        placeholder: "e.g., 70 h",
+      },
+      { key: "year", label: "Year", placeholder: "e.g., 2021" },
+      { key: "condition", label: "Condition", placeholder: "e.g., Excellent" },
+      { key: "box-papers", label: "Box/Papers", placeholder: "e.g., Yes" },
+    ];
+
+    if (d === "watch") return watchFields;
+    if (c.includes("ring")) return [...ringExtras, ...baseJewelry];
+    if (c.includes("bracelet")) return braceletPreset;
+    if (c.includes("necklace")) return necklacePreset;
+    if (c.includes("earring")) return earringPreset;
+    return baseJewelry;
+  };
+
+  const specFields = useMemo(
+    () => specFieldsFor(dept, category),
+    [dept, category]
   );
+
+  // When the visible fields change, prefill from known specs and keep unknown in hidden ref
+  useEffect(() => {
+    setSpecValues((prev) => {
+      const next: Record<string, string> = {};
+      for (const f of specFields) {
+        // if we already have value (user typed), keep it
+        if (prev[f.key] !== undefined) next[f.key] = prev[f.key];
+        else {
+          // else try from hidden (loaded from DB)
+          const v = hiddenSpecsRef.current[f.key];
+          next[f.key] = v ?? "";
+        }
+      }
+      return next;
+    });
+  }, [specFields]);
 
   // ---------- Upload image ----------
   async function uploadImage(): Promise<string | null> {
@@ -215,6 +254,19 @@ export default function EditProductPage() {
       if (resetToPlaceholder) nextImageUrl = PLACEHOLDER;
       else if (imageFile) nextImageUrl = await uploadImage();
 
+      // Build specs: merge visible non-empty + hidden (unknown) untouched
+      const visible: Record<string, string> = {};
+      for (const f of specFields) {
+        const v = (specValues[f.key] ?? "").trim();
+        if (v !== "") visible[f.key] = v;
+      }
+
+      // Include any hidden keys that aren’t overridden by visible
+      const merged: Record<string, string> = {
+        ...hiddenSpecsRef.current,
+        ...visible,
+      };
+
       const body: Record<string, any> = {
         name,
         description,
@@ -222,11 +274,8 @@ export default function EditProductPage() {
         salePrice: salePrice.trim() === "" ? null : Number(salePrice),
         category: category || null,
         subcategory: subcategory || null,
-        audience: [audience], // single-select via bubble
-        specs: specRows.reduce(
-          (acc, r) => (r.key ? { ...acc, [r.key]: r.value } : acc),
-          {} as Record<string, any>
-        ),
+        audience: [audience],
+        specs: merged,
         department: dept,
       };
       if (nextImageUrl !== undefined) body.imageUrl = nextImageUrl;
@@ -245,6 +294,16 @@ export default function EditProductPage() {
       setImageUrl(p.imageUrl ?? PLACEHOLDER);
       setResetToPlaceholder(false);
       setImageFile(null);
+
+      // Refresh hidden with what server saved (keeps everything consistent)
+      const serverSpecs =
+        p.specs && typeof p.specs === "object"
+          ? (p.specs as Record<string, any>)
+          : {};
+      hiddenSpecsRef.current = Object.fromEntries(
+        Object.entries(serverSpecs).map(([k, v]) => [k, String(v ?? "")])
+      );
+      // Keep visible mapping as before (will auto-prefill via effect if fields change)
     } catch (err: any) {
       setStatusMsg({
         ok: false,
@@ -298,7 +357,7 @@ export default function EditProductPage() {
           onSubmit={onSave}
           className="grid grid-cols-1 md:grid-cols-2 gap-4 border border-[var(--bg-nav)] rounded-xl p-4"
         >
-          {/* Department & Categories */}
+          {/* Dept & Categories */}
           <div className="md:col-span-2 flex flex-wrap items-center gap-2">
             <div className="flex gap-2">
               {DEPARTMENTS.map((d) => (
@@ -344,7 +403,7 @@ export default function EditProductPage() {
             </select>
           </div>
 
-          {/* Name / Description / Price */}
+          {/* Name / Desc / Prices */}
           <label>
             Name
             <input
@@ -387,7 +446,7 @@ export default function EditProductPage() {
             />
           </label>
 
-          {/* Audience bubble buttons */}
+          {/* Audience bubbles */}
           <div className="md:col-span-2">
             <label className="block text-sm font-medium mb-1">Audience</label>
             <div className="flex gap-2">
@@ -438,70 +497,20 @@ export default function EditProductPage() {
             </div>
           </div>
 
-          {/* Specifications (always open) */}
-          <div className="md:col-span-2 rounded border border-[var(--bg-nav)] p-3">
-            <label className="block text-sm font-medium mb-2">
-              Specifications (optional)
-            </label>
-
-            {/* Dropdown to add a spec row */}
-            <div className="flex items-center gap-2 mb-3">
-              <select
-                onChange={(e) => {
-                  const val = e.target.value;
-                  if (!val) return;
-                  setSpecRows((r) => [...r, { key: val, value: "" }]);
-                  e.currentTarget.value = "";
-                }}
-                className="px-3 py-2 rounded bg-[var(--bg-nav)]"
-                defaultValue=""
-              >
-                <option value="">+ Add specification…</option>
-                {SPEC_KEY_OPTIONS.map((k) => (
-                  <option key={k} value={k}>
-                    {k}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {specRows.length === 0 && (
-              <p className="text-sm opacity-70">
-                Add rows like: <i>metal</i>, <i>size</i>, <i>carat</i>,{" "}
-                <i>clarity</i>, <i>movement</i>, <i>case-size</i>, etc.
-                (optional)
-              </p>
-            )}
-
-            {specRows.map((row, i) => (
-              <div key={i} className="grid grid-cols-12 gap-2 mb-2">
+          {/* Specifications — clean labeled inputs */}
+          <div className="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {specFields.map((f) => (
+              <label key={f.key} className="block">
+                {f.label}
                 <input
-                  className="col-span-5 px-3 py-2 rounded bg-[var(--bg-nav)]"
-                  value={row.key}
-                  readOnly
-                />
-                <input
-                  className="col-span-6 px-3 py-2 rounded bg-[var(--bg-nav)]"
-                  placeholder="Value"
-                  value={row.value}
+                  value={specValues[f.key] ?? ""}
                   onChange={(e) =>
-                    setSpecRows((r) =>
-                      r.map((x, idx) =>
-                        idx === i ? { ...x, value: e.target.value } : x
-                      )
-                    )
+                    setSpecValues((s) => ({ ...s, [f.key]: e.target.value }))
                   }
+                  placeholder={f.placeholder}
+                  className="mt-1 w-full px-3 py-2 rounded bg-[var(--bg-nav)]"
                 />
-                <button
-                  type="button"
-                  onClick={() =>
-                    setSpecRows((r) => r.filter((_, idx) => idx !== i))
-                  }
-                  className="col-span-1 px-2 rounded bg-red-600"
-                >
-                  ✕
-                </button>
-              </div>
+              </label>
             ))}
           </div>
 
