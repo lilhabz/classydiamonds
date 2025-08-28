@@ -4,22 +4,33 @@ import type { Product } from "@/types/product";
 
 let _client: MongoClient | null = null;
 let _db: Db | null = null;
+let _dbName: string | null = null;
 
 const MONGODB_URI = process.env.MONGODB_URI as string;
-const MONGODB_DB = (process.env.MONGODB_DB as string) || "classy";
+const PRIMARY_DB = (process.env.MONGODB_DB as string) || "classy"; // default to 'classy'
 
 if (!MONGODB_URI) {
   throw new Error("Missing env MONGODB_URI");
 }
 
+async function getClient(): Promise<MongoClient> {
+  if (_client) return _client;
+  _client = new MongoClient(MONGODB_URI);
+  await _client.connect();
+  return _client;
+}
+
 export async function getDb(): Promise<Db> {
   if (_db) return _db;
-  if (!_client) {
-    _client = new MongoClient(MONGODB_URI);
-    await _client.connect();
-  }
-  _db = _client.db(MONGODB_DB);
+  const client = await getClient();
+  _dbName = PRIMARY_DB;
+  _db = client.db(PRIMARY_DB);
   return _db;
+}
+
+async function getDbByName(name: string): Promise<Db> {
+  const client = await getClient();
+  return client.db(name);
 }
 
 /** ----- Legacy normalization helpers ----- */
@@ -56,7 +67,6 @@ export function mapDbToProduct(doc: any): Product {
     imageUrl: firstImage(doc),
     images: Array.isArray(doc.images) ? doc.images : (firstImage(doc) ? [firstImage(doc)] : []),
     description: doc.description ?? "",
-    // tags intentionally omitted (legacy tolerated in DB, not in type)
     specs: (doc.specs && typeof doc.specs === "object") ? doc.specs : undefined,
     featured: typeof doc.featured === "boolean" ? doc.featured : undefined,
     skuNumber: typeof doc.skuNumber === "number" ? doc.skuNumber : undefined,
@@ -82,10 +92,64 @@ function normalizeForWrite(input: Partial<Product>): any {
     out.images = [out.imageUrl];
   }
 
-  // remove undefined to avoid overwriting with undefined
+  // strip undefined
   Object.keys(out).forEach((k) => out[k] === undefined && delete out[k]);
 
   return out;
+}
+
+/** ------------ READ helpers with DB fallback ------------- */
+
+function otherDbName(curr: string) {
+  return curr === "classy" ? "classydiamonds" : "classy";
+}
+
+async function findManyWithFallback(
+  coll: string,
+  filter: any,
+  options: { sort?: Record<string, 1 | -1>; limit?: number; skip?: number } = {}
+) {
+  const primaryDb = await getDb();
+  const primaryRows = await primaryDb
+    .collection(coll)
+    .find(filter)
+    .sort(options.sort ?? { createdAt: -1 })
+    .limit(options.limit ?? 1000)
+    .skip(options.skip ?? 0)
+    .toArray();
+
+  if (primaryRows.length > 0) return primaryRows;
+
+  // fallback to the other database name if primary was empty
+  const altName = otherDbName(_dbName || PRIMARY_DB);
+  const altDb = await getDbByName(altName);
+  const altRows = await altDb
+    .collection(coll)
+    .find(filter)
+    .sort(options.sort ?? { createdAt: -1 })
+    .limit(options.limit ?? 1000)
+    .skip(options.skip ?? 0)
+    .toArray();
+
+  if (altRows.length > 0) {
+    console.warn(`[products] Fallback DB used: ${altName} (primary had 0 matches)`);
+  }
+  return altRows;
+}
+
+async function findOneWithFallback(coll: string, id: string) {
+  const primaryDb = await getDb();
+  const _id = new ObjectId(id);
+  let doc = await primaryDb.collection(coll).findOne({ _id });
+  if (doc) return doc;
+
+  const altName = otherDbName(_dbName || PRIMARY_DB);
+  const altDb = await getDbByName(altName);
+  doc = await altDb.collection(coll).findOne({ _id });
+  if (doc) {
+    console.warn(`[products] Fallback DB used for getById: ${altName}`);
+  }
+  return doc;
 }
 
 /** ------------ Queries & CRUD ------------- */
@@ -97,21 +161,12 @@ type ListOptions = {
 };
 
 export async function listProducts(filter: any = {}, options: ListOptions = {}) {
-  const db = await getDb();
-  const cursor = db.collection("products")
-    .find(filter)
-    .sort(options.sort ?? { createdAt: -1 })
-    .limit(options.limit ?? 1000)
-    .skip(options.skip ?? 0);
-
-  const rows = await cursor.toArray();
+  const rows = await findManyWithFallback("products", filter, options);
   return rows.map(mapDbToProduct);
 }
 
 export async function getProductById(id: string) {
-  const db = await getDb();
-  const _id = new ObjectId(id);
-  const doc = await db.collection("products").findOne({ _id });
+  const doc = await findOneWithFallback("products", id);
   return doc ? mapDbToProduct(doc) : null;
 }
 
