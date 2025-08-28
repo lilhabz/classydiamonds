@@ -123,7 +123,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
   const headerRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
-  const resetCount = () => setVisibleCount(8);
+  const resetCount = () => setVisibleCount(50);
 
   // Read ?category and ?sub on load/shallow nav; default is "All Jewelry"
   useEffect(() => {
