@@ -1,20 +1,29 @@
-// /pages/api/admin/products/[id].ts
+// pages/api/admin/products/[id].ts
 import type { NextApiRequest, NextApiResponse } from "next";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../../auth/[...nextauth]";
-import clientPromise from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
+<<<<<<< HEAD
 import { productsData as legacyProducts } from "@/data/productsData";
 
+=======
+import { getDb } from "@/lib/products";
+>>>>>>> 3220bd4 (	modified:   pages/api/admin/products/[id].ts)
 
-type ApiResp =
-  | { ok: true; product?: any }
-  | { ok: true; deleted?: boolean }
-  | { ok: false; error: string };
+/** Admin gate with simple typing so TS doesn't complain */
+async function requireAdmin(req: NextApiRequest, res: NextApiResponse) {
+  const session: any = await getServerSession(req, res, authOptions as any);
+  if (!session?.user?.isAdmin) {
+    res.status(401).json({ ok: false, error: "Unauthorized" });
+    return null;
+  }
+  return session as any;
+}
 
-function toObjectId(id?: string) {
+function parseObjectId(idParam: string | string[] | undefined) {
+  if (!idParam || Array.isArray(idParam)) return null;
   try {
-    return id ? new ObjectId(id) : null;
+    return new ObjectId(idParam);
   } catch {
     return null;
   }
@@ -22,18 +31,22 @@ function toObjectId(id?: string) {
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse<ApiResp>
+  res: NextApiResponse
 ) {
-  if (req.method === "OPTIONS") {
-    res.setHeader("Allow", "GET,PUT,PATCH,DELETE,OPTIONS");
-    return res.status(204).end();
+  // Auth
+  const session = await requireAdmin(req, res);
+  if (!session) return;
+
+  // DB + ID
+  const db = await getDb();
+  const _id = parseObjectId(req.query.id);
+  if (!_id) {
+    return res.status(400).json({ ok: false, error: "Invalid id" });
   }
 
-  const session = await getServerSession(req, res, authOptions);
-  if (!session || !session.user || !(session.user as any).isAdmin) {
-    return res.status(401).json({ ok: false, error: "Unauthorized" });
-  }
+  const productsCol = db.collection("products");
 
+<<<<<<< HEAD
   const { id } = req.query as { id: string };
   const _id = toObjectId(id);
 
@@ -147,8 +160,58 @@ export default async function handler(
     return res.status(405).json({ ok: false, error: "Method Not Allowed" });
   } catch (err: any) {
     console.error("Admin product [id] API error:", err);
+=======
+  if (req.method === "GET") {
+    const product = await productsCol.findOne({ _id });
+    if (product) {
+      return res.status(200).json({ ok: true, product });
+    }
+
+    // Optional legacy fallback: safe even if collection doesn't exist
+    let legacyProduct: any = null;
+    try {
+      legacyProduct = await db.collection("legacyProducts").findOne({ _id });
+    } catch {
+      /* ignore */
+    }
+    if (legacyProduct) {
+      return res
+        .status(200)
+        .json({
+          ok: true,
+          product: legacyProduct,
+          note: "Served from legacyProducts",
+        });
+    }
+
+>>>>>>> 3220bd4 (	modified:   pages/api/admin/products/[id].ts)
     return res
-      .status(500)
-      .json({ ok: false, error: err?.message ?? "Server error" });
+      .status(404)
+      .json({ ok: false, error: "Not found (also not in legacyProducts)" });
   }
+
+  if (req.method === "PUT") {
+    const update = { ...(req.body ?? {}) };
+    if ("_id" in update) delete (update as any)._id;
+
+    const { value } = await productsCol.findOneAndUpdate(
+      { _id },
+      { $set: { ...update, updatedAt: new Date() } },
+      { returnDocument: "after" }
+    );
+
+    if (!value)
+      return res.status(404).json({ ok: false, error: "Product not found" });
+    return res.status(200).json({ ok: true, product: value });
+  }
+
+  if (req.method === "DELETE") {
+    const { deletedCount } = await productsCol.deleteOne({ _id });
+    if (!deletedCount)
+      return res.status(404).json({ ok: false, error: "Product not found" });
+    return res.status(200).json({ ok: true, deleted: true });
+  }
+
+  res.setHeader("Allow", "GET,PUT,DELETE");
+  return res.status(405).json({ ok: false, error: "Method not allowed" });
 }
