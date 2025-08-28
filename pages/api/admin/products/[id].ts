@@ -4,6 +4,8 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "../../auth/[...nextauth]";
 import clientPromise from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
+import { productsData as legacyProducts } from "@/data/productsData";
+import { getAllProductsMerged, type Product } from "@/lib/productsAdapter";
 
 type ApiResp =
   | { ok: true; product?: any }
@@ -34,21 +36,43 @@ export default async function handler(
 
   const { id } = req.query as { id: string };
   const _id = toObjectId(id);
-  if (!_id) return res.status(400).json({ ok: false, error: "Invalid id" });
 
   try {
+    const DB_NAME = process.env.MONGODB_DB;
+    if (!DB_NAME)
+      return res
+        .status(500)
+        .json({ ok: false, error: "MONGODB_DB env var not set" });
+    const COLL = process.env.PRODUCTS_COLLECTION || "products";
     const client = await clientPromise;
-    const db = client.db();
-    const collection = db.collection("products");
+    const db = client.db(DB_NAME);
+    const collection = db.collection(COLL);
 
     if (req.method === "GET") {
-      const product = await collection.findOne({ _id });
-      if (!product)
-        return res.status(404).json({ ok: false, error: "Not found" });
-      return res.status(200).json({ ok: true, product });
+      let product = _id ? await collection.findOne({ _id }) : null;
+      if (product) return res.status(200).json({ ok: true, product });
+
+      const merged: Product[] = await getAllProductsMerged();
+      const legacy = merged.find((p) => p.id === id || p.slug === id);
+      if (legacy) return res.status(200).json({ ok: true, product: legacy });
+      return res
+        .status(404)
+        .json({ ok: false, error: "Not found. If this was a legacy product, please migrate it." });
     }
 
     if (req.method === "PUT" || req.method === "PATCH") {
+      if (!_id) {
+        const legacyHit = legacyProducts.find(
+          (p) => String(p.id) === id || p.slug === id
+        );
+        if (legacyHit)
+          return res.status(404).json({
+            ok: false,
+            error: "Not found. If this was a legacy product, please migrate it.",
+          });
+        return res.status(404).json({ ok: false, error: "Not found" });
+      }
+
       const {
         name,
         price,
@@ -102,6 +126,18 @@ export default async function handler(
     }
 
     if (req.method === "DELETE") {
+      if (!_id) {
+        const legacyHit = legacyProducts.find(
+          (p) => String(p.id) === id || p.slug === id
+        );
+        if (legacyHit)
+          return res.status(404).json({
+            ok: false,
+            error: "Not found. If this was a legacy product, please migrate it.",
+          });
+        return res.status(404).json({ ok: false, error: "Not found" });
+      }
+
       const r = await collection.deleteOne({ _id });
       if (!r.deletedCount)
         return res.status(404).json({ ok: false, error: "Not found" });
