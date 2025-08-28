@@ -64,7 +64,7 @@ export async function getServerSideProps(context: any) {
     description: p.description ?? "",
     price: Number(p.price ?? p.unitPrice ?? 0),
     salePrice: p.salePrice ?? undefined,
-    category: p.category,
+    category: (p.category as Category) ?? ("rings" as Category),
     subcategory: p.subCategory ?? p.subcategory ?? undefined,
     subCategory: p.subCategory ?? p.subcategory ?? undefined,
     imageUrl:
@@ -106,7 +106,7 @@ export default function AdminProductsPage({
 }: {
   initialProducts: AdminProduct[];
 }) {
-  // 🔽 NEW: include "all" so you can see everything (old or new) regardless of department/category mismatches
+  // NEW: include "all" so you can see everything (old or new) regardless of department/category mismatches
   const [catalogView, setCatalogView] = useState<"all" | "jewelry" | "watches">(
     "all"
   );
@@ -114,7 +114,7 @@ export default function AdminProductsPage({
   const [products, setProducts] = useState<AdminProduct[]>(
     () => initialProducts || []
   );
-  const [loadingList] = useState(false);
+  const [loadingList, setLoadingList] = useState(false);
 
   const [rowEdits, setRowEdits] = useState<
     Record<string, { featured: boolean }>
@@ -193,6 +193,69 @@ export default function AdminProductsPage({
   });
   const [editSpecRows, setEditSpecRows] = useState<SpecEntry[]>([]);
 
+  // ---------- NEW: client-side refresh to ensure old+new products always show ----------
+  useEffect(() => {
+    let canceled = false;
+    async function load() {
+      try {
+        setLoadingList(true);
+        const res = await fetch("/api/admin/products");
+        const data = await res.json();
+
+        const normalized: AdminProduct[] = (data.products || []).map(
+          (p: any) => ({
+            _id: String(p._id),
+            skuNumber: p.skuNumber ?? undefined,
+            name: p.name ?? p.title ?? "",
+            slug: p.slug ?? undefined,
+            description: p.description ?? "",
+            price: Number(p.price ?? p.unitPrice ?? 0),
+            salePrice: p.salePrice ?? undefined,
+            // tolerate legacy category values: coerce to our union for rendering
+            category: (p.category as Category) ?? ("rings" as Category),
+            subcategory: p.subCategory ?? p.subcategory ?? undefined,
+            subCategory: p.subCategory ?? p.subcategory ?? undefined,
+            imageUrl:
+              Array.isArray(p.images) && p.images.length
+                ? p.images[0]
+                : p.imageUrl ?? "",
+            images: Array.isArray(p.images) ? p.images : [],
+            featured: Boolean(p.featured),
+            gender:
+              p.audience && p.audience[0]
+                ? (p.audience[0] as any)
+                : p.gender ?? "unisex",
+            department: p.department ?? "jewelry",
+            specs: p.specs && typeof p.specs === "object" ? p.specs : {},
+          })
+        );
+
+        if (!canceled) {
+          setProducts(normalized);
+          setRowEdits(
+            normalized.reduce((acc, p) => {
+              acc[p._id] = { featured: p.featured };
+              return acc;
+            }, {} as Record<string, { featured: boolean }>)
+          );
+        }
+      } catch (e: any) {
+        if (!canceled) {
+          setStatus((s) => ({
+            ...s,
+            error: e?.message || "Failed to load products",
+          }));
+        }
+      } finally {
+        if (!canceled) setLoadingList(false);
+      }
+    }
+    load();
+    return () => {
+      canceled = true;
+    };
+  }, []);
+
   const allowedCategoriesForView = (
     view: "all" | "jewelry" | "watches"
   ): Category[] =>
@@ -237,7 +300,7 @@ export default function AdminProductsPage({
     [rowEdits]
   );
 
-  // 🔽 When "all" is selected, show everything (prevents legacy items disappearing)
+  // When "all" is selected, show everything (prevents legacy items disappearing)
   const viewFiltered = useMemo(() => {
     return products.filter((p) => {
       if (catalogView === "all") return true;
@@ -361,13 +424,13 @@ export default function AdminProductsPage({
       formData.append("featured", formState.featured ? "true" : "false");
       formData.append("gender", formState.gender);
 
-      // 🔧 specs -> JSON string
+      // specs -> JSON string
       const specsObj = entriesToObject(specRows);
       if (Object.keys(specsObj).length > 0) {
         formData.append("specs", JSON.stringify(specsObj));
       }
 
-      // ✅ real uploaded file
+      // real uploaded file
       if (formState.imageFile) formData.append("image", formState.imageFile);
 
       const res = await fetch("/api/admin/products", {
@@ -522,7 +585,7 @@ export default function AdminProductsPage({
         formData.append("specs", JSON.stringify({}));
       }
 
-      // ✅ real uploaded file
+      // real uploaded file
       if (editForm.imageFile) formData.append("image", editForm.imageFile);
 
       const res = await fetch(`/api/admin/products/${editingProduct!._id}`, {
@@ -573,7 +636,6 @@ export default function AdminProductsPage({
 
     setStatus({ loading: true, error: "", success: "" });
     try {
-      // If your PUT only supports multipart, skip batch or adapt to FormData.
       const updates = Object.entries(rowEdits).map(async ([id, edits]) => {
         const orig = products.find((p) => p._id === id);
         if (!orig) return null;
@@ -671,7 +733,7 @@ export default function AdminProductsPage({
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Toggle + Add button */}
         <div className="flex items-center justify-between">
-          {/* 🔽 NEW: All/Jewelry/Watches */}
+          {/* All/Jewelry/Watches */}
           <div className="inline-flex rounded overflow-hidden border">
             <button
               type="button"
@@ -1423,7 +1485,9 @@ export default function AdminProductsPage({
                         </td>
 
                         <td className="p-2 capitalize whitespace-normal break-words">
-                          {prettyLabel(CATEGORY_LABELS[p.category])}
+                          {CATEGORY_LABELS[p.category]
+                            ? prettyLabel(CATEGORY_LABELS[p.category])
+                            : ""}
                         </td>
                         <td className="p-2 whitespace-normal break-words">
                           {p.subcategory
