@@ -15,9 +15,10 @@ export default function SubcategoryCards({
 
   return (
     <div className="px-4 sm:px-6 md:px-8 max-w-7xl mx-auto">
-      {/* single row, no wrap; scroll on small screens */}
-      <div className="mt-3 -mx-2 px-2 overflow-x-auto">
-        <div className="flex gap-3 sm:gap-4 whitespace-nowrap">
+      {/* 📱 Mobile: horizontal scroll | 💻 Desktop: centered grid */}
+      <div className="mt-3">
+        {/* Mobile layout (default) */}
+        <div className="flex gap-3 sm:gap-4 whitespace-nowrap overflow-x-auto md:hidden -mx-2 px-2">
           {subcategories.map((s) => (
             <Link
               key={s.key}
@@ -25,7 +26,7 @@ export default function SubcategoryCards({
                 pathname: `/category/${encodeURIComponent(
                   category
                 )}/subcategory/${encodeURIComponent(s.key)}`,
-                query: { scroll: "true" }, // ✅ keeps your scroll behavior
+                query: { scroll: "true" },
               }}
               className="group inline-block align-top w-[220px] sm:w-[240px] rounded-2xl overflow-hidden bg-[#25304f] shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-300"
               aria-label={`${s.label} in ${category}`}
@@ -41,6 +42,39 @@ export default function SubcategoryCards({
                 <div className="absolute inset-0 bg-black/20" />
                 <div className="absolute inset-0 flex items-end">
                   <span className="m-3 px-2 py-1 rounded-md text-white text-sm sm:text-base font-medium backdrop-blur-sm bg-black/30">
+                    {s.label}
+                  </span>
+                </div>
+              </div>
+            </Link>
+          ))}
+        </div>
+
+        {/* Desktop layout (md and up) */}
+        <div className="hidden md:grid grid-cols-2 lg:grid-cols-3 gap-6 justify-items-center">
+          {subcategories.map((s) => (
+            <Link
+              key={s.key}
+              href={{
+                pathname: `/category/${encodeURIComponent(
+                  category
+                )}/subcategory/${encodeURIComponent(s.key)}`,
+                query: { scroll: "true" },
+              }}
+              className="group inline-block w-[240px] rounded-2xl overflow-hidden bg-[#25304f] shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-300"
+              aria-label={`${s.label} in ${category}`}
+            >
+              <div className="relative aspect-[3/2]">
+                <Image
+                  src={s.image}
+                  alt={s.label}
+                  fill
+                  className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+                  sizes="240px"
+                />
+                <div className="absolute inset-0 bg-black/20" />
+                <div className="absolute inset-0 flex items-end">
+                  <span className="m-3 px-2 py-1 rounded-md text-white text-base font-medium backdrop-blur-sm bg-black/30">
                     {s.label}
                   </span>
                 </div>
