@@ -3,7 +3,13 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../../auth/[...nextauth]";
 import { ObjectId } from "mongodb";
-import { getDb } from "@/lib/products"; // <- this must exist in your project
+import { getDb } from "@/lib/products";
+
+// Use the same env-based catalog collection the storefront uses
+const catalogCollectionName =
+  process.env.PRODUCTS_COLLECTION ||
+  process.env.NEXT_PUBLIC_PRODUCTS_COLLECTION ||
+  "products";
 
 /** Require admin session (loose typing so TS doesn't block build) */
 async function requireAdmin(req: NextApiRequest, res: NextApiResponse) {
@@ -15,16 +21,23 @@ async function requireAdmin(req: NextApiRequest, res: NextApiResponse) {
   return session as any;
 }
 
-/** Parse ObjectId from dynamic route param */
-function parseObjectId(
-  idParam: string | string[] | undefined
-): ObjectId | null {
-  if (!idParam || Array.isArray(idParam)) return null;
+/** Build a filter that matches either ObjectId or string _id */
+function makeIdFilter(idParam: string | string[] | undefined) {
+  const raw =
+    typeof idParam === "string"
+      ? idParam
+      : Array.isArray(idParam)
+      ? idParam[0]
+      : "";
+  if (!raw) return null;
+
+  const ors: any[] = [{ _id: raw }]; // string _id support
   try {
-    return new ObjectId(idParam);
+    ors.push({ _id: new ObjectId(raw) }); // ObjectId support
   } catch {
-    return null;
+    // not a valid ObjectId; ignore
   }
+  return ors.length === 1 ? ors[0] : { $or: ors };
 }
 
 export default async function handler(
@@ -35,37 +48,39 @@ export default async function handler(
   const session = await requireAdmin(req, res);
   if (!session) return;
 
-  // DB + ID
   const db = await getDb();
-  const _id = parseObjectId(req.query.id);
-  if (!_id) {
+  const idFilter = makeIdFilter(req.query.id);
+  if (!idFilter) {
     return res.status(400).json({ ok: false, error: "Invalid id" });
   }
 
-  const productsCol = db.collection("products");
+  const productsCol = db.collection(catalogCollectionName);
 
   if (req.method === "GET") {
-    // Primary: find in products
-    const product = await productsCol.findOne({ _id });
+    // Primary: find in the resolved catalog collection
+    const product = await productsCol.findOne(idFilter as any);
     if (product) {
-      return res.status(200).json({ ok: true, product });
+      return res
+        .status(200)
+        .json({ ok: true, product, collection: catalogCollectionName });
     }
 
     // Optional fallback: check legacy collection if it exists
-    let legacyProduct: any = null;
     try {
-      legacyProduct = await db.collection("legacyProducts").findOne({ _id });
+      const legacyProduct = await db
+        .collection("legacyProducts")
+        .findOne(idFilter as any);
+      if (legacyProduct) {
+        return res
+          .status(200)
+          .json({
+            ok: true,
+            product: legacyProduct,
+            note: "Served from legacyProducts",
+          });
+      }
     } catch {
-      // collection may not exist; ignore
-    }
-    if (legacyProduct) {
-      return res
-        .status(200)
-        .json({
-          ok: true,
-          product: legacyProduct,
-          note: "Served from legacyProducts",
-        });
+      /* legacy collection may not exist */
     }
 
     return res.status(404).json({ ok: false, error: "Product not found" });
@@ -76,7 +91,7 @@ export default async function handler(
     if ("_id" in update) delete (update as any)._id;
 
     const { value } = await productsCol.findOneAndUpdate(
-      { _id },
+      idFilter as any,
       { $set: { ...update, updatedAt: new Date() } },
       { returnDocument: "after" }
     );
@@ -87,7 +102,7 @@ export default async function handler(
   }
 
   if (req.method === "DELETE") {
-    const { deletedCount } = await productsCol.deleteOne({ _id });
+    const { deletedCount } = await productsCol.deleteOne(idFilter as any);
     if (!deletedCount)
       return res.status(404).json({ ok: false, error: "Product not found" });
     return res.status(200).json({ ok: true, deleted: true });
