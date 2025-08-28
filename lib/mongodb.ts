@@ -39,25 +39,25 @@ if (uri) {
  * 3) Derive from MONGODB_URI path (…/<db>?…)
  * 4) Fallback to app default ("classydiamonds")
  */
-function resolveDbName(explicit?: string): string {
-  if (explicit && explicit.trim()) return explicit.trim();
+// lib/mongodb.ts
 
-  const envDb = process.env.MONGODB_DB?.trim();
-  if (envDb) return envDb;
-
-  // derive from URI path if present
+function parseDbFromUri(u?: string) {
   try {
-    if (process.env.MONGODB_URI) {
-      const u = new URL(process.env.MONGODB_URI);
-      const path = u.pathname.replace(/^\/+/, ""); // remove leading '/'
-      if (path) return path;
-    }
+    const m = u?.match(/^mongodb(?:\+srv)?:\/\/[^/]+\/([^?]+)/i);
+    return m?.[1];
   } catch {
-    // ignore parse errors
+    return undefined;
   }
+}
 
-  // final fallback — choose your real app DB (not "test")
-  return "classydiamonds";
+/**
+ * Priority to pick the DB name reliably:
+ * 1) explicit arg
+ * 2) MONGODB_DB
+ * 3) DB name from MONGODB_URI path (e.g. ".../classydiamonds?...")
+ */
+function resolveDbName(explicit?: string): string | undefined {
+  return explicit || process.env.MONGODB_DB || parseDbFromUri(uri);
 }
 
 /**
