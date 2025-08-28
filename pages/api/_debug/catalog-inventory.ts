@@ -1,113 +1,89 @@
 // pages/api/_debug/catalog-inventory.ts
 import type { NextApiRequest, NextApiResponse } from "next";
-import { getDb } from "@/lib/products";
+import { getDb } from "@/lib/mongodb"; // ✅ fixed import
 
 type Row = {
   collection: string;
+  exists: boolean;
   count: number;
-  productish: boolean;
-  sampleKeys: string[];
-  sampleDoc?: Record<string, any>;
+  sample?: Array<{ _id: string; slug?: string; name?: string; title?: string }>;
 };
 
+type Ok = {
+  ok: true;
+  primaryCollection: string;
+  alsoQueried: string[];
+  rows: Row[];
+};
+type Err = { ok: false; error: string };
+
+// Resolve like the rest of the app
+const PRIMARY_COLLECTION =
+  process.env.PRODUCTS_COLLECTION ||
+  process.env.NEXT_PUBLIC_PRODUCTS_COLLECTION ||
+  "products";
+
 export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
+  _req: NextApiRequest,
+  res: NextApiResponse<Ok | Err>
 ) {
   try {
     const db = await getDb();
 
-    // list all collections
-    const cols = await db.listCollections().toArray();
-    const names = cols.map((c: any) => c.name).sort();
+    // We always look at the primary + the hard-coded "products"
+    const collectionsToCheck = Array.from(
+      new Set([PRIMARY_COLLECTION, "products", "legacyProducts"])
+    );
 
-    // heuristics for “product-like” collections
-    const maybeProductNames = [
-      "products",
-      "product",
-      "catalog",
-      "items",
-      "inventory",
-      "storeProducts",
-      "store_items",
-      "shopifyProducts",
-      "merch",
-      "sku",
-      "skus",
-    ];
+    const rows: Row[] = [];
 
-    const results: Row[] = [];
-    for (const name of names) {
-      const col = db.collection(name);
-      const count = await col.estimatedDocumentCount();
-      if (!count) {
-        results.push({
-          collection: name,
-          count,
-          productish: false,
-          sampleKeys: [],
-        });
-        continue;
-      }
-
-      // small peek at first doc
-      const sample = await col.find({}).limit(1).toArray();
-      const doc = sample[0] || {};
-      const keys = Object.keys(doc || {}).sort();
-
-      // “producty” if it has typical fields OR name hints
-      const hasProductFields = [
-        "name",
-        "title",
-        "slug",
-        "price",
-        "category",
-        "images",
-        "image",
-        "imageUrl",
-      ].some((k) => k in doc);
-      const productish = hasProductFields || maybeProductNames.includes(name);
-
-      results.push({
-        collection: name,
-        count,
-        productish,
-        sampleKeys: keys.slice(0, 25),
-        sampleDoc: productish ? sanitize(doc) : undefined, // include one doc only if productish
-      });
-    }
-
-    // also return a quick check of the two we’ve been using
-    const checks: Record<string, number> = {};
-    for (const key of ["products", "legacyProducts"]) {
+    for (const name of collectionsToCheck) {
       try {
-        checks[key] = await db.collection(key).estimatedDocumentCount();
+        const exists = !!(
+          await db.listCollections({ name }, { nameOnly: true }).toArray()
+        ).length;
+
+        if (!exists) {
+          rows.push({ collection: name, exists: false, count: 0 });
+          continue;
+        }
+
+        const col = db.collection(name);
+        const count = (await col.estimatedDocumentCount().catch(async () => {
+          // fall back to countDocuments if needed
+          await col.countDocuments();
+        })) as number;
+
+        const sampleDocs = await col
+          .find({}, { projection: { _id: 1, slug: 1, name: 1, title: 1 } })
+          .limit(5)
+          .toArray();
+
+        rows.push({
+          collection: name,
+          exists: true,
+          count: Number(count) || 0,
+          sample: sampleDocs.map((d: any) => ({
+            _id: String(d._id),
+            slug: d.slug,
+            name: d.name,
+            title: d.title,
+          })),
+        });
       } catch {
-        checks[key] = -1;
+        rows.push({ collection: name, exists: false, count: 0 });
       }
     }
 
     return res.status(200).json({
       ok: true,
-      collections: results,
-      quickCounts: checks,
-      note: "READ-ONLY diagnostic. Remove this file after use.",
+      primaryCollection: PRIMARY_COLLECTION,
+      alsoQueried: ["products", "legacyProducts"],
+      rows,
     });
   } catch (e: any) {
-    console.error(e);
     return res
       .status(500)
-      .json({ ok: false, error: e?.message || "diagnostic failed" });
+      .json({ ok: false, error: e?.message || "debug failed" });
   }
-}
-
-function sanitize(doc: any) {
-  if (!doc || typeof doc !== "object") return doc;
-  const out: any = {};
-  for (const [k, v] of Object.entries(doc)) {
-    if (k.toLowerCase().includes("secret") || k.toLowerCase().includes("token"))
-      continue;
-    out[k] = v;
-  }
-  return out;
 }
