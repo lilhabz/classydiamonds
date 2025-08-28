@@ -44,16 +44,21 @@ export default function EditProductPage() {
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState<string>("");
   const [salePrice, setSalePrice] = useState<string>("");
+
+  // Bubble buttons for Audience (unisex | him | her | kids)
   const [audience, setAudience] = useState<string>("unisex");
 
+  // Image upload (no URL field). We still keep current imageUrl for preview if no new file chosen.
   const [imageUrl, setImageUrl] = useState<string | null>(PLACEHOLDER);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [resetToPlaceholder, setResetToPlaceholder] = useState(false);
 
+  // Specs as rows
   const [specRows, setSpecRows] = useState<{ key: string; value: string }[]>(
     []
   );
 
+  // --- Load product ---
   useEffect(() => {
     if (!id) return;
     (async () => {
@@ -63,6 +68,7 @@ export default function EditProductPage() {
         const json = await res.json();
         if (!res.ok || !json?.ok || !json.product)
           throw new Error(json?.error || "Load failed");
+
         const p: ProductDoc = json.product;
 
         setName(p.name ?? "");
@@ -101,6 +107,85 @@ export default function EditProductPage() {
     [dept, category]
   );
 
+  // ---------- Spec option logic (same as new product page) ----------
+  const COMMON_JEWELRY_SPECS = [
+    "metal",
+    "stone",
+    "carat",
+    "color",
+    "clarity",
+    "cut",
+    "shape",
+    "size",
+    "width",
+    "length",
+    "weight",
+    "setting",
+    "style",
+    "certificate",
+  ];
+  const RING_ONLY = ["ring-size", "band-width", "stone-size"];
+  const COMMON_WATCH_SPECS = [
+    "brand",
+    "model",
+    "movement",
+    "case-size",
+    "case-material",
+    "band-material",
+    "dial-color",
+    "crystal",
+    "water-resistance",
+    "power-reserve",
+    "year",
+    "condition",
+    "box-papers",
+  ];
+
+  const specOptions = useMemo(() => {
+    if (dept === "watch") return COMMON_WATCH_SPECS;
+    const c = (category || "").toLowerCase();
+    if (c.includes("ring")) return [...RING_ONLY, ...COMMON_JEWELRY_SPECS];
+    if (c.includes("bracelet"))
+      return [
+        "length",
+        "metal",
+        "style",
+        "weight",
+        "stone",
+        "carat",
+        "width",
+        ...COMMON_JEWELRY_SPECS,
+      ];
+    if (c.includes("necklace"))
+      return [
+        "length",
+        "metal",
+        "style",
+        "pendant",
+        "stone",
+        "carat",
+        ...COMMON_JEWELRY_SPECS,
+      ];
+    if (c.includes("earring"))
+      return [
+        "style",
+        "back-type",
+        "metal",
+        "stone",
+        "carat",
+        "length",
+        "width",
+        ...COMMON_JEWELRY_SPECS,
+      ];
+    return COMMON_JEWELRY_SPECS;
+  }, [dept, category]);
+
+  const SPEC_KEY_OPTIONS = useMemo(
+    () => Array.from(new Set(specOptions)),
+    [specOptions]
+  );
+
+  // ---------- Upload image ----------
   async function uploadImage(): Promise<string | null> {
     if (!imageFile) return null;
     const fd = new FormData();
@@ -114,6 +199,11 @@ export default function EditProductPage() {
     return json.url as string;
   }
 
+  const previewSrc = imageFile
+    ? URL.createObjectURL(imageFile)
+    : imageUrl || PLACEHOLDER;
+
+  // ---------- Save ----------
   async function onSave(e: React.FormEvent) {
     e.preventDefault();
     if (!id) return;
@@ -132,7 +222,7 @@ export default function EditProductPage() {
         salePrice: salePrice.trim() === "" ? null : Number(salePrice),
         category: category || null,
         subcategory: subcategory || null,
-        audience: [audience],
+        audience: [audience], // single-select via bubble
         specs: specRows.reduce(
           (acc, r) => (r.key ? { ...acc, [r.key]: r.value } : acc),
           {} as Record<string, any>
@@ -150,6 +240,7 @@ export default function EditProductPage() {
       if (!res.ok || !json?.ok) throw new Error(json?.error || "Update failed");
 
       setStatusMsg({ ok: true, text: "✅ Product updated" });
+
       const p: ProductDoc = json.product;
       setImageUrl(p.imageUrl ?? PLACEHOLDER);
       setResetToPlaceholder(false);
@@ -207,8 +298,8 @@ export default function EditProductPage() {
           onSubmit={onSave}
           className="grid grid-cols-1 md:grid-cols-2 gap-4 border border-[var(--bg-nav)] rounded-xl p-4"
         >
-          {/* Dept & cats */}
-          <div className="md:col-span-2 flex gap-2">
+          {/* Department & Categories */}
+          <div className="md:col-span-2 flex flex-wrap items-center gap-2">
             <div className="flex gap-2">
               {DEPARTMENTS.map((d) => (
                 <button
@@ -253,6 +344,7 @@ export default function EditProductPage() {
             </select>
           </div>
 
+          {/* Name / Description / Price */}
           <label>
             Name
             <input
@@ -295,20 +387,28 @@ export default function EditProductPage() {
             />
           </label>
 
-          <label>
-            Audience
-            <select
-              value={audience}
-              onChange={(e) => setAudience(e.target.value)}
-              className="mt-1 w-full px-3 py-2 rounded bg-[var(--bg-nav)]"
-            >
-              <option value="unisex">Unisex</option>
-              <option value="him">For Him</option>
-              <option value="her">For Her</option>
-            </select>
-          </label>
+          {/* Audience bubble buttons */}
+          <div className="md:col-span-2">
+            <label className="block text-sm font-medium mb-1">Audience</label>
+            <div className="flex gap-2">
+              {["unisex", "him", "her", "kids"].map((opt) => (
+                <button
+                  key={opt}
+                  type="button"
+                  onClick={() => setAudience(opt)}
+                  className={`px-3 py-1 rounded-full text-sm border capitalize ${
+                    audience === opt
+                      ? "bg-yellow-500 text-black"
+                      : "bg-[var(--bg-nav)] text-white"
+                  }`}
+                >
+                  {opt}
+                </button>
+              ))}
+            </div>
+          </div>
 
-          {/* Image controls */}
+          {/* Image upload with preview + reset */}
           <div className="md:col-span-2 space-y-2">
             <label className="text-sm font-medium">Product Photo</label>
             <div className="flex items-center gap-3">
@@ -328,83 +428,82 @@ export default function EditProductPage() {
             </div>
 
             <div className="mt-1">
-              {imageFile ? (
+              {previewSrc && (
                 <img
-                  src={URL.createObjectURL(imageFile)}
+                  src={previewSrc}
                   alt="Preview"
                   className="w-32 h-32 object-cover rounded border"
                 />
-              ) : (
-                imageUrl && (
-                  <img
-                    src={imageUrl}
-                    alt="Current"
-                    className="w-32 h-32 object-cover rounded border"
-                  />
-                )
               )}
             </div>
           </div>
 
-          {/* Specs */}
-          <details className="md:col-span-2 rounded border border-[var(--bg-nav)]">
-            <summary className="cursor-pointer px-3 py-2 bg-[var(--bg-nav)]">
-              Specifications
-            </summary>
-            <div className="p-3 space-y-2">
-              {specRows.length === 0 && (
-                <p className="text-sm opacity-70">
-                  Add key/value rows like: Metal = 14k Gold
-                </p>
-              )}
-              {specRows.map((row, i) => (
-                <div key={i} className="grid grid-cols-12 gap-2">
-                  <input
-                    className="col-span-5 px-3 py-2 rounded bg-[var(--bg-nav)]"
-                    placeholder="Key (e.g. metal)"
-                    value={row.key}
-                    onChange={(e) =>
-                      setSpecRows((r) =>
-                        r.map((x, idx) =>
-                          idx === i ? { ...x, key: e.target.value } : x
-                        )
-                      )
-                    }
-                  />
-                  <input
-                    className="col-span-6 px-3 py-2 rounded bg-[var(--bg-nav)]"
-                    placeholder="Value (e.g. 14k gold)"
-                    value={row.value}
-                    onChange={(e) =>
-                      setSpecRows((r) =>
-                        r.map((x, idx) =>
-                          idx === i ? { ...x, value: e.target.value } : x
-                        )
-                      )
-                    }
-                  />
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setSpecRows((r) => r.filter((_, idx) => idx !== i))
-                    }
-                    className="col-span-1 px-2 rounded bg-red-600"
-                  >
-                    ✕
-                  </button>
-                </div>
-              ))}
-              <button
-                type="button"
-                onClick={() =>
-                  setSpecRows((r) => [...r, { key: "", value: "" }])
-                }
-                className="px-3 py-1 rounded bg-blue-600"
+          {/* Specifications (always open) */}
+          <div className="md:col-span-2 rounded border border-[var(--bg-nav)] p-3">
+            <label className="block text-sm font-medium mb-2">
+              Specifications (optional)
+            </label>
+
+            {/* Dropdown to add a spec row */}
+            <div className="flex items-center gap-2 mb-3">
+              <select
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (!val) return;
+                  setSpecRows((r) => [...r, { key: val, value: "" }]);
+                  e.currentTarget.value = "";
+                }}
+                className="px-3 py-2 rounded bg-[var(--bg-nav)]"
+                defaultValue=""
               >
-                + Add Row
-              </button>
+                <option value="">+ Add specification…</option>
+                {SPEC_KEY_OPTIONS.map((k) => (
+                  <option key={k} value={k}>
+                    {k}
+                  </option>
+                ))}
+              </select>
             </div>
-          </details>
+
+            {specRows.length === 0 && (
+              <p className="text-sm opacity-70">
+                Add rows like: <i>metal</i>, <i>size</i>, <i>carat</i>,{" "}
+                <i>clarity</i>, <i>movement</i>, <i>case-size</i>, etc.
+                (optional)
+              </p>
+            )}
+
+            {specRows.map((row, i) => (
+              <div key={i} className="grid grid-cols-12 gap-2 mb-2">
+                <input
+                  className="col-span-5 px-3 py-2 rounded bg-[var(--bg-nav)]"
+                  value={row.key}
+                  readOnly
+                />
+                <input
+                  className="col-span-6 px-3 py-2 rounded bg-[var(--bg-nav)]"
+                  placeholder="Value"
+                  value={row.value}
+                  onChange={(e) =>
+                    setSpecRows((r) =>
+                      r.map((x, idx) =>
+                        idx === i ? { ...x, value: e.target.value } : x
+                      )
+                    )
+                  }
+                />
+                <button
+                  type="button"
+                  onClick={() =>
+                    setSpecRows((r) => r.filter((_, idx) => idx !== i))
+                  }
+                  className="col-span-1 px-2 rounded bg-red-600"
+                >
+                  ✕
+                </button>
+              </div>
+            ))}
+          </div>
 
           <button
             type="submit"
