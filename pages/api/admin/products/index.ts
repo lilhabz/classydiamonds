@@ -1,57 +1,101 @@
-// pages/api/admin/products/index.ts
+// /pages/api/admin/products/index.ts
 import type { NextApiRequest, NextApiResponse } from "next";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../../auth/[...nextauth]";
-import {
-  getAllMergedProducts,
-  createDbProduct,
-  AdminProduct,
-} from "@/lib/productAdapter";
+import clientPromise from "@/lib/mongodb";
 
-// JSON-only handler (no bodyParser override)
+type ApiResp =
+  | { ok: true; products?: any[]; product?: any; id?: string }
+  | { ok: false; error: string };
+
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse
+  res: NextApiResponse<ApiResp>
 ) {
-  const session = (await getServerSession(req, res, authOptions as any)) as any;
-  if (!session?.user?.isAdmin)
-    return res.status(403).json({ ok: false, error: "Forbidden" });
+  // Preflight
+  if (req.method === "OPTIONS") {
+    res.setHeader("Allow", "GET,POST,OPTIONS");
+    return res.status(204).end();
+  }
+
+  const session = await getServerSession(req, res, authOptions);
+  if (!session || !session.user || !(session.user as any).isAdmin) {
+    return res.status(401).json({ ok: false, error: "Unauthorized" });
+  }
 
   try {
+    const client = await clientPromise;
+    const db = client.db();
+    const collection = db.collection("products");
+
     if (req.method === "GET") {
-      const items = await getAllMergedProducts();
-      return res.status(200).json({ ok: true, items });
+      const docs = await collection
+        .find({})
+        .sort({ createdAt: -1 })
+        .limit(300)
+        .toArray();
+      return res.status(200).json({ ok: true, products: docs as any[] });
     }
 
     if (req.method === "POST") {
-      const body = req.body as Partial<AdminProduct>;
-      const name = (body.name || "").trim();
-      const category = (body.category || "").trim();
-      const price = Number(body.price);
-      if (!name || !category || !Number.isFinite(price)) {
-        return res
-          .status(400)
-          .json({ ok: false, error: "name, price, category are required" });
-      }
-      const created = await createDbProduct({
+      const {
         name,
-        slug: body.slug,
         price,
-        salePrice: body.salePrice ?? null,
+        salePrice,
         category,
-        subcategory: body.subcategory ?? null,
-        imageUrl: body.imageUrl ?? "/gray-placeholder.jpg",
-        archived: Boolean(body.archived),
-        specs: body.specs ?? {},
-        audience: body.audience ?? ["unisex"],
+        subcategory,
+        imageUrl,
+        audience,
+        specs,
+        description,
+        department,
+      } = (req.body ?? {}) as Record<string, any>;
+
+      const priceNum =
+        typeof price === "number"
+          ? price
+          : typeof price === "string" && price.trim() !== ""
+          ? Number(price)
+          : null;
+
+      const saleNum =
+        typeof salePrice === "number"
+          ? salePrice
+          : typeof salePrice === "string" && salePrice.trim() !== ""
+          ? Number(salePrice)
+          : null;
+
+      const now = new Date();
+      const doc = {
+        name: name ?? "",
+        description: description ?? "",
+        price: priceNum,
+        salePrice: saleNum,
+        category: category ?? null,
+        subcategory: subcategory ?? null,
+        imageUrl: imageUrl ?? "/gray-placeholder.jpg",
+        audience:
+          Array.isArray(audience) && audience.length ? audience : ["unisex"],
+        specs: specs && typeof specs === "object" ? specs : {},
+        department: department ?? "jewelry",
+        createdAt: now,
+        updatedAt: now,
+      };
+
+      const result = await collection.insertOne(doc);
+      return res.status(200).json({
+        ok: true,
+        id: result.insertedId.toString(),
+        product: { _id: result.insertedId, ...doc },
       });
-      return res.status(201).json({ ok: true, item: created });
     }
 
-    res.setHeader("Allow", "GET,POST");
+    res.setHeader("Allow", "GET,POST,OPTIONS");
     return res.status(405).json({ ok: false, error: "Method Not Allowed" });
   } catch (err: any) {
-    console.error("Admin products index error:", err);
-    return res.status(500).json({ ok: false, error: "Internal Server Error" });
+    console.error("Admin products API error:", err);
+    return res
+      .status(500)
+      .json({ ok: false, error: err?.message ?? "Server error" });
   }
 }

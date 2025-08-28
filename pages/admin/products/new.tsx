@@ -1,4 +1,4 @@
-// 📄 pages/admin/products/new.tsx
+// /pages/admin/products/new.tsx
 import { useState, useEffect } from "react";
 import Head from "next/head";
 import Link from "next/link";
@@ -13,6 +13,7 @@ export default function NewProductPage() {
   const [dept, setDept] = useState<Department>("jewelry");
   const [category, setCategory] = useState<string>("");
   const [subcategory, setSubcategory] = useState<string>("");
+
   const [name, setName] = useState("");
   const [price, setPrice] = useState<string>("");
   const [salePrice, setSalePrice] = useState<string>("");
@@ -52,9 +53,10 @@ export default function NewProductPage() {
 
       const body = {
         name,
-        price: Number(price),
-        salePrice: salePrice ? Number(salePrice) : null,
-        category,
+        description,
+        price: price.trim() === "" ? null : Number(price),
+        salePrice: salePrice.trim() === "" ? null : Number(salePrice),
+        category: category || null,
         subcategory: subcategory || null,
         imageUrl: imageUrl ?? "/gray-placeholder.jpg",
         audience: [audience],
@@ -62,6 +64,7 @@ export default function NewProductPage() {
           (acc, r) => (r.key ? { ...acc, [r.key]: r.value } : acc),
           {} as Record<string, any>
         ),
+        department: dept,
       };
 
       const res = await fetch("/api/admin/products", {
@@ -71,7 +74,9 @@ export default function NewProductPage() {
       });
       const json = await res.json();
       if (!res.ok || !json?.ok) throw new Error(json?.error || "Create failed");
+
       setStatusMsg({ ok: true, text: "✅ Product created" });
+      // reset
       setName("");
       setPrice("");
       setSalePrice("");
@@ -179,7 +184,6 @@ export default function NewProductPage() {
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
-            required
             className="mt-1 w-full px-3 py-2 rounded bg-[var(--bg-nav)]"
           />
         </label>
@@ -201,7 +205,6 @@ export default function NewProductPage() {
             step="0.01"
             value={price}
             onChange={(e) => setPrice(e.target.value)}
-            required
             className="mt-1 w-full px-3 py-2 rounded bg-[var(--bg-nav)]"
           />
         </label>
@@ -231,7 +234,7 @@ export default function NewProductPage() {
           </select>
         </label>
 
-        {/* Upload only (with preview) */}
+        {/* Upload (with preview) */}
         <div className="md:col-span-2">
           <label className="text-sm font-medium">Product Photo</label>
           <div className="mt-2 flex items-center gap-3">
@@ -255,7 +258,7 @@ export default function NewProductPage() {
           </div>
         </div>
 
-        {/* Specs dropdown */}
+        {/* Specs */}
         <details className="md:col-span-2 rounded border border-[var(--bg-nav)]">
           <summary className="cursor-pointer px-3 py-2 bg-[var(--bg-nav)]">
             Specifications
