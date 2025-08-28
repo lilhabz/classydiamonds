@@ -59,12 +59,9 @@ function inferDept(p: AdminProduct): Department {
 }
 
 function pickImage(p: AdminProduct): string {
-  return (
-    (p.imageUrl as string) ||
-    (Array.isArray(p.images) && p.images[0]) ||
-    (p.image as string) ||
-    "/gray-placeholder.jpg"
-  );
+  const thumb =
+    p.images?.[0] || (p.image as string) || (p.imageUrl as string) || "/gray-placeholder.jpg";
+  return thumb;
 }
 
 export default function AdminProductsList() {
