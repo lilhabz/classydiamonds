@@ -3,17 +3,16 @@ import type { Department } from "@/types/product";
 
 /**
  * Authoritative taxonomy + helpers
- * - Jewelry categories/subcategories exactly as requested
- * - "Necklaces & pendants" is represented as "necklace-pendant"
- * - Includes spec (filter) config + helper to render dynamic spec fields
+ * - Admin-side category set (separate from storefront's data/taxonomy.ts)
+ * - Spec keys/option slugs align with FiltersSidebar (metal/stone/shape)
  */
 
 export const DEPARTMENTS: Department[] = ["jewelry", "watch"];
 
-/** Top-level categories per department */
+/** Top-level categories per department (admin) */
 export const CATEGORIES: Record<Department, string[]> = {
   jewelry: ["ring", "earring", "bracelet", "necklace-pendant"],
-  watch: ["watch", "strap", "accessory"], // keep for later
+  watch: ["watch", "strap", "accessory"], // placeholder for future
 };
 
 /** Subcategories per (dept:category) */
@@ -32,10 +31,10 @@ export const SUBCATEGORIES: Record<string, string[]> = {
   "jewelry:earring": ["studs", "hoops", "drops", "huggies", "climbers"],
   // BRACELETS
   "jewelry:bracelet": ["tennis", "bangle", "chain", "cuff"],
-  // NECKLACES & PENDANTS — no subs yet (per your note)
+  // NECKLACES & PENDANTS — no subs yet
   "jewelry:necklace-pendant": [],
 
-  // Watches (left blank for now)
+  // Watches (placeholders)
   "watch:watch": [],
   "watch:strap": [],
   "watch:accessory": [],
@@ -43,112 +42,51 @@ export const SUBCATEGORIES: Record<string, string[]> = {
 
 /** ---------- Specs (filters) config ---------- */
 /**
- * BASE_SPECS defines available fields; SPEC_CONFIG picks which to show for each (dept:cat[:sub]?).
- * You can tweak SPEC_CONFIG later without touching UI/API code.
+ * BASE_SPECS defines all available fields.
+ * SPEC_CONFIG picks which to show per (dept:cat[:sub]?).
+ * All fields are optional; blank = not stored.
  */
 type SpecField =
-  | { type: "select"; options: string[] }
-  | { type: "number"; unit?: string; step?: number }
-  | { type: "text" }
+  | { type: "select"; options: string[]; label?: string }
+  | { type: "number"; unit?: string; step?: number; label?: string }
+  | { type: "text"; label?: string }
   | { type: "boolean"; label?: string };
 
+/** IMPORTANT: Keep these slugs in sync with FiltersSidebar */
+const METAL_OPTIONS = ["yellow-gold", "white-gold", "rose-gold", "platinum"] as const;
+const STONE_OPTIONS = ["diamond", "lab-grown", "moissanite", "gemstone"] as const;
+const SHAPE_OPTIONS = ["round", "oval", "princess", "emerald", "cushion", "pear"] as const;
+
 export const BASE_SPECS: Record<string, SpecField> = {
-  metal: {
-    type: "select",
-    options: [
-      "gold",
-      "white gold",
-      "rose gold",
-      "platinum",
-      "silver",
-      "stainless steel",
-      "titanium",
-    ],
-  },
+  // Match FiltersSidebar facets exactly:
+  metal: { type: "select", options: [...METAL_OPTIONS] },
+  stone: { type: "select", options: [...STONE_OPTIONS] },
+  shape: { type: "select", options: [...SHAPE_OPTIONS] },
+
+  // Additional detail (optional)
   karat: { type: "select", options: ["10k", "14k", "18k", "22k", "24k"] },
-  gemstone: {
-    type: "select",
-    options: [
-      "diamond",
-      "lab diamond",
-      "moissanite",
-      "emerald",
-      "ruby",
-      "sapphire",
-      "none",
-    ],
-  },
-  carat: { type: "number", unit: "ct", step: 0.01 },
-  size: { type: "text" }, // ring size / chain length string if needed
-  length: { type: "number", unit: "in", step: 0.5 },
-  width: { type: "number", unit: "mm", step: 0.1 },
-  color: { type: "text" },
+  carat: { type: "number", unit: "ct", step: 0.01, label: "Carat (total/primary)" },
+  size: { type: "text", label: "Size (ring) / Length label" },
+  length: { type: "number", unit: "in", step: 0.5, label: "Length" },
+  width: { type: "number", unit: "mm", step: 0.1, label: "Width" },
+
+  // Diamond-ish grading (slugs normalized to lowercase)
+  color: { type: "text", label: "Color" },
   clarity: {
     type: "select",
-    options: [
-      "FL",
-      "IF",
-      "VVS1",
-      "VVS2",
-      "VS1",
-      "VS2",
-      "SI1",
-      "SI2",
-      "I1",
-      "I2",
-      "I3",
-    ],
+    options: ["fl", "if", "vvs1", "vvs2", "vs1", "vs2", "si1", "si2", "i1", "i2", "i3"],
   },
-  cut: {
-    type: "select",
-    options: [
-      "Round",
-      "Princess",
-      "Emerald",
-      "Asscher",
-      "Cushion",
-      "Marquise",
-      "Oval",
-      "Radiant",
-      "Pear",
-      "Heart",
-    ],
-  },
+
   custom: { type: "boolean", label: "Custom work" },
 };
 
 /** Which spec fields to show by (dept:category[:sub]?) */
 export const SPEC_CONFIG: Record<string, (keyof typeof BASE_SPECS)[]> = {
   // Jewelry
-  "jewelry:ring": [
-    "metal",
-    "karat",
-    "gemstone",
-    "carat",
-    "clarity",
-    "cut",
-    "size",
-    "custom",
-  ],
-  "jewelry:earring": ["metal", "karat", "gemstone", "carat", "custom"],
-  "jewelry:bracelet": [
-    "metal",
-    "karat",
-    "gemstone",
-    "carat",
-    "length",
-    "width",
-    "custom",
-  ],
-  // even without subs, we can still filter necklace/pendant by basics:
-  "jewelry:necklace-pendant": [
-    "metal",
-    "karat",
-    "gemstone",
-    "carat",
-    "length",
-    "custom",
-  ],
+  "jewelry:ring": ["metal", "karat", "stone", "carat", "clarity", "shape", "size", "custom"],
+  "jewelry:earring": ["metal", "karat", "stone", "carat", "shape", "custom"],
+  "jewelry:bracelet": ["metal", "karat", "stone", "carat", "length", "width", "custom"],
+  "jewelry:necklace-pendant": ["metal", "karat", "stone", "carat", "length", "custom"],
 
   // Watch (basic placeholders)
   "watch:watch": ["metal", "color", "custom"],
@@ -193,7 +131,6 @@ export function getSpecFields(
  * Many legacy docs have a subcategory stored in `category` (e.g., "engagement", "studs").
  * This function moves it into `subCategory` and infers the correct parent category.
  */
-
 const JEWELRY_SUB_TO_PARENT: Record<
   string,
   "ring" | "earring" | "bracelet" | "necklace-pendant"
@@ -205,15 +142,9 @@ const JEWELRY_SUB_TO_PARENT: Record<
   };
 
   // rings
-  [
-    "engagement",
-    "wedding",
-    "promise",
-    "eternity",
-    "birthstone",
-    "signet",
-    "mens",
-  ].forEach((s) => add(s, "ring"));
+  ["engagement", "wedding", "promise", "eternity", "birthstone", "signet", "mens"].forEach((s) =>
+    add(s, "ring")
+  );
 
   // earrings (singular/plural)
   add("studs", "earring", ["stud"]);
@@ -226,10 +157,7 @@ const JEWELRY_SUB_TO_PARENT: Record<
   ["tennis", "bangle", "chain", "cuff"].forEach((s) => add(s, "bracelet"));
 
   // (no subs yet for necklace-pendant)
-  return map as Record<
-    string,
-    "ring" | "earring" | "bracelet" | "necklace-pendant"
-  >;
+  return map as Record<string, "ring" | "earring" | "bracelet" | "necklace-pendant">;
 })();
 
 export function normalizeJewelryCategoryPair(

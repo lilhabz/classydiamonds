@@ -14,19 +14,38 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET as string,
 });
 
-function parseForm(
-  req: NextApiRequest
-): Promise<{ fields: Fields; files: Files }> {
+function parseForm(req: NextApiRequest): Promise<{ fields: Fields; files: Files }> {
   const form = formidable({
     multiples: false,
     keepExtensions: true,
     maxFileSize: 25 * 1024 * 1024,
   });
   return new Promise((resolve, reject) => {
-    form.parse(req, (err, fields, files) =>
-      err ? reject(err) : resolve({ fields, files })
-    );
+    form.parse(req, (err, fields, files) => (err ? reject(err) : resolve({ fields, files })));
   });
+}
+
+// ---------- helpers ----------
+function toStr(v: any): string | undefined {
+  if (v == null) return undefined;
+  const s = Array.isArray(v) ? v[0] : v;
+  return typeof s === "string" ? s : undefined;
+}
+function parseJson<T>(v: any, fallback: T): T {
+  const s = toStr(v);
+  if (!s) return fallback;
+  try {
+    const parsed = JSON.parse(s);
+    return (parsed ?? fallback) as T;
+  } catch {
+    return fallback;
+  }
+}
+function parseNumberLike(v: any, d = 0): number {
+  const s = toStr(v);
+  if (!s) return d;
+  const n = Number(s);
+  return Number.isFinite(n) ? n : d;
 }
 
 // ---------- legacy normalization helpers ----------
@@ -39,8 +58,7 @@ function inferDepartment(doc: any): "jewelry" | "watch" {
 }
 function firstImage(doc: any): string {
   if (doc?.imageUrl) return String(doc.imageUrl);
-  if (Array.isArray(doc?.images) && doc.images.length)
-    return String(doc.images[0]);
+  if (Array.isArray(doc?.images) && doc.images.length) return String(doc.images[0]);
   if (doc?.image) return String(doc.image);
   return "";
 }
@@ -56,20 +74,17 @@ function normalizeDoc(doc: any) {
   };
 }
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const session = (await getServerSession(req, res, authOptions as any)) as any;
-  if (!session?.user || !session.user.isAdmin)
+  if (!session?.user || !session.user.isAdmin) {
     return res.status(403).json({ error: "Forbidden" });
+  }
 
   // ----------------- GET -----------------
   if (req.method === "GET") {
     try {
       const db = await getDb();
-      const { department, category, subCategory, q, audience, specs } =
-        req.query;
+      const { department, category, subCategory, q, audience, specs } = req.query;
 
       const filter: any = {};
 
@@ -147,55 +162,65 @@ export default async function handler(
     }
   }
 
-  // ----------------- POST: create (multipart + Cloudinary) -----------------
+  // ----------------- POST: create (multipart + Cloudinary + URL images) -----------------
   if (req.method === "POST") {
     try {
       const db = await getDb();
       const { fields, files } = await parseForm(req);
 
-      const name = String(fields.name || "").trim();
-      const description = String(fields.description || "");
-      const price = String(fields.price || "");
-      const salePrice = String(fields.salePrice || "");
-      const category = String(fields.category || "");
-      const subcategoryIn = String(fields.subcategory || ""); // incoming key
-      const subCategory = subcategoryIn || "";
-      const featured = String(fields.featured || "") === "true";
-      const gender = String(fields.gender || "unisex") as
-        | "unisex"
-        | "him"
-        | "her";
+      // strings
+      const _title = toStr(fields.title);
+      const _name = toStr(fields.name);
+      const name = (_name || _title || "").trim();
+      const description = toStr(fields.description) || "";
+      const category = (toStr(fields.category) || "").trim();
+      const subCategory = (toStr(fields.subCategory) || toStr(fields.subcategory) || "").trim();
 
-      if (!name || !price || !category)
-        return res
-          .status(400)
-          .json({ error: "Missing required fields (name, price, category)" });
+      const price = parseNumberLike(fields.price ?? fields.unitPrice, 0);
+      const salePrice = toStr(fields.salePrice);
+      const featured = (toStr(fields.featured) || "") === "true";
 
+      // allow incoming department override; else infer from category
+      const incomingDept = (toStr(fields.department) || "").toLowerCase();
       const department =
-        category === "watches" || category === "watch" ? "watch" : "jewelry";
+        incomingDept === "watch" || incomingDept === "jewelry"
+          ? (incomingDept as "watch" | "jewelry")
+          : category.toLowerCase().includes("watch")
+          ? "watch"
+          : "jewelry";
 
-      // ✔ robust parse for specs (string | string[] | undefined)
-      let parsedSpecs: any = undefined;
-      const specsField = Array.isArray(fields.specs)
-        ? fields.specs[0]
-        : (fields.specs as string | undefined);
-      if (typeof specsField === "string" && specsField.trim()) {
-        try {
-          const obj = JSON.parse(specsField);
-          if (obj && typeof obj === "object") parsedSpecs = obj;
-        } catch {
-          // ignore bad JSON
-        }
-      }
+      // arrays/objects
+      const audience =
+        parseJson<string[]>(fields.audience, [])?.filter(Boolean) || ["unisex"];
+      const specs =
+        parseJson<Record<string, any>>(fields.specs, {}) || undefined;
 
-      let imageUrl: string | undefined;
+      // merge any URL images (JSON array) + uploaded file
+      const urlImages =
+        parseJson<string[]>(fields.images, []) ||
+        parseJson<string[]>(fields.imageUrls, []) ||
+        [];
+
       const imageFile = files.image as FormidableFile | undefined;
+
+      let images: string[] = [];
       if (imageFile?.filepath) {
         const upload = await cloudinary.uploader.upload(imageFile.filepath, {
           folder: "classy-diamonds/products",
           resource_type: "image",
         });
-        imageUrl = upload.secure_url;
+        images.push(upload.secure_url);
+      }
+      if (Array.isArray(urlImages) && urlImages.length) {
+        images.push(...urlImages.map(String).filter(Boolean));
+      }
+      // dedupe while preserving order
+      images = Array.from(new Set(images));
+
+      if (!name || !category || !(price >= 0)) {
+        return res
+          .status(400)
+          .json({ error: "Missing required fields (name/title, price, category)" });
       }
 
       const now = new Date();
@@ -204,23 +229,23 @@ export default async function handler(
         name,
         title: name,
         description,
-        price: Number(price),
+        price,
+        unitPrice: price,
         salePrice: salePrice ? Number(salePrice) : undefined,
         category,
         subCategory: subCategory || undefined,
         featured,
-        gender,
-        imageUrl,
-        images: imageUrl ? [imageUrl] : [], // keep legacy readers happy
-        specs: parsedSpecs,
+        gender: (toStr(fields.gender) as "unisex" | "him" | "her") || "unisex",
+        audience: audience.length ? audience : ["unisex"],
+        specs,
+        images,
+        imageUrl: images[0] || undefined, // keep legacy readers happy
         createdAt: now,
         updatedAt: now,
       };
 
       const result = await db.collection("products").insertOne(doc);
-      const created = await db
-        .collection("products")
-        .findOne({ _id: result.insertedId });
+      const created = await db.collection("products").findOne({ _id: result.insertedId });
       return res.status(201).json({ product: normalizeDoc(created) });
     } catch (e: any) {
       console.error("POST create product error", e);

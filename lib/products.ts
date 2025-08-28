@@ -1,287 +1,239 @@
 // lib/products.ts
-import clientPromise from "@/lib/mongodb";
-import {
-  ObjectId,
-  type WithId,
-  type Document,
-  type OptionalUnlessRequiredId,
-} from "mongodb";
-import type { Product, Audience, Department } from "@/types/product";
-import {
-  CATEGORIES,
-  getSubCategories,
-  normalizeJewelryCategoryPair,
-} from "@/lib/taxonomy";
+import { MongoClient, Db, ObjectId } from "mongodb";
+import type { Product } from "@/types/product";
 
-/** Robust number parse */
-const toNumber = (v: unknown, d = 0): number => {
-  if (v == null || v === "") return d;
-  if (typeof v === "number") return Number.isFinite(v) ? v : d;
-  if (typeof v === "string") {
-    const n = parseFloat(v.replace(/[^0-9.\-]/g, ""));
-    return Number.isFinite(n) ? n : d;
+let _client: MongoClient | null = null;
+let _db: Db | null = null;
+
+const MONGODB_URI = process.env.MONGODB_URI as string;
+const MONGODB_DB = (process.env.MONGODB_DB as string) || "classy";
+
+if (!MONGODB_URI) {
+  throw new Error("Missing env MONGODB_URI");
+}
+
+export async function getDb(): Promise<Db> {
+  if (_db) return _db;
+  if (!_client) {
+    _client = new MongoClient(MONGODB_URI);
+    await _client.connect();
   }
-  return d;
+  _db = _client.db(MONGODB_DB);
+  return _db;
+}
+
+/** ----- Legacy normalization helpers ----- */
+function inferDepartment(doc: any): "jewelry" | "watch" {
+  const d = String(doc?.department || "").toLowerCase();
+  if (d === "watch") return "watch";
+  const cat = String(doc?.category || "").toLowerCase();
+  if (cat === "watch" || cat === "watches") return "watch";
+  return "jewelry";
+}
+
+function firstImage(doc: any): string {
+  if (doc?.imageUrl) return String(doc.imageUrl);
+  if (Array.isArray(doc?.images) && doc.images.length) return String(doc.images[0]);
+  if (doc?.image) return String(doc.image);
+  return "";
+}
+
+/** Map raw Mongo doc -> typed Product (omit legacy `tags`) */
+export function mapDbToProduct(doc: any): Product {
+  return {
+    _id: String(doc._id),
+    title: doc.title ?? doc.name ?? "",
+    slug: doc.slug,
+    department: inferDepartment(doc),
+    category: doc.category,
+    subCategory: doc.subCategory ?? doc.subcategory,
+    audience: Array.isArray(doc.audience) && doc.audience.length ? doc.audience : ["unisex"],
+    price: doc.price ?? doc.unitPrice,
+    originalPrice: doc.originalPrice,
+    salePrice: doc.salePrice,
+    discountedPrice: doc.discountedPrice,
+    unitPrice: doc.unitPrice ?? doc.price,
+    imageUrl: firstImage(doc),
+    images: Array.isArray(doc.images) ? doc.images : (firstImage(doc) ? [firstImage(doc)] : []),
+    description: doc.description ?? "",
+    // tags intentionally omitted (legacy tolerated in DB, not in type)
+    specs: (doc.specs && typeof doc.specs === "object") ? doc.specs : undefined,
+    featured: typeof doc.featured === "boolean" ? doc.featured : undefined,
+    skuNumber: typeof doc.skuNumber === "number" ? doc.skuNumber : undefined,
+    createdAt: doc.createdAt ? String(doc.createdAt) : undefined,
+    updatedAt: doc.updatedAt ? String(doc.updatedAt) : undefined,
+  };
+}
+
+/** Optional: normalize outgoing product before write */
+function normalizeForWrite(input: Partial<Product>): any {
+  const out: any = { ...input };
+
+  // keep legacy consumers happy
+  if (out.title && !out.name) out.name = out.title;
+  if (out.subCategory == null && (out as any).subcategory) {
+    out.subCategory = (out as any).subcategory;
+  }
+
+  // images/imageUrl sync
+  if (Array.isArray(out.images) && out.images.length) {
+    out.imageUrl = out.imageUrl || out.images[0];
+  } else if (out.imageUrl && (!out.images || out.images.length === 0)) {
+    out.images = [out.imageUrl];
+  }
+
+  // remove undefined to avoid overwriting with undefined
+  Object.keys(out).forEach((k) => out[k] === undefined && delete out[k]);
+
+  return out;
+}
+
+/** ------------ Queries & CRUD ------------- */
+
+type ListOptions = {
+  sort?: Record<string, 1 | -1>;
+  limit?: number;
+  skip?: number;
 };
 
-export async function getDb() {
-  const client = await clientPromise;
-  return client.db();
-}
-
-/** DB representation: _id is ObjectId */
-type DbProduct = Omit<Product, "_id"> & { _id: ObjectId };
-
-/** Convert DB doc -> API Product (string _id), with legacy + taxonomy normalization */
-function fromDb(doc: WithId<Document> | DbProduct): Product {
-  const anyDoc = doc as any;
-
-  // title/image legacy
-  const title = anyDoc.title ?? anyDoc.name ?? "";
-  const images: string[] = Array.isArray(anyDoc.images)
-    ? anyDoc.images
-    : anyDoc.image
-    ? [String(anyDoc.image)]
-    : [];
-
-  // 1) Department normalization (legacy: some used category as "jewelry"/"watch")
-  const rawCat = (anyDoc.category || "").toString().toLowerCase();
-  let department: Department =
-    (anyDoc.department as Department) ||
-    ((rawCat === "jewelry" || rawCat === "watch"
-      ? rawCat
-      : "jewelry") as Department);
-
-  // 2) Category/Sub-category normalization (especially for jewelry)
-  let category = (anyDoc.category || "").toString().toLowerCase();
-  let subCategory = (anyDoc.subCategory || "").toString().toLowerCase();
-
-  if (department === "jewelry") {
-    const fixed = normalizeJewelryCategoryPair(category, subCategory);
-    category = fixed.category || "";
-    subCategory = fixed.subCategory || "";
-  } else {
-    // For non-jewelry (watches): ensure category is one of configured or leave blank
-    const validCats = CATEGORIES.watch;
-    if (!validCats.includes(category as any)) {
-      // keep as-is if you want, or blank it out:
-      // category = "";
-    }
-    // subcategory validity is loose for now (keep whatever is stored)
-  }
-
-  const out: Product = {
-    _id: String(anyDoc._id),
-    title: String(title),
-    slug: anyDoc.slug ? String(anyDoc.slug) : undefined,
-    department,
-    category: category || undefined,
-    subCategory: subCategory || undefined,
-    audience:
-      Array.isArray(anyDoc.audience) && anyDoc.audience.length > 0
-        ? anyDoc.audience
-        : ["unisex"],
-    price: anyDoc.price,
-    originalPrice: anyDoc.originalPrice,
-    salePrice: anyDoc.salePrice,
-    discountedPrice: anyDoc.discountedPrice,
-    unitPrice: anyDoc.unitPrice,
-    images,
-    description: anyDoc.description ? String(anyDoc.description) : "",
-    tags: Array.isArray(anyDoc.tags) ? anyDoc.tags : [],
-    specs:
-      anyDoc.specs && typeof anyDoc.specs === "object"
-        ? anyDoc.specs
-        : undefined,
-    createdAt: anyDoc.createdAt ? String(anyDoc.createdAt) : undefined,
-    updatedAt: anyDoc.updatedAt ? String(anyDoc.updatedAt) : undefined,
-  };
-  return out;
-}
-
-/** Normalize incoming payload (no _id) before insert/update */
-function normalizeProductInput(p: Partial<Product>): Omit<Product, "_id"> {
-  const now = new Date().toISOString();
-
-  const images = Array.isArray(p.images)
-    ? p.images.filter(
-        (u: unknown): u is string => typeof u === "string" && u.trim() !== ""
-      )
-    : [];
-
-  const audience: Audience[] =
-    Array.isArray(p.audience) && p.audience.length > 0
-      ? (Array.from(new Set(p.audience)) as Audience[])
-      : ["unisex"];
-
-  let department = (p.department || "jewelry") as Product["department"];
-  let category = (p.category || "").toString().toLowerCase() || undefined;
-  let subCategory = (p.subCategory || "").toString().toLowerCase() || undefined;
-
-  if (department === "jewelry") {
-    const fixed = normalizeJewelryCategoryPair(category, subCategory);
-    category = fixed.category || undefined;
-    subCategory = fixed.subCategory || undefined;
-  }
-
-  const unit =
-    toNumber(p.unitPrice) ||
-    toNumber(p.salePrice) ||
-    toNumber(p.discountedPrice) ||
-    toNumber(p.originalPrice) ||
-    toNumber(p.price);
-
-  const specs = p.specs && typeof p.specs === "object" ? p.specs : undefined;
-
-  const out: Omit<Product, "_id"> = {
-    title: (p.title || "").toString(),
-    slug: (p.slug || "").toString().trim() || undefined,
-    department,
-    category,
-    subCategory,
-    audience,
-    unitPrice: unit,
-    price: p.price ?? unit,
-    originalPrice: p.originalPrice ?? undefined,
-    salePrice: p.salePrice ?? undefined,
-    discountedPrice: p.discountedPrice ?? undefined,
-    images,
-    description: (p.description || "").toString(),
-    tags: Array.isArray(p.tags) ? p.tags.map(String) : [],
-    specs,
-    createdAt: (p as any).createdAt || now,
-    updatedAt: now,
-  };
-
-  return out;
-}
-
-export async function listProducts(
-  filter: any = {},
-  options: { limit?: number; skip?: number; sort?: any } = {}
-) {
+export async function listProducts(filter: any = {}, options: ListOptions = {}) {
   const db = await getDb();
-  const Products = db.collection<DbProduct>("products");
+  const cursor = db.collection("products")
+    .find(filter)
+    .sort(options.sort ?? { createdAt: -1 })
+    .limit(options.limit ?? 1000)
+    .skip(options.skip ?? 0);
 
-  // Default audience at read time
-  const audienceFix = {
-    $addFields: {
-      audience: {
-        $cond: [
-          { $gt: [{ $size: { $ifNull: ["$audience", []] } }, 0] },
-          "$audience",
-          ["unisex"],
-        ],
-      },
-    },
-  };
-
-  // Department normalization in pipeline for legacy docs:
-  const departmentFix = {
-    $addFields: {
-      department: {
-        $cond: [
-          { $ne: [{ $ifNull: ["$department", ""] }, ""] },
-          { $toLower: "$department" },
-          {
-            $cond: [
-              {
-                $in: [
-                  { $toLower: { $ifNull: ["$category", ""] } },
-                  ["jewelry", "watch"],
-                ],
-              },
-              { $toLower: "$category" },
-              "jewelry",
-            ],
-          },
-        ],
-      },
-    },
-  };
-
-  const pipeline: any[] = [audienceFix, departmentFix];
-
-  if (filter && Object.keys(filter).length) {
-    pipeline.push({ $match: filter });
-  }
-  if (options.sort) pipeline.push({ $sort: options.sort });
-  if (options.skip) pipeline.push({ $skip: options.skip });
-  if (options.limit) pipeline.push({ $limit: options.limit });
-
-  const docs = await Products.aggregate(pipeline).toArray();
-  return docs.map((d) => fromDb(d as any));
+  const rows = await cursor.toArray();
+  return rows.map(mapDbToProduct);
 }
 
 export async function getProductById(id: string) {
   const db = await getDb();
-  const Products = db.collection<DbProduct>("products");
-  const doc = await Products.findOne({ _id: new ObjectId(id) });
-  if (!doc) return null;
+  const _id = new ObjectId(id);
+  const doc = await db.collection("products").findOne({ _id });
+  return doc ? mapDbToProduct(doc) : null;
+}
 
-  if (
-    !doc.audience ||
-    !Array.isArray(doc.audience) ||
-    doc.audience.length === 0
-  ) {
-    (doc as any).audience = ["unisex"];
+/** Allow legacy payloads to contain `tags` but drop them before insert */
+type LegacyCreate = Omit<Product, "_id"> & { tags?: string[] };
+
+export async function createProduct(input: LegacyCreate) {
+  const db = await getDb();
+  const { tags: _legacyTags, ...clean } = input; // strip tags
+  const now = new Date();
+
+  const toInsert = normalizeForWrite({
+    ...clean,
+    createdAt: now,
+    updatedAt: now,
+  });
+
+  const result = await db.collection("products").insertOne(toInsert);
+  const saved = await db.collection("products").findOne({ _id: result.insertedId });
+  return saved ? mapDbToProduct(saved) : null;
+}
+
+/** Drop legacy `tags` in patch; keep imageUrl/images in sync */
+type LegacyPatch = Partial<Product> & { tags?: string[] };
+
+export async function updateProduct(id: string, patch: LegacyPatch) {
+  const db = await getDb();
+  const _id = new ObjectId(id);
+
+  const { tags: _legacyTags, ...clean } = patch; // strip tags
+  const updateSet = normalizeForWrite({
+    ...clean,
+    updatedAt: new Date(),
+  });
+
+  if (Object.keys(updateSet).length === 0) {
+    const fresh = await db.collection("products").findOne({ _id });
+    return fresh ? mapDbToProduct(fresh) : null;
   }
 
-  // Do same normalization as listProducts → fromDb handles the rest
-  const normalized = {
-    ...doc,
-    department:
-      doc.department ??
-      (["jewelry", "watch"].includes(String(doc.category || "").toLowerCase())
-        ? String(doc.category).toLowerCase()
-        : "jewelry"),
-  } as any;
-
-  return fromDb(normalized);
-}
-
-export async function createProduct(p: Partial<Product>) {
-  const db = await getDb();
-  const Products = db.collection<DbProduct>("products");
-
-  const toInsert: OptionalUnlessRequiredId<DbProduct> = {
-    ...(normalizeProductInput(p) as Omit<DbProduct, "_id">),
-  } as any;
-
-  const result = await Products.insertOne(toInsert);
-  const insertedDoc: DbProduct = {
-    ...(toInsert as any),
-    _id: result.insertedId,
-  };
-  return fromDb(insertedDoc);
-}
-
-export async function updateProduct(id: string, p: Partial<Product>) {
-  const db = await getDb();
-  const Products = db.collection<DbProduct>("products");
-
-  const existing = await Products.findOne({ _id: new ObjectId(id) });
-  if (!existing) return null;
-
-  const { _id: _ignore, ...existingNoId } = existing as any;
-
-  const normalized = normalizeProductInput({ ...existingNoId, ...p });
-  const merged: DbProduct = {
-    ...existing,
-    ...normalized,
-    _id: existing._id,
-    updatedAt: new Date().toISOString(),
-  };
-
-  const { _id, ...$set } = merged as any;
-  await Products.updateOne({ _id: existing._id }, { $set });
-
-  return fromDb(merged);
+  await db.collection("products").updateOne({ _id }, { $set: updateSet });
+  const saved = await db.collection("products").findOne({ _id });
+  return saved ? mapDbToProduct(saved) : null;
 }
 
 export async function deleteProduct(id: string) {
   const db = await getDb();
-  const Products = db.collection<DbProduct>("products");
-  const res = await Products.deleteOne({ _id: new ObjectId(id) });
-  return res.deletedCount === 1;
+  const _id = new ObjectId(id);
+  await db.collection("products").deleteOne({ _id });
+  return { ok: true };
+}
+
+/** ---------- Optional: query helpers compatible with your API ---------- */
+
+export function buildSearchFilter(qs: {
+  department?: string;
+  category?: string;
+  subCategory?: string;
+  q?: string;
+  audienceCsv?: string;
+  specsJson?: string;
+}) {
+  const filter: any = {};
+
+  if (qs.department) {
+    filter.$or = [
+      ...(filter.$or || []),
+      { department: qs.department },
+      { category: qs.department }, // legacy
+    ];
+  }
+  if (qs.category) filter.category = qs.category;
+
+  if (qs.subCategory) {
+    filter.$or = [
+      ...(filter.$or || []),
+      { subCategory: qs.subCategory },
+      { subcategory: qs.subCategory }, // legacy
+    ];
+  }
+
+  if (qs.q && qs.q.trim()) {
+    filter.$or = [
+      ...(filter.$or || []),
+      { name: { $regex: qs.q, $options: "i" } },
+      { title: { $regex: qs.q, $options: "i" } },
+      { description: { $regex: qs.q, $options: "i" } },
+      { tags: { $regex: qs.q, $options: "i" } }, // tolerate legacy "tags" in DB
+    ];
+  }
+
+  if (qs.audienceCsv) {
+    const a = qs.audienceCsv
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    if (a.length) {
+      filter.$expr = {
+        $gt: [
+          {
+            $size: {
+              $setIntersection: [{ $ifNull: ["$audience", ["unisex"]] }, a],
+            },
+          },
+          0,
+        ],
+      };
+    }
+  }
+
+  if (qs.specsJson) {
+    try {
+      const wanted = JSON.parse(qs.specsJson);
+      const and: any[] = [];
+      for (const [k, v] of Object.entries(wanted)) {
+        and.push({ [`specs.${k}`]: v });
+      }
+      if (and.length) filter.$and = [...(filter.$and || []), ...and];
+    } catch {
+      // ignore bad JSON
+    }
+  }
+
+  return filter;
 }
