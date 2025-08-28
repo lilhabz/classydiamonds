@@ -3,9 +3,10 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../../auth/[...nextauth]";
 import clientPromise from "@/lib/mongodb";
+import { getAllProductsMerged } from "@/lib/productsAdapter";
 
 type ApiResp =
-  | { ok: true; products?: any[]; product?: any; id?: string }
+  | { ok: true; items?: any[]; product?: any; id?: string }
   | { ok: false; error: string };
 
 export default async function handler(
@@ -24,17 +25,19 @@ export default async function handler(
   }
 
   try {
+    const DB_NAME = process.env.MONGODB_DB;
+    if (!DB_NAME)
+      return res
+        .status(500)
+        .json({ ok: false, error: "MONGODB_DB env var not set" });
+    const COLL = process.env.PRODUCTS_COLLECTION || "products";
     const client = await clientPromise;
-    const db = client.db();
-    const collection = db.collection("products");
+    const db = client.db(DB_NAME);
+    const collection = db.collection(COLL);
 
     if (req.method === "GET") {
-      const docs = await collection
-        .find({})
-        .sort({ createdAt: -1 })
-        .limit(300)
-        .toArray();
-      return res.status(200).json({ ok: true, products: docs as any[] });
+      const items = await getAllProductsMerged();
+      return res.status(200).json({ ok: true, items });
     }
 
     if (req.method === "POST") {
