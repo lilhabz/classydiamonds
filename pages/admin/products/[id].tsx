@@ -52,10 +52,12 @@ export default function EditProductPage() {
   const [imageUrl, setImageUrl] = useState<string | null>(PLACEHOLDER);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [resetToPlaceholder, setResetToPlaceholder] = useState(false);
+  const previewSrc = imageFile
+    ? URL.createObjectURL(imageFile)
+    : imageUrl || PLACEHOLDER;
 
-  // Spec values keyed by field key
+  // Spec values + hidden legacy keys preserved
   const [specValues, setSpecValues] = useState<Record<string, string>>({});
-  // Keep unknown/legacy keys so we don't lose them
   const hiddenSpecsRef = useRef<Record<string, string>>({});
 
   useEffect(() => {
@@ -78,13 +80,12 @@ export default function EditProductPage() {
         setSubcategory(p.subcategory ?? "");
         setAudience(p.audience?.[0] ?? "unisex");
 
-        const rawSpecs =
+        const specsObj =
           p.specs && typeof p.specs === "object"
             ? (p.specs as Record<string, any>)
             : {};
-        // Temporarily store specs until we know fields list
         hiddenSpecsRef.current = Object.fromEntries(
-          Object.entries(rawSpecs).map(([k, v]) => [k, String(v ?? "")])
+          Object.entries(specsObj).map(([k, v]) => [k, String(v ?? "")])
         );
 
         setImageUrl(p.imageUrl ?? PLACEHOLDER);
@@ -106,7 +107,7 @@ export default function EditProductPage() {
     [dept, category]
   );
 
-  // ---------- Spec fields (shared with new) ----------
+  // ---------- Spec fields (same as new) ----------
   const specFieldsFor = (d: Department, cat: string): SpecField[] => {
     const c = (cat || "").toLowerCase();
 
@@ -207,24 +208,19 @@ export default function EditProductPage() {
     [dept, category]
   );
 
-  // When the visible fields change, prefill from known specs and keep unknown in hidden ref
+  // Prefill visible spec inputs from hidden specs
   useEffect(() => {
     setSpecValues((prev) => {
       const next: Record<string, string> = {};
       for (const f of specFields) {
-        // if we already have value (user typed), keep it
         if (prev[f.key] !== undefined) next[f.key] = prev[f.key];
-        else {
-          // else try from hidden (loaded from DB)
-          const v = hiddenSpecsRef.current[f.key];
-          next[f.key] = v ?? "";
-        }
+        else next[f.key] = hiddenSpecsRef.current[f.key] ?? "";
       }
       return next;
     });
   }, [specFields]);
 
-  // ---------- Upload image ----------
+  // ---------- Upload ----------
   async function uploadImage(): Promise<string | null> {
     if (!imageFile) return null;
     const fd = new FormData();
@@ -238,10 +234,6 @@ export default function EditProductPage() {
     return json.url as string;
   }
 
-  const previewSrc = imageFile
-    ? URL.createObjectURL(imageFile)
-    : imageUrl || PLACEHOLDER;
-
   // ---------- Save ----------
   async function onSave(e: React.FormEvent) {
     e.preventDefault();
@@ -254,14 +246,13 @@ export default function EditProductPage() {
       if (resetToPlaceholder) nextImageUrl = PLACEHOLDER;
       else if (imageFile) nextImageUrl = await uploadImage();
 
-      // Build specs: merge visible non-empty + hidden (unknown) untouched
+      // Visible non-empty specs
       const visible: Record<string, string> = {};
       for (const f of specFields) {
         const v = (specValues[f.key] ?? "").trim();
         if (v !== "") visible[f.key] = v;
       }
-
-      // Include any hidden keys that aren’t overridden by visible
+      // Merge with legacy hidden
       const merged: Record<string, string> = {
         ...hiddenSpecsRef.current,
         ...visible,
@@ -295,7 +286,7 @@ export default function EditProductPage() {
       setResetToPlaceholder(false);
       setImageFile(null);
 
-      // Refresh hidden with what server saved (keeps everything consistent)
+      // Refresh legacy map from server
       const serverSpecs =
         p.specs && typeof p.specs === "object"
           ? (p.specs as Record<string, any>)
@@ -303,7 +294,6 @@ export default function EditProductPage() {
       hiddenSpecsRef.current = Object.fromEntries(
         Object.entries(serverSpecs).map(([k, v]) => [k, String(v ?? "")])
       );
-      // Keep visible mapping as before (will auto-prefill via effect if fields change)
     } catch (err: any) {
       setStatusMsg({
         ok: false,
@@ -395,7 +385,7 @@ export default function EditProductPage() {
               disabled={!category}
             >
               <option value="">(no subcategory)</option>
-              {subcats.map((s) => (
+              {getSubCategories(dept, category).map((s) => (
                 <option key={s} value={s}>
                   {s}
                 </option>
@@ -467,15 +457,20 @@ export default function EditProductPage() {
             </div>
           </div>
 
-          {/* Image upload with preview + reset */}
+          {/* Button-looking upload + persistent preview + reset */}
           <div className="md:col-span-2 space-y-2">
             <label className="text-sm font-medium">Product Photo</label>
-            <div className="flex items-center gap-3">
-              <input
-                type="file"
-                accept="image/*"
-                onChange={(e) => setImageFile(e.target.files?.[0] ?? null)}
-              />
+            <div className="flex items-center gap-4">
+              <label className="px-4 py-2 rounded bg-blue-600 cursor-pointer inline-block">
+                Upload Image
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => setImageFile(e.target.files?.[0] ?? null)}
+                />
+              </label>
+
               <label className="flex items-center gap-2 text-sm opacity-90">
                 <input
                   type="checkbox"
@@ -484,35 +479,37 @@ export default function EditProductPage() {
                 />
                 Reset to placeholder
               </label>
-            </div>
 
-            <div className="mt-1">
-              {previewSrc && (
-                <img
-                  src={previewSrc}
-                  alt="Preview"
-                  className="w-32 h-32 object-cover rounded border"
-                />
-              )}
+              {/* Persistent preview (never removed) */}
+              <img
+                src={previewSrc}
+                alt="Preview"
+                className="w-32 h-32 object-cover rounded border"
+              />
             </div>
           </div>
 
-          {/* Specifications — clean labeled inputs */}
-          <div className="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {specFields.map((f) => (
-              <label key={f.key} className="block">
-                {f.label}
-                <input
-                  value={specValues[f.key] ?? ""}
-                  onChange={(e) =>
-                    setSpecValues((s) => ({ ...s, [f.key]: e.target.value }))
-                  }
-                  placeholder={f.placeholder}
-                  className="mt-1 w-full px-3 py-2 rounded bg-[var(--bg-nav)]"
-                />
-              </label>
-            ))}
-          </div>
+          {/* Specifications inside a dropdown; smaller text */}
+          <details className="md:col-span-2 rounded border border-[var(--bg-nav)]">
+            <summary className="cursor-pointer px-3 py-2 bg-[var(--bg-nav)]">
+              Specifications
+            </summary>
+            <div className="p-3 grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+              {specFields.map((f) => (
+                <label key={f.key} className="block">
+                  {f.label}
+                  <input
+                    value={specValues[f.key] ?? ""}
+                    onChange={(e) =>
+                      setSpecValues((s) => ({ ...s, [f.key]: e.target.value }))
+                    }
+                    placeholder={f.placeholder}
+                    className="mt-1 w-full px-3 py-2 rounded bg-[var(--bg-nav)]"
+                  />
+                </label>
+              ))}
+            </div>
+          </details>
 
           <button
             type="submit"

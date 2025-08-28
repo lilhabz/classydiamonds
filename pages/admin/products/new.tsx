@@ -1,5 +1,5 @@
 // /pages/admin/products/new.tsx
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Head from "next/head";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
@@ -26,13 +26,15 @@ export default function NewProductPage() {
   const [salePrice, setSalePrice] = useState<string>("");
   const [description, setDescription] = useState("");
 
-  // Audience bubble
+  // Audience bubbles (unisex | him | her | kids)
   const [audience, setAudience] = useState<string>("unisex");
 
-  // Image upload only (with preview)
+  // Upload-only with visible preview
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const previewSrc = imageFile
+    ? URL.createObjectURL(imageFile)
+    : "/gray-placeholder.jpg";
 
-  // Status
   const [statusMsg, setStatusMsg] = useState<{ ok?: boolean; text?: string }>(
     {}
   );
@@ -42,7 +44,7 @@ export default function NewProductPage() {
     setSubcategory("");
   }, [dept]);
 
-  // ---------- Spec fields definition (no requirements) ----------
+  // ---------- Spec fields (dropdown content) ----------
   const specFieldsFor = (d: Department, cat: string): SpecField[] => {
     const c = (cat || "").toLowerCase();
 
@@ -131,12 +133,10 @@ export default function NewProductPage() {
     ];
 
     if (d === "watch") return watchFields;
-
     if (c.includes("ring")) return [...ringExtras, ...baseJewelry];
     if (c.includes("bracelet")) return braceletPreset;
     if (c.includes("necklace")) return necklacePreset;
     if (c.includes("earring")) return earringPreset;
-
     return baseJewelry;
   };
 
@@ -144,11 +144,7 @@ export default function NewProductPage() {
     () => specFieldsFor(dept, category),
     [dept, category]
   );
-
-  // Store spec values as a simple object keyed by spec key
   const [specValues, setSpecValues] = useState<Record<string, string>>({});
-
-  // Reset visible spec values when the visible fields change (don’t carry over irrelevant ones)
   useEffect(() => {
     setSpecValues((prev) => {
       const next: Record<string, string> = {};
@@ -157,7 +153,7 @@ export default function NewProductPage() {
     });
   }, [specFields]);
 
-  // ---------- Image upload ----------
+  // ---------- Upload image ----------
   async function uploadImage(): Promise<string | null> {
     if (!imageFile) return null;
     const fd = new FormData();
@@ -170,7 +166,6 @@ export default function NewProductPage() {
     if (!res.ok || !json?.ok) throw new Error(json?.error || "Upload failed");
     return json.url as string;
   }
-  const previewSrc = imageFile ? URL.createObjectURL(imageFile) : "";
 
   // ---------- Submit ----------
   async function onSubmit(e: React.FormEvent) {
@@ -181,7 +176,6 @@ export default function NewProductPage() {
       let finalImageUrl: string | null = "/gray-placeholder.jpg";
       if (imageFile) finalImageUrl = await uploadImage();
 
-      // Build specs from filled fields only (skip empties)
       const specs: Record<string, string> = {};
       for (const f of specFields) {
         const v = (specValues[f.key] ?? "").trim();
@@ -210,8 +204,7 @@ export default function NewProductPage() {
       if (!res.ok || !json?.ok) throw new Error(json?.error || "Create failed");
 
       setStatusMsg({ ok: true, text: "✅ Product created" });
-
-      // reset (keep dept/category for faster multiple adds)
+      // reset (keep dept/category for speed)
       setName("");
       setPrice("");
       setSalePrice("");
@@ -379,41 +372,51 @@ export default function NewProductPage() {
           </div>
         </div>
 
-        {/* Upload with preview */}
+        {/* Upload with button-look + preview (kept!) */}
         <div className="md:col-span-2">
           <label className="text-sm font-medium">Product Photo</label>
-          <div className="mt-2 flex items-center gap-3">
-            <input
-              type="file"
-              accept="image/*"
-              onChange={(e) => setImageFile(e.target.files?.[0] ?? null)}
-            />
-            {previewSrc && (
-              <img
-                src={previewSrc}
-                alt="Preview"
-                className="w-32 h-32 object-cover rounded border"
+          <div className="mt-2 flex items-center gap-4">
+            {/* Button-looking upload */}
+            <label className="px-4 py-2 rounded bg-blue-600 cursor-pointer inline-block">
+              Upload Image
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => setImageFile(e.target.files?.[0] ?? null)}
               />
-            )}
+            </label>
+
+            {/* Persistent preview */}
+            <img
+              src={previewSrc}
+              alt="Preview"
+              className="w-32 h-32 object-cover rounded border"
+            />
           </div>
         </div>
 
-        {/* Specifications — clean labeled inputs */}
-        <div className="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {specFields.map((f) => (
-            <label key={f.key} className="block">
-              {f.label}
-              <input
-                value={specValues[f.key] ?? ""}
-                onChange={(e) =>
-                  setSpecValues((s) => ({ ...s, [f.key]: e.target.value }))
-                }
-                placeholder={f.placeholder}
-                className="mt-1 w-full px-3 py-2 rounded bg-[var(--bg-nav)]"
-              />
-            </label>
-          ))}
-        </div>
+        {/* Specifications in a dropdown (details). Smaller text inside. */}
+        <details className="md:col-span-2 rounded border border-[var(--bg-nav)]">
+          <summary className="cursor-pointer px-3 py-2 bg-[var(--bg-nav)]">
+            Specifications
+          </summary>
+          <div className="p-3 grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+            {specFields.map((f) => (
+              <label key={f.key} className="block">
+                {f.label}
+                <input
+                  value={specValues[f.key] ?? ""}
+                  onChange={(e) =>
+                    setSpecValues((s) => ({ ...s, [f.key]: e.target.value }))
+                  }
+                  placeholder={f.placeholder}
+                  className="mt-1 w-full px-3 py-2 rounded bg-[var(--bg-nav)]"
+                />
+              </label>
+            ))}
+          </div>
+        </details>
 
         <button
           type="submit"
