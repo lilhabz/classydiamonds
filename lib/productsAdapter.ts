@@ -6,20 +6,14 @@ const DB_NAME = process.env.MONGODB_DB!;
 const COLL = process.env.PRODUCTS_COLLECTION || "products";
 
 export type Product = {
-  _id?: string; // Mongo id as string
-  id?: string; // legacy id support, always string if present
+
   name: string;
   slug?: string;
   price: number;
   salePrice?: number | null;
   category: string;
   subCategory?: string | null;
-  image?: string | null; // unified primary image
-  imageUrl?: string | null; // legacy field sometimes used
-  audience?: string[]; // optional facet
-  specs?: Record<string, unknown>; // optional facet
-  images?: string[]; // optional gallery
-  source?: "db" | "legacy"; // indicate origin
+
   // ... other optional fields
 };
 
@@ -53,7 +47,7 @@ export async function getAllProductsMerged(): Promise<Product[]> {
       audience: (d.audience as string[]) ?? undefined,
       specs: (d.specs as Record<string, unknown>) ?? undefined,
       images: (d.images as string[]) ?? undefined,
-      source: "db",
+
     };
   });
 
@@ -61,7 +55,7 @@ export async function getAllProductsMerged(): Promise<Product[]> {
   const legacyNormalized: Product[] = (legacyProducts as any[]).map((p) => {
     const image = p.image ?? p.imageUrl ?? (p.images?.[0] ?? null);
     return {
-      id: p.id != null ? String(p.id) : undefined,
+
       name: p.name ?? p.title,
       slug: p.slug,
       price: Number(p.price ?? 0),
@@ -73,7 +67,7 @@ export async function getAllProductsMerged(): Promise<Product[]> {
       audience: p.audience,
       specs: p.specs,
       images: p.images,
-      source: "legacy",
+
     };
   });
 

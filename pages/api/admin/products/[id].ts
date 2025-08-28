@@ -5,7 +5,7 @@ import { authOptions } from "../../auth/[...nextauth]";
 import clientPromise from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
 import { productsData as legacyProducts } from "@/data/productsData";
-import { getAllProductsMerged, type Product } from "@/lib/productsAdapter";
+
 
 type ApiResp =
   | { ok: true; product?: any }
@@ -52,8 +52,7 @@ export default async function handler(
       let product = _id ? await collection.findOne({ _id }) : null;
       if (product) return res.status(200).json({ ok: true, product });
 
-      const merged: Product[] = await getAllProductsMerged();
-      const legacy = merged.find((p) => p.id === id || p.slug === id);
+
       if (legacy) return res.status(200).json({ ok: true, product: legacy });
       return res
         .status(404)
