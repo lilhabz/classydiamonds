@@ -4,7 +4,6 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "../../auth/[...nextauth]";
 import { getDb } from "@/lib/products";
 
-// ----- Types your table already expects -----
 type Source = "db" | "legacy";
 type AdminProduct = {
   _id?: string;
@@ -34,10 +33,20 @@ type AdminProduct = {
 type Ok = {
   ok: true;
   items: AdminProduct[];
-  counts?: { new: number; legacy: number };
-  collection: string;
+  counts: {
+    primary: number;
+    alsoProducts: number;
+    legacy: number;
+    totalAfterDedupe: number;
+  };
+  collectionsQueried: string[];
 };
 type Err = { ok: false; error: string };
+
+const pickCatalogName =
+  process.env.PRODUCTS_COLLECTION ||
+  process.env.NEXT_PUBLIC_PRODUCTS_COLLECTION ||
+  "products";
 
 const s = (v: any) => (typeof v === "string" ? v : v == null ? "" : String(v));
 const n = (v: any) => {
@@ -49,13 +58,6 @@ const n = (v: any) => {
 const toId = (x: any) =>
   typeof x === "string" ? x : x?.toString?.() ?? undefined;
 
-// IMPORTANT: honor your env-based collection selector
-const catalogCollectionName =
-  process.env.PRODUCTS_COLLECTION ||
-  process.env.NEXT_PUBLIC_PRODUCTS_COLLECTION ||
-  "products";
-
-// Build a simple `$or` regex filter for q
 function buildFilter(q: string) {
   if (!q) return {};
   const rx = {
@@ -195,39 +197,71 @@ export default async function handler(
 
   const db = await getDb();
 
-  // query params
   const q = typeof req.query.q === "string" ? req.query.q.trim() : "";
   const includeLegacy =
     String(req.query.includeLegacy ?? "1").toLowerCase() !== "0" &&
     String(req.query.includeLegacy ?? "1").toLowerCase() !== "false";
-  const curFilter = buildFilter(q);
-  const legFilter = buildFilter(q);
+  const filter = buildFilter(q);
 
-  // ✅ Use the resolved catalog collection name
-  const productsCol = db.collection(catalogCollectionName);
-  const currentDocs = await productsCol.find(curFilter).toArray();
-  const current = currentDocs.map(adaptDb);
+  // Query BOTH the env-selected catalog and the hard-coded "products" (if different),
+  // then merge+dedupe by slug or _id so you always see everything.
+  const collectionsToQuery = Array.from(new Set([pickCatalogName, "products"]));
+
+  const results: AdminProduct[] = [];
+  let primaryCount = 0;
+  let alsoProductsCount = 0;
+
+  for (const colName of collectionsToQuery) {
+    try {
+      const docs = await db.collection(colName).find(filter).toArray();
+      const mapped = docs.map(adaptDb);
+      results.push(...mapped);
+      if (colName === pickCatalogName) primaryCount = mapped.length;
+      if (colName === "products" && colName !== pickCatalogName)
+        alsoProductsCount = mapped.length;
+    } catch {
+      // collection may not exist; skip
+    }
+  }
 
   // legacy (optional)
   let legacy: AdminProduct[] = [];
+  let legacyCount = 0;
   if (includeLegacy) {
     try {
       const legacyDocs = await db
         .collection("legacyProducts")
-        .find(legFilter)
+        .find(filter)
         .toArray();
       legacy = legacyDocs.map(adaptLegacy);
+      legacyCount = legacy.length;
     } catch {
       legacy = [];
     }
   }
 
-  const items = [...current, ...legacy].sort((a, b) => {
-    // new first
+  // Deduplicate by slug (preferred) then by _id/id
+  const seen = new Map<string, AdminProduct>();
+  function keyFor(p: AdminProduct) {
+    return (p.slug && p.slug.trim()) || (p._id ?? p.id ?? "");
+  }
+  for (const p of [...results, ...legacy]) {
+    const k = keyFor(p);
+    if (!k) continue;
+    // prefer non-legacy over legacy if a collision
+    if (
+      !seen.has(k) ||
+      (seen.get(k)?.source === "legacy" && p.source === "db")
+    ) {
+      seen.set(k, p);
+    }
+  }
+
+  // Sort: db first, then legacy; then newest createdAt
+  const items = Array.from(seen.values()).sort((a, b) => {
     if ((a.source === "legacy") !== (b.source === "legacy")) {
       return a.source === "legacy" ? 1 : -1;
     }
-    // then newest createdAt
     const at = a.createdAt ? new Date(a.createdAt).getTime() : 0;
     const bt = b.createdAt ? new Date(b.createdAt).getTime() : 0;
     return bt - at;
@@ -236,7 +270,12 @@ export default async function handler(
   return res.status(200).json({
     ok: true,
     items,
-    counts: { new: current.length, legacy: legacy.length },
-    collection: catalogCollectionName,
+    counts: {
+      primary: primaryCount,
+      alsoProducts: alsoProductsCount,
+      legacy: legacyCount,
+      totalAfterDedupe: items.length,
+    },
+    collectionsQueried: collectionsToQuery,
   });
 }

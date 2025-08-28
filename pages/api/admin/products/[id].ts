@@ -5,13 +5,12 @@ import { authOptions } from "../../auth/[...nextauth]";
 import { ObjectId } from "mongodb";
 import { getDb } from "@/lib/products";
 
-// Use the same env-based catalog collection the storefront uses
-const catalogCollectionName =
+const pickCatalogName =
   process.env.PRODUCTS_COLLECTION ||
   process.env.NEXT_PUBLIC_PRODUCTS_COLLECTION ||
   "products";
 
-/** Require admin session (loose typing so TS doesn't block build) */
+/** Admin gate */
 async function requireAdmin(req: NextApiRequest, res: NextApiResponse) {
   const session: any = await getServerSession(req, res, authOptions as any);
   if (!session?.user?.isAdmin) {
@@ -21,7 +20,7 @@ async function requireAdmin(req: NextApiRequest, res: NextApiResponse) {
   return session as any;
 }
 
-/** Build a filter that matches either ObjectId or string _id */
+/** Build filter that matches string _id or ObjectId */
 function makeIdFilter(idParam: string | string[] | undefined) {
   const raw =
     typeof idParam === "string"
@@ -30,13 +29,10 @@ function makeIdFilter(idParam: string | string[] | undefined) {
       ? idParam[0]
       : "";
   if (!raw) return null;
-
-  const ors: any[] = [{ _id: raw }]; // string _id support
+  const ors: any[] = [{ _id: raw }];
   try {
-    ors.push({ _id: new ObjectId(raw) }); // ObjectId support
-  } catch {
-    // not a valid ObjectId; ignore
-  }
+    ors.push({ _id: new ObjectId(raw) });
+  } catch {}
   return ors.length === 1 ? ors[0] : { $or: ors };
 }
 
@@ -44,45 +40,42 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
-  // Auth
   const session = await requireAdmin(req, res);
   if (!session) return;
 
   const db = await getDb();
   const idFilter = makeIdFilter(req.query.id);
-  if (!idFilter) {
+  if (!idFilter)
     return res.status(400).json({ ok: false, error: "Invalid id" });
-  }
 
-  const productsCol = db.collection(catalogCollectionName);
+  const collectionsToQuery = Array.from(new Set([pickCatalogName, "products"]));
 
   if (req.method === "GET") {
-    // Primary: find in the resolved catalog collection
-    const product = await productsCol.findOne(idFilter as any);
-    if (product) {
-      return res
-        .status(200)
-        .json({ ok: true, product, collection: catalogCollectionName });
+    for (const colName of collectionsToQuery) {
+      try {
+        const found = await db.collection(colName).findOne(idFilter as any);
+        if (found) {
+          return res
+            .status(200)
+            .json({ ok: true, product: found, collection: colName });
+        }
+      } catch {}
     }
-
-    // Optional fallback: check legacy collection if it exists
+    // legacy fallback
     try {
-      const legacyProduct = await db
+      const legacy = await db
         .collection("legacyProducts")
         .findOne(idFilter as any);
-      if (legacyProduct) {
+      if (legacy) {
         return res
           .status(200)
           .json({
             ok: true,
-            product: legacyProduct,
+            product: legacy,
             note: "Served from legacyProducts",
           });
       }
-    } catch {
-      /* legacy collection may not exist */
-    }
-
+    } catch {}
     return res.status(404).json({ ok: false, error: "Product not found" });
   }
 
@@ -90,22 +83,36 @@ export default async function handler(
     const update = { ...(req.body ?? {}) };
     if ("_id" in update) delete (update as any)._id;
 
-    const { value } = await productsCol.findOneAndUpdate(
-      idFilter as any,
-      { $set: { ...update, updatedAt: new Date() } },
-      { returnDocument: "after" }
-    );
-
-    if (!value)
-      return res.status(404).json({ ok: false, error: "Product not found" });
-    return res.status(200).json({ ok: true, product: value });
+    for (const colName of collectionsToQuery) {
+      try {
+        const { value } = await db
+          .collection(colName)
+          .findOneAndUpdate(
+            idFilter as any,
+            { $set: { ...update, updatedAt: new Date() } },
+            { returnDocument: "after" }
+          );
+        if (value)
+          return res
+            .status(200)
+            .json({ ok: true, product: value, collection: colName });
+      } catch {}
+    }
+    return res.status(404).json({ ok: false, error: "Product not found" });
   }
 
   if (req.method === "DELETE") {
-    const { deletedCount } = await productsCol.deleteOne(idFilter as any);
-    if (!deletedCount)
-      return res.status(404).json({ ok: false, error: "Product not found" });
-    return res.status(200).json({ ok: true, deleted: true });
+    for (const colName of collectionsToQuery) {
+      try {
+        const result = await db.collection(colName).deleteOne(idFilter as any);
+        if (result.deletedCount) {
+          return res
+            .status(200)
+            .json({ ok: true, deleted: true, collection: colName });
+        }
+      } catch {}
+    }
+    return res.status(404).json({ ok: false, error: "Product not found" });
   }
 
   res.setHeader("Allow", "GET,PUT,DELETE");
