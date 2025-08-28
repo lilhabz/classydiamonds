@@ -1,4 +1,4 @@
-// pages/admin/products/new.tsx
+// 📄 pages/admin/products/new.tsx
 import { useState, useEffect } from "react";
 import Head from "next/head";
 import Link from "next/link";
@@ -231,7 +231,7 @@ export default function NewProductPage() {
           </select>
         </label>
 
-        {/* Upload only (no URL inputs) */}
+        {/* Upload only (with preview) */}
         <div className="md:col-span-2">
           <label className="text-sm font-medium">Product Photo</label>
           <div className="mt-2 flex items-center gap-3">
@@ -241,7 +241,16 @@ export default function NewProductPage() {
               onChange={(e) => setImageFile(e.target.files?.[0] ?? null)}
             />
             {imageFile && (
-              <span className="text-sm opacity-80">{imageFile.name}</span>
+              <>
+                <span className="text-sm opacity-80">{imageFile.name}</span>
+                <div className="mt-2">
+                  <img
+                    src={URL.createObjectURL(imageFile)}
+                    alt="Preview"
+                    className="w-32 h-32 object-cover rounded border"
+                  />
+                </div>
+              </>
             )}
           </div>
         </div>
