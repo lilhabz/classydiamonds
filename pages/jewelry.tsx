@@ -200,8 +200,13 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
 
   // ----------------------------- Filtering logic -----------------------------
   const shown = useMemo(() => {
+    // 0) Absolute safety gate: NEVER show non-allowed categories (e.g., watches)
+    const allowedSet = new Set(ALLOWED);
+    let base = products.filter((p) =>
+      allowedSet.has((p.category || "").toLowerCase() as CategorySlug)
+    );
+
     // 1) Category/Subcategory base filter
-    let base = products;
     if (activeCategorySlug) {
       base = base.filter(
         (p) => (p.category || "").toLowerCase() === activeCategorySlug
@@ -468,26 +473,35 @@ export const getServerSideProps: GetServerSideProps = async () => {
   // ✅ Unified source of truth
   const rows = await listProducts({}, { sort: { createdAt: -1 }, limit: 2000 });
 
+  // ✅ Allow-list only jewelry categories (explicit filter; no watches ever)
+  const ALLOWED_SET = new Set<"rings" | "earrings" | "bracelets" | "necklaces">(
+    ["rings", "earrings", "bracelets", "necklaces"]
+  );
+
   // Map to this page's lightweight shape (preserve your existing keys)
-  const products: ProductType[] = rows.map((p: any) => ({
-    id: String(p._id),
-    slug: p.slug,
-    name: p.title || p.name || "",
-    price: p.price ?? p.unitPrice ?? 0,
-    salePrice: p.salePrice ?? p.discountedPrice ?? null,
-    image:
-      p.imageUrl ||
-      (Array.isArray(p.images) && p.images.length ? p.images[0] : "") ||
-      "",
-    category: (p.category || "").toLowerCase(),
-    subcategory: (p.subCategory ?? p.subcategory ?? "").toLowerCase(),
-    metal: (p.metal || "").toLowerCase(),
-    stone: (p.stone || "").toLowerCase(),
-    shape: (p.shape || "").toLowerCase(),
-    carat: typeof p.carat === "number" ? p.carat : null,
-    gender: p.gender || "unisex",
-    description: p.description || "",
-  }));
+  const products: ProductType[] = rows
+    .filter((p: any) =>
+      ALLOWED_SET.has(String(p.category || "").toLowerCase() as any)
+    )
+    .map((p: any) => ({
+      id: String(p._id),
+      slug: p.slug,
+      name: p.title || p.name || "",
+      price: p.price ?? p.unitPrice ?? 0,
+      salePrice: p.salePrice ?? p.discountedPrice ?? null,
+      image:
+        p.imageUrl ||
+        (Array.isArray(p.images) && p.images.length ? p.images[0] : "") ||
+        "",
+      category: (p.category || "").toLowerCase(),
+      subcategory: (p.subCategory ?? p.subcategory ?? "").toLowerCase(),
+      metal: (p.metal || "").toLowerCase(),
+      stone: (p.stone || "").toLowerCase(),
+      shape: (p.shape || "").toLowerCase(),
+      carat: typeof p.carat === "number" ? p.carat : null,
+      gender: p.gender || "unisex",
+      description: p.description || "",
+    }));
 
   return { props: { products } };
 };
