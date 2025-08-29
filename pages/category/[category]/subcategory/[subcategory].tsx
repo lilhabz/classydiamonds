@@ -119,7 +119,6 @@ const SUBHEADERS: Record<
 const resolveSubheader = (category: string, sub: string): string => {
   const cat = SUBHEADERS[category];
   if (!cat) return "Thoughtfully designed and beautifully finished.";
-
   const key = (sub || "").toLowerCase().trim().replace(/\s+/g, "-");
   const specific = cat.subs?.[key];
   return specific || cat.default;
@@ -129,9 +128,7 @@ const isRingCategory = (cat?: string) =>
   (cat ?? "").toLowerCase().includes("ring");
 
 /* ----------------------------- SSR ------------------------------ */
-export const getServerSideProps: GetServerSideProps<PageProps> = async (
-  ctx
-) => {
+export const getServerSideProps: GetServerSideProps<PageProps> = async (ctx) => {
   const categorySlug = String(ctx.params?.category || "").toLowerCase();
   const subcategorySlug = String(ctx.params?.subcategory || "").toLowerCase();
   if (!categorySlug || !subcategorySlug) return { notFound: true };
@@ -345,13 +342,12 @@ export default function SubcategoryPage({
             <FiltersSidebar />
           </div>
 
-          {/* Product grid — unified with the rest of the site */}
+          {/* Product grid — unified to 2→3→4 columns */}
           <div>
             {products.length === 0 ? (
               <p className="text-white/80">No products found.</p>
             ) : (
-              /* ✅ Use the shared product-grid that honors CSS vars */
-              <div className="product-grid">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6 justify-items-center">
                 {products.slice(0, visibleCount).map((p) => {
                   const href = `/category/${encodeURIComponent(
                     categorySlug

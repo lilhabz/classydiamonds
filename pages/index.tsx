@@ -30,9 +30,6 @@ interface HomeProps {
 }
 
 export const getServerSideProps: GetServerSideProps<HomeProps> = async () => {
-  // ---------------------------------------------
-  // 🎯 OPTION 1: DATABASE-DRIVEN FEATURED
-  // ---------------------------------------------
   const client = await clientPromise;
   const db = client.db();
   const featuredDocs = await db
@@ -50,20 +47,6 @@ export const getServerSideProps: GetServerSideProps<HomeProps> = async () => {
     category: String(doc.category || "").toLowerCase(),
     slug: doc.slug,
   }));
-
-  // ---------------------------------------------
-  // 🎯 OPTION 2: STATIC FALLBACK (uncomment if needed)
-  // ---------------------------------------------
-  // const staticFeaturedItems = staticFeatured.slice(0, 4).map(item => ({
-  //   _id: item.id.toString(),
-  //   name: item.name,
-  //   price: item.price,
-  //   salePrice: item.salePrice ?? null,
-  //   image: item.image,
-  //   category: item.category,
-  //   slug: item.slug,
-  // }));
-  // return { props: { products: staticFeaturedItems } };
 
   return { props: { products } };
 };
@@ -109,20 +92,11 @@ export default function Home({ products }: HomeProps) {
     );
   }
 
-  // 🔧 4 categories (same as Jewelry)
   const CATEGORY_ITEMS = [
     { label: "Rings", slug: "rings", image: "/category/ring-cat.jpg" },
     { label: "Earrings", slug: "earrings", image: "/category/earring-cat.jpg" },
-    {
-      label: "Bracelets",
-      slug: "bracelets",
-      image: "/category/bracelet-cat.jpg",
-    },
-    {
-      label: "Necklaces & Pendants",
-      slug: "necklaces",
-      image: "/category/necklace-cat.jpg",
-    },
+    { label: "Bracelets", slug: "bracelets", image: "/category/bracelet-cat.jpg" },
+    { label: "Necklaces & Pendants", slug: "necklaces", image: "/category/necklace-cat.jpg" },
   ];
 
   return (
@@ -139,12 +113,7 @@ export default function Home({ products }: HomeProps) {
       <main className="flex flex-col min-h-screen bg-[var(--bg-page)] text-[var(--foreground)] overflow-x-hidden">
         {/* ⭐ Hero Section */}
         <section className="-mt-20 relative w-full h-[80vh] flex items-center justify-center overflow-hidden">
-          <Image
-            src="/hero-home.jpg"
-            alt="Hero"
-            fill
-            className="object-cover"
-          />
+          <Image src="/hero-home.jpg" alt="Hero" fill className="object-cover" />
           <div className="absolute inset-0 bg-black/50" />
           <div className="relative z-10 text-center px-4">
             <h1 className="text-3xl sm:text-4xl md:text-6xl font-serif font-bold tracking-wider leading-snug text-[#e0e0e0] mb-6">
@@ -161,27 +130,25 @@ export default function Home({ products }: HomeProps) {
           </div>
         </section>
 
-        {/* 🛍️ Shared Category Grid (matches Jewelry sizes & behavior) */}
+        {/* 🛍️ Shared Category Grid */}
         <CategoryGrid
           items={CATEGORY_ITEMS}
           title="Shop by Category"
           fullBleedDesktop
-          className="mt-12 md:mt-16" // extra top spacing to match Jewelry page with Breadcrumbs
+          className="mt-12 md:mt-16"
         />
 
-        {/* 🛍️ Mobile-Only “Featured” Below Categories (uses ProductCard) */}
+        {/* 🛍️ Mobile-Only “Featured” */}
         <section className="sm:hidden px-4 mt-2 mb-8">
           <h2 className="text-2xl font-serif font-semibold tracking-wide text-center mb-4 text-white">
             Featured Pieces
           </h2>
 
           {featured.length === 0 ? (
-            <p className="text-white text-center w-full">
-              No featured items to display.
-            </p>
+            <p className="text-white text-center w-full">No featured items to display.</p>
           ) : (
-            /* ✅ ONLY CHANGE: use the same product-grid so cards follow CSS vars */
-            <div className="product-grid">
+            /* 🔒 2 cols on phones (section hidden ≥sm) */
+            <div className="grid grid-cols-2 gap-4 justify-items-center">
               {featured.map((item) => (
                 <ProductCard
                   key={item._id}
@@ -208,19 +175,17 @@ export default function Home({ products }: HomeProps) {
           )}
         </section>
 
-        {/* 🖥️ Desktop-Only “Featured” Above About (uses ProductCard) */}
+        {/* 🖥️ Desktop-Only “Featured” */}
         <section className="hidden sm:block py-16 sm:py-20 px-4 sm:px-6 max-w-7xl mx-auto">
           <h2 className="text-3xl sm:text-4xl font-serif font-semibold tracking-wide text-center mb-8">
             Featured Pieces
           </h2>
 
           {featured.length === 0 ? (
-            <p className="text-white text-center">
-              No featured items to display.
-            </p>
+            <p className="text-white text-center">No featured items to display.</p>
           ) : (
-            /* ✅ ONLY CHANGE: switch to product-grid for consistent sizing/columns */
-            <div className="product-grid">
+            /* 🔒 Always 4 per row on desktop, 3 at sm/md */
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-10 justify-items-center">
               {featured.map((item) => (
                 <ProductCard
                   key={item._id}
@@ -247,7 +212,7 @@ export default function Home({ products }: HomeProps) {
           )}
         </section>
 
-        {/* 🎁 Gifts for Him & Her Section */}
+        {/* 🎁 Gifts for Him & Her */}
         <section className="py-16 sm:py-20 px-4 sm:px-10 w-full">
           <h2 className="text-2xl sm:text-3xl font-serif font-semibold tracking-wide text-center mb-12 sm:mb-16">
             Gifts for Him & Her
@@ -278,7 +243,7 @@ export default function Home({ products }: HomeProps) {
 
         {/* 💎 Why Choose Us Section */}
         <section className="py-16 sm:py-20 px-4 sm:px-6 --bg-page">
-          <div className="max-w-4xl mx-auto text-center">
+          <div className="max-w-4xl mx_auto text-center">
             <h2 className="text-3xl sm:text-4xl font-serif font-bold mb-8 sm:mb-10 tracking-wide">
               Why Choose Classy Diamonds?
             </h2>

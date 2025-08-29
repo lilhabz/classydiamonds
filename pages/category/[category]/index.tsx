@@ -43,9 +43,7 @@ const pretty = (slug: string) =>
   slug.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 
 /* ----------------------------- SERVER DATA ------------------------------ */
-export const getServerSideProps: GetServerSideProps<PageProps> = async (
-  ctx
-) => {
+export const getServerSideProps: GetServerSideProps<PageProps> = async (ctx) => {
   const categorySlug = String(ctx.params?.category || "").toLowerCase();
   if (!categorySlug) return { notFound: true };
 
@@ -257,8 +255,8 @@ export default function CategoryPage({
             {products.length === 0 ? (
               <p className="text-white/80">No products found.</p>
             ) : (
-              /* ✅ Unified with Jewelry/Watches: use .product-grid to honor CSS vars */
-              <div className="product-grid">
+              /* 🔒 Force 4 per row on desktop, 3 on tablets, 2 on phones */
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6 justify-items-center">
                 {products.map((p) => {
                   const href = `/category/${encodeURIComponent(
                     categorySlug
