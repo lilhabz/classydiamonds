@@ -201,7 +201,30 @@ export default function SubcategoryPage({
   const { addToCart } = useCart();
   const [visibleCount, setVisibleCount] = useState(8);
 
-  // Preserve ?scroll=true behavior
+  /* 🔝 Force open-from-top (unless ?scroll=true is set intentionally)
+     - Prevents Chrome/Next from restoring a lower scroll position.
+     - Kept minimal to avoid regressions elsewhere. */
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const { scroll } = router.query as { scroll?: string };
+    // Temporarily disable history-based scroll restoration for this mount.
+    const prev = (history as any).scrollRestoration;
+    try {
+      (history as any).scrollRestoration = "manual";
+    } catch {}
+    if (scroll !== "true") {
+      window.scrollTo({ top: 0, behavior: "auto" });
+    }
+    return () => {
+      try {
+        (history as any).scrollRestoration = prev || "auto";
+      } catch {}
+    };
+    // Run once on mount for this route
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Preserve ?scroll=true behavior (e.g., from category links)
   useEffect(() => {
     const { scroll } = router.query as { scroll?: string };
     if (scroll === "true") {
