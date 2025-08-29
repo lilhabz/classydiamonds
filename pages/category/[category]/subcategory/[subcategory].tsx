@@ -44,31 +44,84 @@ type PageProps = {
 const titleCase = (s: string) =>
   s.replace(/-/g, " ").replace(/\b\w/g, (m) => m.toUpperCase());
 
-const HERO_BY_CATEGORY: Record<string, { image: string; subtitle?: string }> = {
+/** Hero images keyed by category; subtitles will be computed separately */
+const HERO_BY_CATEGORY: Record<string, { image: string }> = {
+  engagement: { image: "/category-hero/engagement-ring-hero.jpg" },
+  "wedding-bands": { image: "/category-hero/wedding-band-hero.jpg" },
+  rings: { image: "/category-hero/ring-hero.jpg" },
+  bracelets: { image: "/category-hero/bracelet-hero.jpg" },
+  "necklaces-pendants": { image: "/category-hero/necklace-hero.jpg" },
+  earrings: { image: "/category-hero/earring-hero.jpg" },
+};
+
+/** Professional subheaders by category + common subcategories */
+const SUBHEADERS: Record<
+  string,
+  { default: string; subs?: Record<string, string> }
+> = {
   engagement: {
-    image: "/category-hero/engagement-ring-hero.jpg",
-    subtitle: "Signature solitaires and brilliant halos.",
+    default: "Expertly crafted settings to showcase your center stone.",
+    subs: {
+      solitaire: "Minimalist elegance for maximum brilliance.",
+      halo: "A ring of light to amplify sparkle and presence.",
+      "three-stone": "Past, present, future—perfectly balanced.",
+      eternity: "Unbroken sparkle, timeless devotion.",
+    },
   },
   "wedding-bands": {
-    image: "/category-hero/wedding-band-hero.jpg",
-    subtitle: "Classic, comfort-fit, pavé and more.",
+    default: "Classic profiles, comfort-fit designs, precision detailing.",
+    subs: {
+      mens: "Refined profiles built for everyday wear.",
+      eternity: "Full-circle diamonds for uninterrupted fire.",
+      pave: "Fine pavé for delicate, continuous shimmer.",
+    },
   },
   rings: {
-    image: "/category-hero/ring-hero.jpg",
-    subtitle: "From timeless designs to bold statements.",
+    default: "Signature silhouettes designed for daily sophistication.",
+    subs: {
+      solitaire: "Clean lines, iconic shape, enduring style.",
+      halo: "A luminous frame that intensifies your center stone.",
+      "three-stone": "A trio of facets—symbolic and striking.",
+      eternity: "Infinite brilliance in a continuous circle.",
+      mens: "Understated strength with elevated finish.",
+    },
   },
   bracelets: {
-    image: "/category-hero/bracelet-hero.jpg",
-    subtitle: "Chain, cuff, tennis and more.",
+    default: "Impeccable craftsmanship—made to move with you.",
+    subs: {
+      tennis: "Hand-set diamonds in a fluid, flexible line.",
+      bangles: "Sculptural forms with a polished finish.",
+      cuffs: "Bold contours, effortless statement.",
+      chains: "Substantial links with smooth articulation.",
+    },
   },
   "necklaces-pendants": {
-    image: "/category-hero/necklace-hero.jpg",
-    subtitle: "Minimal to ornate — elevate every neckline.",
+    default: "Elevate every neckline with fine balance and proportion.",
+    subs: {
+      pendants: "Perfectly scaled focal points—delicate to dramatic.",
+      solitaire: "A singular diamond, precisely suspended.",
+      station: "Evenly spaced brilliance for modern symmetry.",
+      nameplates: "Personalized lettering, crisp and refined.",
+      pearl: "Lustrous gems with timeless grace.",
+    },
   },
   earrings: {
-    image: "/category-hero/earring-hero.jpg",
-    subtitle: "Studs, hoops, drops and more.",
+    default: "Balanced pairs with impeccable set and finish.",
+    subs: {
+      studs: "Everyday brilliance—secure, bright, essential.",
+      hoops: "Sleek curvature with a flawless mirror polish.",
+      drops: "Elongated lines for graceful movement.",
+      huggies: "Close-fitting sparkle with easy wear.",
+    },
   },
+};
+
+const resolveSubheader = (category: string, sub: string): string => {
+  const cat = SUBHEADERS[category];
+  if (!cat) return "Thoughtfully designed and beautifully finished.";
+  const key = (sub || "").toLowerCase();
+  const specific = cat.subs?.[key];
+  return specific || cat.default;
 };
 
 const isRingCategory = (cat?: string) =>
@@ -170,10 +223,11 @@ export const getServerSideProps: GetServerSideProps<PageProps> = async (
     products = [];
   }
 
-  const hero = HERO_BY_CATEGORY[categorySlug] ?? {
-    image: "/hero-jewelry.jpg",
-    subtitle: undefined,
-  };
+  const heroImage =
+    HERO_BY_CATEGORY[categorySlug]?.image ?? "/hero-jewelry.jpg";
+
+  // 🔹 Compute a professional subheader for the hero (category + subcategory aware)
+  const heroSubtitle = resolveSubheader(categorySlug, subcategorySlug);
 
   return {
     props: {
@@ -181,8 +235,8 @@ export const getServerSideProps: GetServerSideProps<PageProps> = async (
       categoryLabel,
       subcategorySlug,
       subcategoryLabel,
-      heroImage: hero.image,
-      heroSubtitle: hero.subtitle,
+      heroImage,
+      heroSubtitle,
       products,
     },
   };
@@ -201,13 +255,10 @@ export default function SubcategoryPage({
   const { addToCart } = useCart();
   const [visibleCount, setVisibleCount] = useState(8);
 
-  /* 🔝 Force open-from-top (unless ?scroll=true is set intentionally)
-     - Prevents Chrome/Next from restoring a lower scroll position.
-     - Kept minimal to avoid regressions elsewhere. */
+  /* 🔝 Force open-from-top (unless ?scroll=true is set intentionally) */
   useEffect(() => {
     if (typeof window === "undefined") return;
     const { scroll } = router.query as { scroll?: string };
-    // Temporarily disable history-based scroll restoration for this mount.
     const prev = (history as any).scrollRestoration;
     try {
       (history as any).scrollRestoration = "manual";
@@ -220,7 +271,6 @@ export default function SubcategoryPage({
         (history as any).scrollRestoration = prev || "auto";
       } catch {}
     };
-    // Run once on mount for this route
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -264,7 +314,7 @@ export default function SubcategoryPage({
       {/* 80vh hero */}
       <HeroBanner
         title={subcategoryLabel}
-        subtitle={categoryLabel}
+        subtitle={heroSubtitle} /* ← now a professional, category-aware line */
         imageSrc={heroImage}
         heightClass="h-[80vh]"
         topOffsetClass="-mt-20"
@@ -281,9 +331,7 @@ export default function SubcategoryPage({
         <h1 className="text-2xl sm:text-3xl font-serif font-semibold tracking-wider leading-snug">
           {subcategoryLabel}
         </h1>
-        {heroSubtitle ? (
-          <p className="mt-2 text-sm text-white/70">{heroSubtitle}</p>
-        ) : null}
+        {/* Removed the extra subtitle here to avoid duplicating the hero line */}
       </div>
 
       {/* Anchor for scroll=true */}

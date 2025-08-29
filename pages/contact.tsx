@@ -176,6 +176,17 @@ export default function ContactPage() {
             />
             <div className="absolute inset-0 bg-black opacity-50 pointer-events-none" />
           </div>
+
+          {/* 📝 Title + Subtitle Overlay */}
+          <div className="relative z-10 text-center px-4">
+            <h1 className="text-3xl sm:text-4xl md:text-6xl font-serif font-bold tracking-wider leading-snug text-[#e0e0e0] mb-4">
+              Contact
+            </h1>
+            <p className="text-base sm:text-lg md:text-xl text-[#e0e0e0] max-w-2xl mx-auto leading-relaxed">
+              We’d love to hear from you — whether it’s a question, custom
+              design request, or help finding the perfect piece.
+            </p>
+          </div>
         </section>
 
         <div className="pl-4 pr-4 sm:pl-8 sm:pr-8 mt-6 mb-6">
