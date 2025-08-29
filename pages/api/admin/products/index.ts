@@ -45,6 +45,8 @@ type Ok =
         totalAfterDedupe: number;
       };
       collectionsQueried: string[];
+      sort?: string;
+      dir?: "asc" | "desc";
     }
   | {
       ok: true;
@@ -207,11 +209,6 @@ function parseForm(
   });
 }
 
-function toBool(v: any) {
-  const s = String(v ?? "").toLowerCase();
-  return s === "true" || s === "1" || s === "yes";
-}
-
 function toAudience(v: any): string[] {
   if (Array.isArray(v)) return v.map(String);
   if (typeof v === "string") {
@@ -241,6 +238,56 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET as string,
 });
 
+function getSortKeyAndDir(req: NextApiRequest) {
+  const allowed = new Set([
+    "createdAt",
+    "name",
+    "price",
+    "salePrice",
+    "category",
+    "department",
+    "skuNumber",
+  ]);
+  const sort =
+    typeof req.query.sort === "string" && allowed.has(req.query.sort)
+      ? (req.query.sort as string)
+      : "createdAt";
+  const dir =
+    typeof req.query.dir === "string" &&
+    (req.query.dir.toLowerCase() === "asc" ||
+      req.query.dir.toLowerCase() === "desc")
+      ? (req.query.dir.toLowerCase() as "asc" | "desc")
+      : "desc";
+  return { sort, dir };
+}
+
+function valFor(p: AdminProduct, key: string): any {
+  switch (key) {
+    case "createdAt":
+      return p.createdAt ? new Date(p.createdAt).getTime() : 0;
+    case "name":
+      return (p.name || p.title || "").toString();
+    case "price":
+      return typeof p.price === "number"
+        ? p.price
+        : typeof p.unitPrice === "number"
+        ? p.unitPrice
+        : 0;
+    case "salePrice":
+      return p.salePrice == null
+        ? Number.POSITIVE_INFINITY
+        : Number(p.salePrice);
+    case "category":
+      return (p.category || "").toString();
+    case "department":
+      return (p.department || "").toString();
+    case "skuNumber":
+      return typeof p.skuNumber === "number" ? p.skuNumber : 0;
+    default:
+      return 0;
+  }
+}
+
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<Ok | Err>
@@ -260,6 +307,8 @@ export default async function handler(
       String(req.query.includeLegacy ?? "1").toLowerCase() !== "0" &&
       String(req.query.includeLegacy ?? "1").toLowerCase() !== "false";
     const filter = buildFilter(q);
+    const { sort, dir } = getSortKeyAndDir(req);
+    const dirMul = dir === "asc" ? 1 : -1;
 
     const collectionsToQuery = Array.from(
       new Set([PRIMARY_COLLECTION, "products"])
@@ -309,14 +358,31 @@ export default async function handler(
       if (
         !seen.has(k) ||
         (seen.get(k)?.source === "legacy" && p.source === "db")
-      )
+      ) {
         seen.set(k, p);
+      }
     }
 
+    // Final items, sorted
     const items = Array.from(seen.values()).sort((a, b) => {
-      if ((a.source === "legacy") !== (b.source === "legacy")) {
-        return a.source === "legacy" ? 1 : -1;
+      const av = valFor(a, sort);
+      const bv = valFor(b, sort);
+
+      let cmp: number;
+      if (typeof av === "string" && typeof bv === "string") {
+        cmp = av.localeCompare(bv);
+      } else {
+        const na = typeof av === "number" ? av : Number(av) || 0;
+        const nb = typeof bv === "number" ? bv : Number(bv) || 0;
+        cmp = na === nb ? 0 : na < nb ? -1 : 1;
       }
+      if (cmp !== 0) return cmp * dirMul;
+
+      // tie-break 1: prefer DB over legacy
+      if (a.source !== b.source) {
+        return a.source === "db" ? -1 : 1;
+      }
+      // tie-break 2: createdAt desc
       const at = a.createdAt ? new Date(a.createdAt).getTime() : 0;
       const bt = b.createdAt ? new Date(b.createdAt).getTime() : 0;
       return bt - at;
@@ -332,6 +398,8 @@ export default async function handler(
         totalAfterDedupe: items.length,
       },
       collectionsQueried: collectionsToQuery,
+      sort,
+      dir,
     });
   }
 

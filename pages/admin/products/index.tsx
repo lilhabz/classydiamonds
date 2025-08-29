@@ -37,7 +37,13 @@ type AdminProduct = {
 };
 
 type Department = "jewelry" | "watch";
-type SortKey = "createdAt" | "title" | "unitPrice" | "subCategory" | "category";
+type SortKey =
+  | "createdAt"
+  | "title"
+  | "unitPrice"
+  | "subCategory"
+  | "category"
+  | "skuNumber";
 type SortDir = "asc" | "desc";
 
 const toNum = (v: unknown, d = 0) => {
@@ -106,27 +112,27 @@ function adaptApiProduct(p: ApiProduct): AdminProduct {
     name: p.name ?? undefined,
     title: p.name ?? undefined,
     description: p.description ?? undefined,
-    price: p.price ?? undefined,
-    unitPrice: p.price ?? undefined,
-    salePrice: p.salePrice ?? null,
-    category: p.category ?? undefined,
-    subCategory: p.subCategory ?? undefined,
-    subcategory: p.subCategory ?? undefined,
-    imageUrl: p.imageUrl ?? p.image ?? null,
-    image: p.image ?? p.imageUrl ?? null,
+    price: (p.price as any) ?? undefined,
+    unitPrice: (p.price as any) ?? undefined,
+    salePrice: (p.salePrice as any) ?? null,
+    category: (p.category as any) ?? undefined,
+    subCategory: (p.subCategory as any) ?? undefined,
+    subcategory: (p.subCategory as any) ?? undefined,
+    imageUrl: (p.imageUrl as any) ?? (p.image as any) ?? null,
+    image: (p.image as any) ?? (p.imageUrl as any) ?? null,
     images: null,
     audience: audienceArray,
-    specs: p.specs ?? {},
+    specs: (p.specs as any) ?? {},
     source,
     archived: !!p.archived,
-    createdAt: p.createdAt ?? undefined,
+    createdAt: (p.createdAt as any) ?? undefined,
     department: (p.department as any) ?? undefined,
     skuNumber: (p.skuNumber as any) ?? undefined,
   };
 }
 
 export default function AdminProductsList() {
-  const { data: session, status } = useSession();
+  const { data: session, status: authStatus } = useSession();
   const [allItems, setAllItems] = useState<AdminProduct[]>([]);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string>("");
@@ -174,17 +180,27 @@ export default function AdminProductsList() {
   useEffect(() => {
     setCat("");
     setSub("");
-    setSpecFilter({});
+    setSpecFilter({}); // reset spec filters on dept change
     setPage(1);
   }, [dept]);
 
   useEffect(() => {
     setSub("");
-    setSpecFilter({});
+    setSpecFilter({}); // reset spec filters on category change
     setPage(1);
   }, [cat]);
 
-  // client filtering
+  // header click sort toggle
+  function toggleSort(key: SortKey) {
+    if (sortKey === key) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortKey(key);
+      setSortDir("asc");
+    }
+  }
+
+  // client filtering + sorting
   const filtered = useMemo(() => {
     const needle = q.trim().toLowerCase();
     const wantedSpecs = Object.fromEntries(
@@ -247,6 +263,12 @@ export default function AdminProductsList() {
             .localeCompare((b.category ?? "").toString()) * dir
         );
       }
+      if (sortKey === "skuNumber") {
+        const as = typeof a.skuNumber === "number" ? a.skuNumber : -Infinity;
+        const bs = typeof b.skuNumber === "number" ? b.skuNumber : -Infinity;
+        return (as - bs) * dir;
+      }
+      // createdAt default
       const at = a.createdAt ? new Date(a.createdAt).getTime() : 0;
       const bt = b.createdAt ? new Date(b.createdAt).getTime() : 0;
       return (at - bt) * dir;
@@ -317,7 +339,6 @@ export default function AdminProductsList() {
     }
   }
 
-  const { status: authStatus } = useSession();
   if (authStatus === "loading")
     return <div className="p-6">Checking access…</div>;
   if (!session?.user?.isAdmin)
@@ -400,6 +421,7 @@ export default function AdminProductsList() {
 
         <span className="opacity-50 mx-2">|</span>
 
+        {/* Keep dropdown sort controls (optional) */}
         <label className="text-sm">Sort:</label>
         <select
           value={sortKey}
@@ -411,6 +433,7 @@ export default function AdminProductsList() {
           <option value="unitPrice">Price</option>
           <option value="category">Category</option>
           <option value="subCategory">Sub-Category</option>
+          <option value="skuNumber">SKU</option>
         </select>
         <select
           value={sortDir}
@@ -528,14 +551,60 @@ export default function AdminProductsList() {
         <table className="min-w-full text-left">
           <thead className="bg-[var(--bg-nav)] text-sm">
             <tr>
-              <th className="py-2 px-3">ID</th>
+              <th
+                className="py-2 px-3 cursor-pointer select-none"
+                onClick={() => toggleSort("skuNumber")}
+                title="Sort by SKU"
+              >
+                ID{" "}
+                {sortKey === "skuNumber" ? (sortDir === "asc" ? "▲" : "▼") : ""}
+              </th>
               <th className="py-2 px-3">Item</th>
-              <th className="py-2 px-3">Title</th>
-              <th className="py-2 px-3">Category</th>
-              <th className="py-2 px-3">Sub-Category</th>
+              <th
+                className="py-2 px-3 cursor-pointer select-none"
+                onClick={() => toggleSort("title")}
+                title="Sort by Title"
+              >
+                Title{" "}
+                {sortKey === "title" ? (sortDir === "asc" ? "▲" : "▼") : ""}
+              </th>
+              <th
+                className="py-2 px-3 cursor-pointer select-none"
+                onClick={() => toggleSort("category")}
+                title="Sort by Category"
+              >
+                Category{" "}
+                {sortKey === "category" ? (sortDir === "asc" ? "▲" : "▼") : ""}
+              </th>
+              <th
+                className="py-2 px-3 cursor-pointer select-none"
+                onClick={() => toggleSort("subCategory")}
+                title="Sort by Sub-Category"
+              >
+                Sub-Category{" "}
+                {sortKey === "subCategory"
+                  ? sortDir === "asc"
+                    ? "▲"
+                    : "▼"
+                  : ""}
+              </th>
               <th className="py-2 px-3">Audience</th>
-              <th className="py-2 px-3">Price</th>
-              <th className="py-2 px-3">Created</th>
+              <th
+                className="py-2 px-3 cursor-pointer select-none"
+                onClick={() => toggleSort("unitPrice")}
+                title="Sort by Price"
+              >
+                Price{" "}
+                {sortKey === "unitPrice" ? (sortDir === "asc" ? "▲" : "▼") : ""}
+              </th>
+              <th
+                className="py-2 px-3 cursor-pointer select-none"
+                onClick={() => toggleSort("createdAt")}
+                title="Sort by Created"
+              >
+                Created{" "}
+                {sortKey === "createdAt" ? (sortDir === "asc" ? "▲" : "▼") : ""}
+              </th>
               <th className="py-2 px-3"></th>
             </tr>
           </thead>
