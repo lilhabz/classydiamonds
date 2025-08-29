@@ -22,20 +22,42 @@ function App({ Component, pageProps: { session, ...pageProps } }: AppProps) {
       window.history.scrollRestoration = "manual";
     }
 
-    // 🔄 Only scroll to top on full route changes (skip same-page query changes)
+    // ✅ Match /category/[category]/subcategory/[subcategory]
+    const isSubcatUrl = (url: string) =>
+      /^\/category\/[^/]+\/subcategory\/[^/]+(?:\?|$)/.test(url.split("#")[0]);
+
+    // 🔄 On route start, pre-empt any restoration jump
     const handleRouteChangeStart = (url: string) => {
       const toPath = url.split("?")[0];
       const fromPath = router.asPath.split("?")[0];
+
+      // Keep your original "only on full route changes" behavior
       if (toPath !== fromPath) {
+        // Force top for subcategory routes unless explicitly using ?scroll=true
+        if (isSubcatUrl(url) && !url.includes("scroll=true")) {
+          // Snap immediately so hero is visible (prevents opening mid-page)
+          window.scrollTo(0, 0);
+        } else {
+          // Original behavior for other full route changes
+          window.scrollTo(0, 0);
+        }
+      }
+    };
+
+    // 🧷 Also enforce at completion (some browsers restore after paint)
+    const handleRouteChangeComplete = (url: string) => {
+      if (isSubcatUrl(url) && !url.includes("scroll=true")) {
         window.scrollTo(0, 0);
       }
     };
 
     // 📡 Listen for route changes
     router.events.on("routeChangeStart", handleRouteChangeStart);
+    router.events.on("routeChangeComplete", handleRouteChangeComplete);
 
     return () => {
       router.events.off("routeChangeStart", handleRouteChangeStart);
+      router.events.off("routeChangeComplete", handleRouteChangeComplete);
       if ("scrollRestoration" in window.history) {
         window.history.scrollRestoration = "auto";
       }
