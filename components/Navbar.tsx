@@ -303,10 +303,19 @@ const Navbar = () => {
           <nav className="flex flex-wrap justify-center gap-6 text-[#e0e0e0] font-semibold text-sm">
             {"Home Jewelry Watches Custom Contact".split(" ").map((name) => {
               const href = `/${name === "Home" ? "" : name.toLowerCase()}`;
+              const isJewelry = name === "Jewelry";
               return (
                 <Link
                   key={name}
                   href={href}
+                  scroll
+                  onClick={
+                    isJewelry
+                      ? () => {
+                          window.scrollTo(0, 0);
+                        }
+                      : undefined
+                  }
                   className={`cursor-pointer text-[#e0e0e0] hover:text-white hover:scale-105 transition-transform duration-300 text-sm md:text-base ${
                     pathname === href
                       ? "text-white underline underline-offset-4"
@@ -427,12 +436,16 @@ const Navbar = () => {
         >
           {"Home Jewelry Watches Custom Contact".split(" ").map((name) => {
             const href = `/${name === "Home" ? "" : name.toLowerCase()}`;
+            const isJewelry = name === "Jewelry";
             return (
               <Link
                 key={name}
                 href={href}
                 className="block cursor-pointer hover:text-white hover:underline"
-                onClick={() => setMenuOpen(false)}
+                onClick={() => {
+                  if (isJewelry) window.scrollTo(0, 0);
+                  setMenuOpen(false);
+                }}
               >
                 {name}
               </Link>
@@ -535,14 +548,14 @@ const Navbar = () => {
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => decreaseQty(item.id)}
-                        className="px-2 py-1 text-xs bg-white text-[#1f2a44] rounded hover:bg-gray-100"
+                        className="px-2 py-1 text-xs bg白 text-[#1f2a44] rounded hover:bg-gray-100"
                       >
                         -
                       </button>
                       <span className="text-sm">{item.quantity}</span>
                       <button
                         onClick={() => increaseQty(item.id)}
-                        className="px-2 py-1 text-xs bg-white text-[#1f2a44] rounded hover:bg-gray-100"
+                        className="px-2 py-1 text-xs bg白 text-[#1f2a44] rounded hover:bg-gray-100"
                       >
                         +
                       </button>
@@ -573,7 +586,7 @@ const Navbar = () => {
       {searchOpen && (
         <div
           ref={searchRef}
-          className="fixed right-0 w-80 bg-[#1f2a44]/95 backdrop-blur-sm shadow-lg text-sm text-white z-40 animate-slide-fade-in transition-all duration-300"
+          className="fixed right-0 w-80 bg-[#1f2a44]/95 backdrop-blur-sm shadow-lg text-sm text白 text-white z-40 animate-slide-fade-in transition-all duration-300"
           style={{
             top: scrolled ? "64px" : "80px",
             borderRadius: "0 0 0.75rem 0.75rem",

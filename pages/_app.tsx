@@ -22,32 +22,39 @@ function App({ Component, pageProps: { session, ...pageProps } }: AppProps) {
       window.history.scrollRestoration = "manual";
     }
 
-    // ✅ Match /category/[category]/subcategory/[subcategory]
+    // ✅ Match target routes where the hero must be visible on load
     const isSubcatUrl = (url: string) =>
       /^\/category\/[^/]+\/subcategory\/[^/]+(?:\?|$)/.test(url.split("#")[0]);
+    const isJewelryUrl = (url: string) =>
+      url.split("#")[0].split("?")[0] === "/jewelry";
 
-    // 🔄 On route start, pre-empt any restoration jump
+    // 🔄 Only scroll to top on full route changes (skip same-page query changes)
     const handleRouteChangeStart = (url: string) => {
       const toPath = url.split("?")[0];
       const fromPath = router.asPath.split("?")[0];
-
-      // Keep your original "only on full route changes" behavior
       if (toPath !== fromPath) {
-        // Force top for subcategory routes unless explicitly using ?scroll=true
-        if (isSubcatUrl(url) && !url.includes("scroll=true")) {
-          // Snap immediately so hero is visible (prevents opening mid-page)
+        // Force top BEFORE paint for Jewelry/Subcategory (unless ?scroll=true)
+        if (
+          (isSubcatUrl(url) || isJewelryUrl(url)) &&
+          !url.includes("scroll=true")
+        ) {
           window.scrollTo(0, 0);
         } else {
-          // Original behavior for other full route changes
+          // Keep original behavior for other full route changes
           window.scrollTo(0, 0);
         }
       }
     };
 
-    // 🧷 Also enforce at completion (some browsers restore after paint)
+    // 🧷 Some browsers restore after paint — guard again on complete
     const handleRouteChangeComplete = (url: string) => {
-      if (isSubcatUrl(url) && !url.includes("scroll=true")) {
+      if (
+        (isSubcatUrl(url) || isJewelryUrl(url)) &&
+        !url.includes("scroll=true")
+      ) {
         window.scrollTo(0, 0);
+        // Double-RAF guard against late layout nudges/hydration shifts
+        requestAnimationFrame(() => window.scrollTo(0, 0));
       }
     };
 

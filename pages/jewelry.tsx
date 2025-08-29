@@ -134,10 +134,8 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
       try {
         (history as any).scrollRestoration = "manual";
       } catch {}
-      // Snap to absolute top so hero is fully visible
-      document.documentElement.scrollTop = 0;
-      document.body.scrollTop = 0;
-      // optional: restore after mount
+      window.scrollTo(0, 0);
+      requestAnimationFrame(() => window.scrollTo(0, 0)); // double-guard
       queueMicrotask(() => {
         try {
           (history as any).scrollRestoration = "auto";
@@ -147,6 +145,22 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
     // run once on mount
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router.isReady]);
+
+  // 🧹 If scroll=true leaked in without a category, remove it immediately.
+  useEffect(() => {
+    if (!router.isReady) return;
+    const { scroll, category } = router.query as {
+      scroll?: string;
+      category?: string;
+    };
+    if (scroll === "true" && !category) {
+      const next = { ...router.query };
+      delete (next as any).scroll;
+      router.replace({ pathname: "/jewelry", query: next }, undefined, {
+        shallow: true,
+      });
+    }
+  }, [router.isReady, router.query]);
 
   // Read ?category and ?sub on load/shallow nav; default is "All Jewelry"
   useEffect(() => {
