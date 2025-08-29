@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import Head from "next/head";
 import { useCart } from "@/context/CartContext";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useLayoutEffect } from "react";
 import { useRouter } from "next/router";
 import { GetServerSideProps } from "next";
 import Breadcrumbs from "@/components/Breadcrumbs";
@@ -125,6 +125,29 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
 
   const resetCount = () => setVisibleCount(50);
 
+  /* 🔝 Force open-from-top on mount unless explicitly told to skip hero.
+     This prevents “opens below hero” when clicking the navbar link. */
+  useLayoutEffect(() => {
+    if (!router.isReady) return;
+    const { scroll } = router.query as { scroll?: string };
+    if (scroll !== "true") {
+      try {
+        (history as any).scrollRestoration = "manual";
+      } catch {}
+      // Snap to absolute top so hero is fully visible
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+      // optional: restore after mount
+      queueMicrotask(() => {
+        try {
+          (history as any).scrollRestoration = "auto";
+        } catch {}
+      });
+    }
+    // run once on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [router.isReady]);
+
   // Read ?category and ?sub on load/shallow nav; default is "All Jewelry"
   useEffect(() => {
     if (!router.isReady) return;
@@ -153,7 +176,8 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
 
     resetCount();
 
-    if (scroll === "true" && heroRef.current) {
+    // ⬇️ Only skip the hero when BOTH scroll=true AND a category is present.
+    if (scroll === "true" && typeof category === "string" && heroRef.current) {
       const offset = heroRef.current.offsetTop + heroRef.current.offsetHeight;
       window.scrollTo({ top: offset, behavior: "smooth" });
     }
