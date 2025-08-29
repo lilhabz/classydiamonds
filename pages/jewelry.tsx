@@ -432,7 +432,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
           </div>
           <button
             onClick={() => setMobileFiltersOpen(true)}
-            className="px-4 py-2 rounded-lg bg-white/10 hover:bg白/20 text-sm font-medium"
+            className="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-sm font-medium"
             aria-haspopup="dialog"
             aria-controls="filters-drawer"
           >
@@ -458,7 +458,8 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
             {shown.length === 0 ? (
               <p className="text-white/80">No products found.</p>
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 gap-6 justify-items-center">
+              /* ⬇️ ONLY CHANGE: swap to product-grid for auto-fit columns */
+              <div className="product-grid">
                 {shown.slice(0, visibleCount).map((product) => {
                   const href = `/category/${product.category}/${product.slug}`;
                   return (

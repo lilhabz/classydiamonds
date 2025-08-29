@@ -253,3 +253,11 @@ input[type="reset"] {
     }
   }
 }
+
+/* 🧩 Auto-fit product grid so fixed-width cards wrap cleanly at any viewport */
+.product-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(var(--card-w), 1fr));
+  gap: 1.5rem; /* matches Tailwind gap-6 */
+  justify-items: center; /* center each card within its track */
+}
