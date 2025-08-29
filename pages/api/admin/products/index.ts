@@ -5,6 +5,12 @@ import { authOptions } from "../../auth/[...nextauth]";
 import { getDb } from "@/lib/mongodb"; // ✅ unified DB helper
 import formidable, { Fields, Files } from "formidable";
 import { v2 as cloudinary } from "cloudinary";
+// 👇 NEW: sku helpers
+import {
+  ensureSkuCounter,
+  getNextSkuNumber,
+  syncSkuCounterToMax,
+} from "@/lib/sku";
 
 export const config = { api: { bodyParser: false } };
 
@@ -56,7 +62,6 @@ type Ok =
 
 type Err = { ok: false; error: string };
 
-// ✅ Same resolution policy everywhere
 const PRIMARY_COLLECTION =
   process.env.PRODUCTS_COLLECTION ||
   process.env.NEXT_PUBLIC_PRODUCTS_COLLECTION ||
@@ -376,7 +381,7 @@ export default async function handler(
         const nb = typeof bv === "number" ? bv : Number(bv) || 0;
         cmp = na === nb ? 0 : na < nb ? -1 : 1;
       }
-      if (cmp !== 0) return cmp * dirMul;
+      if (cmp !== 0) return cmp * (dir === "asc" ? 1 : -1);
 
       // tie-break 1: prefer DB over legacy
       if (a.source !== b.source) {
@@ -409,6 +414,10 @@ export default async function handler(
       const db = await getDb();
       const products = db.collection(PRIMARY_COLLECTION);
       const { fields, files } = await parseForm(req);
+
+      // Ensure SKU counter exists & synced to current max
+      await ensureSkuCounter(db);
+      await syncSkuCounterToMax(db, PRIMARY_COLLECTION);
 
       // Pull fields (mirror ProductForm)
       const title = s(fields.title ?? fields.name);
@@ -464,6 +473,12 @@ export default async function handler(
         normalized.carat = Number(specs.carat);
       }
 
+      // ✅ SKU: honor explicit, otherwise assign next number
+      const explicitSku = Number(fields.skuNumber);
+      const skuNumber = Number.isFinite(explicitSku)
+        ? explicitSku
+        : await getNextSkuNumber(db);
+
       const now = new Date();
       const doc = {
         name: title,
@@ -473,7 +488,6 @@ export default async function handler(
         salePrice,
         category,
         subCategory: subCategory || null,
-        // 👇 persisted normalized fields (only if present)
         ...(normalized.metal ? { metal: normalized.metal } : {}),
         ...(normalized.stone ? { stone: normalized.stone } : {}),
         ...(normalized.shape ? { shape: normalized.shape } : {}),
@@ -485,13 +499,14 @@ export default async function handler(
         imageUrl,
         images: imageUrl ? [imageUrl] : undefined,
         archived,
-        specs, // keep full pretty specs for PDP display
+        specs, // full specs for PDP
         audience: audience.length ? audience : ["unisex"],
         description,
         department:
           department === "watch" || department === "jewelry"
             ? department
             : undefined,
+        skuNumber, // 👈 store the sequence
         createdAt: now,
         updatedAt: now,
       };
