@@ -62,7 +62,17 @@ type DynamicFacets = {
   extras?: Record<string, string[]>;
 };
 
-export default function FiltersSidebar({ className }: { className?: string }) {
+export default function FiltersSidebar({
+  className,
+  /** When true on small screens, render as a full-height drawer. On desktop this prop is ignored. */
+  mobileOpen,
+  /** Close handler for the mobile drawer. Ignored on desktop. */
+  onClose,
+}: {
+  className?: string;
+  mobileOpen?: boolean;
+  onClose?: () => void;
+}) {
   const router = useRouter();
   const q = router.query;
 
@@ -275,298 +285,340 @@ export default function FiltersSidebar({ className }: { className?: string }) {
     dyn.caratBounds!.max
   );
 
-  return (
-    <aside className={className}>
-      <div className="sticky top-24 p-4 rounded-xl bg-[#1b2440] border border-white/10">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-lg font-semibold tracking-wide">Filters</h3>
-          <button
-            onClick={clearAll}
-            className="text-sm text-white/70 hover:text-white underline"
-          >
-            Clear
-          </button>
-        </div>
+  // --- UI content (reused for desktop + mobile drawer) ---
+  const Content = (
+    <div className="p-4 rounded-xl bg-[#1b2440] border border-white/10">
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="text-lg font-semibold tracking-wide">Filters</h3>
+        <button
+          onClick={clearAll}
+          className="text-sm text-white/70 hover:text-white underline"
+        >
+          Clear
+        </button>
+      </div>
 
-        {/* Subcategory (only when a category is selected) */}
-        {currentCategory && subOptions.length > 0 && (
-          <details className="mb-3">
-            <summary className="cursor-pointer select-none py-2 font-medium">
-              Subcategory
-            </summary>
-            <div className="mt-2">
-              <select
-                value={subSelected ?? "all"}
-                onChange={(e) => setSubcategory(e.target.value)}
-                className="w-full px-3 py-2 rounded-md bg-[#0f1530] border border-white/10 text-sm"
-              >
-                <option value="all">
-                  All {CATEGORY_LABELS[currentCategory]}
+      {/* Subcategory (only when a category is selected) */}
+      {currentCategory && subOptions.length > 0 && (
+        <details className="mb-3">
+          <summary className="cursor-pointer select-none py-2 font-medium">
+            Subcategory
+          </summary>
+          <div className="mt-2">
+            <select
+              value={subSelected ?? "all"}
+              onChange={(e) => setSubcategory(e.target.value)}
+              className="w-full px-3 py-2 rounded-md bg-[#0f1530] border border-white/10 text-sm"
+            >
+              <option value="all">
+                All {CATEGORY_LABELS[currentCategory]}
+              </option>
+              {subOptions.map((s) => (
+                <option key={s} value={s}>
+                  {pretty(s)}
                 </option>
-                {subOptions.map((s) => (
-                  <option key={s} value={s}>
-                    {pretty(s)}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </details>
-        )}
-
-        {/* Metal */}
-        <details className="mb-3">
-          <summary className="cursor-pointer select-none py-2 font-medium">
-            Metal
-          </summary>
-          <div className="mt-2 space-y-2">
-            {(dyn.metals || FALLBACK_METALS).map((m) => {
-              const checked = metals.includes(m);
-              return (
-                <label key={m} className="flex items-center gap-2 text-sm">
-                  <input
-                    type="checkbox"
-                    className="accent-white"
-                    checked={checked}
-                    onChange={() => toggleFacet("metal", m)}
-                  />
-                  <span className="capitalize">{m.replace(/-/g, " ")}</span>
-                </label>
-              );
-            })}
+              ))}
+            </select>
           </div>
         </details>
+      )}
 
-        {/* Stone */}
-        <details className="mb-3">
-          <summary className="cursor-pointer select-none py-2 font-medium">
-            Stone
-          </summary>
-          <div className="mt-2 space-y-2">
-            {(dyn.stones || FALLBACK_STONES).map((s) => {
-              const checked = stones.includes(s);
-              return (
-                <label key={s} className="flex items-center gap-2 text-sm">
-                  <input
-                    type="checkbox"
-                    className="accent-white"
-                    checked={checked}
-                    onChange={() => toggleFacet("stone", s)}
-                  />
-                  <span className="capitalize">{s.replace(/-/g, " ")}</span>
-                </label>
-              );
-            })}
-          </div>
-        </details>
-
-        {/* Shape */}
-        <details className="mb-3">
-          <summary className="cursor-pointer select-none py-2 font-medium">
-            Shape
-          </summary>
-          <div className="mt-2 space-y-2">
-            {(dyn.shapes || FALLBACK_SHAPES).map((s) => {
-              const checked = shapes.includes(s);
-              return (
-                <label key={s} className="flex items-center gap-2 text-sm">
-                  <input
-                    type="checkbox"
-                    className="accent-white"
-                    checked={checked}
-                    onChange={() => toggleFacet("shape", s)}
-                  />
-                  <span className="capitalize">{s}</span>
-                </label>
-              );
-            })}
-          </div>
-        </details>
-
-        {/* Extra facets from admin (style, color, clarity, cut, etc.) */}
-        {dyn.extras &&
-          Object.entries(dyn.extras).map(([key, values]) => {
-            const selected = toArray(q[key as any]);
-            if (!values?.length) return null;
+      {/* Metal */}
+      <details className="mb-3">
+        <summary className="cursor-pointer select-none py-2 font-medium">
+          Metal
+        </summary>
+        <div className="mt-2 space-y-2">
+          {(dyn.metals || FALLBACK_METALS).map((m) => {
+            const checked = metals.includes(m);
             return (
-              <details key={key} className="mb-3">
-                <summary className="cursor-pointer select-none py-2 font-medium">
-                  {pretty(key)}
-                </summary>
-                <div className="mt-2 space-y-2">
-                  {values.map((v) => {
-                    const checked = selected.includes(v);
-                    return (
-                      <label
-                        key={v}
-                        className="flex items-center gap-2 text-sm"
-                      >
-                        <input
-                          type="checkbox"
-                          className="accent-white"
-                          checked={checked}
-                          onChange={() => {
-                            const curr = toArray(q[key as any]);
-                            const exists = curr.includes(v);
-                            const nextArr = exists
-                              ? curr.filter((x) => x !== v)
-                              : [...curr, v];
-                            const next = setParam(q, key, nextArr);
-                            push(next);
-                          }}
-                        />
-                        <span className="capitalize">
-                          {v.replace(/-/g, " ")}
-                        </span>
-                      </label>
-                    );
-                  })}
-                </div>
-              </details>
+              <label key={m} className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  className="accent-white"
+                  checked={checked}
+                  onChange={() => toggleFacet("metal", m)}
+                />
+                <span className="capitalize">{m.replace(/-/g, " ")}</span>
+              </label>
             );
           })}
+        </div>
+      </details>
 
-        {/* Price (Dual Slider) */}
-        <details className="mb-3">
-          <summary className="cursor-pointer select-none py-2 font-medium">
-            Price
-          </summary>
-          <div className="mt-3">
-            <div className="flex items-center justify-between text-xs text-white/70 mb-2">
-              <span>${Math.min(priceMin, priceMax).toLocaleString()}</span>
-              <span>${Math.max(priceMin, priceMax).toLocaleString()}</span>
-            </div>
+      {/* Stone */}
+      <details className="mb-3">
+        <summary className="cursor-pointer select-none py-2 font-medium">
+          Stone
+        </summary>
+        <div className="mt-2 space-y-2">
+          {(dyn.stones || FALLBACK_STONES).map((s) => {
+            const checked = stones.includes(s);
+            return (
+              <label key={s} className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  className="accent-white"
+                  checked={checked}
+                  onChange={() => toggleFacet("stone", s)}
+                />
+                <span className="capitalize">{s.replace(/-/g, " ")}</span>
+              </label>
+            );
+          })}
+        </div>
+      </details>
 
-            <div className="relative h-8">
-              <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-1 bg-white/15 rounded" />
-              <div
-                className="absolute top-1/2 -translate-y-1/2 h-1 bg-white rounded"
-                style={{
-                  left: `${priceLeft}%`,
-                  right: `${100 - priceRight}%`,
-                }}
-              />
-              <input
-                type="range"
-                min={dyn.priceBounds!.min}
-                max={dyn.priceBounds!.max}
-                step={50}
-                value={Math.min(priceMin, priceMax)}
-                onChange={(e) => setPriceMin(Number(e.target.value))}
-                onMouseUp={commitPrice}
-                onTouchEnd={commitPrice}
-                aria-label="Minimum price"
-                className="absolute inset-0 w-full appearance-none bg-transparent pointer-events-auto"
-              />
-              <input
-                type="range"
-                min={dyn.priceBounds!.min}
-                max={dyn.priceBounds!.max}
-                step={50}
-                value={Math.max(priceMin, priceMax)}
-                onChange={(e) => setPriceMax(Number(e.target.value))}
-                onMouseUp={commitPrice}
-                onTouchEnd={commitPrice}
-                aria-label="Maximum price"
-                className="absolute inset-0 w-full appearance-none bg-transparent pointer-events-auto"
-              />
-            </div>
+      {/* Shape */}
+      <details className="mb-3">
+        <summary className="cursor-pointer select-none py-2 font-medium">
+          Shape
+        </summary>
+        <div className="mt-2 space-y-2">
+          {(dyn.shapes || FALLBACK_SHAPES).map((s) => {
+            const checked = shapes.includes(s);
+            return (
+              <label key={s} className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  className="accent-white"
+                  checked={checked}
+                  onChange={() => toggleFacet("shape", s)}
+                />
+                <span className="capitalize">{s}</span>
+              </label>
+            );
+          })}
+        </div>
+      </details>
 
-            <div className="mt-3 grid grid-cols-2 gap-2">
-              <input
-                inputMode="numeric"
-                placeholder="Min"
-                value={Math.min(priceMin, priceMax)}
-                onChange={(e) =>
-                  setPriceMin(Number(e.target.value || dyn.priceBounds!.min))
-                }
-                onBlur={commitPrice}
-                className="px-3 py-2 rounded-md bg-[#0f1530] border border-white/10 text-sm"
-              />
-              <input
-                inputMode="numeric"
-                placeholder="Max"
-                value={Math.max(priceMin, priceMax)}
-                onChange={(e) =>
-                  setPriceMax(Number(e.target.value || dyn.priceBounds!.max))
-                }
-                onBlur={commitPrice}
-                className="px-3 py-2 rounded-md bg-[#0f1530] border border-white/10 text-sm"
-              />
-            </div>
+      {/* Extra facets from admin (style, color, clarity, cut, etc.) */}
+      {dyn.extras &&
+        Object.entries(dyn.extras).map(([key, values]) => {
+          const selected = toArray(q[key as any]);
+          if (!values?.length) return null;
+          return (
+            <details key={key} className="mb-3">
+              <summary className="cursor-pointer select-none py-2 font-medium">
+                {pretty(key)}
+              </summary>
+              <div className="mt-2 space-y-2">
+                {values.map((v) => {
+                  const checked = selected.includes(v);
+                  return (
+                    <label key={v} className="flex items-center gap-2 text-sm">
+                      <input
+                        type="checkbox"
+                        className="accent-white"
+                        checked={checked}
+                        onChange={() => {
+                          const curr = toArray(q[key as any]);
+                          const exists = curr.includes(v);
+                          const nextArr = exists
+                            ? curr.filter((x) => x !== v)
+                            : [...curr, v];
+                          const next = setParam(q, key, nextArr);
+                          push(next);
+                        }}
+                      />
+                      <span className="capitalize">{v.replace(/-/g, " ")}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            </details>
+          );
+        })}
+
+      {/* Price (Dual Slider) */}
+      <details className="mb-3">
+        <summary className="cursor-pointer select-none py-2 font-medium">
+          Price
+        </summary>
+        <div className="mt-3">
+          <div className="flex items-center justify-between text-xs text-white/70 mb-2">
+            <span>${Math.min(priceMin, priceMax).toLocaleString()}</span>
+            <span>${Math.max(priceMin, priceMax).toLocaleString()}</span>
           </div>
-        </details>
 
-        {/* Carat (Dual Slider) */}
-        <details>
-          <summary className="cursor-pointer select-none py-2 font-medium">
-            Carat
-          </summary>
-          <div className="mt-3">
-            <div className="flex items-center justify-between text-xs text-white/70 mb-2">
-              <span>{Math.min(caratMin, caratMax).toFixed(2)} ct</span>
-              <span>{Math.max(caratMin, caratMax).toFixed(2)} ct</span>
-            </div>
-
-            <div className="relative h-8">
-              <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-1 bg-white/15 rounded" />
-              <div
-                className="absolute top-1/2 -translate-y-1/2 h-1 bg-white rounded"
-                style={{
-                  left: `${caratLeft}%`,
-                  right: `${100 - caratRight}%`,
-                }}
-              />
-              <input
-                type="range"
-                min={dyn.caratBounds!.min}
-                max={dyn.caratBounds!.max}
-                step={0.01}
-                value={Math.min(caratMin, caratMax)}
-                onChange={(e) => setCaratMin(Number(e.target.value))}
-                onMouseUp={commitCarat}
-                onTouchEnd={commitCarat}
-                aria-label="Minimum carat"
-                className="absolute inset-0 w-full appearance-none bg-transparent pointer-events-auto"
-              />
-              <input
-                type="range"
-                min={dyn.caratBounds!.min}
-                max={dyn.caratBounds!.max}
-                step={0.01}
-                value={Math.max(caratMin, caratMax)}
-                onChange={(e) => setCaratMax(Number(e.target.value))}
-                onMouseUp={commitCarat}
-                onTouchEnd={commitCarat}
-                aria-label="Maximum carat"
-                className="absolute inset-0 w-full appearance-none bg-transparent pointer-events-auto"
-              />
-            </div>
-
-            <div className="mt-3 grid grid-cols-2 gap-2">
-              <input
-                inputMode="decimal"
-                placeholder="Min"
-                value={Math.min(caratMin, caratMax)}
-                onChange={(e) =>
-                  setCaratMin(Number(e.target.value || dyn.caratBounds!.min))
-                }
-                onBlur={commitCarat}
-                className="px-3 py-2 rounded-md bg-[#0f1530] border border-white/10 text-sm"
-              />
-              <input
-                inputMode="decimal"
-                placeholder="Max"
-                value={Math.max(caratMin, caratMax)}
-                onChange={(e) =>
-                  setCaratMax(Number(e.target.value || dyn.caratBounds!.max))
-                }
-                onBlur={commitCarat}
-                className="px-3 py-2 rounded-md bg-[#0f1530] border border-white/10 text-sm"
-              />
-            </div>
+          <div className="relative h-8">
+            <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-1 bg-white/15 rounded" />
+            <div
+              className="absolute top-1/2 -translate-y-1/2 h-1 bg-white rounded"
+              style={{
+                left: `${priceLeft}%`,
+                right: `${100 - priceRight}%`,
+              }}
+            />
+            <input
+              type="range"
+              min={dyn.priceBounds!.min}
+              max={dyn.priceBounds!.max}
+              step={50}
+              value={Math.min(priceMin, priceMax)}
+              onChange={(e) => setPriceMin(Number(e.target.value))}
+              onMouseUp={commitPrice}
+              onTouchEnd={commitPrice}
+              aria-label="Minimum price"
+              className="absolute inset-0 w-full appearance-none bg-transparent pointer-events-auto"
+            />
+            <input
+              type="range"
+              min={dyn.priceBounds!.min}
+              max={dyn.priceBounds!.max}
+              step={50}
+              value={Math.max(priceMin, priceMax)}
+              onChange={(e) => setPriceMax(Number(e.target.value))}
+              onMouseUp={commitPrice}
+              onTouchEnd={commitPrice}
+              aria-label="Maximum price"
+              className="absolute inset-0 w-full appearance-none bg-transparent pointer-events-auto"
+            />
           </div>
-        </details>
+
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            <input
+              inputMode="numeric"
+              placeholder="Min"
+              value={Math.min(priceMin, priceMax)}
+              onChange={(e) =>
+                setPriceMin(Number(e.target.value || dyn.priceBounds!.min))
+              }
+              onBlur={commitPrice}
+              className="px-3 py-2 rounded-md bg-[#0f1530] border border-white/10 text-sm"
+            />
+            <input
+              inputMode="numeric"
+              placeholder="Max"
+              value={Math.max(priceMin, priceMax)}
+              onChange={(e) =>
+                setPriceMax(Number(e.target.value || dyn.priceBounds!.max))
+              }
+              onBlur={commitPrice}
+              className="px-3 py-2 rounded-md bg-[#0f1530] border border-white/10 text-sm"
+            />
+          </div>
+        </div>
+      </details>
+
+      {/* Carat (Dual Slider) */}
+      <details>
+        <summary className="cursor-pointer select-none py-2 font-medium">
+          Carat
+        </summary>
+        <div className="mt-3">
+          <div className="flex items-center justify-between text-xs text-white/70 mb-2">
+            <span>{Math.min(caratMin, caratMax).toFixed(2)} ct</span>
+            <span>{Math.max(caratMin, caratMax).toFixed(2)} ct</span>
+          </div>
+
+          <div className="relative h-8">
+            <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-1 bg-white/15 rounded" />
+            <div
+              className="absolute top-1/2 -translate-y-1/2 h-1 bg-white rounded"
+              style={{
+                left: `${caratLeft}%`,
+                right: `${100 - caratRight}%`,
+              }}
+            />
+            <input
+              type="range"
+              min={dyn.caratBounds!.min}
+              max={dyn.caratBounds!.max}
+              step={0.01}
+              value={Math.min(caratMin, caratMax)}
+              onChange={(e) => setCaratMin(Number(e.target.value))}
+              onMouseUp={commitCarat}
+              onTouchEnd={commitCarat}
+              aria-label="Minimum carat"
+              className="absolute inset-0 w-full appearance-none bg-transparent pointer-events-auto"
+            />
+            <input
+              type="range"
+              min={dyn.caratBounds!.min}
+              max={dyn.caratBounds!.max}
+              step={0.01}
+              value={Math.max(caratMin, caratMax)}
+              onChange={(e) => setCaratMax(Number(e.target.value))}
+              onMouseUp={commitCarat}
+              onTouchEnd={commitCarat}
+              aria-label="Maximum carat"
+              className="absolute inset-0 w-full appearance-none bg-transparent pointer-events-auto"
+            />
+          </div>
+
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            <input
+              inputMode="decimal"
+              placeholder="Min"
+              value={Math.min(caratMin, caratMax)}
+              onChange={(e) =>
+                setCaratMin(Number(e.target.value || dyn.caratBounds!.min))
+              }
+              onBlur={commitCarat}
+              className="px-3 py-2 rounded-md bg-[#0f1530] border border-white/10 text-sm"
+            />
+            <input
+              inputMode="decimal"
+              placeholder="Max"
+              value={Math.max(caratMin, caratMax)}
+              onChange={(e) =>
+                setCaratMax(Number(e.target.value || dyn.caratBounds!.max))
+              }
+              onBlur={commitCarat}
+              className="px-3 py-2 rounded-md bg-[#0f1530] border border-white/10 text-sm"
+            />
+          </div>
+        </div>
+      </details>
+    </div>
+  );
+
+  // --- Desktop: unchanged sticky sidebar ---
+  // Note: stickiness applied only on lg+ to avoid heavy layout on phones.
+  const Desktop = (
+    <aside className={className}>
+      <div className="hidden lg:block">
+        <div className="sticky top-24">{Content}</div>
       </div>
     </aside>
+  );
+
+  // --- Mobile drawer (shown only when mobileOpen; ignored on lg+) ---
+  const MobileDrawer = mobileOpen ? (
+    <div
+      className="lg:hidden fixed inset-0 z-50"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Filters"
+    >
+      {/* Backdrop */}
+      <button
+        className="absolute inset-0 bg-black/60"
+        onClick={onClose}
+        aria-label="Close filters"
+      />
+      {/* Panel (slide-in) */}
+      <div className="absolute right-0 top-0 h-full w-[90%] max-w-sm bg-[var(--bg-page)] shadow-2xl overflow-y-auto">
+        <div className="sticky top-0 z-10 flex items-center justify-between px-4 py-3 border-b border-white/10 bg-[var(--bg-page)]">
+          <h2 className="text-base font-semibold">Filters</h2>
+          <button
+            onClick={onClose}
+            className="px-3 py-1 rounded-md bg-white/10 hover:bg-white/20 text-sm"
+            aria-label="Close"
+          >
+            Close
+          </button>
+        </div>
+        <div className="p-4">{Content}</div>
+      </div>
+    </div>
+  ) : null;
+
+  return (
+    <>
+      {Desktop}
+      {MobileDrawer}
+    </>
   );
 }

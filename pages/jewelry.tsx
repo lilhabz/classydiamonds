@@ -114,6 +114,9 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
   const { addToCart } = useCart();
   const [visibleCount, setVisibleCount] = useState(50);
 
+  // NEW: mobile filters drawer state (lg+ ignores this)
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+
   // When null => All Jewelry
   const [activeCategorySlug, setActiveCategorySlug] =
     useState<CategorySlug | null>(null);
@@ -444,9 +447,30 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
 
       {/* 🧰 SIDEBAR + GRID */}
       <section className="mt-6 px-4 sm:px-6 max-w-7xl mx-auto mb-20">
+        {/* Mobile filters trigger (hidden on lg+) */}
+        <div className="flex items-center justify-between mb-4 lg:hidden">
+          <div className="text-sm text-white/80">
+            {shown.length} {shown.length === 1 ? "item" : "items"}
+          </div>
+          <button
+            onClick={() => setMobileFiltersOpen(true)}
+            className="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-sm font-medium"
+            aria-haspopup="dialog"
+            aria-controls="filters-drawer"
+          >
+            Filters
+          </button>
+        </div>
+
+        {/* Drawer for mobile (reuses FiltersSidebar content) */}
+        <FiltersSidebar
+          mobileOpen={mobileFiltersOpen}
+          onClose={() => setMobileFiltersOpen(false)}
+        />
+
         <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-6">
-          {/* Sidebar (visible on all sizes; stacks above grid on mobile) */}
-          <div className="block">
+          {/* Sidebar: only visible on lg+ (sticky), unchanged */}
+          <div className="hidden lg:block">
             <FiltersSidebar />
           </div>
 
@@ -455,7 +479,8 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
             {shown.length === 0 ? (
               <p className="text-white/80">No products found.</p>
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
+              // Columns tuned for fixed-width cards with CSS-var scaling
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 gap-6 justify-items-center">
                 {shown.slice(0, visibleCount).map((product) => {
                   const href = `/category/${product.category}/${product.slug}`;
                   return (

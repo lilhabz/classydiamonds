@@ -1,4 +1,4 @@
-// components/ProductCard.tsx – Fixed sizes + Animations restored
+// components/ProductCard.tsx – Desktop pixel-locked; sub-desktop scales via CSS vars
 "use client";
 
 import Image from "next/image";
@@ -17,6 +17,7 @@ export type ProductCardProps = {
 
 const PLACEHOLDER = "/gray-placeholder.jpg";
 
+// 🧩 Normalize any local paths to /products/* while allowing full URLs unchanged
 function normalizeLocalPath(src: string) {
   const trimmed = src.trim();
   if (!trimmed) return PLACEHOLDER;
@@ -68,44 +69,69 @@ export default function ProductCard({
 
   return (
     <div
+      // 💎 Desktop stays 219×339; sub-desktop is handled by CSS vars in globals.css
       className="rounded-2xl bg-[#25304f] shadow-lg transition hover:shadow-xl"
-      style={{ width: 219, height: 339 }}
+      style={{
+        width: "var(--card-w)",
+        height: "var(--card-h)",
+      }}
     >
       <Link
         href={link}
         aria-label={name}
         className="block mx-auto group"
-        style={{ width: 195, height: 259 }}
+        style={{
+          width: "var(--card-inner-w)", // equals 195px on desktop
+          height: "var(--link-h)", // equals 259px on desktop
+        }}
       >
-        {/* 🔒 IMAGE with hover scale */}
+        {/* 🖼️ Image wrapper uses fill so it can follow --img exactly on each breakpoint */}
         <div
-          className="overflow-hidden rounded-xl"
-          style={{ width: 195, height: 195 }}
+          className="overflow-hidden rounded-xl relative"
+          style={{
+            width: "var(--img)",
+            height: "var(--img)",
+          }}
         >
           <Image
             src={src}
             alt={name}
-            width={195}
-            height={195}
+            fill
             className="object-cover transform transition-transform duration-300 group-hover:scale-105"
             unoptimized={unoptimized}
             onError={handleImgError}
+            // sizes is safe since width is fixed by CSS vars; keep it simple
+            sizes="(max-width: 1024px) 33vw, 195px"
+            priority={false}
           />
         </div>
 
-        <div style={{ width: 195, height: 16 }} />
+        {/* 🔢 Spacer that’s part of the 259px link area math */}
+        <div
+          style={{ width: "var(--card-inner-w)", height: "var(--spacer)" }}
+        />
 
+        {/* 🏷️ Title (24px tall on desktop). Keep truncation/animations as-is */}
         <h3
           className="font-medium text-white leading-[24px] truncate"
-          style={{ width: 195, height: 24, fontSize: 14 }}
+          style={{
+            width: "var(--card-inner-w)",
+            height: "var(--title-h)",
+            fontSize: "var(--title-fs)",
+          }}
           title={name}
         >
           {name}
         </h3>
 
+        {/* 💲 Price row (24px tall on desktop). No styling changes, just variable widths */}
         <p
           className="text-gray-200 leading-[24px] truncate"
-          style={{ width: 195, height: 24, fontSize: 14 }}
+          style={{
+            width: "var(--card-inner-w)",
+            height: "var(--price-h)",
+            fontSize: "var(--price-fs)",
+          }}
           title={
             salePrice
               ? `$${price.toLocaleString()} → $${displayPrice.toLocaleString()}`
@@ -129,15 +155,16 @@ export default function ProductCard({
         </p>
       </Link>
 
+      {/* 🛒 CTA — same hover/transition, just sized via CSS vars */}
       <div className="w-full flex justify-center">
         <button
           onClick={onAddToCart}
-          className="rounded-xl text-white font-semibold focus:outline-none focus:ring-2 focus:ring-white/40
-                     transition-colors duration-200 hover:bg-white/20"
+          className="rounded-xl text-white font-semibold focus:outline-none focus:ring-2 focus:ring-white/40 transition-colors duration-200 hover:bg-white/20"
           style={{
-            width: 195,
-            height: 44,
+            width: "var(--card-inner-w)",
+            height: "var(--btn-h)",
             background: "rgba(255,255,255,0.10)",
+            fontSize: "var(--btn-fs)",
           }}
           aria-label={`Add ${name} to cart`}
         >
