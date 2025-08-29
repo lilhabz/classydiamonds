@@ -180,7 +180,8 @@ export default function Home({ products }: HomeProps) {
               No featured items to display.
             </p>
           ) : (
-            <div className="grid grid-cols-2 gap-4">
+            /* ✅ ONLY CHANGE: use the same product-grid so cards follow CSS vars */
+            <div className="product-grid">
               {featured.map((item) => (
                 <ProductCard
                   key={item._id}
@@ -218,7 +219,8 @@ export default function Home({ products }: HomeProps) {
               No featured items to display.
             </p>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-10">
+            /* ✅ ONLY CHANGE: switch to product-grid for consistent sizing/columns */
+            <div className="product-grid">
               {featured.map((item) => (
                 <ProductCard
                   key={item._id}
@@ -251,10 +253,8 @@ export default function Home({ products }: HomeProps) {
             Gifts for Him & Her
           </h2>
           <div className="grid grid-cols-2 gap-4 justify-center max-w-2xl mx-auto">
-            {[
-              { name: "For Him", image: "/category/his-gift-cat.jpg" },
-              { name: "For Her", image: "/category/her-gift-cat.jpg" },
-            ].map((gift, index) => (
+            {[{ name: "For Him", image: "/category/his-gift-cat.jpg" },
+              { name: "For Her", image: "/category/her-gift-cat.jpg" }].map((gift, index) => (
               <GiftButton key={gift.name} gift={gift} index={index} />
             ))}
           </div>

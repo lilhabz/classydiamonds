@@ -257,7 +257,8 @@ export default function CategoryPage({
             {products.length === 0 ? (
               <p className="text-white/80">No products found.</p>
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
+              /* ✅ Unified with Jewelry/Watches: use .product-grid to honor CSS vars */
+              <div className="product-grid">
                 {products.map((p) => {
                   const href = `/category/${encodeURIComponent(
                     categorySlug

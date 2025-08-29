@@ -120,9 +120,7 @@ const resolveSubheader = (category: string, sub: string): string => {
   const cat = SUBHEADERS[category];
   if (!cat) return "Thoughtfully designed and beautifully finished.";
 
-  // slugify sub so "Three Stone", "three-stone", "THREE stone" all match
-  const key = (sub || "").toLowerCase().trim().replace(/\s+/g, "-"); // spaces -> dashes
-
+  const key = (sub || "").toLowerCase().trim().replace(/\s+/g, "-");
   const specific = cat.subs?.[key];
   return specific || cat.default;
 };
@@ -317,7 +315,7 @@ export default function SubcategoryPage({
       {/* 80vh hero */}
       <HeroBanner
         title={subcategoryLabel}
-        subtitle={heroSubtitle} /* ← now a professional, category-aware line */
+        subtitle={heroSubtitle}
         imageSrc={heroImage}
         heightClass="h-[80vh]"
         topOffsetClass="-mt-20"
@@ -334,7 +332,6 @@ export default function SubcategoryPage({
         <h1 className="text-2xl sm:text-3xl font-serif font-semibold tracking-wider leading-snug">
           {subcategoryLabel}
         </h1>
-        {/* Removed the extra subtitle here to avoid duplicating the hero line */}
       </div>
 
       {/* Anchor for scroll=true */}
@@ -348,12 +345,13 @@ export default function SubcategoryPage({
             <FiltersSidebar />
           </div>
 
-          {/* Product grid — subcategory-only sizing to match Jewelry */}
+          {/* Product grid — unified with the rest of the site */}
           <div>
             {products.length === 0 ? (
               <p className="text-white/80">No products found.</p>
             ) : (
-              <div className="fixed-card-grid">
+              /* ✅ Use the shared product-grid that honors CSS vars */
+              <div className="product-grid">
                 {products.slice(0, visibleCount).map((p) => {
                   const href = `/category/${encodeURIComponent(
                     categorySlug
@@ -401,36 +399,6 @@ export default function SubcategoryPage({
           </div>
         </div>
       </section>
-
-      {/* 🔧 Subcategory-only: replicate Jewelry page card footprint */}
-      <style jsx global>{`
-        /* Grid uses OUTER card size for columns: 219px */
-        .subcategory-page .fixed-card-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fill, 219px);
-          gap: 1.5rem; /* Tailwind gap-6 */
-          justify-content: center;
-        }
-        @media (min-width: 640px) {
-          .subcategory-page .fixed-card-grid {
-            justify-content: start;
-          }
-        }
-
-        /* ProductCard root (has .group) — force the exact outer size */
-        .subcategory-page .fixed-card-grid > .group {
-          width: 219px !important; /* outer card width */
-          height: 339px !important; /* outer card height */
-          box-sizing: border-box;
-          overflow: hidden; /* prevents spill if text is long */
-          display: flex;
-          flex-direction: column;
-        }
-
-        /* Do NOT size the image wrapper: keep aspect-square + w-full.
-           With p-3 padding (12*2=24), inner width = 219 - 24 = 195px,
-           so the image becomes 195x195 automatically, matching Jewelry. */
-      `}</style>
     </div>
   );
 }
