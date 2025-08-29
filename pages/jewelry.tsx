@@ -424,7 +424,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
       </div>
 
       {/* 🧰 SIDEBAR + GRID */}
-      <section className="mt-6 px-4 sm:px-6 lg:pl-0 lg:pr-8 max-w-7xl mx-auto mb-20">
+      <section className="mt-6 px-4 sm:px-6 lg:px-0 max-w-7xl mx-auto mb-20">
         {/* Mobile filters trigger (ONLY on < lg) */}
         <div className="flex items-center justify-between mb-4 lg:hidden">
           <div className="text-sm text-white/80">
@@ -432,7 +432,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
           </div>
           <button
             onClick={() => setMobileFiltersOpen(true)}
-            className="px-4 py-2 rounded-lg bg-white/10 hover:bg白/20 text-sm font-medium"
+            className="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-sm font-medium"
             aria-haspopup="dialog"
             aria-controls="filters-drawer"
           >
@@ -447,19 +447,29 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
           onClose={() => setMobileFiltersOpen(false)}
         />
 
-        <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-[240px_1fr] gap-6">
           {/* Desktop sticky sidebar (ONLY on lg+) */}
           <div className="hidden lg:block">
             <FiltersSidebar mode="desktop" />
           </div>
 
-           {/* Product Grid */}
-          <div>
+          {/* Product Grid */}
+          <div className="flex justify-center">
             {shown.length === 0 ? (
               <p className="text-white/80">No products found.</p>
             ) : (
-              /* 🔒 Force 4 per row on desktop, 3 on small tablets, 2 on phones */
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6 justify-items-center">
+              // Exact content widths so it centers perfectly under the title
+              // 2 cols: (2×219) + (1×24) = 462px
+              // 3 cols: (3×219) + (2×24) = 705px
+              // 4 cols: (4×219) + (3×24) = 948px
+              <div
+                className="
+                  grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4
+                  gap-6 justify-items-center
+                  w-full mx-auto
+                  max-w-[462px] sm:max-w-[705px] lg:max-w-[948px]
+                "
+              >
                 {shown.slice(0, visibleCount).map((product) => {
                   const href = `/category/${product.category}/${product.slug}`;
                   return (
