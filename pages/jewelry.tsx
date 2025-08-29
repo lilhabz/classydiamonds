@@ -123,22 +123,23 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
   const resetCount = () => setVisibleCount(50);
 
   useLayoutEffect(() => {
-    if (!router.isReady) return;
-    const { scroll } = router.query as { scroll?: string };
-    if (scroll !== "true") {
+  if (!router.isReady) return;
+  const { scroll } = router.query as { scroll?: string };
+
+  if (scroll !== "true") {
+    try {
+      (history as any).scrollRestoration = "manual";
+    } catch {}
+    window.scrollTo(0, 0);
+    requestAnimationFrame(() => window.scrollTo(0, 0));
+    queueMicrotask(() => {
       try {
-        (history as any).scrollRestoration = "manual";
+        (history as any).scrollRestoration = "auto";
       } catch {}
-      window.scrollTo(0, 0);
-      requestAnimationFrame(() => window.scrollTo(0, 0));
-      queueMicrotask(() => {
-        try {
-          (history as any).scrollRestoration = "auto";
-        } catch {}
-      });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [router.isReady]);
+    });
+  }
+}, [router.isReady, router.asPath]); // 🔑 added router.asPath
+
 
   useEffect(() => {
     if (!router.isReady) return;
@@ -424,7 +425,8 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
       </div>
 
       {/* 🧰 SIDEBAR + GRID */}
-      <section className="mt-6 px-4 sm:px-6 lg:px-0 max-w-7xl mx-auto mb-20">
+      <section className="mt-6 px-4 sm:px-6 lg:pl-0 lg:pr-8 max-w-7xl mx-auto mb-20">
+
         {/* Mobile filters trigger (ONLY on < lg) */}
         <div className="flex items-center justify-between mb-4 lg:hidden">
           <div className="text-sm text-white/80">
