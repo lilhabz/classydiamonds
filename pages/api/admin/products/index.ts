@@ -360,7 +360,10 @@ export default async function handler(
       const price = n(fields.unitPrice ?? fields.price) ?? 0;
       const salePrice =
         fields.salePrice == null ? null : n(fields.salePrice) ?? null;
-      const archived = toBool(fields.archived);
+      const archived = String(fields.archived ?? "").length
+        ? String(fields.archived).toLowerCase() === "true" ||
+          String(fields.archived) === "1"
+        : false;
       const audience = toAudience(fields.audience);
       const specs = toSpecs(fields.specs);
       const description = s(fields.description);
@@ -377,6 +380,22 @@ export default async function handler(
         imageUrl = upload.secure_url;
       }
 
+      // 🔁 Normalize select specs to top-level fields used by storefront filters
+      const toSlug = (val: any) =>
+        (val ?? "").toString().trim().toLowerCase().replace(/\s+/g, "-");
+
+      const normalized: Record<string, any> = {};
+      if (specs.metal) normalized.metal = toSlug(specs.metal);
+      if (specs.stone) normalized.stone = toSlug(specs.stone);
+      if (specs.shape) normalized.shape = toSlug(specs.shape);
+      if (specs.style) normalized.style = toSlug(specs.style);
+      if (specs.color) normalized.color = toSlug(specs.color);
+      if (specs.clarity) normalized.clarity = toSlug(specs.clarity);
+      if (specs.cut) normalized.cut = toSlug(specs.cut);
+      if (specs.carat && !Number.isNaN(Number(specs.carat))) {
+        normalized.carat = Number(specs.carat);
+      }
+
       const now = new Date();
       const doc = {
         name: title,
@@ -386,10 +405,19 @@ export default async function handler(
         salePrice,
         category,
         subCategory: subCategory || null,
+        // 👇 persisted normalized fields (only if present)
+        ...(normalized.metal ? { metal: normalized.metal } : {}),
+        ...(normalized.stone ? { stone: normalized.stone } : {}),
+        ...(normalized.shape ? { shape: normalized.shape } : {}),
+        ...(normalized.style ? { style: normalized.style } : {}),
+        ...(normalized.color ? { color: normalized.color } : {}),
+        ...(normalized.clarity ? { clarity: normalized.clarity } : {}),
+        ...(normalized.cut ? { cut: normalized.cut } : {}),
+        ...(normalized.carat !== undefined ? { carat: normalized.carat } : {}),
         imageUrl,
         images: imageUrl ? [imageUrl] : undefined,
         archived,
-        specs,
+        specs, // keep full pretty specs for PDP display
         audience: audience.length ? audience : ["unisex"],
         description,
         department:

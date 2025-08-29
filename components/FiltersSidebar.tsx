@@ -19,7 +19,7 @@ const FALLBACK_SHAPES = [
   "pear",
 ];
 
-// Some routes may use "necklaces" but DB/taxonomy uses "necklaces-pendants".
+// Alias map (kept from your original)
 const CATEGORY_ALIAS_TO_TAXONOMY: Record<string, Category> = {
   necklaces: "necklaces-pendants",
   "necklaces-pendants": "necklaces-pendants",
@@ -59,63 +59,57 @@ type DynamicFacets = {
   shapes?: string[];
   priceBounds?: { min: number; max: number };
   caratBounds?: { min: number; max: number };
+  extras?: Record<string, string[]>;
 };
 
 export default function FiltersSidebar({ className }: { className?: string }) {
   const router = useRouter();
   const q = router.query;
 
-  // current category from route params / query (jewelry page sets ?category=...)
+  // Current category derived from route/query
   const currentCategorySlugRaw =
     (router.query.category as string) || (q.category as string) || "";
   const currentCategory: Category | undefined =
     CATEGORY_ALIAS_TO_TAXONOMY[currentCategorySlugRaw?.toLowerCase?.() || ""];
 
-  // Subcategory support (drives ?sub=)
+  // Subcategory selection & list
   const subSelected = typeof q.sub === "string" ? q.sub : undefined;
   const subOptions = useMemo(() => {
     if (!currentCategory) return [];
     return SUBCATEGORY_MAP[currentCategory] || [];
   }, [currentCategory]);
 
-  // read arrays
+  // Arrays from URL
   const metals = toArray(q.metal);
   const stones = toArray(q.stone);
   const shapes = toArray(q.shape);
 
-  // read ranges from the URL
+  // Range values from URL
   const priceMinQ = q.priceMin ? Number(q.priceMin) : undefined;
   const priceMaxQ = q.priceMax ? Number(q.priceMax) : undefined;
   const caratMinQ = q.caratMin ? Number(q.caratMin) : undefined;
   const caratMaxQ = q.caratMax ? Number(q.caratMax) : undefined;
 
-  // ----------------------------------------------
-  // Optional Dynamic Facets (admin-driven)
-  // Tries /api/facets?category=... and falls back
-  // ----------------------------------------------
+  // Dynamic facets from API (fallback-safe)
   const [dyn, setDyn] = useState<DynamicFacets>({
     metals: FALLBACK_METALS,
     stones: FALLBACK_STONES,
     shapes: FALLBACK_SHAPES,
     priceBounds: { min: 0, max: 50000 },
     caratBounds: { min: 0, max: 10 },
+    extras: {},
   });
 
   useEffect(() => {
     let cancelled = false;
-
     const fetchFacets = async () => {
       try {
         const params = new URLSearchParams();
         if (currentCategory) params.set("category", currentCategory);
-        // Optionally include subcategory to tighten bounds
         if (typeof subSelected === "string" && subSelected !== "all") {
           params.set("subcategory", subSelected);
         }
-        const res = await fetch(`/api/facets?${params.toString()}`, {
-          method: "GET",
-        });
-        if (!res.ok) throw new Error("no facets");
+        const res = await fetch(`/api/facets?${params.toString()}`);
         const data = await res.json();
         if (!cancelled) {
           setDyn({
@@ -124,21 +118,23 @@ export default function FiltersSidebar({ className }: { className?: string }) {
             shapes: data.shapes?.length ? data.shapes : FALLBACK_SHAPES,
             priceBounds: data.priceBounds || { min: 0, max: 50000 },
             caratBounds: data.caratBounds || { min: 0, max: 10 },
+            extras: data.extras || {},
           });
         }
       } catch {
         if (!cancelled) {
-          setDyn({
+          setDyn((d) => ({
+            ...d,
             metals: FALLBACK_METALS,
             stones: FALLBACK_STONES,
             shapes: FALLBACK_SHAPES,
             priceBounds: { min: 0, max: 50000 },
             caratBounds: { min: 0, max: 10 },
-          });
+            extras: {},
+          }));
         }
       }
     };
-
     fetchFacets();
     return () => {
       cancelled = true;
@@ -146,7 +142,7 @@ export default function FiltersSidebar({ className }: { className?: string }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentCategory, subSelected]);
 
-  // Local slider state synced with URL (keeps UI responsive)
+  // Local slider state mirrors URL/range
   const [priceMin, setPriceMin] = useState<number>(
     priceMinQ ?? dyn.priceBounds!.min
   );
@@ -160,7 +156,7 @@ export default function FiltersSidebar({ className }: { className?: string }) {
     caratMaxQ ?? dyn.caratBounds!.max
   );
 
-  // When dynamic bounds change (e.g., different category), normalize slider positions
+  // Normalize when bounds change (category/subcategory switch)
   useEffect(() => {
     setPriceMin(priceMinQ ?? dyn.priceBounds!.min);
     setPriceMax(priceMaxQ ?? dyn.priceBounds!.max);
@@ -230,7 +226,6 @@ export default function FiltersSidebar({ className }: { className?: string }) {
   };
 
   const setSubcategory = (value: string) => {
-    // "" or "all" clears the filter
     const v = value === "" || value === "all" ? undefined : value;
     const next = setParam(q, "sub", v);
     push(next);
@@ -247,11 +242,15 @@ export default function FiltersSidebar({ className }: { className?: string }) {
       "caratMin",
       "caratMax",
       "sub",
+      // clear any extras if present
+      "style",
+      "color",
+      "clarity",
+      "cut",
     ].forEach((k) => delete (next as any)[k]);
     push(next);
   };
 
-  // Helpers for rendering the dual sliders with a filled track (simple)
   const percent = (value: number, min: number, max: number) =>
     ((value - min) * 100) / (max - min);
 
@@ -265,7 +264,6 @@ export default function FiltersSidebar({ className }: { className?: string }) {
     dyn.priceBounds!.min,
     dyn.priceBounds!.max
   );
-
   const caratLeft = percent(
     Math.min(caratMin, caratMax),
     dyn.caratBounds!.min,
@@ -290,10 +288,9 @@ export default function FiltersSidebar({ className }: { className?: string }) {
           </button>
         </div>
 
-        {/* Subcategory — only when a category is selected (consistent with Jewelry page UX) */}
+        {/* Subcategory (only when a category is selected) */}
         {currentCategory && subOptions.length > 0 && (
           <details className="mb-3">
-            {/* closed by default */}
             <summary className="cursor-pointer select-none py-2 font-medium">
               Subcategory
             </summary>
@@ -318,7 +315,6 @@ export default function FiltersSidebar({ className }: { className?: string }) {
 
         {/* Metal */}
         <details className="mb-3">
-          {/* closed by default */}
           <summary className="cursor-pointer select-none py-2 font-medium">
             Metal
           </summary>
@@ -342,7 +338,6 @@ export default function FiltersSidebar({ className }: { className?: string }) {
 
         {/* Stone */}
         <details className="mb-3">
-          {/* closed by default */}
           <summary className="cursor-pointer select-none py-2 font-medium">
             Stone
           </summary>
@@ -366,7 +361,6 @@ export default function FiltersSidebar({ className }: { className?: string }) {
 
         {/* Shape */}
         <details className="mb-3">
-          {/* closed by default */}
           <summary className="cursor-pointer select-none py-2 font-medium">
             Shape
           </summary>
@@ -388,9 +382,51 @@ export default function FiltersSidebar({ className }: { className?: string }) {
           </div>
         </details>
 
+        {/* Extra facets from admin (style, color, clarity, cut, etc.) */}
+        {dyn.extras &&
+          Object.entries(dyn.extras).map(([key, values]) => {
+            const selected = toArray(q[key as any]);
+            if (!values?.length) return null;
+            return (
+              <details key={key} className="mb-3">
+                <summary className="cursor-pointer select-none py-2 font-medium">
+                  {pretty(key)}
+                </summary>
+                <div className="mt-2 space-y-2">
+                  {values.map((v) => {
+                    const checked = selected.includes(v);
+                    return (
+                      <label
+                        key={v}
+                        className="flex items-center gap-2 text-sm"
+                      >
+                        <input
+                          type="checkbox"
+                          className="accent-white"
+                          checked={checked}
+                          onChange={() => {
+                            const curr = toArray(q[key as any]);
+                            const exists = curr.includes(v);
+                            const nextArr = exists
+                              ? curr.filter((x) => x !== v)
+                              : [...curr, v];
+                            const next = setParam(q, key, nextArr);
+                            push(next);
+                          }}
+                        />
+                        <span className="capitalize">
+                          {v.replace(/-/g, " ")}
+                        </span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </details>
+            );
+          })}
+
         {/* Price (Dual Slider) */}
         <details className="mb-3">
-          {/* closed by default */}
           <summary className="cursor-pointer select-none py-2 font-medium">
             Price
           </summary>
@@ -401,9 +437,7 @@ export default function FiltersSidebar({ className }: { className?: string }) {
             </div>
 
             <div className="relative h-8">
-              {/* Track */}
               <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-1 bg-white/15 rounded" />
-              {/* Selected range */}
               <div
                 className="absolute top-1/2 -translate-y-1/2 h-1 bg-white rounded"
                 style={{
@@ -411,7 +445,6 @@ export default function FiltersSidebar({ className }: { className?: string }) {
                   right: `${100 - priceRight}%`,
                 }}
               />
-              {/* Min handle */}
               <input
                 type="range"
                 min={dyn.priceBounds!.min}
@@ -424,7 +457,6 @@ export default function FiltersSidebar({ className }: { className?: string }) {
                 aria-label="Minimum price"
                 className="absolute inset-0 w-full appearance-none bg-transparent pointer-events-auto"
               />
-              {/* Max handle */}
               <input
                 type="range"
                 min={dyn.priceBounds!.min}
@@ -439,7 +471,6 @@ export default function FiltersSidebar({ className }: { className?: string }) {
               />
             </div>
 
-            {/* Inputs for precise entry (optional) */}
             <div className="mt-3 grid grid-cols-2 gap-2">
               <input
                 inputMode="numeric"
@@ -467,7 +498,6 @@ export default function FiltersSidebar({ className }: { className?: string }) {
 
         {/* Carat (Dual Slider) */}
         <details>
-          {/* closed by default */}
           <summary className="cursor-pointer select-none py-2 font-medium">
             Carat
           </summary>
@@ -478,9 +508,7 @@ export default function FiltersSidebar({ className }: { className?: string }) {
             </div>
 
             <div className="relative h-8">
-              {/* Track */}
               <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-1 bg-white/15 rounded" />
-              {/* Selected range */}
               <div
                 className="absolute top-1/2 -translate-y-1/2 h-1 bg-white rounded"
                 style={{
@@ -488,7 +516,6 @@ export default function FiltersSidebar({ className }: { className?: string }) {
                   right: `${100 - caratRight}%`,
                 }}
               />
-              {/* Min handle */}
               <input
                 type="range"
                 min={dyn.caratBounds!.min}
@@ -501,7 +528,6 @@ export default function FiltersSidebar({ className }: { className?: string }) {
                 aria-label="Minimum carat"
                 className="absolute inset-0 w-full appearance-none bg-transparent pointer-events-auto"
               />
-              {/* Max handle */}
               <input
                 type="range"
                 min={dyn.caratBounds!.min}
@@ -516,7 +542,6 @@ export default function FiltersSidebar({ className }: { className?: string }) {
               />
             </div>
 
-            {/* Inputs for precise entry (optional) */}
             <div className="mt-3 grid grid-cols-2 gap-2">
               <input
                 inputMode="decimal"

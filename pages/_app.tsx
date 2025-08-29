@@ -9,56 +9,52 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { CartProvider } from "@/context/CartContext";
 import IdleTimerProvider from "@/components/AutoLogout";
-
-// ⚡ Import the SpeedInsights component (no HOC wrapper needed)
 import { SpeedInsights } from "@vercel/speed-insights/next";
 
 function App({ Component, pageProps: { session, ...pageProps } }: AppProps) {
   const router = useRouter();
 
   useEffect(() => {
-    // 🎯 Prevent browser from auto-restoring scroll
     if ("scrollRestoration" in window.history) {
       window.history.scrollRestoration = "manual";
     }
 
-    // ✅ Match target routes where the hero must be visible on load
-    const isSubcatUrl = (url: string) =>
-      /^\/category\/[^/]+\/subcategory\/[^/]+(?:\?|$)/.test(url.split("#")[0]);
-    const isJewelryUrl = (url: string) =>
-      url.split("#")[0].split("?")[0] === "/jewelry";
+    const pathnameOf = (url: string) =>
+      new URL(url, window.location.origin).pathname;
 
-    // 🔄 Only scroll to top on full route changes (skip same-page query changes)
+    const isJewelryPath = (p: string) => p === "/jewelry";
+    const isSubcatPath = (p: string) =>
+      /^\/category\/[^/]+\/subcategory\/[^/]+$/.test(p);
+
+    // ⬇️ Only scroll to top when the PATHNAME changes (ignore query-only)
     const handleRouteChangeStart = (url: string) => {
-      const toPath = url.split("?")[0];
-      const fromPath = router.asPath.split("?")[0];
+      const toPath = pathnameOf(url);
+      const fromPath = pathnameOf(router.asPath);
       if (toPath !== fromPath) {
-        // Force top BEFORE paint for Jewelry/Subcategory (unless ?scroll=true)
-        if (
-          (isSubcatUrl(url) || isJewelryUrl(url)) &&
-          !url.includes("scroll=true")
-        ) {
-          window.scrollTo(0, 0);
-        } else {
-          // Keep original behavior for other full route changes
-          window.scrollTo(0, 0);
-        }
-      }
-    };
-
-    // 🧷 Some browsers restore after paint — guard again on complete
-    const handleRouteChangeComplete = (url: string) => {
-      if (
-        (isSubcatUrl(url) || isJewelryUrl(url)) &&
-        !url.includes("scroll=true")
-      ) {
         window.scrollTo(0, 0);
-        // Double-RAF guard against late layout nudges/hydration shifts
-        requestAnimationFrame(() => window.scrollTo(0, 0));
       }
     };
 
-    // 📡 Listen for route changes
+    // ⬇️ Keep the “open from top” behavior for first loads into
+    // /jewelry and subcategory pages — but again, ONLY on pathname change.
+    const handleRouteChangeComplete = (url: string) => {
+      const toPath = pathnameOf(url);
+      const fromPath = pathnameOf(router.asPath);
+
+      // if only queries changed (filters), do nothing
+      if (toPath === fromPath) return;
+
+      const params = new URL(url, window.location.origin).searchParams;
+      const wantScroll = params.get("scroll") === "true";
+
+      if (!wantScroll && (isJewelryPath(toPath) || isSubcatPath(toPath))) {
+        // ensure the hero is visible after content paints
+        requestAnimationFrame(() =>
+          window.scrollTo({ top: 0, behavior: "auto" })
+        );
+      }
+    };
+
     router.events.on("routeChangeStart", handleRouteChangeStart);
     router.events.on("routeChangeComplete", handleRouteChangeComplete);
 
@@ -75,18 +71,11 @@ function App({ Component, pageProps: { session, ...pageProps } }: AppProps) {
     <SessionProvider session={session}>
       <CartProvider>
         <IdleTimerProvider>
-          {/* 🌐 Navbar */}
           <Navbar />
-
-          {/* 📦 Main Content */}
           <div className="pt-20 flex flex-col min-h-screen bg-[#1f2a44] text-[#e0e0e0]">
             <Component {...pageProps} />
           </div>
-
-          {/* 🦶 Footer */}
           <Footer />
-
-          {/* ⚡ Insert SpeedInsights here */}
           <SpeedInsights />
         </IdleTimerProvider>
       </CartProvider>

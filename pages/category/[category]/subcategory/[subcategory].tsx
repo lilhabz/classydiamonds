@@ -119,7 +119,10 @@ const SUBHEADERS: Record<
 const resolveSubheader = (category: string, sub: string): string => {
   const cat = SUBHEADERS[category];
   if (!cat) return "Thoughtfully designed and beautifully finished.";
-  const key = (sub || "").toLowerCase();
+
+  // slugify sub so "Three Stone", "three-stone", "THREE stone" all match
+  const key = (sub || "").toLowerCase().trim().replace(/\s+/g, "-"); // spaces -> dashes
+
   const specific = cat.subs?.[key];
   return specific || cat.default;
 };
