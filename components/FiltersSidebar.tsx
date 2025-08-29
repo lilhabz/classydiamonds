@@ -2,15 +2,22 @@
 "use client";
 
 import { useRouter } from "next/router";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { SUBCATEGORY_MAP, CATEGORY_LABELS, Category } from "@/data/taxonomy";
 
 type FacetKey = "metal" | "stone" | "shape";
 type RangeKey = "priceMin" | "priceMax" | "caratMin" | "caratMax";
 
-const METALS = ["yellow-gold", "white-gold", "rose-gold", "platinum"];
-const STONES = ["diamond", "lab-grown", "moissanite", "gemstone"];
-const SHAPES = ["round", "oval", "princess", "emerald", "cushion", "pear"];
+const FALLBACK_METALS = ["yellow-gold", "white-gold", "rose-gold", "platinum"];
+const FALLBACK_STONES = ["diamond", "lab-grown", "moissanite", "gemstone"];
+const FALLBACK_SHAPES = [
+  "round",
+  "oval",
+  "princess",
+  "emerald",
+  "cushion",
+  "pear",
+];
 
 // Some routes may use "necklaces" but DB/taxonomy uses "necklaces-pendants".
 const CATEGORY_ALIAS_TO_TAXONOMY: Record<string, Category> = {
@@ -35,7 +42,7 @@ function setParam(q: Record<string, any>, key: string, value?: any) {
     value === "" ||
     (Array.isArray(value) && value.length === 0)
   ) {
-    delete next[key];
+    delete (next as any)[key];
   } else {
     next[key] = value;
   }
@@ -46,22 +53,19 @@ function setParam(q: Record<string, any>, key: string, value?: any) {
 const pretty = (s: string) =>
   s.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 
+type DynamicFacets = {
+  metals?: string[];
+  stones?: string[];
+  shapes?: string[];
+  priceBounds?: { min: number; max: number };
+  caratBounds?: { min: number; max: number };
+};
+
 export default function FiltersSidebar({ className }: { className?: string }) {
   const router = useRouter();
   const q = router.query;
 
-  // read arrays
-  const metals = toArray(q.metal);
-  const stones = toArray(q.stone);
-  const shapes = toArray(q.shape);
-
-  // read ranges
-  const priceMin = q.priceMin ? Number(q.priceMin) : undefined;
-  const priceMax = q.priceMax ? Number(q.priceMax) : undefined;
-  const caratMin = q.caratMin ? Number(q.caratMin) : undefined;
-  const caratMax = q.caratMax ? Number(q.caratMax) : undefined;
-
-  // current category from route params
+  // current category from route params / query (jewelry page sets ?category=...)
   const currentCategorySlugRaw =
     (router.query.category as string) || (q.category as string) || "";
   const currentCategory: Category | undefined =
@@ -71,10 +75,104 @@ export default function FiltersSidebar({ className }: { className?: string }) {
   const subSelected = typeof q.sub === "string" ? q.sub : undefined;
   const subOptions = useMemo(() => {
     if (!currentCategory) return [];
-    // pull from taxonomy
-    const list = SUBCATEGORY_MAP[currentCategory] || [];
-    return list;
+    return SUBCATEGORY_MAP[currentCategory] || [];
   }, [currentCategory]);
+
+  // read arrays
+  const metals = toArray(q.metal);
+  const stones = toArray(q.stone);
+  const shapes = toArray(q.shape);
+
+  // read ranges from the URL
+  const priceMinQ = q.priceMin ? Number(q.priceMin) : undefined;
+  const priceMaxQ = q.priceMax ? Number(q.priceMax) : undefined;
+  const caratMinQ = q.caratMin ? Number(q.caratMin) : undefined;
+  const caratMaxQ = q.caratMax ? Number(q.caratMax) : undefined;
+
+  // ----------------------------------------------
+  // Optional Dynamic Facets (admin-driven)
+  // Tries /api/facets?category=... and falls back
+  // ----------------------------------------------
+  const [dyn, setDyn] = useState<DynamicFacets>({
+    metals: FALLBACK_METALS,
+    stones: FALLBACK_STONES,
+    shapes: FALLBACK_SHAPES,
+    priceBounds: { min: 0, max: 50000 },
+    caratBounds: { min: 0, max: 10 },
+  });
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const fetchFacets = async () => {
+      try {
+        const params = new URLSearchParams();
+        if (currentCategory) params.set("category", currentCategory);
+        // Optionally include subcategory to tighten bounds
+        if (typeof subSelected === "string" && subSelected !== "all") {
+          params.set("subcategory", subSelected);
+        }
+        const res = await fetch(`/api/facets?${params.toString()}`, {
+          method: "GET",
+        });
+        if (!res.ok) throw new Error("no facets");
+        const data = await res.json();
+        if (!cancelled) {
+          setDyn({
+            metals: data.metals?.length ? data.metals : FALLBACK_METALS,
+            stones: data.stones?.length ? data.stones : FALLBACK_STONES,
+            shapes: data.shapes?.length ? data.shapes : FALLBACK_SHAPES,
+            priceBounds: data.priceBounds || { min: 0, max: 50000 },
+            caratBounds: data.caratBounds || { min: 0, max: 10 },
+          });
+        }
+      } catch {
+        if (!cancelled) {
+          setDyn({
+            metals: FALLBACK_METALS,
+            stones: FALLBACK_STONES,
+            shapes: FALLBACK_SHAPES,
+            priceBounds: { min: 0, max: 50000 },
+            caratBounds: { min: 0, max: 10 },
+          });
+        }
+      }
+    };
+
+    fetchFacets();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentCategory, subSelected]);
+
+  // Local slider state synced with URL (keeps UI responsive)
+  const [priceMin, setPriceMin] = useState<number>(
+    priceMinQ ?? dyn.priceBounds!.min
+  );
+  const [priceMax, setPriceMax] = useState<number>(
+    priceMaxQ ?? dyn.priceBounds!.max
+  );
+  const [caratMin, setCaratMin] = useState<number>(
+    caratMinQ ?? dyn.caratBounds!.min
+  );
+  const [caratMax, setCaratMax] = useState<number>(
+    caratMaxQ ?? dyn.caratBounds!.max
+  );
+
+  // When dynamic bounds change (e.g., different category), normalize slider positions
+  useEffect(() => {
+    setPriceMin(priceMinQ ?? dyn.priceBounds!.min);
+    setPriceMax(priceMaxQ ?? dyn.priceBounds!.max);
+    setCaratMin(caratMinQ ?? dyn.caratBounds!.min);
+    setCaratMax(caratMaxQ ?? dyn.caratBounds!.max);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    dyn.priceBounds?.min,
+    dyn.priceBounds?.max,
+    dyn.caratBounds?.min,
+    dyn.caratBounds?.max,
+  ]);
 
   const push = (nextQuery: Record<string, any>) => {
     router.push({ pathname: router.pathname, query: nextQuery }, undefined, {
@@ -94,9 +192,41 @@ export default function FiltersSidebar({ className }: { className?: string }) {
     const next = setParam(
       q,
       key,
-      value && !Number.isNaN(value) ? String(value) : undefined
+      value !== undefined && !Number.isNaN(value) ? String(value) : undefined
     );
     push(next);
+  };
+
+  const commitPrice = () => {
+    const lo = Math.min(priceMin, priceMax);
+    const hi = Math.max(priceMin, priceMax);
+    const next = setParam(
+      q,
+      "priceMin",
+      lo === dyn.priceBounds!.min ? undefined : lo
+    );
+    const finalQ = setParam(
+      next,
+      "priceMax",
+      hi === dyn.priceBounds!.max ? undefined : hi
+    );
+    push(finalQ);
+  };
+
+  const commitCarat = () => {
+    const lo = Math.min(caratMin, caratMax);
+    const hi = Math.max(caratMin, caratMax);
+    const next = setParam(
+      q,
+      "caratMin",
+      lo === dyn.caratBounds!.min ? undefined : lo
+    );
+    const finalQ = setParam(
+      next,
+      "caratMax",
+      hi === dyn.caratBounds!.max ? undefined : hi
+    );
+    push(finalQ);
   };
 
   const setSubcategory = (value: string) => {
@@ -121,6 +251,32 @@ export default function FiltersSidebar({ className }: { className?: string }) {
     push(next);
   };
 
+  // Helpers for rendering the dual sliders with a filled track (simple)
+  const percent = (value: number, min: number, max: number) =>
+    ((value - min) * 100) / (max - min);
+
+  const priceLeft = percent(
+    Math.min(priceMin, priceMax),
+    dyn.priceBounds!.min,
+    dyn.priceBounds!.max
+  );
+  const priceRight = percent(
+    Math.max(priceMin, priceMax),
+    dyn.priceBounds!.min,
+    dyn.priceBounds!.max
+  );
+
+  const caratLeft = percent(
+    Math.min(caratMin, caratMax),
+    dyn.caratBounds!.min,
+    dyn.caratBounds!.max
+  );
+  const caratRight = percent(
+    Math.max(caratMin, caratMax),
+    dyn.caratBounds!.min,
+    dyn.caratBounds!.max
+  );
+
   return (
     <aside className={className}>
       <div className="sticky top-24 p-4 rounded-xl bg-[#1b2440] border border-white/10">
@@ -134,9 +290,10 @@ export default function FiltersSidebar({ className }: { className?: string }) {
           </button>
         </div>
 
-        {/* Subcategory (only when the current category has defined subcategories) */}
+        {/* Subcategory — only when a category is selected (consistent with Jewelry page UX) */}
         {currentCategory && subOptions.length > 0 && (
-          <details open className="mb-3">
+          <details className="mb-3">
+            {/* closed by default */}
             <summary className="cursor-pointer select-none py-2 font-medium">
               Subcategory
             </summary>
@@ -160,12 +317,13 @@ export default function FiltersSidebar({ className }: { className?: string }) {
         )}
 
         {/* Metal */}
-        <details open className="mb-3">
+        <details className="mb-3">
+          {/* closed by default */}
           <summary className="cursor-pointer select-none py-2 font-medium">
             Metal
           </summary>
           <div className="mt-2 space-y-2">
-            {METALS.map((m) => {
+            {(dyn.metals || FALLBACK_METALS).map((m) => {
               const checked = metals.includes(m);
               return (
                 <label key={m} className="flex items-center gap-2 text-sm">
@@ -175,7 +333,7 @@ export default function FiltersSidebar({ className }: { className?: string }) {
                     checked={checked}
                     onChange={() => toggleFacet("metal", m)}
                   />
-                  <span className="capitalize">{m.replace("-", " ")}</span>
+                  <span className="capitalize">{m.replace(/-/g, " ")}</span>
                 </label>
               );
             })}
@@ -183,12 +341,13 @@ export default function FiltersSidebar({ className }: { className?: string }) {
         </details>
 
         {/* Stone */}
-        <details open className="mb-3">
+        <details className="mb-3">
+          {/* closed by default */}
           <summary className="cursor-pointer select-none py-2 font-medium">
             Stone
           </summary>
           <div className="mt-2 space-y-2">
-            {STONES.map((s) => {
+            {(dyn.stones || FALLBACK_STONES).map((s) => {
               const checked = stones.includes(s);
               return (
                 <label key={s} className="flex items-center gap-2 text-sm">
@@ -198,7 +357,7 @@ export default function FiltersSidebar({ className }: { className?: string }) {
                     checked={checked}
                     onChange={() => toggleFacet("stone", s)}
                   />
-                  <span className="capitalize">{s.replace("-", " ")}</span>
+                  <span className="capitalize">{s.replace(/-/g, " ")}</span>
                 </label>
               );
             })}
@@ -206,12 +365,13 @@ export default function FiltersSidebar({ className }: { className?: string }) {
         </details>
 
         {/* Shape */}
-        <details open className="mb-3">
+        <details className="mb-3">
+          {/* closed by default */}
           <summary className="cursor-pointer select-none py-2 font-medium">
             Shape
           </summary>
           <div className="mt-2 space-y-2">
-            {SHAPES.map((s) => {
+            {(dyn.shapes || FALLBACK_SHAPES).map((s) => {
               const checked = shapes.includes(s);
               return (
                 <label key={s} className="flex items-center gap-2 text-sm">
@@ -228,69 +388,157 @@ export default function FiltersSidebar({ className }: { className?: string }) {
           </div>
         </details>
 
-        {/* Price */}
-        <details open className="mb-3">
+        {/* Price (Dual Slider) */}
+        <details className="mb-3">
+          {/* closed by default */}
           <summary className="cursor-pointer select-none py-2 font-medium">
             Price
           </summary>
-          <div className="mt-3 grid grid-cols-2 gap-2">
-            <input
-              inputMode="numeric"
-              placeholder="Min"
-              defaultValue={priceMin ?? ""}
-              onBlur={(e) =>
-                setRange(
-                  "priceMin",
-                  e.target.value ? Number(e.target.value) : undefined
-                )
-              }
-              className="px-3 py-2 rounded-md bg-[#0f1530] border border-white/10 text-sm"
-            />
-            <input
-              inputMode="numeric"
-              placeholder="Max"
-              defaultValue={priceMax ?? ""}
-              onBlur={(e) =>
-                setRange(
-                  "priceMax",
-                  e.target.value ? Number(e.target.value) : undefined
-                )
-              }
-              className="px-3 py-2 rounded-md bg-[#0f1530] border border-white/10 text-sm"
-            />
+          <div className="mt-3">
+            <div className="flex items-center justify-between text-xs text-white/70 mb-2">
+              <span>${Math.min(priceMin, priceMax).toLocaleString()}</span>
+              <span>${Math.max(priceMin, priceMax).toLocaleString()}</span>
+            </div>
+
+            <div className="relative h-8">
+              {/* Track */}
+              <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-1 bg-white/15 rounded" />
+              {/* Selected range */}
+              <div
+                className="absolute top-1/2 -translate-y-1/2 h-1 bg-white rounded"
+                style={{
+                  left: `${priceLeft}%`,
+                  right: `${100 - priceRight}%`,
+                }}
+              />
+              {/* Min handle */}
+              <input
+                type="range"
+                min={dyn.priceBounds!.min}
+                max={dyn.priceBounds!.max}
+                step={50}
+                value={Math.min(priceMin, priceMax)}
+                onChange={(e) => setPriceMin(Number(e.target.value))}
+                onMouseUp={commitPrice}
+                onTouchEnd={commitPrice}
+                aria-label="Minimum price"
+                className="absolute inset-0 w-full appearance-none bg-transparent pointer-events-auto"
+              />
+              {/* Max handle */}
+              <input
+                type="range"
+                min={dyn.priceBounds!.min}
+                max={dyn.priceBounds!.max}
+                step={50}
+                value={Math.max(priceMin, priceMax)}
+                onChange={(e) => setPriceMax(Number(e.target.value))}
+                onMouseUp={commitPrice}
+                onTouchEnd={commitPrice}
+                aria-label="Maximum price"
+                className="absolute inset-0 w-full appearance-none bg-transparent pointer-events-auto"
+              />
+            </div>
+
+            {/* Inputs for precise entry (optional) */}
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              <input
+                inputMode="numeric"
+                placeholder="Min"
+                value={Math.min(priceMin, priceMax)}
+                onChange={(e) =>
+                  setPriceMin(Number(e.target.value || dyn.priceBounds!.min))
+                }
+                onBlur={commitPrice}
+                className="px-3 py-2 rounded-md bg-[#0f1530] border border-white/10 text-sm"
+              />
+              <input
+                inputMode="numeric"
+                placeholder="Max"
+                value={Math.max(priceMin, priceMax)}
+                onChange={(e) =>
+                  setPriceMax(Number(e.target.value || dyn.priceBounds!.max))
+                }
+                onBlur={commitPrice}
+                className="px-3 py-2 rounded-md bg-[#0f1530] border border-white/10 text-sm"
+              />
+            </div>
           </div>
         </details>
 
-        {/* Carat */}
+        {/* Carat (Dual Slider) */}
         <details>
+          {/* closed by default */}
           <summary className="cursor-pointer select-none py-2 font-medium">
             Carat
           </summary>
-          <div className="mt-3 grid grid-cols-2 gap-2">
-            <input
-              inputMode="decimal"
-              placeholder="Min"
-              defaultValue={caratMin ?? ""}
-              onBlur={(e) =>
-                setRange(
-                  "caratMin",
-                  e.target.value ? Number(e.target.value) : undefined
-                )
-              }
-              className="px-3 py-2 rounded-md bg-[#0f1530] border border-white/10 text-sm"
-            />
-            <input
-              inputMode="decimal"
-              placeholder="Max"
-              defaultValue={caratMax ?? ""}
-              onBlur={(e) =>
-                setRange(
-                  "caratMax",
-                  e.target.value ? Number(e.target.value) : undefined
-                )
-              }
-              className="px-3 py-2 rounded-md bg-[#0f1530] border border-white/10 text-sm"
-            />
+          <div className="mt-3">
+            <div className="flex items-center justify-between text-xs text-white/70 mb-2">
+              <span>{Math.min(caratMin, caratMax).toFixed(2)} ct</span>
+              <span>{Math.max(caratMin, caratMax).toFixed(2)} ct</span>
+            </div>
+
+            <div className="relative h-8">
+              {/* Track */}
+              <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-1 bg-white/15 rounded" />
+              {/* Selected range */}
+              <div
+                className="absolute top-1/2 -translate-y-1/2 h-1 bg-white rounded"
+                style={{
+                  left: `${caratLeft}%`,
+                  right: `${100 - caratRight}%`,
+                }}
+              />
+              {/* Min handle */}
+              <input
+                type="range"
+                min={dyn.caratBounds!.min}
+                max={dyn.caratBounds!.max}
+                step={0.01}
+                value={Math.min(caratMin, caratMax)}
+                onChange={(e) => setCaratMin(Number(e.target.value))}
+                onMouseUp={commitCarat}
+                onTouchEnd={commitCarat}
+                aria-label="Minimum carat"
+                className="absolute inset-0 w-full appearance-none bg-transparent pointer-events-auto"
+              />
+              {/* Max handle */}
+              <input
+                type="range"
+                min={dyn.caratBounds!.min}
+                max={dyn.caratBounds!.max}
+                step={0.01}
+                value={Math.max(caratMin, caratMax)}
+                onChange={(e) => setCaratMax(Number(e.target.value))}
+                onMouseUp={commitCarat}
+                onTouchEnd={commitCarat}
+                aria-label="Maximum carat"
+                className="absolute inset-0 w-full appearance-none bg-transparent pointer-events-auto"
+              />
+            </div>
+
+            {/* Inputs for precise entry (optional) */}
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              <input
+                inputMode="decimal"
+                placeholder="Min"
+                value={Math.min(caratMin, caratMax)}
+                onChange={(e) =>
+                  setCaratMin(Number(e.target.value || dyn.caratBounds!.min))
+                }
+                onBlur={commitCarat}
+                className="px-3 py-2 rounded-md bg-[#0f1530] border border-white/10 text-sm"
+              />
+              <input
+                inputMode="decimal"
+                placeholder="Max"
+                value={Math.max(caratMin, caratMax)}
+                onChange={(e) =>
+                  setCaratMax(Number(e.target.value || dyn.caratBounds!.max))
+                }
+                onBlur={commitCarat}
+                className="px-3 py-2 rounded-md bg-[#0f1530] border border-white/10 text-sm"
+              />
+            </div>
           </div>
         </details>
       </div>

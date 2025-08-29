@@ -39,8 +39,8 @@ export default function SubcategoryCards({
                   sizes="(max-width: 640px) 220px, 240px"
                 />
                 <div className="absolute inset-0 bg-black/20" />
-                <div className="absolute inset-0 flex items-end">
-                  <span className="m-3 px-2 py-1 rounded-md text-white text-sm sm:text-base font-medium backdrop-blur-sm bg-black/30">
+                <div className="absolute inset-0 flex items-end justify-center">
+                  <span className="mb-3 px-3 py-1 rounded-md text-white text-sm sm:text-base font-medium backdrop-blur-sm bg-black/30 text-center">
                     {s.label}
                   </span>
                 </div>
