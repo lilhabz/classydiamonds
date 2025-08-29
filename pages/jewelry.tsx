@@ -424,7 +424,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
       </div>
 
       {/* 🧰 SIDEBAR + GRID */}
-      <section className="mt-6 px-4 sm:px-6 max-w-7xl mx-auto mb-20">
+      <section className="mt-6 px-4 sm:px-6 lg:pl-0 lg:pr-8 max-w-7xl mx-auto mb-20">
         {/* Mobile filters trigger (ONLY on < lg) */}
         <div className="flex items-center justify-between mb-4 lg:hidden">
           <div className="text-sm text-white/80">
@@ -453,7 +453,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
             <FiltersSidebar mode="desktop" />
           </div>
 
-          {/* Product Grid */}
+           {/* Product Grid */}
           <div>
             {shown.length === 0 ? (
               <p className="text-white/80">No products found.</p>
