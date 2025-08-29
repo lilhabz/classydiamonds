@@ -7,8 +7,6 @@ import { useCart } from "@/context/CartContext";
 import { GetServerSideProps } from "next";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import ProductCard from "@/components/ProductCard";
-import FiltersSidebar from "@/components/FiltersSidebar"; // ⬅️ added
-import { useState } from "react"; // ⬅️ added
 
 // ✅ unified data source
 import { listProducts } from "@/lib/products";
@@ -29,7 +27,6 @@ interface WatchesProps {
 
 export default function WatchesPage({ products }: WatchesProps) {
   const { addToCart } = useCart();
-  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false); // ⬅️ added
 
   return (
     <div className="min-h-screen flex flex-col bg-[var(--bg-page)] text-[var(--foreground)]">
@@ -72,27 +69,10 @@ export default function WatchesPage({ products }: WatchesProps) {
           Watches
         </h2>
 
-        {/* 🔘 Mobile filters trigger + drawer (desktop untouched) */}
-        <div className="flex items-center justify-end mb-4 lg:hidden">
-          <button
-            onClick={() => setMobileFiltersOpen(true)}
-            className="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-sm font-medium"
-            aria-haspopup="dialog"
-            aria-controls="filters-drawer"
-          >
-            Filters
-          </button>
-        </div>
-        <FiltersSidebar
-          mobileOpen={mobileFiltersOpen}
-          onClose={() => setMobileFiltersOpen(false)}
-        />
-
         {products.length === 0 ? (
           <div className="text-center text-gray-400">No watches available.</div>
         ) : (
-          /* ⬇️ Grid-only: keep 2→3→3→4 columns and center cards.
-             Card sizes remain controlled by CSS vars in globals.css. */
+          /* Grid: 2→3→3→4; cards keep fixed/var sizing via globals.css */
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 gap-6 justify-items-center">
             {products.map((product) => {
               const href =

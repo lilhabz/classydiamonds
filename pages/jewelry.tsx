@@ -1,4 +1,4 @@
-// pages/jewelry.tsx — All Jewelry by default + 4 categories + subcategory pills + FILTER SIDEBAR
+// pages/jewelry.tsx — All Jewelry + categories + subcategory pills + FILTER SIDEBAR
 "use client";
 
 import Image from "next/image";
@@ -24,7 +24,7 @@ export type ProductType = {
   salePrice?: number | null;
   image: string;
   category: string; // "rings" | "earrings" | "bracelets" | "necklaces"
-  subcategory?: string; // style (halo, studs, tennis, pendants, engagement, wedding-bands)
+  subcategory?: string;
   metal?: string;
   stone?: string;
   shape?: string;
@@ -49,7 +49,6 @@ const toArray = (v: string | string[] | undefined): string[] =>
   !v ? [] : Array.isArray(v) ? v : [v];
 
 /* ------------------------------- Constants -------------------------------- */
-// 4 category tiles only
 const CATEGORY_ITEMS: CategoryItem[] = [
   { label: "Rings", slug: "rings", image: "/category/ring-cat.jpg" },
   { label: "Earrings", slug: "earrings", image: "/category/earring-cat.jpg" },
@@ -65,7 +64,6 @@ const CATEGORY_ITEMS: CategoryItem[] = [
   },
 ];
 
-// Subcategory pills (shown only when a category is selected)
 const SUBS: Record<CategorySlug, SubItem[]> = {
   rings: [
     { label: "All", slug: "all" },
@@ -101,7 +99,6 @@ const SUBS: Record<CategorySlug, SubItem[]> = {
   ],
 };
 
-// Map for nicer headings
 const CATEGORY_LABELS: Record<CategorySlug, string> = {
   rings: "Rings",
   earrings: "Earrings",
@@ -113,11 +110,8 @@ const CATEGORY_LABELS: Record<CategorySlug, string> = {
 export default function JewelryPage({ products }: { products: ProductType[] }) {
   const { addToCart } = useCart();
   const [visibleCount, setVisibleCount] = useState(50);
-
-  // NEW: mobile filters drawer state (lg+ ignores this)
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
-  // When null => All Jewelry
   const [activeCategorySlug, setActiveCategorySlug] =
     useState<CategorySlug | null>(null);
   const [activeSub, setActiveSub] = useState<string>("all");
@@ -128,8 +122,6 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
 
   const resetCount = () => setVisibleCount(50);
 
-  /* 🔝 Force open-from-top on mount unless explicitly told to skip hero.
-     This prevents “opens below hero” when clicking the navbar link. */
   useLayoutEffect(() => {
     if (!router.isReady) return;
     const { scroll } = router.query as { scroll?: string };
@@ -138,18 +130,16 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
         (history as any).scrollRestoration = "manual";
       } catch {}
       window.scrollTo(0, 0);
-      requestAnimationFrame(() => window.scrollTo(0, 0)); // double-guard
+      requestAnimationFrame(() => window.scrollTo(0, 0));
       queueMicrotask(() => {
         try {
           (history as any).scrollRestoration = "auto";
         } catch {}
       });
     }
-    // run once on mount
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router.isReady]);
 
-  // 🧹 If scroll=true leaked in without a category, remove it immediately.
   useEffect(() => {
     if (!router.isReady) return;
     const { scroll, category } = router.query as {
@@ -165,7 +155,6 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
     }
   }, [router.isReady, router.query]);
 
-  // Read ?category and ?sub on load/shallow nav; default is "All Jewelry"
   useEffect(() => {
     if (!router.isReady) return;
     const { category, sub, scroll } = router.query;
@@ -193,14 +182,12 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
 
     resetCount();
 
-    // ⬇️ Only skip the hero when BOTH scroll=true AND a category is present.
     if (scroll === "true" && typeof category === "string" && heroRef.current) {
       const offset = heroRef.current.offsetTop + heroRef.current.offsetHeight;
       window.scrollTo({ top: offset, behavior: "smooth" });
     }
   }, [router.isReady, router.query]);
 
-  // When category changes via click, reset count and scroll to header
   useEffect(() => {
     resetCount();
     headerRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -210,12 +197,10 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
   const pageDesc =
     "Explore timeless rings, earrings, bracelets, and necklaces & pendants.";
 
-  // Build sub pills for current category
   const subPills: SubItem[] = activeCategorySlug
     ? SUBS[activeCategorySlug] ?? [{ label: "All", slug: "all" }]
     : [];
 
-  // ------- Read facet filters from URL (FiltersSidebar writes to these) -------
   const metals = toArray(router.query.metal as any).map((x) =>
     String(x).toLowerCase()
   );
@@ -239,15 +224,12 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
     ? Number(router.query.caratMax)
     : undefined;
 
-  // ----------------------------- Filtering logic -----------------------------
   const shown = useMemo(() => {
-    // 0) Absolute safety gate: NEVER show non-allowed categories (e.g., watches)
     const allowedSet = new Set(ALLOWED);
     let base = products.filter((p) =>
       allowedSet.has((p.category || "").toLowerCase() as CategorySlug)
     );
 
-    // 1) Category/Subcategory base filter
     if (activeCategorySlug) {
       base = base.filter(
         (p) => (p.category || "").toLowerCase() === activeCategorySlug
@@ -259,7 +241,6 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
       }
     }
 
-    // 2) Facet filters
     const meets = (p: ProductType) => {
       const metalOk = metals.length
         ? metals.includes((p.metal || "").toLowerCase())
@@ -303,7 +284,6 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
 
   const totalProducts = shown.length;
 
-  // Push URL when user clicks a top category tile
   const goCategory = (slug: CategorySlug) => {
     setActiveCategorySlug(slug);
     setActiveSub("all");
@@ -317,7 +297,6 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
     );
   };
 
-  // Push URL when user clicks a sub pill
   const goSub = (slug: string) => {
     if (!activeCategorySlug) return;
     setActiveSub(slug);
@@ -330,7 +309,6 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
     });
   };
 
-  // Heading text
   const heading = activeCategorySlug
     ? CATEGORY_LABELS[activeCategorySlug]
     : "All Jewelry";
@@ -447,14 +425,14 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
 
       {/* 🧰 SIDEBAR + GRID */}
       <section className="mt-6 px-4 sm:px-6 max-w-7xl mx-auto mb-20">
-        {/* Mobile filters trigger (hidden on lg+) */}
+        {/* Mobile filters trigger (ONLY on < lg) */}
         <div className="flex items-center justify-between mb-4 lg:hidden">
           <div className="text-sm text-white/80">
             {shown.length} {shown.length === 1 ? "item" : "items"}
           </div>
           <button
             onClick={() => setMobileFiltersOpen(true)}
-            className="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-sm font-medium"
+            className="px-4 py-2 rounded-lg bg-white/10 hover:bg白/20 text-sm font-medium"
             aria-haspopup="dialog"
             aria-controls="filters-drawer"
           >
@@ -462,24 +440,24 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
           </button>
         </div>
 
-        {/* Drawer for mobile (reuses FiltersSidebar content) */}
+        {/* Drawer (mobile/tablet only) */}
         <FiltersSidebar
-          mobileOpen={mobileFiltersOpen}
+          mode="drawer"
+          open={mobileFiltersOpen}
           onClose={() => setMobileFiltersOpen(false)}
         />
 
         <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-6">
-          {/* Sidebar: only visible on lg+ (sticky), unchanged */}
+          {/* Desktop sticky sidebar (ONLY on lg+) */}
           <div className="hidden lg:block">
-            <FiltersSidebar />
+            <FiltersSidebar mode="desktop" />
           </div>
 
-          {/* Product Grid — shows all, or filtered by category/subcategory + facets */}
+          {/* Product Grid */}
           <div>
             {shown.length === 0 ? (
               <p className="text-white/80">No products found.</p>
             ) : (
-              // Columns tuned for fixed-width cards with CSS-var scaling
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 gap-6 justify-items-center">
                 {shown.slice(0, visibleCount).map((product) => {
                   const href = `/category/${product.category}/${product.slug}`;
@@ -494,10 +472,8 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
                       href={href}
                       onAddToCart={() => {
                         if (isRingCategory(product.category)) {
-                          // Rings go to PDP to capture size/etc.
                           return router.push(href);
                         }
-                        // Non-rings quick add
                         addToCart({
                           id: product.id,
                           slug: product.slug,
@@ -533,15 +509,12 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
 
 /* ----------------------------- Server-side data ---------------------------- */
 export const getServerSideProps: GetServerSideProps = async () => {
-  // ✅ Unified source of truth
   const rows = await listProducts({}, { sort: { createdAt: -1 }, limit: 2000 });
 
-  // ✅ Allow-list only jewelry categories (explicit filter; no watches ever)
   const ALLOWED_SET = new Set<"rings" | "earrings" | "bracelets" | "necklaces">(
     ["rings", "earrings", "bracelets", "necklaces"]
   );
 
-  // Map to this page's lightweight shape (preserve your existing keys)
   const products: ProductType[] = rows
     .filter((p: any) =>
       ALLOWED_SET.has(String(p.category || "").toLowerCase() as any)

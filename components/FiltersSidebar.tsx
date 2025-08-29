@@ -64,14 +64,17 @@ type DynamicFacets = {
 
 export default function FiltersSidebar({
   className,
-  /** When true on small screens, render as a full-height drawer. On desktop this prop is ignored. */
-  mobileOpen,
-  /** Close handler for the mobile drawer. Ignored on desktop. */
+  mode = "desktop",
+  open = false,
   onClose,
 }: {
-  className?: string;
-  mobileOpen?: boolean;
+  /** "desktop" renders sticky sidebar only; "drawer" renders mobile drawer only */
+  mode?: "desktop" | "drawer";
+  /** For drawer mode: whether it is open */
+  open?: boolean;
+  /** For drawer mode: close handler */
   onClose?: () => void;
+  className?: string;
 }) {
   const router = useRouter();
   const q = router.query;
@@ -285,7 +288,7 @@ export default function FiltersSidebar({
     dyn.caratBounds!.max
   );
 
-  // --- UI content (reused for desktop + mobile drawer) ---
+  // --- UI content (shared between desktop + drawer) ---
   const Content = (
     <div className="p-4 rounded-xl bg-[#1b2440] border border-white/10">
       <div className="flex items-center justify-between mb-3">
@@ -574,51 +577,49 @@ export default function FiltersSidebar({
     </div>
   );
 
-  // --- Desktop: unchanged sticky sidebar ---
-  // Note: stickiness applied only on lg+ to avoid heavy layout on phones.
-  const Desktop = (
-    <aside className={className}>
-      <div className="hidden lg:block">
+  // --- RENDER based on mode ---
+  if (mode === "desktop") {
+    // Sticky sidebar only; parent can control visibility via Tailwind (e.g., hidden lg:block)
+    return (
+      <aside className={className}>
         <div className="sticky top-24">{Content}</div>
-      </div>
-    </aside>
-  );
+      </aside>
+    );
+  }
 
-  // --- Mobile drawer (shown only when mobileOpen; ignored on lg+) ---
-  const MobileDrawer = mobileOpen ? (
-    <div
-      className="lg:hidden fixed inset-0 z-50"
-      role="dialog"
-      aria-modal="true"
-      aria-label="Filters"
-    >
-      {/* Backdrop */}
-      <button
-        className="absolute inset-0 bg-black/60"
-        onClick={onClose}
-        aria-label="Close filters"
-      />
-      {/* Panel (slide-in) */}
-      <div className="absolute right-0 top-0 h-full w-[90%] max-w-sm bg-[var(--bg-page)] shadow-2xl overflow-y-auto">
-        <div className="sticky top-0 z-10 flex items-center justify-between px-4 py-3 border-b border-white/10 bg-[var(--bg-page)]">
-          <h2 className="text-base font-semibold">Filters</h2>
-          <button
-            onClick={onClose}
-            className="px-3 py-1 rounded-md bg-white/10 hover:bg-white/20 text-sm"
-            aria-label="Close"
-          >
-            Close
-          </button>
+  // Drawer mode (mobile). Only render if open === true. Hidden on lg+.
+  if (mode === "drawer") {
+    if (!open) return null;
+    return (
+      <div
+        className="lg:hidden fixed inset-0 z-50"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Filters"
+      >
+        {/* Backdrop */}
+        <button
+          className="absolute inset-0 bg-black/60"
+          onClick={onClose}
+          aria-label="Close filters"
+        />
+        {/* Panel */}
+        <div className="absolute right-0 top-0 h-full w-[90%] max-w-sm bg-[var(--bg-page)] shadow-2xl overflow-y-auto">
+          <div className="sticky top-0 z-10 flex items-center justify-between px-4 py-3 border-b border-white/10 bg-[var(--bg-page)]">
+            <h2 className="text-base font-semibold">Filters</h2>
+            <button
+              onClick={onClose}
+              className="px-3 py-1 rounded-md bg-white/10 hover:bg-white/20 text-sm"
+              aria-label="Close"
+            >
+              Close
+            </button>
+          </div>
+          <div className="p-4">{Content}</div>
         </div>
-        <div className="p-4">{Content}</div>
       </div>
-    </div>
-  ) : null;
+    );
+  }
 
-  return (
-    <>
-      {Desktop}
-      {MobileDrawer}
-    </>
-  );
+  return null;
 }
