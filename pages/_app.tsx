@@ -37,15 +37,6 @@ function App({ Component, pageProps: { session, ...pageProps } }: AppProps) {
     const isSubcatPath = (p: string) =>
       /^\/category\/[^/]+\/subcategory\/[^/]+$/.test(p);
 
-    const forceScrollTopOnce = () => {
-      // Temporarily disable smooth behavior so the jump is immediate and cannot "race"
-      const html = document.documentElement as HTMLElement & { style: any };
-      const prev = html.style.scrollBehavior;
-      html.style.scrollBehavior = "auto";
-      window.scrollTo(0, 0);
-      html.style.scrollBehavior = prev || "";
-    };
-
     // We ONLY act on routeChangeComplete, after the new page is ready.
     const handleRouteChangeComplete = (url: string) => {
       const toPath = pathnameOf(url);
@@ -54,14 +45,27 @@ function App({ Component, pageProps: { session, ...pageProps } }: AppProps) {
       // If only the query changed (filters on the same page), do nothing.
       if (toPath === fromPath) return;
 
-      // Skip if user explicitly deep-linked.
+      // Skip if user explicitly deep-linked (hash or ?scroll=true)
       if (hasDeepLink(url)) return;
 
       // Guarantee top for Jewelry and its subcategory pages.
       if (isJewelryPath(toPath) || isSubcatPath(toPath)) {
-        // After paint, force the top once with smooth behavior briefly disabled
+        const html = document.documentElement as HTMLElement & { style: any };
+        const prev = html.style.scrollBehavior;
+
+        // disable smooth just for the forced jump
+        html.style.scrollBehavior = "auto";
+
+        // Do it twice across two paints to beat late layout shifts
         requestAnimationFrame(() => {
-          forceScrollTopOnce();
+          window.scrollTo(0, 0);
+          requestAnimationFrame(() => {
+            window.scrollTo(0, 0);
+            html.style.scrollBehavior = prev || "";
+
+            // Tell Navbar to recompute height immediately (prevents h-20→h-16 push)
+            window.dispatchEvent(new Event("force-scroll-top"));
+          });
         });
       }
     };

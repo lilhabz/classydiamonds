@@ -1,0 +1,29 @@
+diff --git a/node_modules/@vercel/speed-insights/tsconfig.json b/node_modules/@vercel/speed-insights/tsconfig.json
+index 435362c..69a5c89 100644
+--- a/node_modules/@vercel/speed-insights/tsconfig.json
++++ b/node_modules/@vercel/speed-insights/tsconfig.json
+@@ -1,7 +1,8 @@
+ {
+-  "extends": "../../tsconfig.json",
+   "compilerOptions": {
++    "skipLibCheck": true,
++    "moduleResolution": "node",
+     "module": "esnext"
+   },
+-  "include": ["src", "./test.setup.ts"]
++  "exclude": ["node_modules"]
+ }
+diff --git a/node_modules/@vercel/speed-insights/tsconfig.json.bak b/node_modules/@vercel/speed-insights/tsconfig.json.bak
+new file mode 100644
+index 0000000..69a5c89
+--- /dev/null
++++ b/node_modules/@vercel/speed-insights/tsconfig.json.bak
+@@ -0,0 +1,8 @@
++{
++  "compilerOptions": {
++    "skipLibCheck": true,
++    "moduleResolution": "node",
++    "module": "esnext"
++  },
++  "exclude": ["node_modules"]
++}

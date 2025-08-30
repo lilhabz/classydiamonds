@@ -128,6 +128,22 @@ const Navbar = () => {
     }
   }, [searchOpen]);
 
+  // ✅ Sync navbar height immediately when _app forces scroll top
+  useEffect(() => {
+    const onComplete = () => setScrolled(window.scrollY > 50);
+    const onForceTop = () => setScrolled(false); // ensure h-20 right away
+
+    // Run once on mount and on each route complete
+    onComplete();
+    router.events.on("routeChangeComplete", onComplete);
+    window.addEventListener("force-scroll-top", onForceTop);
+
+    return () => {
+      router.events.off("routeChangeComplete", onComplete);
+      window.removeEventListener("force-scroll-top", onForceTop);
+    };
+  }, [router.events]);
+
   const totalQuantity = cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
   // 🔨 Updated to use string ID
