@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import Head from "next/head";
 import { useCart } from "@/context/CartContext";
-import { useEffect, useMemo, useRef, useState, useLayoutEffect } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/router";
 import { GetServerSideProps } from "next";
 import Breadcrumbs from "@/components/Breadcrumbs";
@@ -122,25 +122,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
 
   const resetCount = () => setVisibleCount(50);
 
-  useLayoutEffect(() => {
-  if (!router.isReady) return;
-  const { scroll } = router.query as { scroll?: string };
-
-  if (scroll !== "true") {
-    try {
-      (history as any).scrollRestoration = "manual";
-    } catch {}
-    window.scrollTo(0, 0);
-    requestAnimationFrame(() => window.scrollTo(0, 0));
-    queueMicrotask(() => {
-      try {
-        (history as any).scrollRestoration = "auto";
-      } catch {}
-    });
-  }
-}, [router.isReady, router.asPath]); // 🔑 added router.asPath
-
-
+  // 🔧 Preserve deep-link UX: if `?scroll=true` has no category, strip it (no scroll)
   useEffect(() => {
     if (!router.isReady) return;
     const { scroll, category } = router.query as {
@@ -156,6 +138,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
     }
   }, [router.isReady, router.query]);
 
+  // 🔧 Sync URL → UI state, and handle `?scroll=true` (category deep-link) smooth scroll past hero
   useEffect(() => {
     if (!router.isReady) return;
     const { category, sub, scroll } = router.query;
@@ -183,12 +166,14 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
 
     resetCount();
 
+    // Only when explicitly asked (deep-link), scroll below hero
     if (scroll === "true" && typeof category === "string" && heroRef.current) {
       const offset = heroRef.current.offsetTop + heroRef.current.offsetHeight;
       window.scrollTo({ top: offset, behavior: "smooth" });
     }
   }, [router.isReady, router.query]);
 
+  // 🔧 When changing category in-page, keep your smooth scroll to header
   useEffect(() => {
     resetCount();
     headerRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -426,21 +411,19 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
 
       {/* 🧰 SIDEBAR + GRID */}
       <section className="mt-6 px-4 sm:px-6 lg:pl-0 lg:pr-8 max-w-7xl mx-auto mb-20">
-
         {/* Mobile filters trigger (ONLY on < lg) */}
         <div className="flex items-center justify-between mb-4 lg:hidden">
           <div className="text-sm text-white/80">
             {shown.length} {shown.length === 1 ? "item" : "items"}
           </div>
           <button
-  onClick={() => setMobileFiltersOpen(true)}
-  className="px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-sm font-medium transition-colors"
-  aria-haspopup="dialog"
-  aria-controls="filters-drawer"
->
-  Filters
-</button>
-
+            onClick={() => setMobileFiltersOpen(true)}
+            className="px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-sm font-medium transition-colors"
+            aria-haspopup="dialog"
+            aria-controls="filters-drawer"
+          >
+            Filters
+          </button>
         </div>
 
         {/* Drawer (mobile/tablet only) */}
