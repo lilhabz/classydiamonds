@@ -5,15 +5,13 @@ import Image from "next/image";
 import Link from "next/link";
 import Head from "next/head";
 import { useCart } from "@/context/CartContext";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useRef as useRef2 } from "react";
 import { useRouter } from "next/router";
 import { GetServerSideProps } from "next";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import CategoryGrid, { CategoryItem } from "@/components/CategoryGrid";
 import FiltersSidebar from "@/components/FiltersSidebar";
 import ProductCard from "@/components/ProductCard";
-
-// 🔁 unified data source
 import { listProducts } from "@/lib/products";
 
 export type ProductType = {
@@ -23,7 +21,7 @@ export type ProductType = {
   price: number;
   salePrice?: number | null;
   image: string;
-  category: string; // "rings" | "earrings" | "bracelets" | "necklaces"
+  category: string;
   subcategory?: string;
   metal?: string;
   stone?: string;
@@ -52,16 +50,8 @@ const toArray = (v: string | string[] | undefined): string[] =>
 const CATEGORY_ITEMS: CategoryItem[] = [
   { label: "Rings", slug: "rings", image: "/category/ring-cat.jpg" },
   { label: "Earrings", slug: "earrings", image: "/category/earring-cat.jpg" },
-  {
-    label: "Bracelets",
-    slug: "bracelets",
-    image: "/category/bracelet-cat.jpg",
-  },
-  {
-    label: "Necklaces & Pendants",
-    slug: "necklaces",
-    image: "/category/necklace-cat.jpg",
-  },
+  { label: "Bracelets", slug: "bracelets", image: "/category/bracelet-cat.jpg" },
+  { label: "Necklaces & Pendants", slug: "necklaces", image: "/category/necklace-cat.jpg" },
 ];
 
 const SUBS: Record<CategorySlug, SubItem[]> = {
@@ -111,9 +101,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
   const { addToCart } = useCart();
   const [visibleCount, setVisibleCount] = useState(50);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
-
-  const [activeCategorySlug, setActiveCategorySlug] =
-    useState<CategorySlug | null>(null);
+  const [activeCategorySlug, setActiveCategorySlug] = useState<CategorySlug | null>(null);
   const [activeSub, setActiveSub] = useState<string>("all");
 
   const heroRef = useRef<HTMLDivElement>(null);
@@ -122,39 +110,28 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
 
   const resetCount = () => setVisibleCount(50);
 
-  // 🔧 Preserve deep-link UX: if `?scroll=true` has no category, strip it (no scroll)
+  // Strip stray ?scroll=true when no category is present (no deep-link intent)
   useEffect(() => {
     if (!router.isReady) return;
-    const { scroll, category } = router.query as {
-      scroll?: string;
-      category?: string;
-    };
+    const { scroll, category } = router.query as { scroll?: string; category?: string };
     if (scroll === "true" && !category) {
       const next = { ...router.query };
       delete (next as any).scroll;
-      router.replace({ pathname: "/jewelry", query: next }, undefined, {
-        shallow: true,
-      });
+      router.replace({ pathname: "/jewelry", query: next }, undefined, { shallow: true });
     }
   }, [router.isReady, router.query]);
 
-  // 🔧 Sync URL → UI state, and handle `?scroll=true` (category deep-link) smooth scroll past hero
+  // Sync URL -> state, and perform deep-link scroll ONLY when category is present & scroll=true
   useEffect(() => {
     if (!router.isReady) return;
     const { category, sub, scroll } = router.query;
 
-    if (
-      typeof category === "string" &&
-      ALLOWED.includes(category.toLowerCase() as CategorySlug)
-    ) {
+    if (typeof category === "string" && ALLOWED.includes(category.toLowerCase() as CategorySlug)) {
       const cat = category.toLowerCase() as CategorySlug;
       setActiveCategorySlug(cat);
 
       const subs = SUBS[cat];
-      if (
-        typeof sub === "string" &&
-        subs?.some((s: SubItem) => s.slug.toLowerCase() === sub.toLowerCase())
-      ) {
+      if (typeof sub === "string" && subs?.some((s) => s.slug.toLowerCase() === sub.toLowerCase())) {
         setActiveSub(sub.toLowerCase());
       } else {
         setActiveSub("all");
@@ -166,77 +143,59 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
 
     resetCount();
 
-    // Only when explicitly asked (deep-link), scroll below hero
+    // Deep-link behavior: only when explicitly requested
     if (scroll === "true" && typeof category === "string" && heroRef.current) {
       const offset = heroRef.current.offsetTop + heroRef.current.offsetHeight;
       window.scrollTo({ top: offset, behavior: "smooth" });
     }
   }, [router.isReady, router.query]);
 
-  // 🔧 When changing category in-page, keep your smooth scroll to header
+  // 🔒 IMPORTANT: Do NOT auto-scroll on initial mount when no category is selected.
+  // Only smooth-scroll to the grid when the user actually chooses a category (state change to non-null).
+  const firstRunRef = useRef<boolean>(true);
   useEffect(() => {
-    resetCount();
-    headerRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    // Skip on initial mount
+    if (firstRunRef.current) {
+      firstRunRef.current = false;
+      return;
+    }
+    // Only scroll when a category is selected (i.e., user action or explicit URL)
+    if (activeCategorySlug) {
+      resetCount();
+      headerRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+    // If activeCategorySlug is null, do nothing (remain at top/hero)
   }, [activeCategorySlug]);
 
   const pageTitle = "Jewelry Collection | Classy Diamonds";
-  const pageDesc =
-    "Explore timeless rings, earrings, bracelets, and necklaces & pendants.";
+  const pageDesc = "Explore timeless rings, earrings, bracelets, and necklaces & pendants.";
 
-  const subPills: SubItem[] = activeCategorySlug
-    ? SUBS[activeCategorySlug] ?? [{ label: "All", slug: "all" }]
-    : [];
+  const subPills: SubItem[] = activeCategorySlug ? SUBS[activeCategorySlug] ?? [{ label: "All", slug: "all" }] : [];
 
-  const metals = toArray(router.query.metal as any).map((x) =>
-    String(x).toLowerCase()
-  );
-  const stones = toArray(router.query.stone as any).map((x) =>
-    String(x).toLowerCase()
-  );
-  const shapes = toArray(router.query.shape as any).map((x) =>
-    String(x).toLowerCase()
-  );
+  const metals = toArray(router.query.metal as any).map((x) => String(x).toLowerCase());
+  const stones = toArray(router.query.stone as any).map((x) => String(x).toLowerCase());
+  const shapes = toArray(router.query.shape as any).map((x) => String(x).toLowerCase());
 
-  const priceMin = router.query.priceMin
-    ? Number(router.query.priceMin)
-    : undefined;
-  const priceMax = router.query.priceMax
-    ? Number(router.query.priceMax)
-    : undefined;
-  const caratMin = router.query.caratMin
-    ? Number(router.query.caratMin)
-    : undefined;
-  const caratMax = router.query.caratMax
-    ? Number(router.query.caratMax)
-    : undefined;
+  const priceMin = router.query.priceMin ? Number(router.query.priceMin) : undefined;
+  const priceMax = router.query.priceMax ? Number(router.query.priceMax) : undefined;
+  const caratMin = router.query.caratMin ? Number(router.query.caratMin) : undefined;
+  const caratMax = router.query.caratMax ? Number(router.query.caratMax) : undefined;
 
   const shown = useMemo(() => {
     const allowedSet = new Set(ALLOWED);
-    let base = products.filter((p) =>
-      allowedSet.has((p.category || "").toLowerCase() as CategorySlug)
-    );
+    let base = products.filter((p) => allowedSet.has((p.category || "").toLowerCase() as CategorySlug));
 
     if (activeCategorySlug) {
-      base = base.filter(
-        (p) => (p.category || "").toLowerCase() === activeCategorySlug
-      );
+      base = base.filter((p) => (p.category || "").toLowerCase() === activeCategorySlug);
       if (activeSub !== "all") {
-        base = base.filter(
-          (p) => (p.subcategory || "").toLowerCase() === activeSub
-        );
+        base = base.filter((p) => (p.subcategory || "").toLowerCase() === activeSub);
       }
     }
 
     const meets = (p: ProductType) => {
-      const metalOk = metals.length
-        ? metals.includes((p.metal || "").toLowerCase())
-        : true;
-      const stoneOk = stones.length
-        ? stones.includes((p.stone || "").toLowerCase())
-        : true;
-      const shapeOk = shapes.length
-        ? shapes.includes((p.shape || "").toLowerCase())
-        : true;
+      const metalOk = metals.length ? metals.includes((p.metal || "").toLowerCase()) : true;
+      const stoneOk = stones.length ? stones.includes((p.stone || "").toLowerCase()) : true;
+      const shapeOk = shapes.length ? shapes.includes((p.shape || "").toLowerCase()) : true;
 
       const effectivePrice = (p.salePrice ?? p.price) as number;
       const priceOk =
@@ -255,18 +214,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
     };
 
     return base.filter(meets);
-  }, [
-    products,
-    activeCategorySlug,
-    activeSub,
-    metals,
-    stones,
-    shapes,
-    priceMin,
-    priceMax,
-    caratMin,
-    caratMax,
-  ]);
+  }, [products, activeCategorySlug, activeSub, metals, stones, shapes, priceMin, priceMax, caratMin, caratMax]);
 
   const totalProducts = shown.length;
 
@@ -274,10 +222,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
     setActiveCategorySlug(slug);
     setActiveSub("all");
     router.push(
-      {
-        pathname: "/jewelry",
-        query: { category: slug, scroll: "true", ...router.query },
-      },
+      { pathname: "/jewelry", query: { category: slug, scroll: "true", ...router.query } },
       undefined,
       { shallow: true }
     );
@@ -290,14 +235,10 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
     if (slug === "all") delete (next as any).sub;
     else (next as any).sub = slug;
     next.category = activeCategorySlug;
-    router.push({ pathname: "/jewelry", query: next }, undefined, {
-      shallow: true,
-    });
+    router.push({ pathname: "/jewelry", query: next }, undefined, { shallow: true });
   };
 
-  const heading = activeCategorySlug
-    ? CATEGORY_LABELS[activeCategorySlug]
-    : "All Jewelry";
+  const heading = activeCategorySlug ? CATEGORY_LABELS[activeCategorySlug] : "All Jewelry";
 
   return (
     <div className="min-h-screen flex flex-col bg-[var(--bg-page)] text-[var(--foreground)]">
@@ -312,18 +253,13 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
         ref={heroRef}
         className="-mt-20 relative w-full h-[80vh] flex items-center justify-center overflow-hidden"
       >
-        <Image
-          src="/hero-jewelry.jpg"
-          alt="Jewelry Hero"
-          fill
-          className="object-cover"
-        />
+        <Image src="/hero-jewelry.jpg" alt="Jewelry Hero" fill className="object-cover" />
         <div className="absolute inset-0 bg-black/50 pointer-events-none" />
         <div className="relative z-10 text-center px-4">
-          <h1 className="text-3xl md:text-6xl font-serif font-bold tracking-wider leading-snug mb-4 text-[var(--foreground)]">
+          <h1 className="text-3xl md:text-6xl font-serif font-bold tracking-wider leading-snug mb-4">
             Jewelry Collection
           </h1>
-          <p className="text-base md:text-xl max-w-2xl mx-auto text-[var(--foreground)] leading-relaxed tracking-wide">
+          <p className="text-base md:text-xl max-w-2xl mx-auto leading-relaxed tracking-wide">
             Discover timeless pieces crafted with passion.
           </p>
         </div>
@@ -334,7 +270,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
         <Breadcrumbs />
       </div>
 
-      {/* 💎 Category Tiles (Top Section) */}
+      {/* 💎 Category Tiles */}
       <section
         ref={headerRef}
         className="pt-6 pb-4 px-0 sm:px-0 w-full"
@@ -357,7 +293,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
             {/* mobile */}
             <div className="sm:hidden mt-1 overflow-x-auto">
               <div className="flex gap-2 w-max">
-                {subPills.map((s: SubItem) => {
+                {SUBS[activeCategorySlug].map((s) => {
                   const active = activeSub === s.slug.toLowerCase();
                   return (
                     <button
@@ -379,7 +315,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
             </div>
             {/* desktop */}
             <div className="hidden sm:flex gap-2 mt-1 flex-wrap">
-              {subPills.map((s: SubItem) => {
+              {SUBS[activeCategorySlug].map((s) => {
                 const active = activeSub === s.slug.toLowerCase();
                 return (
                   <button
@@ -411,7 +347,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
 
       {/* 🧰 SIDEBAR + GRID */}
       <section className="mt-6 px-4 sm:px-6 lg:pl-0 lg:pr-8 max-w-7xl mx-auto mb-20">
-        {/* Mobile filters trigger (ONLY on < lg) */}
+        {/* Mobile filters trigger */}
         <div className="flex items-center justify-between mb-4 lg:hidden">
           <div className="text-sm text-white/80">
             {shown.length} {shown.length === 1 ? "item" : "items"}
@@ -427,14 +363,10 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
         </div>
 
         {/* Drawer (mobile/tablet only) */}
-        <FiltersSidebar
-          mode="drawer"
-          open={mobileFiltersOpen}
-          onClose={() => setMobileFiltersOpen(false)}
-        />
+        <FiltersSidebar mode="drawer" open={mobileFiltersOpen} onClose={() => setMobileFiltersOpen(false)} />
 
         <div className="grid grid-cols-1 lg:grid-cols-[240px_1fr] gap-6">
-          {/* Desktop sticky sidebar (ONLY on lg+) */}
+          {/* Desktop sticky sidebar */}
           <div className="hidden lg:block">
             <FiltersSidebar mode="desktop" />
           </div>
@@ -444,10 +376,6 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
             {shown.length === 0 ? (
               <p className="text-white/80">No products found.</p>
             ) : (
-              // Exact content widths so it centers perfectly under the title
-              // 2 cols: (2×219) + (1×24) = 462px
-              // 3 cols: (3×219) + (2×24) = 705px
-              // 4 cols: (4×219) + (3×24) = 948px
               <div
                 className="
                   grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4
@@ -513,9 +441,7 @@ export const getServerSideProps: GetServerSideProps = async () => {
   );
 
   const products: ProductType[] = rows
-    .filter((p: any) =>
-      ALLOWED_SET.has(String(p.category || "").toLowerCase() as any)
-    )
+    .filter((p: any) => ALLOWED_SET.has(String(p.category || "").toLowerCase() as any))
     .map((p: any) => ({
       id: String(p._id),
       slug: p.slug,

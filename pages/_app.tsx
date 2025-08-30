@@ -1,7 +1,7 @@
-// 📄 pages/_app.tsx – App with Scroll Restoration & Speed Insights Integration 🚀
+// 📄 pages/_app.tsx – App with reliable Scroll Reset & Speed Insights Integration
 
 import "@/styles/globals.css";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useRouter } from "next/router";
 import type { AppProps } from "next/app";
 import { SessionProvider } from "next-auth/react";
@@ -14,8 +14,11 @@ import { SpeedInsights } from "@vercel/speed-insights/next";
 function App({ Component, pageProps: { session, ...pageProps } }: AppProps) {
   const router = useRouter();
 
+  // Keep the FROM path stable across route events
+  const prevPathRef = useRef<string | null>(null);
+
   useEffect(() => {
-    // Ensure the browser does NOT restore previous scroll positions across routes
+    // Don’t let the browser restore prior offsets automatically
     try {
       if ("scrollRestoration" in window.history) {
         window.history.scrollRestoration = "manual";
@@ -25,54 +28,58 @@ function App({ Component, pageProps: { session, ...pageProps } }: AppProps) {
     const pathnameOf = (url: string) =>
       new URL(url, window.location.origin).pathname;
 
-    const hasDeepLink = (url: string) => {
-      // Respect anchors and explicit deep-link query
-      if (!url) return false;
-      if (url.includes("#")) return true;
-      if (/\bscroll=true\b/.test(url)) return true;
-      return false;
-    };
+    const hasDeepLink = (url: string) =>
+      url.includes("#") || /\bscroll=true\b/.test(url);
 
     const isJewelryPath = (p: string) => p === "/jewelry";
     const isSubcatPath = (p: string) =>
       /^\/category\/[^/]+\/subcategory\/[^/]+$/.test(p);
 
-    // We ONLY act on routeChangeComplete, after the new page is ready.
+    const handleRouteChangeStart = () => {
+      // Capture the path we’re leaving
+      prevPathRef.current = pathnameOf(router.asPath);
+    };
+
     const handleRouteChangeComplete = (url: string) => {
       const toPath = pathnameOf(url);
-      const fromPath = pathnameOf(router.asPath);
+      const fromPath = prevPathRef.current;
 
-      // If only the query changed (filters on the same page), do nothing.
-      if (toPath === fromPath) return;
+      // If we somehow didn’t get a start event, fall back
+      if (fromPath == null) {
+        prevPathRef.current = toPath;
+      }
 
-      // Skip if user explicitly deep-linked (hash or ?scroll=true)
+      // Ignore query-only updates
+      if (fromPath === toPath) return;
+
+      // Honor hashes and explicit deep-link query
       if (hasDeepLink(url)) return;
 
-      // Guarantee top for Jewelry and its subcategory pages.
+      // Force top for Jewelry & its subcategory detail pages
       if (isJewelryPath(toPath) || isSubcatPath(toPath)) {
         const html = document.documentElement as HTMLElement & { style: any };
         const prev = html.style.scrollBehavior;
 
-        // disable smooth just for the forced jump
+        // Disable smooth only for this jump to avoid racing with global smooth-scroll
         html.style.scrollBehavior = "auto";
-
-        // Do it twice across two paints to beat late layout shifts
+        // Double RAF to win against late layout/image shifts
         requestAnimationFrame(() => {
           window.scrollTo(0, 0);
           requestAnimationFrame(() => {
             window.scrollTo(0, 0);
             html.style.scrollBehavior = prev || "";
-
-            // Tell Navbar to recompute height immediately (prevents h-20→h-16 push)
+            // Let Navbar instantly reset its height (prevents h-20→h-16 push)
             window.dispatchEvent(new Event("force-scroll-top"));
           });
         });
       }
     };
 
+    router.events.on("routeChangeStart", handleRouteChangeStart);
     router.events.on("routeChangeComplete", handleRouteChangeComplete);
 
     return () => {
+      router.events.off("routeChangeStart", handleRouteChangeStart);
       router.events.off("routeChangeComplete", handleRouteChangeComplete);
       try {
         if ("scrollRestoration" in window.history) {
