@@ -1,4 +1,4 @@
-// components/ProductCard.tsx – Desktop pixel-locked; mobile grows naturally
+// components/ProductCard.tsx – Desktop pixel-locked; mobile uses the same layout math (no clipping)
 "use client";
 
 import Image from "next/image";
@@ -17,13 +17,15 @@ export type ProductCardProps = {
 
 const PLACEHOLDER = "/gray-placeholder.jpg";
 
-/* 🔧 Path helpers */
+/* ============================
+   🔧 Path helpers (no forced /products/)
+   ============================ */
 function normalizeLocalPath(src: string) {
   const trimmed = src.trim();
   if (!trimmed) return PLACEHOLDER;
   if (/^(https?:)?\/\//i.test(trimmed) || trimmed.startsWith("data:"))
     return trimmed;
-  if (trimmed.startsWith("/")) return trimmed; // absolute in /public
+  if (trimmed.startsWith("/")) return trimmed; // absolute within /public
   return `/${trimmed.replace(/^(\.\/)+/, "")}`; // make relative paths absolute
 }
 function resolveImageSrc(raw?: string | null) {
@@ -31,6 +33,9 @@ function resolveImageSrc(raw?: string | null) {
   return normalizeLocalPath(raw);
 }
 
+/* ============================
+   💳 Component
+   ============================ */
 export default function ProductCard({
   slug,
   image,
@@ -70,7 +75,7 @@ export default function ProductCard({
       className="product-card rounded-2xl bg-[#25304f] shadow-lg hover:shadow-xl transform-gpu transition-transform duration-300 md:hover:scale-105 no-touch-scale"
       style={{
         width: "var(--card-w)",
-        height: "var(--card-h)", // will be forced to auto on mobile via CSS
+        height: "var(--card-h)", // mobile computes this via CSS vars (same stack as desktop)
       }}
     >
       {/* 🔗 Clickable top area */}
@@ -80,7 +85,7 @@ export default function ProductCard({
         className="pc-link block mx-auto group"
         style={{
           width: "var(--card-inner-w)", // 195px desktop
-          height: "var(--link-h)", // forced to auto on mobile via CSS
+          height: "var(--link-h)", // desktop 259px; mobile computes exact value
         }}
       >
         {/* 🖼️ Image */}
@@ -88,7 +93,7 @@ export default function ProductCard({
           className="pc-img overflow-hidden rounded-xl relative"
           style={{
             width: "var(--img)",
-            height: "var(--img-h, var(--img))", // mobile may override via CSS/aspect-ratio
+            height: "var(--img-h, var(--img))", // mobile defines --img-h for taller pic
           }}
         >
           <Image
@@ -103,7 +108,7 @@ export default function ProductCard({
           />
         </div>
 
-        {/* 🔢 Spacer */}
+        {/* 🔢 Spacer in the link area math */}
         <div
           style={{ width: "var(--card-inner-w)", height: "var(--spacer)" }}
         />
@@ -115,7 +120,7 @@ export default function ProductCard({
             width: "var(--card-inner-w)",
             height: "var(--title-h)",
             fontSize: "var(--title-fs)",
-            lineHeight: "var(--title-h)", // prevents overflow on mobile
+            lineHeight: "var(--title-h)", // matches computed row height on mobile
           }}
           title={name}
         >
@@ -129,7 +134,7 @@ export default function ProductCard({
             width: "var(--card-inner-w)",
             height: "var(--price-h)",
             fontSize: "var(--price-fs)",
-            lineHeight: "var(--price-h)", // prevents overflow on mobile
+            lineHeight: "var(--price-h)", // matches computed row height on mobile
           }}
           title={
             salePrice

@@ -454,11 +454,11 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
             ) : (
               <div
                 className="
-            grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4
-            gap-6 justify-items-center
-            w-full mx-auto
-            max-w-[462px] sm:max-w-[705px] lg:max-w-[948px]
-          "
+        grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4
+        gap-6 justify-items-center
+        w-full mx-auto
+        max-w-[462px] sm:max-w-[705px] lg:max-w-[948px]
+      "
                 style={{
                   ["--grid-gap" as any]: "24px", // gap-6
                   ["--page-pad" as any]: "16px", // outer px-4
@@ -500,7 +500,6 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
                 })}
               </div>
             )}
-
             {visibleCount < totalProducts && shown.length > 0 && (
               <div className="flex justify-center mt-10">
                 <button

@@ -72,13 +72,12 @@ export default function WatchesPage({ products }: WatchesProps) {
         {products.length === 0 ? (
           <div className="text-center text-gray-400">No watches available.</div>
         ) : (
-          /* 🔒 2 → 3 → 4 explicit columns */
           <div
             className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6 justify-items-center"
             style={{
               ["--grid-gap" as any]: "24px", // gap-6
               ["--page-pad" as any]: "16px", // px-4
-              ["--img-ratio-mobile" as any]: "1.28",
+              ["--img-ratio-mobile" as any]: "1.30",
               ["--mobile-font-scale" as any]: "0.84",
             }}
           >
@@ -88,7 +87,6 @@ export default function WatchesPage({ products }: WatchesProps) {
                 `/category/${(product.category || "watches").toLowerCase()}/${
                   product.slug
                 }`;
-
               return (
                 <ProductCard
                   key={product.id}
