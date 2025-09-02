@@ -454,11 +454,15 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
             ) : (
               <div
                 className="
-        grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4
-        gap-6 justify-items-center
-        w-full mx-auto
-        max-w-[462px] sm:max-w-[705px] lg:max-w-[948px]
-      "
+            grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4
+            gap-6 justify-items-center
+            w-full mx-auto
+            max-w-[462px] sm:max-w-[705px] lg:max-w-[948px]
+          "
+                style={{
+                  ["--grid-gap" as any]: "24px",
+                  ["--page-pad" as any]: "16px",
+                }} // gap-6 + outer px-4
               >
                 {shown.slice(0, visibleCount).map((product) => {
                   const href = `/category/${product.category}/${product.slug}`;

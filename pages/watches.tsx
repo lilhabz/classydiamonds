@@ -73,7 +73,13 @@ export default function WatchesPage({ products }: WatchesProps) {
           <div className="text-center text-gray-400">No watches available.</div>
         ) : (
           /* 🔒 2 → 3 → 4 explicit columns */
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6 justify-items-center">
+          <div
+            className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6 justify-items-center"
+            style={{
+              ["--grid-gap" as any]: "24px",
+              ["--page-pad" as any]: "16px",
+            }} // gap-6 + px-4
+          >
             {products.map((product) => {
               const href =
                 product.slug &&

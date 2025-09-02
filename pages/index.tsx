@@ -163,7 +163,13 @@ export default function Home({ products }: HomeProps) {
             </p>
           ) : (
             /* 🔒 2 cols on phones (section hidden ≥sm) */
-            <div className="grid grid-cols-2 gap-4 justify-items-center">
+            <div
+              className="grid grid-cols-2 gap-4 justify-items-center"
+              style={{
+                ["--grid-gap" as any]: "16px",
+                ["--page-pad" as any]: "16px",
+              }} // gap-4 + px-4
+            >
               {featured.map((item) => (
                 <ProductCard
                   key={item._id}
@@ -201,7 +207,7 @@ export default function Home({ products }: HomeProps) {
               No featured items to display.
             </p>
           ) : (
-            /* 🔒 Always 2 → 3 → 4 explicit columns */
+            /* 🔒 Always 4 per row on desktop, 3 at sm/md */
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-10 justify-items-center">
               {featured.map((item) => (
                 <ProductCard

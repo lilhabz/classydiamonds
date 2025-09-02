@@ -10,7 +10,7 @@
   /* Navbar background */
   --bg-nav: #1f2a44;
   /* Page/content background (slightly lighter than nav) */
-  --bg-page: #232f4d;
+  --bg-page: #232f4d; /* slightly lighter navy for stronger contrast */
   /* Foreground (text/icons) */
   --foreground: #e0e0e0;
 }
@@ -43,7 +43,9 @@ header {
   background: var(--bg-nav);
 }
 
-/* 🧼 Hide Scrollbars for Swipe Areas */
+/* ============================
+   🧼 Hide Scrollbars for Swipe Areas
+   ============================ */
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
@@ -52,12 +54,16 @@ header {
   scrollbar-width: none;
 }
 
-/* 🚼 Touch-action utilities */
+/* ============================
+   🚼 Touch-action utilities
+   ============================ */
 .touch-pan-x {
   touch-action: pan-x;
 }
 
-/* 🖱️ Pointer cursor for standard clickable elements */
+/* ============================
+   🖱️ Pointer cursor for clickables
+   ============================ */
 button,
 a,
 input[type="button"],
@@ -66,7 +72,9 @@ input[type="reset"] {
   cursor: pointer;
 }
 
-/* ✅ Scroll Snap Classes (do NOT use @apply) */
+/* ============================
+   ✅ Scroll Snap Classes (do NOT use @apply)
+   ============================ */
 .scroll-snap-x {
   scroll-snap-type: x mandatory;
   -webkit-overflow-scrolling: touch;
@@ -75,7 +83,9 @@ input[type="reset"] {
   scroll-snap-align: start;
 }
 
-/* 🌀 Animations – Safe in @layer */
+/* ============================
+   🌀 Animations – Safe in @layer
+   ============================ */
 @layer utilities {
   .animate-fade-in {
     animation: fadeIn 0.4s ease-out forwards;
@@ -106,12 +116,16 @@ input[type="reset"] {
   }
 }
 
-/* ✅ Safeguard Vercel build from purging important scroll classes */
+/* ============================
+   ✅ Safeguard (keep purge targets)
+   ============================ */
 .hidden-scroll-snap-include {
   display: none;
 }
 
-/* 🔧 Replace @apply with equivalent CSS to avoid VS Code 'unknownAtRules' warning */
+/* ============================
+   🔧 Replace @apply with equivalents
+   ============================ */
 .product-card-img {
   position: relative; /* was: @apply relative */
   width: 100%; /* was: @apply w-full */
@@ -134,12 +148,12 @@ input[type="reset"] {
   --price-h: 24px;
   --btn-h: 44px;
 
-  /* Typography */
+  /* Typography (can scale slightly on small screens) */
   --title-fs: 14px;
   --price-fs: 14px;
   --btn-fs: 14px;
 
-  /* Link area math = 195 + 16 + 24 + 24 = 259 */
+  /* Link area math = img (195) + spacer (16) + title (24) + price (24) = 259 */
   --link-h: 259px;
 }
 
@@ -235,25 +249,7 @@ input[type="reset"] {
     }
   }
 
-  /* ≤640px → 0.74× (🆕) */
-  @media (max-width: 640px) {
-    :root {
-      --card-w: calc(219px * 0.74);
-      --card-h: calc(339px * 0.74);
-      --card-inner-w: calc(195px * 0.74);
-      --img: calc(195px * 0.74);
-      --spacer: calc(16px * 0.74);
-      --title-h: calc(24px * 0.74);
-      --price-h: calc(24px * 0.74);
-      --btn-h: calc(44px * 0.74);
-      --title-fs: calc(14px * 0.93);
-      --price-fs: calc(14px * 0.93);
-      --btn-fs: calc(14px * 0.93);
-      --link-h: calc(259px * 0.74);
-    }
-  }
-
-  /* ≤480px → 0.76× (kept; appears above in your original order, safe either way) */
+  /* ≤480px → 0.76× */
   @media (max-width: 480px) {
     :root {
       --card-w: calc(219px * 0.76);
@@ -270,46 +266,7 @@ input[type="reset"] {
       --link-h: calc(259px * 0.76);
     }
   }
-
-  /* ≤414px → 0.70× (🆕) */
-  @media (max-width: 414px) {
-    :root {
-      --card-w: calc(219px * 0.7);
-      --card-h: calc(339px * 0.7);
-      --card-inner-w: calc(195px * 0.7);
-      --img: calc(195px * 0.7);
-      --spacer: calc(16px * 0.7);
-      --title-h: calc(24px * 0.7);
-      --price-h: calc(24px * 0.7);
-      --btn-h: calc(44px * 0.7);
-      --title-fs: calc(14px * 0.95);
-      --price-fs: calc(14px * 0.95);
-      --btn-fs: calc(14px * 0.95);
-      --link-h: calc(259px * 0.7);
-    }
-  }
 }
-
-/* ============================
-   📐 Global responsive grid
-   Use .product-grid anywhere you list ProductCards.
-   ============================ */
-.product-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(var(--card-w), 1fr));
-  justify-items: center;
-  gap: 1.25rem; /* ~gap-5, good for phones */
-}
-@media (min-width: 640px) {
-  .product-grid {
-    gap: 2rem;
-  }
-} /* ~gap-8 */
-@media (min-width: 1024px) {
-  .product-grid {
-    gap: 2.5rem;
-  }
-} /* ~gap-10 */
 
 /* ============================
    🖐️ Touch hover guard
@@ -319,5 +276,55 @@ input[type="reset"] {
 @media (hover: none) {
   .no-touch-scale:hover {
     transform: none !important;
+  }
+}
+
+/* ============================
+   🧩 Optional global grid helper
+   (Not currently used; you’re on explicit 2→3→4 columns)
+   ============================ */
+/*
+.product-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(var(--card-w), 1fr));
+  justify-items: center;
+  gap: 1.25rem;  / * ~gap-5 * /
+}
+@media (min-width: 640px) { .product-grid { gap: 2rem;   } }  / * ~gap-8 * /
+@media (min-width: 1024px){ .product-grid { gap: 2.5rem; } }  / * ~gap-10 * /
+*/
+
+/* ============================
+   📏 Mobile Fit Override (final pass)
+   Ensures 2 cards ALWAYS fit on phones, using viewport width.
+   - Keeps desktop pixel-lock intact (only runs ≤640px)
+   - Uses --page-pad and --grid-gap that you set per grid (or defaults below)
+   ============================ */
+
+/* Defaults (match px-4 = 16px padding and gap-6 = 24px) */
+:root {
+  --page-pad: 16px;
+  --grid-gap: 24px;
+}
+
+@media (max-width: 640px) {
+  :root {
+    /* Two columns: (viewport - left pad - right pad - 1 gap) / 2 */
+    --card-w: calc((100vw - (var(--page-pad) * 2) - var(--grid-gap)) / 2);
+
+    /* Scale all other dims proportionally from the desktop baseline */
+    --scale: calc(var(--card-w) / 219px);
+
+    --card-h: calc(339px * var(--scale));
+    --card-inner-w: calc(195px * var(--scale));
+    --img: calc(195px * var(--scale));
+    --spacer: calc(16px * var(--scale));
+    --title-h: calc(24px * var(--scale));
+    --price-h: calc(24px * var(--scale));
+    --btn-h: calc(44px * var(--scale));
+    --title-fs: calc(14px * var(--scale));
+    --price-fs: calc(14px * var(--scale));
+    --btn-fs: calc(14px * var(--scale));
+    --link-h: calc(259px * var(--scale));
   }
 }
