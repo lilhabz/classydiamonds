@@ -166,9 +166,13 @@ export default function Home({ products }: HomeProps) {
             <div
               className="grid grid-cols-2 gap-4 justify-items-center"
               style={{
-                ["--grid-gap" as any]: "16px",
-                ["--page-pad" as any]: "16px",
-              }} // gap-4 + px-4
+                // mobile fit math: exact gap + page padding for this section
+                ["--grid-gap" as any]: "16px", // gap-4
+                ["--page-pad" as any]: "16px", // px-4
+                // tune mobile-only look (taller pics + smaller text)
+                ["--img-ratio-mobile" as any]: "1.3",
+                ["--mobile-font-scale" as any]: "0.82",
+              }}
             >
               {featured.map((item) => (
                 <ProductCard

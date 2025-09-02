@@ -76,9 +76,11 @@ export default function WatchesPage({ products }: WatchesProps) {
           <div
             className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6 justify-items-center"
             style={{
-              ["--grid-gap" as any]: "24px",
-              ["--page-pad" as any]: "16px",
-            }} // gap-6 + px-4
+              ["--grid-gap" as any]: "24px", // gap-6
+              ["--page-pad" as any]: "16px", // px-4
+              ["--img-ratio-mobile" as any]: "1.28",
+              ["--mobile-font-scale" as any]: "0.84",
+            }}
           >
             {products.map((product) => {
               const href =

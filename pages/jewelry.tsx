@@ -460,9 +460,11 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
             max-w-[462px] sm:max-w-[705px] lg:max-w-[948px]
           "
                 style={{
-                  ["--grid-gap" as any]: "24px",
-                  ["--page-pad" as any]: "16px",
-                }} // gap-6 + outer px-4
+                  ["--grid-gap" as any]: "24px", // gap-6
+                  ["--page-pad" as any]: "16px", // outer px-4
+                  ["--img-ratio-mobile" as any]: "1.28",
+                  ["--mobile-font-scale" as any]: "0.84",
+                }}
               >
                 {shown.slice(0, visibleCount).map((product) => {
                   const href = `/category/${product.category}/${product.slug}`;

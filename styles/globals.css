@@ -288,23 +288,35 @@ input[type="reset"] {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(var(--card-w), 1fr));
   justify-items: center;
-  gap: 1.25rem;  / * ~gap-5 * /
-}
-@media (min-width: 640px) { .product-grid { gap: 2rem;   } }  / * ~gap-8 * /
-@media (min-width: 1024px){ .product-grid { gap: 2.5rem; } }  / * ~gap-10 * /
+  gap: 1.25rem;  /* ~gap-5 */
+
+@media (min-width: 640px) {
+  .product-grid {
+    gap: 2rem;
+  }
+} /* ~gap-8 */
+@media (min-width: 1024px) {
+  .product-grid {
+    gap: 2.5rem;
+  }
+} /* ~gap-10 */
 */
 
 /* ============================
    📏 Mobile Fit Override (final pass)
    Ensures 2 cards ALWAYS fit on phones, using viewport width.
-   - Keeps desktop pixel-lock intact (only runs ≤640px)
+   Also makes images taller and shrinks text so it won't overflow.
+   - Desktop pixel-lock intact (only runs ≤640px)
    - Uses --page-pad and --grid-gap that you set per grid (or defaults below)
    ============================ */
 
-/* Defaults (match px-4 = 16px padding and gap-6 = 24px) */
+/* Defaults (match px-4 = 16px padding and gap-6 = 24px)
+   Plus tunable knobs you can override inline per grid (mobile only). */
 :root {
   --page-pad: 16px;
   --grid-gap: 24px;
+  --img-ratio-mobile: 1.25; /* try 1.20–1.35 for taste */
+  --mobile-font-scale: 0.86; /* smaller text on phones */
 }
 
 @media (max-width: 640px) {
@@ -312,19 +324,44 @@ input[type="reset"] {
     /* Two columns: (viewport - left pad - right pad - 1 gap) / 2 */
     --card-w: calc((100vw - (var(--page-pad) * 2) - var(--grid-gap)) / 2);
 
-    /* Scale all other dims proportionally from the desktop baseline */
+    /* Scale from desktop baseline width (219px) */
     --scale: calc(var(--card-w) / 219px);
 
-    --card-h: calc(339px * var(--scale));
+    /* Inner width ties the image width */
     --card-inner-w: calc(195px * var(--scale));
-    --img: calc(195px * var(--scale));
+    --img: var(--card-inner-w);
+
+    /* ↕️ Taller image on mobile */
+    --img-h: calc(var(--img) * var(--img-ratio-mobile));
+
+    /* Spacing */
     --spacer: calc(16px * var(--scale));
+
+    /* Mobile-friendly font sizes (shrink a bit) */
+    --title-fs: clamp(
+      11px,
+      calc(14px * var(--scale) * var(--mobile-font-scale)),
+      14px
+    );
+    --price-fs: clamp(
+      11px,
+      calc(14px * var(--scale) * var(--mobile-font-scale)),
+      14px
+    );
+    --btn-fs: clamp(11px, calc(14px * var(--scale)), 14px);
+
+    /* Element heights */
     --title-h: calc(24px * var(--scale));
     --price-h: calc(24px * var(--scale));
     --btn-h: calc(44px * var(--scale));
-    --title-fs: calc(14px * var(--scale));
-    --price-fs: calc(14px * var(--scale));
-    --btn-fs: calc(14px * var(--scale));
-    --link-h: calc(259px * var(--scale));
+
+    /* Link area now based on taller image */
+    --link-h: calc(
+      var(--img-h) + var(--spacer) + var(--title-h) + var(--price-h)
+    );
+
+    /* Card height = link area + button + extra spacing (desktop extra ≈ 36px) */
+    --extra: calc(36px * var(--scale));
+    --card-h: calc(var(--link-h) + var(--btn-h) + var(--extra));
   }
 }

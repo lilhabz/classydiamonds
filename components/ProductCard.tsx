@@ -90,7 +90,7 @@ export default function ProductCard({
         className="block mx-auto group"
         style={{
           width: "var(--card-inner-w)", // 195px desktop
-          height: "var(--link-h)", // 259px desktop
+          height: "var(--link-h)", // 259px desktop (overridden on mobile)
         }}
       >
         {/* 🖼️ Image */}
@@ -98,7 +98,8 @@ export default function ProductCard({
           className="overflow-hidden rounded-xl relative"
           style={{
             width: "var(--img)",
-            height: "var(--img)",
+            // allow a taller image on mobile via --img-h (falls back to square)
+            height: "var(--img-h, var(--img))",
           }}
         >
           <Image
@@ -108,6 +109,7 @@ export default function ProductCard({
             className="object-cover transform transition-transform duration-300 group-hover:scale-105"
             unoptimized={unoptimized}
             onError={handleImgError}
+            // width fixed by CSS vars; keep sizes simple
             sizes="(max-width: 1024px) 33vw, 195px"
             priority={false}
           />
@@ -120,11 +122,12 @@ export default function ProductCard({
 
         {/* 🏷️ Title */}
         <h3
-          className="font-medium text-white leading-[24px] truncate"
+          className="font-medium text-white truncate"
           style={{
             width: "var(--card-inner-w)",
             height: "var(--title-h)",
             fontSize: "var(--title-fs)",
+            lineHeight: "var(--title-h)", // scales cleanly on mobile
           }}
           title={name}
         >
@@ -133,11 +136,12 @@ export default function ProductCard({
 
         {/* 💲 Price row */}
         <p
-          className="text-gray-200 leading-[24px] truncate"
+          className="text-gray-200 truncate"
           style={{
             width: "var(--card-inner-w)",
             height: "var(--price-h)",
             fontSize: "var(--price-fs)",
+            lineHeight: "var(--price-h)", // scales cleanly on mobile
           }}
           title={
             salePrice
