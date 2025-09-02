@@ -21,8 +21,7 @@ const PLACEHOLDER = "/gray-placeholder.jpg";
 function normalizeLocalPath(src: string) {
   const trimmed = src.trim();
   if (!trimmed) return PLACEHOLDER;
-  if (/^(https?:)?\/\//i.test(trimmed) || trimmed.startsWith("data:"))
-    return trimmed;
+  if (/^(https?:)?\/\//i.test(trimmed) || trimmed.startsWith("data:")) return trimmed;
   if (trimmed.startsWith("/")) return trimmed; // absolute within /public
   return `/${trimmed.replace(/^(\.\/)+/, "")}`; // make relative paths absolute
 }
@@ -67,7 +66,7 @@ export default function ProductCard({
 
   return (
     <div
-      className="product-card rounded-2xl bg-[#25304f] shadow-lg hover:shadow-xl transform-gpu transition-transform duration-300 md:hover:scale-105 no-touch-scale"
+      className="product-card rounded-2xl bg-[#25304f] shadow-lg hover:shadow-xl transform-gpu transition-transform duration-300 no-touch-scale"
       style={{
         width: "var(--card-w)",
         height: "var(--card-h)", // mobile computes this; desktop stays fixed
@@ -105,9 +104,7 @@ export default function ProductCard({
         </div>
 
         {/* 🔢 Spacer */}
-        <div
-          style={{ width: "var(--card-inner-w)", height: "var(--spacer)" }}
-        />
+        <div style={{ width: "var(--card-inner-w)", height: "var(--spacer)" }} />
 
         {/* 🏷️ Title */}
         <h3
