@@ -418,7 +418,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
       </div>
 
       {/* 🧰 SIDEBAR + GRID */}
-      <section className="mt-6 px-4 sm:px-6 lg:pl-0 lg:pr-8 max-w-7xl mx-auto mb-20">
+      <section className="mt-6 px-0 sm:px-6 lg:pl-0 lg:pr-8 max-w-none sm:max-w-7xl sm:mx-auto mb-20">
         {/* Mobile filters trigger */}
         <div className="flex items-center justify-between mb-4 lg:hidden">
           <div className="text-sm text-white/80">
@@ -453,19 +453,20 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
               <p className="text-white/80">No products found.</p>
             ) : (
               <div
-                className="
+  className="
         grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4
-        gap-6 justify-items-center
-        w-full mx-auto
-        max-w-[462px] sm:max-w-[705px] lg:max-w-[948px]
+        gap-4 sm:gap-6 justify-items-center
+        w-full
+        max-w-none sm:max-w-[705px] lg:max-w-[948px]
+        sm:mx-auto
       "
-                style={{
-                  ["--grid-gap" as any]: "24px", // gap-6
-                  ["--page-pad" as any]: "16px", // outer px-4
-                  ["--img-ratio-mobile" as any]: "1.28",
-                  ["--mobile-font-scale" as any]: "0.84",
-                }}
-              >
+  style={{
+    ["--grid-gap" as any]: "16px", // tighter mobile gap (optional)
+    ["--img-ratio-mobile" as any]: "1.28",
+    ["--mobile-font-scale" as any]: "0.84",
+  }}
+>
+
                 {shown.slice(0, visibleCount).map((product) => {
                   const href = `/category/${product.category}/${product.slug}`;
                   return (
