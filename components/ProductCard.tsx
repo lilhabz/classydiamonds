@@ -1,4 +1,4 @@
-// components/ProductCard.tsx – Desktop pixel-locked; sub-desktop scales via CSS vars
+// components/ProductCard.tsx – Desktop pixel-locked; mobile grows naturally
 "use client";
 
 import Image from "next/image";
@@ -17,27 +17,20 @@ export type ProductCardProps = {
 
 const PLACEHOLDER = "/gray-placeholder.jpg";
 
-/* ============================
-   🔧 Path helpers
-   ============================ */
+/* 🔧 Path helpers */
 function normalizeLocalPath(src: string) {
   const trimmed = src.trim();
   if (!trimmed) return PLACEHOLDER;
-  if (trimmed.startsWith("http")) return trimmed;
-  const withSlash = trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
-  return withSlash.startsWith("/products/")
-    ? withSlash
-    : `/products/${withSlash.replace(/^\//, "")}`;
+  if (/^(https?:)?\/\//i.test(trimmed) || trimmed.startsWith("data:"))
+    return trimmed;
+  if (trimmed.startsWith("/")) return trimmed; // absolute in /public
+  return `/${trimmed.replace(/^(\.\/)+/, "")}`; // make relative paths absolute
 }
-
 function resolveImageSrc(raw?: string | null) {
   if (!raw || !raw.trim()) return PLACEHOLDER;
-  return raw.startsWith("http") ? raw : normalizeLocalPath(raw);
+  return normalizeLocalPath(raw);
 }
 
-/* ============================
-   💳 Component
-   ============================ */
 export default function ProductCard({
   slug,
   image,
@@ -74,32 +67,28 @@ export default function ProductCard({
 
   return (
     <div
-      /* 💎 Pixel-lock on desktop; hover scale only on md+ and non-touch
-         - md:hover:scale-105 keeps phones from “sticky hover”
-         - no-touch-scale disables transform on hover-capable=false devices */
-      className="rounded-2xl bg-[#25304f] shadow-lg transition hover:shadow-xl transform-gpu transition-transform duration-300 md:hover:scale-105 no-touch-scale"
+      className="product-card rounded-2xl bg-[#25304f] shadow-lg hover:shadow-xl transform-gpu transition-transform duration-300 md:hover:scale-105 no-touch-scale"
       style={{
         width: "var(--card-w)",
-        height: "var(--card-h)",
+        height: "var(--card-h)", // will be forced to auto on mobile via CSS
       }}
     >
       {/* 🔗 Clickable top area */}
       <Link
         href={link}
         aria-label={name}
-        className="block mx-auto group"
+        className="pc-link block mx-auto group"
         style={{
           width: "var(--card-inner-w)", // 195px desktop
-          height: "var(--link-h)", // 259px desktop (overridden on mobile)
+          height: "var(--link-h)", // forced to auto on mobile via CSS
         }}
       >
         {/* 🖼️ Image */}
         <div
-          className="overflow-hidden rounded-xl relative"
+          className="pc-img overflow-hidden rounded-xl relative"
           style={{
             width: "var(--img)",
-            // allow a taller image on mobile via --img-h (falls back to square)
-            height: "var(--img-h, var(--img))",
+            height: "var(--img-h, var(--img))", // mobile may override via CSS/aspect-ratio
           }}
         >
           <Image
@@ -109,13 +98,12 @@ export default function ProductCard({
             className="object-cover transform transition-transform duration-300 group-hover:scale-105"
             unoptimized={unoptimized}
             onError={handleImgError}
-            // width fixed by CSS vars; keep sizes simple
-            sizes="(max-width: 1024px) 33vw, 195px"
+            sizes="(max-width: 640px) 45vw, (max-width: 1024px) 33vw, 195px"
             priority={false}
           />
         </div>
 
-        {/* 🔢 Spacer within the link area math */}
+        {/* 🔢 Spacer */}
         <div
           style={{ width: "var(--card-inner-w)", height: "var(--spacer)" }}
         />
@@ -127,7 +115,7 @@ export default function ProductCard({
             width: "var(--card-inner-w)",
             height: "var(--title-h)",
             fontSize: "var(--title-fs)",
-            lineHeight: "var(--title-h)", // scales cleanly on mobile
+            lineHeight: "var(--title-h)", // prevents overflow on mobile
           }}
           title={name}
         >
@@ -141,7 +129,7 @@ export default function ProductCard({
             width: "var(--card-inner-w)",
             height: "var(--price-h)",
             fontSize: "var(--price-fs)",
-            lineHeight: "var(--price-h)", // scales cleanly on mobile
+            lineHeight: "var(--price-h)", // prevents overflow on mobile
           }}
           title={
             salePrice

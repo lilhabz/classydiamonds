@@ -355,3 +355,56 @@ input[type="reset"] {
     --card-h: auto;
   }
 }
+/* ============================
+   📱 Mobile-only hard fix (≤640px)
+   - Let card & link grow naturally (no clipping)
+   - Show image via aspect-ratio (taller pic)
+   - Keep your width math with vars you already set
+   ============================ */
+:root {
+  --page-pad: 16px; /* can override per-grid inline */
+  --grid-gap: 24px; /* can override per-grid inline */
+  --img-aspect-mobile: 4/5; /* try 3/4, 1/1, etc. */
+  --mobile-font-scale: 0.86; /* smaller text on phones */
+}
+
+@media (max-width: 640px) {
+  :root {
+    /* fit exactly 2 cards across with real padding/gap */
+    --card-w: calc((100vw - (var(--page-pad) * 2) - var(--grid-gap)) / 2);
+    --scale: calc(var(--card-w) / 219px);
+    --card-inner-w: calc(195px * var(--scale));
+    --img: var(--card-inner-w);
+    --spacer: calc(16px * var(--scale));
+
+    --title-fs: clamp(
+      11px,
+      calc(14px * var(--scale) * var(--mobile-font-scale)),
+      14px
+    );
+    --price-fs: clamp(
+      11px,
+      calc(14px * var(--scale) * var(--mobile-font-scale)),
+      14px
+    );
+    --btn-fs: clamp(11px, calc(14px * var(--scale)), 14px);
+
+    --title-h: calc(24px * var(--scale));
+    --price-h: calc(24px * var(--scale));
+    --btn-h: calc(44px * var(--scale));
+  }
+
+  /* ✅ hard-force heights to auto so nothing gets clipped */
+  .product-card {
+    height: auto !important;
+  }
+  .product-card .pc-link {
+    height: auto !important;
+  }
+
+  /* 🖼️ make image visible & taller via aspect-ratio (independent of height vars) */
+  .product-card .pc-img {
+    height: auto !important;
+    aspect-ratio: var(--img-aspect-mobile);
+  }
+}
