@@ -452,10 +452,10 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
             {shown.length === 0 ? (
               <p className="text-white/80">No products found.</p>
             ) : (
-              /* 📐 Global auto-fit grid + your width caps to preserve 2/3/4 feel */
               <div
                 className="
-        product-grid
+        grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4
+        gap-6 justify-items-center
         w-full mx-auto
         max-w-[462px] sm:max-w-[705px] lg:max-w-[948px]
       "

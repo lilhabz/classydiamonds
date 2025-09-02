@@ -72,8 +72,8 @@ export default function WatchesPage({ products }: WatchesProps) {
         {products.length === 0 ? (
           <div className="text-center text-gray-400">No watches available.</div>
         ) : (
-          /* 📐 Global auto-fit product grid */
-          <div className="product-grid">
+          /* 🔒 2 → 3 → 4 explicit columns */
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6 justify-items-center">
             {products.map((product) => {
               const href =
                 product.slug &&

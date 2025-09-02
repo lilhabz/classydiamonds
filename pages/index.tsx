@@ -162,8 +162,8 @@ export default function Home({ products }: HomeProps) {
               No featured items to display.
             </p>
           ) : (
-            /* 📐 Uses global auto-fit product grid */
-            <div className="product-grid">
+            /* 🔒 2 cols on phones (section hidden ≥sm) */
+            <div className="grid grid-cols-2 gap-4 justify-items-center">
               {featured.map((item) => (
                 <ProductCard
                   key={item._id}
@@ -201,8 +201,8 @@ export default function Home({ products }: HomeProps) {
               No featured items to display.
             </p>
           ) : (
-            /* 📐 Uses global auto-fit product grid */
-            <div className="product-grid">
+            /* 🔒 Always 2 → 3 → 4 explicit columns */
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-10 justify-items-center">
               {featured.map((item) => (
                 <ProductCard
                   key={item._id}
