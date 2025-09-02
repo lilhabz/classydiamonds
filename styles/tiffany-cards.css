@@ -1,0 +1,154 @@
+/* Tiffany-style card sizing for PHONES (exact at measured device widths)
+   Your ProductCard.tsx already reads these CSS variables.
+   We set: card width/height, image size, info block, title/price, button, etc.
+*/
+
+/* ── Base fallback (reasonable default for modern phones) ───────────── */
+.product-card {
+  --card-w: 193px;           /* iPhone 12 Pro baseline */
+  --card-inner-w: 193px;
+  --img: 193px;
+  --img-h: 193px;            /* square */
+  --spacer: 12px;            /* gap inside info block (Tiffany uses ~12) */
+  --title-h: 72px;           /* choose 72 or 52 depending on device */
+  --title-fs: 18px;          /* pairs with 72px height */
+  --price-h: 20px;
+  --price-fs: 16px;
+  --btn-h: 48px;             /* measured from total card height deltas */
+  --btn-fs: 16px;
+
+  /* link area = image + info block */
+  --info-h: 104px;           /* choose 104 or 84 depending on device */
+  --link-h: calc(var(--img) + var(--info-h));
+
+  /* total card = link area + button */
+  --card-h: calc(var(--link-h) + var(--btn-h));
+}
+
+/* ── DEVICE-PINNED SIZES (exact matches) ───────────────────────────── */
+
+/* Galaxy Z Fold 5 — viewport width 344px
+   div 170×322, img 170, info 104 (title 72 + price 20 + spacer 12), btn 48
+*/
+@media (width: 344px) {
+  .product-card {
+    --card-w: 170px; --card-inner-w: 170px;
+    --img: 170px; --img-h: 170px;
+    --info-h: 104px; --title-h: 72px; --title-fs: 18px;
+    --price-h: 20px; --price-fs: 16px;
+    --btn-h: 48px; --btn-fs: 16px;
+  }
+}
+
+/* Samsung Galaxy S8+ — width 360px
+   div 178×330, img 178, info 104 (72+20+12), btn 48
+*/
+@media (width: 360px) {
+  .product-card {
+    --card-w: 178px; --card-inner-w: 178px;
+    --img: 178px; --img-h: 178px;
+    --info-h: 104px; --title-h: 72px; --title-fs: 18px;
+    --price-h: 20px; --price-fs: 16px;
+    --btn-h: 48px; --btn-fs: 16px;
+  }
+}
+
+/* iPhone SE — width 375px
+   div 185.5×337.5, img 185.5, info 104 (72+20+12), btn 48
+*/
+@media (width: 375px) {
+  .product-card {
+    --card-w: 185.5px; --card-inner-w: 185.5px;
+    --img: 185.5px; --img-h: 185.5px;
+    --info-h: 104px; --title-h: 72px; --title-fs: 18px;
+    --price-h: 20px; --price-fs: 16px;
+    --btn-h: 48px; --btn-fs: 16px;
+  }
+}
+
+/* iPhone 12 Pro — width 390px
+   div 193×345, img 193, info 104 (72+20+12), btn 48
+*/
+@media (width: 390px) {
+  .product-card {
+    --card-w: 193px; --card-inner-w: 193px;
+    --img: 193px; --img-h: 193px;
+    --info-h: 104px; --title-h: 72px; --title-fs: 18px;
+    --price-h: 20px; --price-fs: 16px;
+    --btn-h: 48px; --btn-fs: 16px;
+  }
+}
+
+/* iPhone XR — width 414px
+   div 205×337, img 205, info 84 (52+20+12), btn 48
+*/
+@media (width: 414px) {
+  .product-card {
+    --card-w: 205px; --card-inner-w: 205px;
+    --img: 205px; --img-h: 205px;
+    --info-h: 84px; --title-h: 52px; --title-fs: 16px;
+    --price-h: 20px; --price-fs: 16px;
+    --btn-h: 48px; --btn-fs: 16px;
+  }
+}
+
+/* Pixel 7 / Galaxy S20 Ultra — width 412px
+   div 204×336, img 204, info 84 (52+20+12), btn 48
+   NOTE: At this same width some A-series showed info=104; we choose 84 as default.
+*/
+@media (width: 412px) {
+  .product-card {
+    --card-w: 204px; --card-inner-w: 204px;
+    --img: 204px; --img-h: 204px;
+    --info-h: 84px; --title-h: 52px; --title-fs: 16px;
+    --price-h: 20px; --price-fs: 16px;
+    --btn-h: 48px; --btn-fs: 16px;
+  }
+}
+
+/* iPhone 14 Pro Max — width 430px
+   div 213×345, img 213, info 84 (52+20+12), btn 48
+*/
+@media (width: 430px) {
+  .product-card {
+    --card-w: 213px; --card-inner-w: 213px;
+    --img: 213px; --img-h: 213px;
+    --info-h: 84px; --title-h: 52px; --title-fs: 16px;
+    --price-h: 20px; --price-fs: 16px;
+    --btn-h: 48px; --btn-fs: 16px;
+  }
+}
+
+/* Samsung Galaxy A51/71 — width sometimes reports as 412px but with different info (104) and taller card: 204×356.
+   If you specifically want to target these, you can opt-in by adding a class on <body> (e.g., .a-series-mode).
+   Then this rule will override the 412px default above.
+*/
+@media (width: 412px) {
+  body.a-series-mode .product-card {
+    --card-w: 204px; --card-inner-w: 204px;
+    --img: 204px; --img-h: 204px;
+    --info-h: 104px; --title-h: 72px; --title-fs: 18px;
+    --price-h: 20px; --price-fs: 16px;
+    --btn-h: 48px; --btn-fs: 16px;
+  }
+}
+
+/* ── Smooth fallback band for other narrow phones (optional)
+   This gives a reasonable scale for 351–374, 376–389, 391–411, 415–429.
+   We deliberately keep it simple; exact devices above will still pin perfectly.
+*/
+@media (max-width: 349px) {
+  .product-card { --card-w: 168px; --card-inner-w: 168px; --img: 168px; --img-h: 168px; --info-h: 104px; --title-h: 72px; --title-fs: 18px; }
+}
+@media (min-width: 351px) and (max-width: 374px) {
+  .product-card { --card-w: 180px; --card-inner-w: 180px; --img: 180px; --img-h: 180px; --info-h: 104px; --title-h: 72px; --title-fs: 18px; }
+}
+@media (min-width: 376px) and (max-width: 389px) {
+  .product-card { --card-w: 190px; --card-inner-w: 190px; --img: 190px; --img-h: 190px; --info-h: 104px; --title-h: 72px; --title-fs: 18px; }
+}
+@media (min-width: 391px) and (max-width: 411px) {
+  .product-card { --card-w: 200px; --card-inner-w: 200px; --img: 200px; --img-h: 200px; --info-h: 92px; --title-h: 60px; --title-fs: 17px; }
+}
+@media (min-width: 415px) and (max-width: 429px) {
+  .product-card { --card-w: 210px; --card-inner-w: 210px; --img: 210px; --img-h: 210px; --info-h: 84px; --title-h: 52px; --title-fs: 16px; }
+}

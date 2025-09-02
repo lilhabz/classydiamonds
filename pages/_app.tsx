@@ -10,6 +10,7 @@ import Footer from "@/components/Footer";
 import { CartProvider } from "@/context/CartContext";
 import IdleTimerProvider from "@/components/AutoLogout";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import "@/styles/tiffany-cards.css";
 
 function App({ Component, pageProps: { session, ...pageProps } }: AppProps) {
   const router = useRouter();
