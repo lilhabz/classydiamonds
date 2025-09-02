@@ -95,8 +95,16 @@ export default function Home({ products }: HomeProps) {
   const CATEGORY_ITEMS = [
     { label: "Rings", slug: "rings", image: "/category/ring-cat.jpg" },
     { label: "Earrings", slug: "earrings", image: "/category/earring-cat.jpg" },
-    { label: "Bracelets", slug: "bracelets", image: "/category/bracelet-cat.jpg" },
-    { label: "Necklaces & Pendants", slug: "necklaces", image: "/category/necklace-cat.jpg" },
+    {
+      label: "Bracelets",
+      slug: "bracelets",
+      image: "/category/bracelet-cat.jpg",
+    },
+    {
+      label: "Necklaces & Pendants",
+      slug: "necklaces",
+      image: "/category/necklace-cat.jpg",
+    },
   ];
 
   return (
@@ -113,7 +121,12 @@ export default function Home({ products }: HomeProps) {
       <main className="flex flex-col min-h-screen bg-[var(--bg-page)] text-[var(--foreground)] overflow-x-hidden">
         {/* ⭐ Hero Section */}
         <section className="-mt-20 relative w-full h-[80vh] flex items-center justify-center overflow-hidden">
-          <Image src="/hero-home.jpg" alt="Hero" fill className="object-cover" />
+          <Image
+            src="/hero-home.jpg"
+            alt="Hero"
+            fill
+            className="object-cover"
+          />
           <div className="absolute inset-0 bg-black/50" />
           <div className="relative z-10 text-center px-4">
             <h1 className="text-3xl sm:text-4xl md:text-6xl font-serif font-bold tracking-wider leading-snug text-[#e0e0e0] mb-6">
@@ -145,10 +158,12 @@ export default function Home({ products }: HomeProps) {
           </h2>
 
           {featured.length === 0 ? (
-            <p className="text-white text-center w-full">No featured items to display.</p>
+            <p className="text-white text-center w-full">
+              No featured items to display.
+            </p>
           ) : (
-            /* 🔒 2 cols on phones (section hidden ≥sm) */
-            <div className="grid grid-cols-2 gap-4 justify-items-center">
+            /* 📐 Uses global auto-fit product grid */
+            <div className="product-grid">
               {featured.map((item) => (
                 <ProductCard
                   key={item._id}
@@ -182,10 +197,12 @@ export default function Home({ products }: HomeProps) {
           </h2>
 
           {featured.length === 0 ? (
-            <p className="text-white text-center">No featured items to display.</p>
+            <p className="text-white text-center">
+              No featured items to display.
+            </p>
           ) : (
-            /* 🔒 Always 4 per row on desktop, 3 at sm/md */
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-10 justify-items-center">
+            /* 📐 Uses global auto-fit product grid */
+            <div className="product-grid">
               {featured.map((item) => (
                 <ProductCard
                   key={item._id}
@@ -218,8 +235,10 @@ export default function Home({ products }: HomeProps) {
             Gifts for Him & Her
           </h2>
           <div className="grid grid-cols-2 gap-4 justify-center max-w-2xl mx-auto">
-            {[{ name: "For Him", image: "/category/his-gift-cat.jpg" },
-              { name: "For Her", image: "/category/her-gift-cat.jpg" }].map((gift, index) => (
+            {[
+              { name: "For Him", image: "/category/his-gift-cat.jpg" },
+              { name: "For Her", image: "/category/her-gift-cat.jpg" },
+            ].map((gift, index) => (
               <GiftButton key={gift.name} gift={gift} index={index} />
             ))}
           </div>
@@ -243,7 +262,7 @@ export default function Home({ products }: HomeProps) {
 
         {/* 💎 Why Choose Us Section */}
         <section className="py-16 sm:py-20 px-4 sm:px-6 --bg-page">
-          <div className="max-w-4xl mx_auto text-center">
+          <div className="max-w-4xl mx-auto text-center">
             <h2 className="text-3xl sm:text-4xl font-serif font-bold mb-8 sm:mb-10 tracking-wide">
               Why Choose Classy Diamonds?
             </h2>

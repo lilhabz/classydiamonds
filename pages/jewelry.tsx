@@ -50,8 +50,16 @@ const toArray = (v: string | string[] | undefined): string[] =>
 const CATEGORY_ITEMS: CategoryItem[] = [
   { label: "Rings", slug: "rings", image: "/category/ring-cat.jpg" },
   { label: "Earrings", slug: "earrings", image: "/category/earring-cat.jpg" },
-  { label: "Bracelets", slug: "bracelets", image: "/category/bracelet-cat.jpg" },
-  { label: "Necklaces & Pendants", slug: "necklaces", image: "/category/necklace-cat.jpg" },
+  {
+    label: "Bracelets",
+    slug: "bracelets",
+    image: "/category/bracelet-cat.jpg",
+  },
+  {
+    label: "Necklaces & Pendants",
+    slug: "necklaces",
+    image: "/category/necklace-cat.jpg",
+  },
 ];
 
 const SUBS: Record<CategorySlug, SubItem[]> = {
@@ -101,7 +109,8 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
   const { addToCart } = useCart();
   const [visibleCount, setVisibleCount] = useState(50);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
-  const [activeCategorySlug, setActiveCategorySlug] = useState<CategorySlug | null>(null);
+  const [activeCategorySlug, setActiveCategorySlug] =
+    useState<CategorySlug | null>(null);
   const [activeSub, setActiveSub] = useState<string>("all");
 
   const heroRef = useRef<HTMLDivElement>(null);
@@ -113,11 +122,16 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
   // Strip stray ?scroll=true when no category is present (no deep-link intent)
   useEffect(() => {
     if (!router.isReady) return;
-    const { scroll, category } = router.query as { scroll?: string; category?: string };
+    const { scroll, category } = router.query as {
+      scroll?: string;
+      category?: string;
+    };
     if (scroll === "true" && !category) {
       const next = { ...router.query };
       delete (next as any).scroll;
-      router.replace({ pathname: "/jewelry", query: next }, undefined, { shallow: true });
+      router.replace({ pathname: "/jewelry", query: next }, undefined, {
+        shallow: true,
+      });
     }
   }, [router.isReady, router.query]);
 
@@ -126,12 +140,18 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
     if (!router.isReady) return;
     const { category, sub, scroll } = router.query;
 
-    if (typeof category === "string" && ALLOWED.includes(category.toLowerCase() as CategorySlug)) {
+    if (
+      typeof category === "string" &&
+      ALLOWED.includes(category.toLowerCase() as CategorySlug)
+    ) {
       const cat = category.toLowerCase() as CategorySlug;
       setActiveCategorySlug(cat);
 
       const subs = SUBS[cat];
-      if (typeof sub === "string" && subs?.some((s) => s.slug.toLowerCase() === sub.toLowerCase())) {
+      if (
+        typeof sub === "string" &&
+        subs?.some((s) => s.slug.toLowerCase() === sub.toLowerCase())
+      ) {
         setActiveSub(sub.toLowerCase());
       } else {
         setActiveSub("all");
@@ -168,34 +188,63 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
   }, [activeCategorySlug]);
 
   const pageTitle = "Jewelry Collection | Classy Diamonds";
-  const pageDesc = "Explore timeless rings, earrings, bracelets, and necklaces & pendants.";
+  const pageDesc =
+    "Explore timeless rings, earrings, bracelets, and necklaces & pendants.";
 
-  const subPills: SubItem[] = activeCategorySlug ? SUBS[activeCategorySlug] ?? [{ label: "All", slug: "all" }] : [];
+  const subPills: SubItem[] = activeCategorySlug
+    ? SUBS[activeCategorySlug] ?? [{ label: "All", slug: "all" }]
+    : [];
 
-  const metals = toArray(router.query.metal as any).map((x) => String(x).toLowerCase());
-  const stones = toArray(router.query.stone as any).map((x) => String(x).toLowerCase());
-  const shapes = toArray(router.query.shape as any).map((x) => String(x).toLowerCase());
+  const metals = toArray(router.query.metal as any).map((x) =>
+    String(x).toLowerCase()
+  );
+  const stones = toArray(router.query.stone as any).map((x) =>
+    String(x).toLowerCase()
+  );
+  const shapes = toArray(router.query.shape as any).map((x) =>
+    String(x).toLowerCase()
+  );
 
-  const priceMin = router.query.priceMin ? Number(router.query.priceMin) : undefined;
-  const priceMax = router.query.priceMax ? Number(router.query.priceMax) : undefined;
-  const caratMin = router.query.caratMin ? Number(router.query.caratMin) : undefined;
-  const caratMax = router.query.caratMax ? Number(router.query.caratMax) : undefined;
+  const priceMin = router.query.priceMin
+    ? Number(router.query.priceMin)
+    : undefined;
+  const priceMax = router.query.priceMax
+    ? Number(router.query.priceMax)
+    : undefined;
+  const caratMin = router.query.caratMin
+    ? Number(router.query.caratMin)
+    : undefined;
+  const caratMax = router.query.caratMax
+    ? Number(router.query.caratMax)
+    : undefined;
 
   const shown = useMemo(() => {
     const allowedSet = new Set(ALLOWED);
-    let base = products.filter((p) => allowedSet.has((p.category || "").toLowerCase() as CategorySlug));
+    let base = products.filter((p) =>
+      allowedSet.has((p.category || "").toLowerCase() as CategorySlug)
+    );
 
     if (activeCategorySlug) {
-      base = base.filter((p) => (p.category || "").toLowerCase() === activeCategorySlug);
+      base = base.filter(
+        (p) => (p.category || "").toLowerCase() === activeCategorySlug
+      );
       if (activeSub !== "all") {
-        base = base.filter((p) => (p.subcategory || "").toLowerCase() === activeSub);
+        base = base.filter(
+          (p) => (p.subcategory || "").toLowerCase() === activeSub
+        );
       }
     }
 
     const meets = (p: ProductType) => {
-      const metalOk = metals.length ? metals.includes((p.metal || "").toLowerCase()) : true;
-      const stoneOk = stones.length ? stones.includes((p.stone || "").toLowerCase()) : true;
-      const shapeOk = shapes.length ? shapes.includes((p.shape || "").toLowerCase()) : true;
+      const metalOk = metals.length
+        ? metals.includes((p.metal || "").toLowerCase())
+        : true;
+      const stoneOk = stones.length
+        ? stones.includes((p.stone || "").toLowerCase())
+        : true;
+      const shapeOk = shapes.length
+        ? shapes.includes((p.shape || "").toLowerCase())
+        : true;
 
       const effectivePrice = (p.salePrice ?? p.price) as number;
       const priceOk =
@@ -214,7 +263,18 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
     };
 
     return base.filter(meets);
-  }, [products, activeCategorySlug, activeSub, metals, stones, shapes, priceMin, priceMax, caratMin, caratMax]);
+  }, [
+    products,
+    activeCategorySlug,
+    activeSub,
+    metals,
+    stones,
+    shapes,
+    priceMin,
+    priceMax,
+    caratMin,
+    caratMax,
+  ]);
 
   const totalProducts = shown.length;
 
@@ -222,7 +282,10 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
     setActiveCategorySlug(slug);
     setActiveSub("all");
     router.push(
-      { pathname: "/jewelry", query: { category: slug, scroll: "true", ...router.query } },
+      {
+        pathname: "/jewelry",
+        query: { category: slug, scroll: "true", ...router.query },
+      },
       undefined,
       { shallow: true }
     );
@@ -235,10 +298,14 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
     if (slug === "all") delete (next as any).sub;
     else (next as any).sub = slug;
     next.category = activeCategorySlug;
-    router.push({ pathname: "/jewelry", query: next }, undefined, { shallow: true });
+    router.push({ pathname: "/jewelry", query: next }, undefined, {
+      shallow: true,
+    });
   };
 
-  const heading = activeCategorySlug ? CATEGORY_LABELS[activeCategorySlug] : "All Jewelry";
+  const heading = activeCategorySlug
+    ? CATEGORY_LABELS[activeCategorySlug]
+    : "All Jewelry";
 
   return (
     <div className="min-h-screen flex flex-col bg-[var(--bg-page)] text-[var(--foreground)]">
@@ -253,7 +320,12 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
         ref={heroRef}
         className="-mt-20 relative w-full h-[80vh] flex items-center justify-center overflow-hidden"
       >
-        <Image src="/hero-jewelry.jpg" alt="Jewelry Hero" fill className="object-cover" />
+        <Image
+          src="/hero-jewelry.jpg"
+          alt="Jewelry Hero"
+          fill
+          className="object-cover"
+        />
         <div className="absolute inset-0 bg-black/50 pointer-events-none" />
         <div className="relative z-10 text-center px-4">
           <h1 className="text-3xl md:text-6xl font-serif font-bold tracking-wider leading-snug mb-4">
@@ -363,7 +435,11 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
         </div>
 
         {/* Drawer (mobile/tablet only) */}
-        <FiltersSidebar mode="drawer" open={mobileFiltersOpen} onClose={() => setMobileFiltersOpen(false)} />
+        <FiltersSidebar
+          mode="drawer"
+          open={mobileFiltersOpen}
+          onClose={() => setMobileFiltersOpen(false)}
+        />
 
         <div className="grid grid-cols-1 lg:grid-cols-[240px_1fr] gap-6">
           {/* Desktop sticky sidebar */}
@@ -376,13 +452,13 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
             {shown.length === 0 ? (
               <p className="text-white/80">No products found.</p>
             ) : (
+              /* 📐 Global auto-fit grid + your width caps to preserve 2/3/4 feel */
               <div
                 className="
-                  grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4
-                  gap-6 justify-items-center
-                  w-full mx-auto
-                  max-w-[462px] sm:max-w-[705px] lg:max-w-[948px]
-                "
+        product-grid
+        w-full mx-auto
+        max-w-[462px] sm:max-w-[705px] lg:max-w-[948px]
+      "
               >
                 {shown.slice(0, visibleCount).map((product) => {
                   const href = `/category/${product.category}/${product.slug}`;
@@ -396,7 +472,11 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
                       salePrice={product.salePrice ?? null}
                       href={href}
                       onAddToCart={() => {
-                        if (isRingCategory(product.category)) {
+                        if (
+                          (product.category || "")
+                            .toLowerCase()
+                            .includes("ring")
+                        ) {
                           return router.push(href);
                         }
                         addToCart({
@@ -441,7 +521,9 @@ export const getServerSideProps: GetServerSideProps = async () => {
   );
 
   const products: ProductType[] = rows
-    .filter((p: any) => ALLOWED_SET.has(String(p.category || "").toLowerCase() as any))
+    .filter((p: any) =>
+      ALLOWED_SET.has(String(p.category || "").toLowerCase() as any)
+    )
     .map((p: any) => ({
       id: String(p._id),
       slug: p.slug,
