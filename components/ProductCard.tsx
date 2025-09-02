@@ -17,9 +17,7 @@ export type ProductCardProps = {
 
 const PLACEHOLDER = "/gray-placeholder.jpg";
 
-/* ============================
-   🔧 Path helpers (no forced /products/)
-   ============================ */
+/* 🔧 Path helpers (no forced /products/) */
 function normalizeLocalPath(src: string) {
   const trimmed = src.trim();
   if (!trimmed) return PLACEHOLDER;
@@ -33,9 +31,6 @@ function resolveImageSrc(raw?: string | null) {
   return normalizeLocalPath(raw);
 }
 
-/* ============================
-   💳 Component
-   ============================ */
 export default function ProductCard({
   slug,
   image,
@@ -75,7 +70,7 @@ export default function ProductCard({
       className="product-card rounded-2xl bg-[#25304f] shadow-lg hover:shadow-xl transform-gpu transition-transform duration-300 md:hover:scale-105 no-touch-scale"
       style={{
         width: "var(--card-w)",
-        height: "var(--card-h)", // mobile computes this via CSS vars (same stack as desktop)
+        height: "var(--card-h)", // mobile computes this; desktop stays fixed
       }}
     >
       {/* 🔗 Clickable top area */}
@@ -85,7 +80,7 @@ export default function ProductCard({
         className="pc-link block mx-auto group"
         style={{
           width: "var(--card-inner-w)", // 195px desktop
-          height: "var(--link-h)", // desktop 259px; mobile computes exact value
+          height: "var(--link-h)", // computed in CSS (desktop fixed, mobile scaled)
         }}
       >
         {/* 🖼️ Image */}
@@ -93,7 +88,8 @@ export default function ProductCard({
           className="pc-img overflow-hidden rounded-xl relative"
           style={{
             width: "var(--img)",
-            height: "var(--img-h, var(--img))", // mobile defines --img-h for taller pic
+            height: "var(--img-h, var(--img))", // mobile sets --img-h; desktop uses square
+            minHeight: 140, // ✅ mobile failsafe so image is always visible
           }}
         >
           <Image
@@ -108,7 +104,7 @@ export default function ProductCard({
           />
         </div>
 
-        {/* 🔢 Spacer in the link area math */}
+        {/* 🔢 Spacer */}
         <div
           style={{ width: "var(--card-inner-w)", height: "var(--spacer)" }}
         />
@@ -120,7 +116,7 @@ export default function ProductCard({
             width: "var(--card-inner-w)",
             height: "var(--title-h)",
             fontSize: "var(--title-fs)",
-            lineHeight: "var(--title-h)", // matches computed row height on mobile
+            lineHeight: "var(--title-h)",
           }}
           title={name}
         >
@@ -134,7 +130,7 @@ export default function ProductCard({
             width: "var(--card-inner-w)",
             height: "var(--price-h)",
             fontSize: "var(--price-fs)",
-            lineHeight: "var(--price-h)", // matches computed row height on mobile
+            lineHeight: "var(--price-h)",
           }}
           title={
             salePrice

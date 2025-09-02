@@ -200,27 +200,19 @@ export default function Home({ products }: HomeProps) {
           )}
         </section>
 
-        {/* 🛍️ Mobile-Only “Featured” */}
-        <section className="sm:hidden px-4 mt-2 mb-8">
-          <h2 className="text-2xl font-serif font-semibold tracking-wide text-center mb-4 text-white">
+        {/* 🖥️ Desktop-Only “Featured” */}
+        <section className="hidden sm:block py-16 sm:py-20 px-4 sm:px-6 max-w-7xl mx-auto">
+          <h2 className="text-3xl sm:text-4xl font-serif font-semibold tracking-wide text-center mb-8">
             Featured Pieces
           </h2>
 
           {featured.length === 0 ? (
-            <p className="text-white text-center w-full">
+            <p className="text-white text-center">
               No featured items to display.
             </p>
           ) : (
-            /* 🔒 2 cols on phones (section hidden ≥sm) */
-            <div
-              className="grid grid-cols-2 gap-4 justify-items-center"
-              style={{
-                ["--grid-gap" as any]: "16px", // gap-4
-                ["--page-pad" as any]: "16px", // px-4
-                ["--img-ratio-mobile" as any]: "1.30",
-                ["--mobile-font-scale" as any]: "0.82",
-              }}
-            >
+            /* 🔒 Always 4 per row on desktop, 3 at sm/md */
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-10 justify-items-center">
               {featured.map((item) => (
                 <ProductCard
                   key={item._id}
