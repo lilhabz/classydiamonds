@@ -73,7 +73,11 @@ export default function WatchesPage({ products }: WatchesProps) {
           <div className="text-center text-gray-400">No watches available.</div>
         ) : (
           <div
-            className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6 justify-items-center"
+            className="
+              grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4
+              gap-6
+              sm:justify-items-center lg:justify-items-stretch
+            "
             style={{
               ["--grid-gap" as any]: "24px", // gap-6
               ["--page-pad" as any]: "16px", // px-4
@@ -96,6 +100,8 @@ export default function WatchesPage({ products }: WatchesProps) {
                   price={product.price}
                   salePrice={product.salePrice ?? null}
                   href={href || undefined}
+                  // ✅ Desktop-only: stretch card to column width
+                  className="lg:[--card-w:100%] lg:w-full"
                   onAddToCart={() =>
                     addToCart({
                       id: product.id,

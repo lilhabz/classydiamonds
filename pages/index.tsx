@@ -206,7 +206,7 @@ export default function Home({ products }: HomeProps) {
           )}
         </section>
 
-        {/* 🖥️ Desktop-Only “Featured” */}
+        {/* 🖥️ Desktop-Only “Featured” — unified/stretched cards */}
         <section className="hidden sm:block py-16 sm:py-20 px-4 sm:px-6 max-w-7xl mx-auto">
           <h2 className="text-3xl sm:text-4xl font-serif font-semibold tracking-wide text-center mb-8">
             Featured Pieces
@@ -218,7 +218,7 @@ export default function Home({ products }: HomeProps) {
             </p>
           ) : (
             /* 🔒 Always 4 per row on desktop, 3 at sm/md */
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-10 justify-items-center">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-10 sm:justify-items-center lg:justify-items-stretch">
               {featured.map((item) => (
                 <ProductCard
                   key={item._id}
@@ -228,6 +228,8 @@ export default function Home({ products }: HomeProps) {
                   price={item.price}
                   salePrice={item.salePrice ?? null}
                   href={`/category/${item.category}/${item.slug}?scroll=true`}
+                  // ✅ Desktop-only: let the card fill its grid column
+                  className="lg:[--card-w:100%] lg:w-full"
                   onAddToCart={() =>
                     addToCart({
                       id: item._id,

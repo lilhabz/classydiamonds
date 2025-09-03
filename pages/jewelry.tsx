@@ -410,13 +410,6 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
           </button>
         </div>
 
-        {/* Drawer (mobile/tablet only) */}
-        <FiltersSidebar
-          mode="drawer"
-          open={mobileFiltersOpen}
-          onClose={() => setMobileFiltersOpen(false)}
-        />
-
         <div className="grid grid-cols-1 lg:grid-cols-[240px_1fr] gap-6">
           {/* Desktop sticky sidebar */}
           <div className="hidden lg:block">
@@ -432,7 +425,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
                 className="
                   grid grid-cols-2 gap-4 justify-items-center
                   sm:grid-cols-3 sm:gap-6
-                  lg:grid-cols-4
+                  lg:grid-cols-4 lg:justify-items-stretch
                   w-full
                   max-w-none sm:max-w-[705px] lg:max-w-[948px]
                   sm:mx-auto
@@ -457,6 +450,8 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
                       price={product.price}
                       salePrice={product.salePrice ?? null}
                       href={href}
+                      // ✅ Desktop-only: stretch to the grid column width
+                      className="lg:[--card-w:100%] lg:w-full"
                       onAddToCart={() => {
                         if (isRingCategory(category)) {
                           return router.push(href);

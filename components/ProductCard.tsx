@@ -13,6 +13,10 @@ export type ProductCardProps = {
   salePrice?: number | null;
   onAddToCart: () => void;
   href?: string;
+  /** ✅ new: allow external classes (e.g. lg:[--card-w:100%]) */
+  className?: string;
+  /** ✅ new: allow optional inline style overrides */
+  style?: React.CSSProperties;
 };
 
 const PLACEHOLDER = "/gray-placeholder.jpg";
@@ -21,7 +25,8 @@ const PLACEHOLDER = "/gray-placeholder.jpg";
 function normalizeLocalPath(src: string) {
   const trimmed = src.trim();
   if (!trimmed) return PLACEHOLDER;
-  if (/^(https?:)?\/\//i.test(trimmed) || trimmed.startsWith("data:")) return trimmed;
+  if (/^(https?:)?\/\//i.test(trimmed) || trimmed.startsWith("data:"))
+    return trimmed;
   if (trimmed.startsWith("/")) return trimmed; // absolute within /public
   return `/${trimmed.replace(/^(\.\/)+/, "")}`; // make relative paths absolute
 }
@@ -38,6 +43,8 @@ export default function ProductCard({
   salePrice,
   onAddToCart,
   href,
+  className = "", // ✅ new
+  style, // ✅ new
 }: ProductCardProps) {
   const link = href ?? `/product/${slug}`;
   const initial = useMemo(() => resolveImageSrc(image), [image]);
@@ -66,11 +73,12 @@ export default function ProductCard({
 
   return (
     <div
-      className="product-card rounded-2xl bg-[#25304f] shadow-lg hover:shadow-xl transform-gpu transition-transform duration-300 md:hover:scale-105 no-touch-scale"
+      className={`product-card rounded-2xl bg-[#25304f] shadow-lg hover:shadow-xl transform-gpu transition-transform duration-300 md:hover:scale-105 no-touch-scale ${className}`}
       style={{
         width: "var(--card-w)",
         // ✅ critical: let the card height be auto so the button never overlaps the next row
         height: "auto",
+        ...style, // allow caller overrides if provided
       }}
     >
       {/* 🔗 Clickable top area (Tiffany-sized per device) */}
@@ -105,7 +113,9 @@ export default function ProductCard({
         </div>
 
         {/* 🔢 Spacer below image inside link area */}
-        <div style={{ width: "var(--card-inner-w)", height: "var(--spacer)" }} />
+        <div
+          style={{ width: "var(--card-inner-w)", height: "var(--spacer)" }}
+        />
 
         {/* 🏷️ Title */}
         <h3
