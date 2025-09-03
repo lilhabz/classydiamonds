@@ -13,6 +13,7 @@ import CategoryGrid, { CategoryItem } from "@/components/CategoryGrid";
 import FiltersSidebar from "@/components/FiltersSidebar";
 import ProductCard from "@/components/ProductCard";
 import { listProducts } from "@/lib/products";
+import SubcategoryGrid, { Subcat } from "@/components/SubcategoryGrid";
 
 export type ProductType = {
   id: string;
@@ -357,36 +358,29 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
         />
       </section>
 
-      {/* 🔖 Subcategory pills (only when a category is selected) */}
+      {/* 🔖 Subcategory UI (mobile uses cards like Featured; desktop keeps pills) */}
       {activeCategorySlug && (
-        <section className="mt-2 mb-4 px-4 sm:px-6">
+        <section className="mt-2 mb-4">
           <div className="mx-auto max-w-7xl">
-            <h3 className="sr-only">Filters</h3>
-            {/* mobile */}
-            <div className="sm:hidden mt-1 overflow-x-auto">
-              <div className="flex gap-2 w-max">
-                {SUBS[activeCategorySlug].map((s) => {
-                  const active = activeSub === s.slug.toLowerCase();
-                  return (
-                    <button
-                      key={s.slug}
-                      onClick={() => goSub(s.slug)}
-                      className={
-                        "px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap border " +
-                        (active
-                          ? "bg-white text-[#1f2a44] border-white"
-                          : "bg-[#25304f] text-white border-white/20 hover:bg-[#2b3760]")
-                      }
-                      aria-pressed={active}
-                    >
-                      {s.label}
-                    </button>
-                  );
-                })}
-              </div>
+            <h3 className="sr-only">Subcategories</h3>
+
+            {/* 🟦 Mobile: cards (same grid feel as Featured) */}
+            <div className="sm:hidden px-4">
+              <SubcategoryGrid
+                category={activeCategorySlug}
+                subcategories={SUBS[activeCategorySlug]}
+                activeSlug={activeSub}
+                onSelect={(slug) => goSub(slug)}
+                // Match Featured mobile look/spacing
+                gridGapPx={16} // gap-4
+                pagePadPx={16} // px-4
+                imgRatioMobile={1.3}
+                fontScaleMobile={0.82}
+              />
             </div>
-            {/* desktop */}
-            <div className="hidden sm:flex gap-2 mt-1 flex-wrap">
+
+            {/* 🖥️ Desktop: keep your existing pills */}
+            <div className="hidden sm:flex gap-2 mt-1 flex-wrap px-6">
               {SUBS[activeCategorySlug].map((s) => {
                 const active = activeSub === s.slug.toLowerCase();
                 return (
@@ -453,7 +447,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
               <p className="text-white/80">No products found.</p>
             ) : (
               <div
-  className="
+                className="
     product-grid-fullbleed
     sm:grid sm:grid-cols-3 lg:grid-cols-4
     sm:gap-6 sm:justify-items-center
@@ -461,13 +455,12 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
     max-w-none sm:max-w-[705px] lg:max-w-[948px]
     sm:mx-auto
   "
-  style={{
-    ["--grid-gap" as any]: "16px", // tighter mobile gap (optional)
-    ["--img-ratio-mobile" as any]: "1.28",
-    ["--mobile-font-scale" as any]: "0.84",
-  }}
->
-
+                style={{
+                  ["--grid-gap" as any]: "16px", // tighter mobile gap (optional)
+                  ["--img-ratio-mobile" as any]: "1.28",
+                  ["--mobile-font-scale" as any]: "0.84",
+                }}
+              >
                 {shown.slice(0, visibleCount).map((product) => {
                   const href = `/category/${product.category}/${product.slug}`;
                   return (

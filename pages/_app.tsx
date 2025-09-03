@@ -1,4 +1,4 @@
-// 📄 pages/_app.tsx – App with reliable Scroll Reset & Speed Insights Integration
+// 📄 pages/_app.tsx – App with reliable Scroll Reset, Device Classes & Speed Insights Integration
 
 import "@/styles/globals.css";
 import { useEffect, useRef } from "react";
@@ -89,6 +89,29 @@ function App({ Component, pageProps: { session, ...pageProps } }: AppProps) {
       } catch {}
     };
   }, [router]);
+
+  /* 🔍 UA detection → add body class for per-device tweaks */
+  useEffect(() => {
+    const ua = navigator.userAgent.toLowerCase();
+    const body = document.body;
+
+    if (ua.includes("iphone se")) body.classList.add("ua-iphonese");
+    else if (ua.includes("iphone xr")) body.classList.add("ua-iphonexr");
+    else if (ua.includes("iphone 12")) body.classList.add("ua-iphone12");
+    else if (ua.includes("iphone 14")) body.classList.add("ua-iphone14");
+    else if (ua.includes("pixel 7")) body.classList.add("ua-pixel7");
+    else if (ua.includes("sm-g988")) body.classList.add("ua-s20ultra"); // Galaxy S20 Ultra UA code
+    else if (ua.includes("sm-g955")) body.classList.add("ua-s8plus");   // Galaxy S8+
+    // ➕ add more mappings as needed
+
+    // Cleanup if hot reloaded
+    return () => {
+      body.className = body.className
+        .split(" ")
+        .filter((c) => !c.startsWith("ua-"))
+        .join(" ");
+    };
+  }, []);
 
   return (
     <SessionProvider session={session}>

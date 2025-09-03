@@ -1,4 +1,4 @@
-// components/ProductCard.tsx – Desktop pixel-locked; mobile uses the same layout math (no clipping)
+// components/ProductCard.tsx – Tiffany mobile sizes (phones), auto-height card
 "use client";
 
 import Image from "next/image";
@@ -66,20 +66,21 @@ export default function ProductCard({
 
   return (
     <div
-      className="product-card rounded-2xl bg-[#25304f] shadow-lg hover:shadow-xl transform-gpu transition-transform duration-300 no-touch-scale"
+      className="product-card rounded-2xl bg-[#25304f] shadow-lg hover:shadow-xl transform-gpu transition-transform duration-300 md:hover:scale-105 no-touch-scale"
       style={{
         width: "var(--card-w)",
-        height: "var(--card-h)", // mobile computes this; desktop stays fixed
+        // ✅ critical: let the card height be auto so the button never overlaps the next row
+        height: "auto",
       }}
     >
-      {/* 🔗 Clickable top area */}
+      {/* 🔗 Clickable top area (Tiffany-sized per device) */}
       <Link
         href={link}
         aria-label={name}
         className="pc-link block mx-auto group"
         style={{
-          width: "var(--card-inner-w)", // 195px desktop
-          height: "var(--link-h)", // computed in CSS (desktop fixed, mobile scaled)
+          width: "var(--card-inner-w)",
+          height: "var(--link-h)", // image + content area (per-device)
         }}
       >
         {/* 🖼️ Image */}
@@ -87,8 +88,8 @@ export default function ProductCard({
           className="pc-img overflow-hidden rounded-xl relative"
           style={{
             width: "var(--img)",
-            height: "var(--img-h, var(--img))", // mobile sets --img-h; desktop uses square
-            minHeight: 140, // ✅ mobile failsafe so image is always visible
+            height: "var(--img-h, var(--img))", // phones use square
+            minHeight: 120,
           }}
         >
           <Image
@@ -98,12 +99,12 @@ export default function ProductCard({
             className="object-cover transform transition-transform duration-300 group-hover:scale-105"
             unoptimized={unoptimized}
             onError={handleImgError}
-            sizes="(max-width: 640px) 45vw, (max-width: 1024px) 33vw, 195px"
+            sizes="(max-width: 640px) 50vw, 195px"
             priority={false}
           />
         </div>
 
-        {/* 🔢 Spacer */}
+        {/* 🔢 Spacer below image inside link area */}
         <div style={{ width: "var(--card-inner-w)", height: "var(--spacer)" }} />
 
         {/* 🏷️ Title */}
@@ -113,7 +114,7 @@ export default function ProductCard({
             width: "var(--card-inner-w)",
             height: "var(--title-h)",
             fontSize: "var(--title-fs)",
-            lineHeight: "var(--title-h)",
+            lineHeight: "var(--title-h)", // single-line, vertically centered like their tiles
           }}
           title={name}
         >
@@ -152,8 +153,8 @@ export default function ProductCard({
         </p>
       </Link>
 
-      {/* 🛒 CTA */}
-      <div className="w-full flex justify-center">
+      {/* 🛒 CTA (outside the link; adds to total auto height) */}
+      <div className="w-full flex justify-center pb-2">
         <button
           onClick={onAddToCart}
           className="rounded-xl text-white font-semibold focus:outline-none focus:ring-2 focus:ring-white/40 transition-colors duration-200 hover:bg-white/20"

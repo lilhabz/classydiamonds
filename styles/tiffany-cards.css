@@ -1,245 +1,137 @@
-/* ==========================================================================
-   Tiffany Phone Card Locks (MOBILE ONLY)
-   - Exact per-device sizes from your measurements (no rounding).
-   - Grid goes edge-to-edge (no left/right gaps), no overlaps.
-   - Desktop & tablet unaffected.
-   ========================================================================== */
+/* styles/tiffany-cards.css */
+/* Base variables (fallback) */
+.product-card {
+  --card-w: 185.5px;        /* card outer width (per device below) */
+  --card-inner-w: 185.5px;  /* inner link width (same as image width) */
+  --img: 185.5px;           /* image width/height (square) */
+  --img-h: var(--img);
 
-/* Hide the mobile scrollbar on horizontal/vertical where applicable */
-.no-scrollbar::-webkit-scrollbar { display: none; }
-.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  /* Content area under image (Tiffany's "div-...xNN") */
+  --content-h: 104px;       /* default; overridden per device */
 
-/* -------------------------- Base mobile behaviors ------------------------- */
-@media (max-width: 767.98px) {
-  /* Make the product grid full-bleed on mobile */
-  /* You already removed container padding on the page; this ensures cards butt to the edges */
-  .product-grid-fullbleed {
-    margin-left: 0 !important;
-    margin-right: 0 !important;
-    max-width: none !important;
-  }
+  /* Title / Price blocks inside content */
+  --title-h: 72px;          /* Tiffany height for title block */
+  --price-h: 20px;
 
-  /* Two columns, zero horizontal gap, vertical gap stays pleasant */
-  /* (Your page uses Tailwind classes; this ensures no unexpected overrides) */
-  .product-grid-fullbleed {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    column-gap: 0 !important;
-    row-gap: 24px; /* = gap-y-6 */
-    justify-items: start; /* so left card sits flush to left edge */
-  }
+  /* Spacer = content - (title + price) */
+  --spacer: calc(var(--content-h) - (var(--title-h) + var(--price-h)));
 
-  /* Prevent hover scale from causing overlap jitter on touch */
-  .no-touch-scale:hover { transform: none !important; }
+  /* Link area height = image + content */
+  --link-h: calc(var(--img-h) + var(--content-h));
 
-  /* Common typography defaults for mobile (can be overridden per device) */
-  .product-card .pc-link h3 { font-weight: 500; color: #fff; }
-  .product-card .pc-link p  { color: #e5e7eb; } /* gray-200 */
-  .product-card button      {
-    background: rgba(255,255,255,0.10);
-    color: #fff;
-    font-weight: 600;
-  }
+  /* CTA */
+  --btn-h: 40px;
+  --btn-fs: 14px;
 
-  /* The component reads these vars: 
-     --card-w, --card-h
-     --card-inner-w, --link-h
-     --img, --img-h (defaults to --img)
-     --spacer
-     --title-h, --title-fs
-     --price-h, --price-fs
-     --btn-h, --btn-fs
-  */
+  /* Typography defaults (can tweak if needed) */
+  --title-fs: 14px;
+  --price-fs: 14px;
+}
 
-  /* ----------------------- DEFAULT MOBILE FALLBACK ----------------------- */
-  /* Used when we don't precisely match a device width below */
+/* -----------------------------
+   EXACT PHONE WIDTH PROFILES
+   We key off viewport width to mirror Tiffany's card/link sizes.
+   (We only set the link area; the outer card stays auto-height.)
+--------------------------------*/
+
+/* iPhone SE / Mini (CSS width ~375px)
+   Tiffany: card 185.5×337.5; img 185.5; content 104; title 137.5×72; price 153.5×20 */
+@media (min-width: 370px) and (max-width: 379.98px) {
   .product-card {
     --card-w: 185.5px;
-    --card-h: 337.5px;
     --card-inner-w: 185.5px;
-    --link-h: 289.5px;          /* 185.5 img + (104 text area) */
     --img: 185.5px;
-    --spacer: 12px;             /* 104 - (72 title + 20 price) */
+    --content-h: 104px;
     --title-h: 72px;
-    --title-fs: 16px;
     --price-h: 20px;
+    --title-fs: 14px;
     --price-fs: 14px;
-    --btn-h: 48px;              /* 337.5 - 289.5 = 48 */
-    --btn-fs: 14px;
-  }
-
-  /* --------------------------- iPhone SE (375) --------------------------- */
-  /* Your exact measures (no rounding) */
-  @media (min-width: 370px) and (max-width: 382px) {
-    .product-card {
-      --card-w: 185.5px;
-      --card-h: 337.5px;
-      --card-inner-w: 185.5px;
-      --link-h: 289.5px;
-      --img: 185.5px;
-      --spacer: 12px;
-      --title-h: 72px;
-      --title-fs: 16px;
-      --price-h: 20px;
-      --price-fs: 14px;
-      --btn-h: 48px;
-      --btn-fs: 14px;
-    }
-  }
-
-  /* ----------------------------- iPhone 12 Pro (390) ----------------------------- */
-  @media (min-width: 386px) and (max-width: 396px) {
-    .product-card {
-      --card-w: 193px;
-      --card-h: 345px;
-      --card-inner-w: 193px;
-      --link-h: calc(193px + 104px); /* 297px */
-      --img: 193px;
-      --spacer: calc(104px - 72px - 20px); /* 12px */
-      --title-h: 72px;
-      --title-fs: 16px;
-      --price-h: 20px;
-      --price-fs: 14px;
-      --btn-h: calc(345px - (193px + 104px)); /* 48px */
-      --btn-fs: 14px;
-    }
-  }
-
-  /* ------------------------------- iPhone XR (414) ------------------------------- */
-  @media (min-width: 408px) and (max-width: 420px) {
-    .product-card {
-      --card-w: 205px;
-      --card-h: 337px;
-      --card-inner-w: 205px;
-      --link-h: calc(205px + 84px); /* 289px */
-      --img: 205px;
-      --spacer: calc(84px - 52px - 20px); /* 12px */
-      --title-h: 52px;
-      --title-fs: 15px;
-      --price-h: 20px;
-      --price-fs: 14px;
-      --btn-h: calc(337px - (205px + 84px)); /* 48px */
-      --btn-fs: 14px;
-    }
-  }
-
-  /* --------------------------- iPhone 14 Pro Max (430) --------------------------- */
-  @media (min-width: 424px) and (max-width: 436px) {
-    .product-card {
-      --card-w: 213px;
-      --card-h: 345px;
-      --card-inner-w: 213px;
-      --link-h: calc(213px + 84px); /* 297px */
-      --img: 213px;
-      --spacer: calc(84px - 52px - 20px); /* 12px */
-      --title-h: 52px;
-      --title-fs: 15px;
-      --price-h: 20px;
-      --price-fs: 14px;
-      --btn-h: calc(345px - (213px + 84px)); /* 48px */
-      --btn-fs: 14px;
-    }
-  }
-
-  /* -------------------------------- Pixel 7 (412) -------------------------------- */
-  /* shares viewport width with S20 Ultra; different card metrics need different lock */
-  @media (min-width: 408px) and (max-width: 416px) {
-    .product-card.pixel7 {
-      --card-w: 204px;
-      --card-h: 336px;
-      --card-inner-w: 204px;
-      --link-h: calc(204px + 84px); /* 288px */
-      --img: 204px;
-      --spacer: calc(84px - 52px - 20px); /* 12px */
-      --title-h: 52px;
-      --title-fs: 15px;
-      --price-h: 20px;
-      --price-fs: 14px;
-      --btn-h: calc(336px - (204px + 84px)); /* 48px */
-      --btn-fs: 14px;
-    }
-  }
-
-  /* --------------------------- Samsung Galaxy S8+ (360) --------------------------- */
-  @media (max-width: 364px) {
-    .product-card.s8plus {
-      --card-w: 178px;
-      --card-h: 330px;
-      --card-inner-w: 178px;
-      --link-h: calc(178px + 104px); /* 282px */
-      --img: 178px;
-      --spacer: calc(104px - 72px - 20px); /* 12px */
-      --title-h: 72px;
-      --title-fs: 15px;
-      --price-h: 20px;
-      --price-fs: 14px;
-      --btn-h: calc(330px - (178px + 104px)); /* 48px */
-      --btn-fs: 14px;
-    }
-  }
-
-  /* ---------------------- Samsung Galaxy S20 Ultra (412) ---------------------- */
-  @media (min-width: 408px) and (max-width: 416px) {
-    .product-card.s20ultra {
-      --card-w: 204px;
-      --card-h: 336px;
-      --card-inner-w: 204px;
-      --link-h: calc(204px + 84px); /* 288px */
-      --img: 204px;
-      --spacer: calc(84px - 52px - 20px); /* 12px */
-      --title-h: 52px;
-      --title-fs: 15px;
-      --price-h: 20px;
-      --price-fs: 14px;
-      --btn-h: calc(336px - (204px + 84px)); /* 48px */
-      --btn-fs: 14px;
-    }
-  }
-
-  /* ----------------------------- Galaxy Z Fold 5 (344) ----------------------------- */
-  /* (outer folded width ~344 CSS px) */
-  @media (min-width: 338px) and (max-width: 350px) {
-    .product-card.zfold5 {
-      --card-w: 170px;
-      --card-h: 322px;
-      --card-inner-w: 170px;
-      --link-h: calc(170px + 104px); /* 274px */
-      --img: 170px;
-      --spacer: calc(104px - 72px - 20px); /* 12px */
-      --title-h: 72px;
-      --title-fs: 15px;
-      --price-h: 20px;
-      --price-fs: 14px;
-      --btn-h: calc(322px - (170px + 104px)); /* 48px */
-      --btn-fs: 14px;
-    }
-  }
-
-  /* ------------------------ Samsung Galaxy A51 / A71 (phones) ------------------------ */
-  /* If you want these to apply when width ~412 as well, add the class to the card. */
-  @media (min-width: 408px) and (max-width: 416px) {
-    .product-card.a51,
-    .product-card.a71 {
-      --card-w: 204px;
-      --card-h: 356px;
-      --card-inner-w: 204px;
-      --link-h: calc(204px + 104px); /* 308px */
-      --img: 204px;
-      --spacer: calc(104px - 72px - 20px); /* 12px */
-      --title-h: 72px;
-      --title-fs: 15px;
-      --price-h: 20px;
-      --price-fs: 14px;
-      --btn-h: calc(356px - (204px + 104px)); /* 48px */
-      --btn-fs: 14px;
-    }
   }
 }
 
-/* ------------------------------ Desktop safety net ------------------------------ */
-/* Let desktop behave like before (your Tailwind sizes + normal scaling) */
-@media (min-width: 768px) {
+/* iPhone 12/13/14/15 (390px)
+   Tiffany: card 193×345; img 193; content 104; title 145×72; price 161×20 */
+@media (min-width: 386px) and (max-width: 394.98px) {
   .product-card {
-    /* You can leave vars unset so the inline styles can be overridden by your desktop CSS if needed */
+    --card-w: 193px;
+    --card-inner-w: 193px;
+    --img: 193px;
+    --content-h: 104px;
+    --title-h: 72px;
+    --price-h: 20px;
+    --title-fs: 14px;
+    --price-fs: 14px;
   }
 }
+
+/* iPhone XR/11 (414px)
+   Tiffany: card 205×337; img 205; content 84; title 157×52; price 173×20 */
+@media (min-width: 410px) and (max-width: 419.98px) {
+  .product-card {
+    --card-w: 205px;
+    --card-inner-w: 205px;
+    --img: 205px;
+    --content-h: 84px;
+    --title-h: 52px;
+    --price-h: 20px;
+    --title-fs: 14px;
+    --price-fs: 14px;
+  }
+}
+
+/* iPhone 14 Pro Max / 15 Pro Max (430px)
+   Tiffany: card 213×345; img 213; content 84; title 165×52; price 181×20 */
+@media (min-width: 426px) and (max-width: 435.98px) {
+  .product-card {
+    --card-w: 213px;
+    --card-inner-w: 213px;
+    --img: 213px;
+    --content-h: 84px;
+    --title-h: 52px;
+    --price-h: 20px;
+  }
+}
+
+/* Pixel 7 / Galaxy S20 Ultra / Galaxy A51/71 (412px)
+   Tiffany: card 204×336; img 204; content 84; title 156×52; price 172×20 */
+@media (min-width: 408px) and (max-width: 415.98px) {
+  .product-card {
+    --card-w: 204px;
+    --card-inner-w: 204px;
+    --img: 204px;
+    --content-h: 84px;
+    --title-h: 52px;
+    --price-h: 20px;
+  }
+}
+
+/* Galaxy S8+ (360px)
+   Tiffany: card 178×330; img 178; content 104; title 130×72; price 146×20 (span) */
+@media (max-width: 365.98px) {
+  .product-card {
+    --card-w: 178px;
+    --card-inner-w: 178px;
+    --img: 178px;
+    --content-h: 104px;
+    --title-h: 72px;
+    --price-h: 20px;
+  }
+}
+
+/* Galaxy Z Fold 5 (portrait ~344px)
+   Tiffany: card 170×322; img 170; content 104; title 122×72; price 138×20 */
+@media (min-width: 340px) and (max-width: 349.98px) {
+  .product-card {
+    --card-w: 170px;
+    --card-inner-w: 170px;
+    --img: 170px;
+    --content-h: 104px;
+    --title-h: 72px;
+    --price-h: 20px;
+  }
+}
+
+/* --- layout niceties (don’t touch your grid classes) --- */
+.product-card .pc-link { display: block; }
+.product-card .pc-img { border-radius: 12px; }
+.no-touch-scale:hover { transform: none; }
