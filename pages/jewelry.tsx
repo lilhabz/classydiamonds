@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import Head from "next/head";
 import { useCart } from "@/context/CartContext";
-import { useEffect, useMemo, useRef, useState, useRef as useRef2 } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/router";
 import { GetServerSideProps } from "next";
 import Breadcrumbs from "@/components/Breadcrumbs";
@@ -13,7 +13,7 @@ import CategoryGrid, { CategoryItem } from "@/components/CategoryGrid";
 import FiltersSidebar from "@/components/FiltersSidebar";
 import ProductCard from "@/components/ProductCard";
 import { listProducts } from "@/lib/products";
-import SubcategoryGrid, { Subcat } from "@/components/SubcategoryGrid";
+import SubcategoryGrid from "@/components/SubcategoryGrid";
 
 export type ProductType = {
   id: string;
@@ -171,21 +171,17 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
     }
   }, [router.isReady, router.query]);
 
-  // 🔒 IMPORTANT: Do NOT auto-scroll on initial mount when no category is selected.
-  // Only smooth-scroll to the grid when the user actually chooses a category (state change to non-null).
+  // 🔒 Do NOT auto-scroll on initial mount when no category is selected.
   const firstRunRef = useRef<boolean>(true);
   useEffect(() => {
-    // Skip on initial mount
     if (firstRunRef.current) {
       firstRunRef.current = false;
       return;
     }
-    // Only scroll when a category is selected (i.e., user action or explicit URL)
     if (activeCategorySlug) {
       resetCount();
       headerRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     }
-    // If activeCategorySlug is null, do nothing (remain at top/hero)
   }, [activeCategorySlug]);
 
   const pageTitle = "Jewelry Collection | Classy Diamonds";
@@ -358,28 +354,27 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
         />
       </section>
 
-      {/* 🔖 Subcategory UI (mobile uses cards like Featured; desktop keeps pills) */}
+      {/* 🔖 Subcategory UI */}
       {activeCategorySlug && (
         <section className="mt-2 mb-4">
           <div className="mx-auto max-w-7xl">
             <h3 className="sr-only">Subcategories</h3>
 
-            {/* 🟦 Mobile: cards (same grid feel as Featured) */}
+            {/* 🟦 Mobile: cards */}
             <div className="sm:hidden px-4">
               <SubcategoryGrid
                 category={activeCategorySlug}
                 subcategories={SUBS[activeCategorySlug]}
                 activeSlug={activeSub}
                 onSelect={(slug) => goSub(slug)}
-                // Match Featured mobile look/spacing
-                gridGapPx={16} // gap-4
-                pagePadPx={16} // px-4
+                gridGapPx={16}
+                pagePadPx={16}
                 imgRatioMobile={1.3}
                 fontScaleMobile={0.82}
               />
             </div>
 
-            {/* 🖥️ Desktop: keep your existing pills */}
+            {/* 🖥️ Desktop: pills */}
             <div className="hidden sm:flex gap-2 mt-1 flex-wrap px-6">
               {SUBS[activeCategorySlug].map((s) => {
                 const active = activeSub === s.slug.toLowerCase();
@@ -448,18 +443,20 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
             ) : (
               <div
                 className="
-    product-grid-fullbleed
-    sm:grid sm:grid-cols-3 lg:grid-cols-4
-    sm:gap-6 sm:justify-items-center
-    w-full
-    max-w-none sm:max-w-[705px] lg:max-w-[948px]
-    sm:mx-auto
-  "
-                style={{
-                  ["--grid-gap" as any]: "16px", // tighter mobile gap (optional)
-                  ["--img-ratio-mobile" as any]: "1.28",
-                  ["--mobile-font-scale" as any]: "0.84",
-                }}
+                  grid grid-cols-2 gap-4 justify-items-center
+                  sm:grid-cols-3 sm:gap-6
+                  lg:grid-cols-4
+                  w-full
+                  max-w-none sm:max-w-[705px] lg:max-w-[948px]
+                  sm:mx-auto
+                "
+                style={
+                  {
+                    ["--grid-gap" as any]: "16px",
+                    ["--img-ratio-mobile" as any]: "1.28",
+                    ["--mobile-font-scale" as any]: "0.84",
+                  } as React.CSSProperties
+                }
               >
                 {shown.slice(0, visibleCount).map((product) => {
                   const href = `/category/${product.category}/${product.slug}`;
@@ -473,11 +470,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
                       salePrice={product.salePrice ?? null}
                       href={href}
                       onAddToCart={() => {
-                        if (
-                          (product.category || "")
-                            .toLowerCase()
-                            .includes("ring")
-                        ) {
+                        if (isRingCategory(product.category)) {
                           return router.push(href);
                         }
                         addToCart({
