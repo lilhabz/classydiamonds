@@ -6,11 +6,11 @@ import { useEffect } from "react";
 import { useRouter } from "next/router";
 import clientPromise from "@/lib/mongodb";
 import FiltersSidebar from "@/components/FiltersSidebar";
-import SubcategoryGrid from "@/components/SubcategoryGrid"; // ✅ replace SubcategoryCards
 import Breadcrumbs from "@/components/Breadcrumbs";
 import { useCart } from "@/context/CartContext";
 import ProductCard from "@/components/ProductCard";
 import { CATEGORY_LABELS, SUBCATEGORY_MAP } from "@/data/taxonomy";
+import SubcategoryCards from "@/components/SubcategoryCards";
 
 /* ------------------------------ Types ------------------------------ */
 type Product = {
@@ -201,13 +201,6 @@ export default function CategoryPage({
     return "/category/ring-cat.jpg";
   };
 
-  // Map taxonomy items to SubcategoryGrid’s expected shape
-  const subsForGrid = subcategories.map((s) => ({
-    slug: s.slug,
-    label: s.label,
-    image: subcatImage(s.slug),
-  }));
-
   return (
     <>
       <Head>
@@ -218,26 +211,29 @@ export default function CategoryPage({
         />
       </Head>
 
-      {/* ✅ Breadcrumbs aligned like other pages */}
+      {/* Breadcrumbs */}
       <div className="pl-4 pr-4 sm:pl-8 sm:pr-8 mt-8 mb-6">
         <Breadcrumbs />
       </div>
 
-      {/* ✅ Centered title */}
+      {/* Title */}
       <div className="text-center mt-2 px-4 sm:px-6">
         <h1 className="text-2xl sm:text-3xl font-serif font-semibold tracking-wide">
           {categoryLabel}
         </h1>
       </div>
 
-      {/* Subcategory row (swipe) */}
-      {subsForGrid.length > 0 && (
+      {/* Subcategory photo row (slides on mobile, one line on desktop) */}
+      {subcategories.length > 0 && (
         <div className="mt-4 px-4 sm:px-6">
           <div className="mx-auto max-w-7xl">
-            <SubcategoryGrid
+            <SubcategoryCards
               category={categorySlug}
-              subcategories={subsForGrid}
-              layout="row" // ← horizontally scrollable row, sized via CSS vars (matches Category/Product cards)
+              subcategories={subcategories.map((s) => ({
+                key: s.slug,
+                label: s.label,
+                image: subcatImage(s.slug),
+              }))}
             />
           </div>
           <div className="h-6 sm:h-10" />
