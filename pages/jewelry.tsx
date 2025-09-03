@@ -67,7 +67,7 @@ const CATEGORY_ITEMS: CategoryItem[] = [
   },
   {
     label: "Necklaces & Pendants",
-    slug: "necklaces-pendants", // ✅ fixed
+    slug: "necklaces-pendants", // ✅ canonical
     image: "/category/necklace-cat.jpg",
   },
 ];
@@ -120,6 +120,9 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
   const { addToCart } = useCart();
   const [visibleCount, setVisibleCount] = useState(50);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+
+  // NOTE: We’re no longer using /jewelry?category=... navigation,
+  // but we’re keeping the following refs/effects intact to avoid regressions.
   const [activeCategorySlug, setActiveCategorySlug] =
     useState<CategorySlug | null>(null);
   const [activeSub, setActiveSub] = useState<string>("all");
@@ -130,7 +133,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
 
   const resetCount = () => setVisibleCount(50);
 
-  // Strip stray ?scroll=true when no category is present
+  // Strip stray ?scroll=true when no category is present (safe no-op now)
   useEffect(() => {
     if (!router.isReady) return;
     const { scroll, category } = router.query as {
@@ -146,7 +149,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
     }
   }, [router.isReady, router.query]);
 
-  // Sync URL -> state & deep-link scroll
+  // Sync URL -> state (kept for backward-compat deep links; harmless otherwise)
   useEffect(() => {
     if (!router.isReady) return;
     const { category, sub, scroll } = router.query;
@@ -282,20 +285,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
 
   const totalProducts = shown.length;
 
-  const goCategory = (slug: CategorySlug) => {
-    const canonical = canonicalizeCategory(slug) as CategorySlug;
-    setActiveCategorySlug(canonical);
-    setActiveSub("all");
-    router.push(
-      {
-        pathname: "/jewelry",
-        query: { category: canonical, scroll: "true", ...router.query },
-      },
-      undefined,
-      { shallow: true }
-    );
-  };
-
+  // NOTE: goCategory is no longer used (navigation handled by CategoryGrid links to /category/<slug>)
   const goSub = (slug: string) => {
     if (!activeCategorySlug) return;
     setActiveSub(slug);
@@ -347,7 +337,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
         <Breadcrumbs />
       </div>
 
-      {/* 💎 Category Tiles — stay on /jewelry; set ?category=... */}
+      {/* 💎 Category Tiles — now LINK to /category/<slug> (no more ?category= on /jewelry) */}
       <section
         ref={headerRef}
         className="pt-6 pb-4 px-0 sm:px-0 w-full"
@@ -358,17 +348,13 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
           title="Shop by Category"
           fullBleedDesktop
           desktopCols={4}
-          /** 👇 THESE TWO LINES are the fix */
-          routeTo="/jewelry"
-          onSelect={(slug) =>
-            goCategory(canonicalizeCategory(slug) as CategorySlug)
-          }
-          /** optional: show active */
-          activeSlug={activeCategorySlug ?? undefined}
+          // ✅ THIS LINE routes to /category/<slug>
+          routeTo="/category"
+          // ❌ Removed onSelect + local router push
         />
       </section>
 
-      {/* 🔖 Subcategory UI — photo cards only; slide on phones; 6-up line on desktop */}
+      {/* 🔖 Subcategory UI (only appears if user deep-links to ?category=…) */}
       {activeCategorySlug && (
         <section className="mt-2 mb-4">
           <div className="mx-auto max-w-7xl">
@@ -390,10 +376,10 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
                 subcategories={SUBS[activeCategorySlug]}
                 activeSlug={activeSub}
                 onSelect={(slug) => goSub(slug)}
-                layout="desktop-grid" // 👈 new layout: 6-up, smaller, photo cards
+                layout="desktop-grid"
                 desktopCols={6}
                 desktopGapPx={12}
-                desktopCardScale={0.82} // ~18% smaller than category cards
+                desktopCardScale={0.82}
               />
             </div>
           </div>
@@ -416,7 +402,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
           </div>
           <button
             onClick={() => setMobileFiltersOpen(true)}
-            className="px-4 py-2 rounded-lg bg-white/5 hover:bg_white/10 text-sm font-medium transition-colors"
+            className="px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-sm font-medium transition-colors"
             aria-haspopup="dialog"
             aria-controls="filters-drawer"
           >
