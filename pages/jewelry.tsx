@@ -14,6 +14,14 @@ import ProductCard from "@/components/ProductCard";
 import { listProducts } from "@/lib/products";
 import SubcategoryGrid from "@/components/SubcategoryGrid";
 
+/* ----------------------------- Canonical helper ---------------------------- */
+// 🔒 Canonical slugs guard: maps legacy "necklaces" → "necklaces-pendants"
+const canonicalizeCategory = (raw: string) => {
+  const v = String(raw || "").toLowerCase();
+  if (v === "necklaces") return "necklaces-pendants";
+  return v;
+};
+
 export type ProductType = {
   id: string;
   slug: string;
@@ -21,7 +29,7 @@ export type ProductType = {
   price: number;
   salePrice?: number | null;
   image: string;
-  category: string;
+  category: string; // canonical
   subcategory?: string;
   metal?: string;
   stone?: string;
@@ -32,12 +40,13 @@ export type ProductType = {
 };
 
 type SubItem = { label: string; slug: string };
-type CategorySlug = "rings" | "earrings" | "bracelets" | "necklaces";
+// ✅ include canonical "necklaces-pendants"
+type CategorySlug = "rings" | "earrings" | "bracelets" | "necklaces-pendants";
 const ALLOWED: readonly CategorySlug[] = [
   "rings",
   "earrings",
   "bracelets",
-  "necklaces",
+  "necklaces-pendants",
 ] as const;
 
 /* --------------------------------- Helpers -------------------------------- */
@@ -47,6 +56,7 @@ const toArray = (v: string | string[] | undefined): string[] =>
   !v ? [] : Array.isArray(v) ? v : [v];
 
 /* ------------------------------- Constants -------------------------------- */
+// ✅ Use canonical slug here too
 const CATEGORY_ITEMS: CategoryItem[] = [
   { label: "Rings", slug: "rings", image: "/category/ring-cat.jpg" },
   { label: "Earrings", slug: "earrings", image: "/category/earring-cat.jpg" },
@@ -57,11 +67,12 @@ const CATEGORY_ITEMS: CategoryItem[] = [
   },
   {
     label: "Necklaces & Pendants",
-    slug: "necklaces",
+    slug: "necklaces-pendants", // ✅ fixed
     image: "/category/necklace-cat.jpg",
   },
 ];
 
+// ✅ SUBS keyed by canonical category slugs
 const SUBS: Record<CategorySlug, SubItem[]> = {
   rings: [
     { label: "All", slug: "all" },
@@ -87,7 +98,7 @@ const SUBS: Record<CategorySlug, SubItem[]> = {
     { label: "Cuffs", slug: "cuffs" },
     { label: "Chains", slug: "chains" },
   ],
-  necklaces: [
+  "necklaces-pendants": [
     { label: "All", slug: "all" },
     { label: "Pendants", slug: "pendants" },
     { label: "Solitaire", slug: "solitaire" },
@@ -101,7 +112,7 @@ const CATEGORY_LABELS: Record<CategorySlug, string> = {
   rings: "Rings",
   earrings: "Earrings",
   bracelets: "Bracelets",
-  necklaces: "Necklaces & Pendants",
+  "necklaces-pendants": "Necklaces & Pendants",
 };
 
 /* ---------------------------------- Page ---------------------------------- */
@@ -140,20 +151,22 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
     if (!router.isReady) return;
     const { category, sub, scroll } = router.query;
 
-    if (
-      typeof category === "string" &&
-      ALLOWED.includes(category.toLowerCase() as CategorySlug)
-    ) {
-      const cat = category.toLowerCase() as CategorySlug;
-      setActiveCategorySlug(cat);
+    if (typeof category === "string") {
+      const cat = canonicalizeCategory(category) as CategorySlug;
+      if (ALLOWED.includes(cat)) {
+        setActiveCategorySlug(cat);
 
-      const subs = SUBS[cat];
-      if (
-        typeof sub === "string" &&
-        subs?.some((s) => s.slug.toLowerCase() === sub.toLowerCase())
-      ) {
-        setActiveSub(sub.toLowerCase());
+        const subs = SUBS[cat];
+        if (
+          typeof sub === "string" &&
+          subs?.some((s) => s.slug.toLowerCase() === sub.toLowerCase())
+        ) {
+          setActiveSub(sub.toLowerCase());
+        } else {
+          setActiveSub("all");
+        }
       } else {
+        setActiveCategorySlug(null);
         setActiveSub("all");
       }
     } else {
@@ -212,12 +225,12 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
   const shown = useMemo(() => {
     const allowedSet = new Set(ALLOWED);
     let base = products.filter((p) =>
-      allowedSet.has((p.category || "").toLowerCase() as CategorySlug)
+      allowedSet.has(canonicalizeCategory(p.category) as CategorySlug)
     );
 
     if (activeCategorySlug) {
       base = base.filter(
-        (p) => (p.category || "").toLowerCase() === activeCategorySlug
+        (p) => canonicalizeCategory(p.category) === activeCategorySlug
       );
       if (activeSub !== "all") {
         base = base.filter(
@@ -270,12 +283,13 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
   const totalProducts = shown.length;
 
   const goCategory = (slug: CategorySlug) => {
-    setActiveCategorySlug(slug);
+    const canonical = canonicalizeCategory(slug) as CategorySlug;
+    setActiveCategorySlug(canonical);
     setActiveSub("all");
     router.push(
       {
         pathname: "/jewelry",
-        query: { category: slug, scroll: "true", ...router.query },
+        query: { category: canonical, scroll: "true", ...router.query },
       },
       undefined,
       { shallow: true }
@@ -346,7 +360,9 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
           desktopCols={4}
           /** 👇 THESE TWO LINES are the fix */
           routeTo="/jewelry"
-          onSelect={(slug) => goCategory(slug as CategorySlug)}
+          onSelect={(slug) =>
+            goCategory(canonicalizeCategory(slug) as CategorySlug)
+          }
           /** optional: show active */
           activeSlug={activeCategorySlug ?? undefined}
         />
@@ -400,7 +416,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
           </div>
           <button
             onClick={() => setMobileFiltersOpen(true)}
-            className="px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-sm font-medium transition-colors"
+            className="px-4 py-2 rounded-lg bg-white/5 hover:bg_white/10 text-sm font-medium transition-colors"
             aria-haspopup="dialog"
             aria-controls="filters-drawer"
           >
@@ -444,7 +460,8 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
                 }
               >
                 {shown.slice(0, visibleCount).map((product) => {
-                  const href = `/category/${product.category}/${product.slug}`;
+                  const category = canonicalizeCategory(product.category);
+                  const href = `/category/${category}/${product.slug}`;
                   return (
                     <ProductCard
                       key={product.id}
@@ -455,7 +472,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
                       salePrice={product.salePrice ?? null}
                       href={href}
                       onAddToCart={() => {
-                        if (isRingCategory(product.category)) {
+                        if (isRingCategory(category)) {
                           return router.push(href);
                         }
                         addToCart({
@@ -494,33 +511,35 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
 export const getServerSideProps: GetServerSideProps = async () => {
   const rows = await listProducts({}, { sort: { createdAt: -1 }, limit: 2000 });
 
-  const ALLOWED_SET = new Set<"rings" | "earrings" | "bracelets" | "necklaces">(
-    ["rings", "earrings", "bracelets", "necklaces"]
-  );
+  // ✅ include canonical slug
+  const ALLOWED_SET = new Set<
+    "rings" | "earrings" | "bracelets" | "necklaces-pendants"
+  >(["rings", "earrings", "bracelets", "necklaces-pendants"]);
 
   const products: ProductType[] = rows
-    .filter((p: any) =>
-      ALLOWED_SET.has(String(p.category || "").toLowerCase() as any)
-    )
-    .map((p: any) => ({
-      id: String(p._id),
-      slug: p.slug,
-      name: p.title || p.name || "",
-      price: p.price ?? p.unitPrice ?? 0,
-      salePrice: p.salePrice ?? p.discountedPrice ?? null,
-      image:
-        p.imageUrl ||
-        (Array.isArray(p.images) && p.images.length ? p.images[0] : "") ||
-        "",
-      category: (p.category || "").toLowerCase(),
-      subcategory: (p.subCategory ?? p.subcategory ?? "").toLowerCase(),
-      metal: (p.metal || "").toLowerCase(),
-      stone: (p.stone || "").toLowerCase(),
-      shape: (p.shape || "").toLowerCase(),
-      carat: typeof p.carat === "number" ? p.carat : null,
-      gender: p.gender || "unisex",
-      description: p.description || "",
-    }));
+    .map((p: any) => {
+      const cat = canonicalizeCategory(String(p.category || ""));
+      return {
+        id: String(p._id),
+        slug: p.slug,
+        name: p.title || p.name || "",
+        price: p.price ?? p.unitPrice ?? 0,
+        salePrice: p.salePrice ?? p.discountedPrice ?? null,
+        image:
+          p.imageUrl ||
+          (Array.isArray(p.images) && p.images.length ? p.images[0] : "") ||
+          "",
+        category: cat, // ✅ normalized here
+        subcategory: (p.subCategory ?? p.subcategory ?? "").toLowerCase(),
+        metal: (p.metal || "").toLowerCase(),
+        stone: (p.stone || "").toLowerCase(),
+        shape: (p.shape || "").toLowerCase(),
+        carat: typeof p.carat === "number" ? p.carat : null,
+        gender: p.gender || "unisex",
+        description: p.description || "",
+      } as ProductType;
+    })
+    .filter((p: ProductType) => ALLOWED_SET.has(p.category as any));
 
   return { props: { products } };
 };

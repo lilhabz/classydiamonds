@@ -12,8 +12,12 @@ import { useRouter } from "next/router";
 import CategoryGrid from "@/components/CategoryGrid";
 import ProductCard from "@/components/ProductCard";
 
-// 🔷 OPTION 2 (static fallback) requires this import:
-// import { productsData as staticFeatured } from "@/data/productsData";
+// 🔒 Canonical slugs helper (guards against legacy "necklaces")
+const canonicalizeCategory = (raw: string) => {
+  const v = String(raw || "").toLowerCase();
+  if (v === "necklaces") return "necklaces-pendants";
+  return v;
+};
 
 interface Product {
   _id: string;
@@ -21,7 +25,7 @@ interface Product {
   price: number;
   salePrice?: number | null;
   image: string;
-  category: string;
+  category: string; // canonical slug
   slug: string;
 }
 
@@ -44,7 +48,8 @@ export const getServerSideProps: GetServerSideProps<HomeProps> = async () => {
     price: doc.price,
     salePrice: doc.salePrice ?? null,
     image: doc.imageUrl || doc.image,
-    category: String(doc.category || "").toLowerCase(),
+    // ✅ normalize to canonical slugs so links don't break
+    category: canonicalizeCategory(String(doc.category || "")),
     slug: doc.slug,
   }));
 
@@ -92,6 +97,7 @@ export default function Home({ products }: HomeProps) {
     );
   }
 
+  // ✅ Use canonical slug for Necklaces & Pendants
   const CATEGORY_ITEMS = [
     { label: "Rings", slug: "rings", image: "/category/ring-cat.jpg" },
     { label: "Earrings", slug: "earrings", image: "/category/earring-cat.jpg" },
@@ -102,7 +108,7 @@ export default function Home({ products }: HomeProps) {
     },
     {
       label: "Necklaces & Pendants",
-      slug: "necklaces",
+      slug: "necklaces-pendants", // ✅ fixed
       image: "/category/necklace-cat.jpg",
     },
   ];
