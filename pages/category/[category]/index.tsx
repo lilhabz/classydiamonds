@@ -6,7 +6,7 @@ import { useEffect } from "react";
 import { useRouter } from "next/router";
 import clientPromise from "@/lib/mongodb";
 import FiltersSidebar from "@/components/FiltersSidebar";
-import SubcategoryCards from "@/components/SubcategoryCards";
+import SubcategoryGrid from "@/components/SubcategoryGrid"; // ✅ replace SubcategoryCards
 import Breadcrumbs from "@/components/Breadcrumbs";
 import { useCart } from "@/context/CartContext";
 import ProductCard from "@/components/ProductCard";
@@ -43,7 +43,9 @@ const pretty = (slug: string) =>
   slug.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 
 /* ----------------------------- SERVER DATA ------------------------------ */
-export const getServerSideProps: GetServerSideProps<PageProps> = async (ctx) => {
+export const getServerSideProps: GetServerSideProps<PageProps> = async (
+  ctx
+) => {
   const categorySlug = String(ctx.params?.category || "").toLowerCase();
   if (!categorySlug) return { notFound: true };
 
@@ -108,7 +110,7 @@ export const getServerSideProps: GetServerSideProps<PageProps> = async (ctx) => 
         price: 1,
         salePrice: 1,
         image: 1,
-        imageUrl: 1, // ✅ include remote field
+        imageUrl: 1,
         category: 1,
         subcategory: 1,
         metal: 1,
@@ -124,7 +126,7 @@ export const getServerSideProps: GetServerSideProps<PageProps> = async (ctx) => 
       name: d.name,
       price: d.price,
       salePrice: d.salePrice ?? null,
-      image: d.imageUrl || d.image || "", // ✅ fallback to imageUrl
+      image: d.imageUrl || d.image || "",
       category: (d.category || "").toLowerCase(),
       subcategory: (d.subcategory || d.subCategory || "").toLowerCase(),
       metal: (d.metal || "").toLowerCase(),
@@ -199,6 +201,13 @@ export default function CategoryPage({
     return "/category/ring-cat.jpg";
   };
 
+  // Map taxonomy items to SubcategoryGrid’s expected shape
+  const subsForGrid = subcategories.map((s) => ({
+    slug: s.slug,
+    label: s.label,
+    image: subcatImage(s.slug),
+  }));
+
   return (
     <>
       <Head>
@@ -209,32 +218,28 @@ export default function CategoryPage({
         />
       </Head>
 
-      {/* ✅ Breadcrumbs aligned like other pages (flush to left edge with page padding) */}
+      {/* ✅ Breadcrumbs aligned like other pages */}
       <div className="pl-4 pr-4 sm:pl-8 sm:pr-8 mt-8 mb-6">
         <Breadcrumbs />
       </div>
 
-      {/* ✅ Centered title, consistent with your other pages */}
+      {/* ✅ Centered title */}
       <div className="text-center mt-2 px-4 sm:px-6">
         <h1 className="text-2xl sm:text-3xl font-serif font-semibold tracking-wide">
           {categoryLabel}
         </h1>
       </div>
 
-      {/* ONLY subcategory cards — with bottom spacing to separate from grid */}
-      {subcategories.length > 0 && (
+      {/* Subcategory row (swipe) */}
+      {subsForGrid.length > 0 && (
         <div className="mt-4 px-4 sm:px-6">
           <div className="mx-auto max-w-7xl">
-            <SubcategoryCards
+            <SubcategoryGrid
               category={categorySlug}
-              subcategories={subcategories.map((s) => ({
-                key: s.slug,
-                label: s.label,
-                image: subcatImage(s.slug),
-              }))}
+              subcategories={subsForGrid}
+              layout="row" // ← horizontally scrollable row, sized via CSS vars (matches Category/Product cards)
             />
           </div>
-          {/* 👇 extra space under subcategory cards */}
           <div className="h-6 sm:h-10" />
         </div>
       )}
@@ -242,7 +247,7 @@ export default function CategoryPage({
       {/* Anchor for scroll=true */}
       <div id="category-header" className="sr-only" aria-hidden="true" />
 
-      {/* Main content: Sidebar + Grid — with extra top margin so cards don’t crowd subcards */}
+      {/* Main content: Sidebar + Grid */}
       <section className="mt-6 sm:mt-10 px-4 sm:px-6 pb-12">
         <div className="mx-auto max-w-7xl">
           <div className="grid grid-cols-1 md:grid-cols-[260px_1fr] gap-6">
@@ -255,7 +260,6 @@ export default function CategoryPage({
             {products.length === 0 ? (
               <p className="text-white/80">No products found.</p>
             ) : (
-              /* 🔒 Force 4 per row on desktop, 3 on tablets, 2 on phones */
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6 justify-items-center">
                 {products.map((p) => {
                   const href = `/category/${encodeURIComponent(
