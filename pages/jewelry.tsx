@@ -2,12 +2,11 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
 import Head from "next/head";
 import { useCart } from "@/context/CartContext";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/router";
-import { GetServerSideProps } from "next";
+import type { GetServerSideProps } from "next";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import CategoryGrid, { CategoryItem } from "@/components/CategoryGrid";
 import FiltersSidebar from "@/components/FiltersSidebar";
@@ -120,7 +119,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
 
   const resetCount = () => setVisibleCount(50);
 
-  // Strip stray ?scroll=true when no category is present (no deep-link intent)
+  // Strip stray ?scroll=true when no category is present
   useEffect(() => {
     if (!router.isReady) return;
     const { scroll, category } = router.query as {
@@ -136,7 +135,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
     }
   }, [router.isReady, router.query]);
 
-  // Sync URL -> state, and perform deep-link scroll ONLY when category is present & scroll=true
+  // Sync URL -> state & deep-link scroll
   useEffect(() => {
     if (!router.isReady) return;
     const { category, sub, scroll } = router.query;
@@ -164,14 +163,13 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
 
     resetCount();
 
-    // Deep-link behavior: only when explicitly requested
     if (scroll === "true" && typeof category === "string" && heroRef.current) {
       const offset = heroRef.current.offsetTop + heroRef.current.offsetHeight;
       window.scrollTo({ top: offset, behavior: "smooth" });
     }
   }, [router.isReady, router.query]);
 
-  // 🔒 Do NOT auto-scroll on initial mount when no category is selected.
+  // Do NOT auto-scroll on initial mount when no category is selected.
   const firstRunRef = useRef<boolean>(true);
   useEffect(() => {
     if (firstRunRef.current) {
@@ -187,10 +185,6 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
   const pageTitle = "Jewelry Collection | Classy Diamonds";
   const pageDesc =
     "Explore timeless rings, earrings, bracelets, and necklaces & pendants.";
-
-  const subPills: SubItem[] = activeCategorySlug
-    ? SUBS[activeCategorySlug] ?? [{ label: "All", slug: "all" }]
-    : [];
 
   const metals = toArray(router.query.metal as any).map((x) =>
     String(x).toLowerCase()
@@ -339,7 +333,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
         <Breadcrumbs />
       </div>
 
-      {/* 💎 Category Tiles */}
+      {/* 💎 Category Tiles — stay on /jewelry; set ?category=... */}
       <section
         ref={headerRef}
         className="pt-6 pb-4 px-0 sm:px-0 w-full"
@@ -350,7 +344,11 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
           title="Shop by Category"
           fullBleedDesktop
           desktopCols={4}
-          routeTo="/category"
+          /** 👇 THESE TWO LINES are the fix */
+          routeTo="/jewelry"
+          onSelect={(slug) => goCategory(slug as CategorySlug)}
+          /** optional: show active */
+          activeSlug={activeCategorySlug ?? undefined}
         />
       </section>
 
