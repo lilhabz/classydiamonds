@@ -3,7 +3,6 @@
 /* 1️⃣ Bring in your Tailwind build via import */
 @import "tailwindcss";
 
-
 /* ============================
    🎨 Semantic Color Variables
    ============================ */
@@ -119,12 +118,15 @@ input[type="reset"] {
    💎 Product Card Sizing Vars
    Desktop pixel-locked. Sub-desktop scales via vars.
    ============================ */
+
+/* 👉 DESKTOP BASELINES (UPDATED for uniform sizing) */
 :root {
   /* Desktop baselines */
-  --card-w: 219px;
-  --card-h: 339px;
-  --card-inner-w: 195px;
-  --img: 195px;
+  --card-w: 260px; /* was 219px */
+  --card-h: 360px; /* visual rough height target (cards are auto-height) */
+  --card-inner-w: 236px; /* was 195px */
+  --img: 236px; /* image width (square on desktop) */
+
   --spacer: 16px;
   --title-h: 24px;
   --price-h: 24px;
@@ -134,18 +136,30 @@ input[type="reset"] {
   --price-fs: 14px;
   --btn-fs: 14px;
 
-  /* link area: 195 + 16 + 24 + 24 = 259 */
-  --link-h: 259px;
+  /* link area = img + spacer + title + price = 236 + 16 + 24 + 24 = 300 */
+  --link-h: 300px;
+
+  /* Global grid gap (sitewide control) */
+  --grid-gap: 24px;
 }
 
+/* 🧱 Shared product grid (use this class everywhere you render ProductCard lists) */
+.product-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(var(--card-w), 1fr));
+  gap: var(--grid-gap);
+  justify-items: stretch; /* so cards fill columns */
+}
+
+/* Keep your existing sub-desktop scaling (unchanged) */
 @layer base {
   /* ≤1024px → 0.92× */
   @media (max-width: 1024px) {
     :root {
-      --card-w: calc(219px * 0.92);
-      --card-h: calc(339px * 0.92);
-      --card-inner-w: calc(195px * 0.92);
-      --img: calc(195px * 0.92);
+      --card-w: calc(260px * 0.92);
+      --card-h: calc(360px * 0.92);
+      --card-inner-w: calc(236px * 0.92);
+      --img: calc(236px * 0.92);
       --spacer: calc(16px * 0.92);
       --title-h: calc(24px * 0.92);
       --price-h: calc(24px * 0.92);
@@ -153,17 +167,17 @@ input[type="reset"] {
       --title-fs: calc(14px * 0.92);
       --price-fs: calc(14px * 0.92);
       --btn-fs: calc(14px * 0.92);
-      --link-h: calc(259px * 0.92);
+      --link-h: calc(300px * 0.92);
     }
   }
 
   /* ≤912px → 0.88× */
   @media (max-width: 912px) {
     :root {
-      --card-w: calc(219px * 0.88);
-      --card-h: calc(339px * 0.88);
-      --card-inner-w: calc(195px * 0.88);
-      --img: calc(195px * 0.88);
+      --card-w: calc(260px * 0.88);
+      --card-h: calc(360px * 0.88);
+      --card-inner-w: calc(236px * 0.88);
+      --img: calc(236px * 0.88);
       --spacer: calc(16px * 0.88);
       --title-h: calc(24px * 0.88);
       --price-h: calc(24px * 0.88);
@@ -171,17 +185,17 @@ input[type="reset"] {
       --title-fs: calc(14px * 0.9);
       --price-fs: calc(14px * 0.9);
       --btn-fs: calc(14px * 0.9);
-      --link-h: calc(259px * 0.88);
+      --link-h: calc(300px * 0.88);
     }
   }
 
   /* ≤853px → 0.84× */
   @media (max-width: 853px) {
     :root {
-      --card-w: calc(219px * 0.84);
-      --card-h: calc(339px * 0.84);
-      --card-inner-w: calc(195px * 0.84);
-      --img: calc(195px * 0.84);
+      --card-w: calc(260px * 0.84);
+      --card-h: calc(360px * 0.84);
+      --card-inner-w: calc(236px * 0.84);
+      --img: calc(236px * 0.84);
       --spacer: calc(16px * 0.84);
       --title-h: calc(24px * 0.84);
       --price-h: calc(24px * 0.84);
@@ -189,17 +203,17 @@ input[type="reset"] {
       --title-fs: calc(14px * 0.92);
       --price-fs: calc(14px * 0.92);
       --btn-fs: calc(14px * 0.92);
-      --link-h: calc(259px * 0.84);
+      --link-h: calc(300px * 0.84);
     }
   }
 
   /* ≤820px → 0.82× */
   @media (max-width: 820px) {
     :root {
-      --card-w: calc(219px * 0.82);
-      --card-h: calc(339px * 0.82);
-      --card-inner-w: calc(195px * 0.82);
-      --img: calc(195px * 0.82);
+      --card-w: calc(260px * 0.82);
+      --card-h: calc(360px * 0.82);
+      --card-inner-w: calc(236px * 0.82);
+      --img: calc(236px * 0.82);
       --spacer: calc(16px * 0.82);
       --title-h: calc(24px * 0.82);
       --price-h: calc(24px * 0.82);
@@ -207,17 +221,17 @@ input[type="reset"] {
       --title-fs: calc(14px * 0.92);
       --price-fs: calc(14px * 0.92);
       --btn-fs: calc(14px * 0.92);
-      --link-h: calc(259px * 0.82);
+      --link-h: calc(300px * 0.82);
     }
   }
 
   /* ≤768px → 0.80× */
   @media (max-width: 768px) {
     :root {
-      --card-w: calc(219px * 0.8);
-      --card-h: calc(339px * 0.8);
-      --card-inner-w: calc(195px * 0.8);
-      --img: calc(195px * 0.8);
+      --card-w: calc(260px * 0.8);
+      --card-h: calc(360px * 0.8);
+      --card-inner-w: calc(236px * 0.8);
+      --img: calc(236px * 0.8);
       --spacer: calc(16px * 0.8);
       --title-h: calc(24px * 0.8);
       --price-h: calc(24px * 0.8);
@@ -225,17 +239,17 @@ input[type="reset"] {
       --title-fs: calc(14px * 0.94);
       --price-fs: calc(14px * 0.94);
       --btn-fs: calc(14px * 0.94);
-      --link-h: calc(259px * 0.8);
+      --link-h: calc(300px * 0.8);
     }
   }
 
   /* ≤480px → 0.76× */
   @media (max-width: 480px) {
     :root {
-      --card-w: calc(219px * 0.76);
-      --card-h: calc(339px * 0.76);
-      --card-inner-w: calc(195px * 0.76);
-      --img: calc(195px * 0.76);
+      --card-w: calc(260px * 0.76);
+      --card-h: calc(360px * 0.76);
+      --card-inner-w: calc(236px * 0.76);
+      --img: calc(236px * 0.76);
       --spacer: calc(16px * 0.76);
       --title-h: calc(24px * 0.76);
       --price-h: calc(24px * 0.76);
@@ -243,7 +257,7 @@ input[type="reset"] {
       --title-fs: calc(14px * 0.95);
       --price-fs: calc(14px * 0.95);
       --btn-fs: calc(14px * 0.95);
-      --link-h: calc(259px * 0.76);
+      --link-h: calc(300px * 0.76);
     }
   }
 }
@@ -261,7 +275,6 @@ input[type="reset"] {
    ============================ */
 :root {
   --page-pad: 16px; /* set per section if needed (px-4) */
-  --grid-gap: 24px; /* set per section (gap-6 = 24px, gap-4 = 16px) */
   --img-ratio-mobile: 1.28; /* 1.20–1.35 = taller image on phones */
   --mobile-font-scale: 0.86; /* slightly smaller text on phones */
 }
@@ -270,10 +283,10 @@ input[type="reset"] {
   :root {
     /* exact 2-up width using real padding + gap */
     --card-w: calc((100vw - (var(--page-pad) * 2) - var(--grid-gap)) / 2);
-    --scale: calc(var(--card-w) / 219px);
+    --scale: calc(var(--card-w) / 260px);
 
     /* core dims */
-    --card-inner-w: calc(195px * var(--scale));
+    --card-inner-w: calc(236px * var(--scale));
     --img: var(--card-inner-w);
 
     /* taller image on phones */
