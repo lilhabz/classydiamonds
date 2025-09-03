@@ -256,7 +256,7 @@ export default function CategoryPage({
             {products.length === 0 ? (
               <p className="text-white/80">No products found.</p>
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6 justify-items-center">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6 sm:justify-items-center lg:justify-items-stretch">
                 {products.map((p) => {
                   const href = `/category/${encodeURIComponent(
                     categorySlug
@@ -271,6 +271,8 @@ export default function CategoryPage({
                       price={p.price}
                       salePrice={p.salePrice ?? null}
                       href={href}
+                      // ✅ Desktop-only: stretch card to full column width
+                      className="lg:[--card-w:100%] lg:w-full"
                       onAddToCart={() =>
                         addToCart({
                           id: p._id || p.id || p.slug,
