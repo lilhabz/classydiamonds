@@ -454,12 +454,13 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
             ) : (
               <div
   className="
-        grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4
-        gap-4 sm:gap-6 justify-items-center
-        w-full
-        max-w-none sm:max-w-[705px] lg:max-w-[948px]
-        sm:mx-auto
-      "
+    product-grid-fullbleed
+    sm:grid sm:grid-cols-3 lg:grid-cols-4
+    sm:gap-6 sm:justify-items-center
+    w-full
+    max-w-none sm:max-w-[705px] lg:max-w-[948px]
+    sm:mx-auto
+  "
   style={{
     ["--grid-gap" as any]: "16px", // tighter mobile gap (optional)
     ["--img-ratio-mobile" as any]: "1.28",
