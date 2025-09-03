@@ -352,46 +352,33 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
         />
       </section>
 
-      {/* 🔖 Subcategory UI */}
+      {/* 🔖 Subcategory UI — photo cards only; slide on phones; 6-up line on desktop */}
       {activeCategorySlug && (
         <section className="mt-2 mb-4">
           <div className="mx-auto max-w-7xl">
-            <h3 className="sr-only">Subcategories</h3>
-
-            {/* 🟦 Mobile: cards */}
-            <div className="sm:hidden px-4">
+            {/* Mobile: swipe row */}
+            <div className="sm:hidden">
               <SubcategoryGrid
                 category={activeCategorySlug}
                 subcategories={SUBS[activeCategorySlug]}
                 activeSlug={activeSub}
                 onSelect={(slug) => goSub(slug)}
-                gridGapPx={16}
-                pagePadPx={16}
-                imgRatioMobile={1.3}
-                fontScaleMobile={0.82}
+                layout="row"
               />
             </div>
 
-            {/* 🖥️ Desktop: pills */}
-            <div className="hidden sm:flex gap-2 mt-1 flex-wrap px-6">
-              {SUBS[activeCategorySlug].map((s) => {
-                const active = activeSub === s.slug.toLowerCase();
-                return (
-                  <button
-                    key={s.slug}
-                    onClick={() => goSub(s.slug)}
-                    className={
-                      "px-3 py-2 rounded-lg text-sm font-medium border " +
-                      (active
-                        ? "bg-white text-[#1f2a44] border-white"
-                        : "bg-[#25304f] text-white border-white/20 hover:bg-[#2b3760]")
-                    }
-                    aria-pressed={active}
-                  >
-                    {s.label}
-                  </button>
-                );
-              })}
+            {/* Desktop: 6 smaller photo cards in a single line */}
+            <div className="hidden sm:block">
+              <SubcategoryGrid
+                category={activeCategorySlug}
+                subcategories={SUBS[activeCategorySlug]}
+                activeSlug={activeSub}
+                onSelect={(slug) => goSub(slug)}
+                layout="desktop-grid" // 👈 new layout: 6-up, smaller, photo cards
+                desktopCols={6}
+                desktopGapPx={12}
+                desktopCardScale={0.82} // ~18% smaller than category cards
+              />
             </div>
           </div>
         </section>
