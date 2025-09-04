@@ -63,35 +63,39 @@ export default function WatchesPage({ products }: WatchesProps) {
       {products.length === 0 ? (
         <div className="text-center text-gray-400">No watches available.</div>
       ) : (
-        <div
-          className="
-            grid w-full sm:mx-auto
-            gap-x-6 gap-y-10
-            grid-cols-2 md:grid-cols-3 lg:grid-cols-4
-            px-4 sm:px-6 lg:px-8
-          "
-        >
-          {products.map((product) => {
-            const href =
-              product.slug &&
-              `/category/${(product.category || "watches").toLowerCase()}/${
-                product.slug
-              }`;
-            return (
-              <ProductCard
-                key={product.id}
-                slug={product.slug || product.id}
-                image={product.image}
-                name={product.name}
-                price={product.price}
-                salePrice={product.salePrice ?? null}
-                href={href || undefined}
-                stockLabel="In Stock"
-                typeLabel="Watch"
-              />
-            );
-          })}
-        </div>
+        /* 🔒 Clamp width like Jewelry/Category pages */
+        <section className="py-10 px-4 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-7xl">
+            <div
+              className="
+                grid w-full
+                gap-x-6 gap-y-10
+                grid-cols-2 md:grid-cols-3 lg:grid-cols-4
+              "
+            >
+              {products.map((product) => {
+                const href =
+                  product.slug &&
+                  `/category/${(product.category || "watches").toLowerCase()}/${
+                    product.slug
+                  }`;
+                return (
+                  <ProductCard
+                    key={product.id}
+                    slug={product.slug || product.id}
+                    image={product.image}
+                    name={product.name}
+                    price={product.price}
+                    salePrice={product.salePrice ?? null}
+                    href={href || undefined}
+                    stockLabel="In Stock"
+                    typeLabel="Watch"
+                  />
+                );
+              })}
+            </div>
+          </div>
+        </section>
       )}
     </div>
   );
