@@ -63,62 +63,47 @@ export default function WatchesPage({ products }: WatchesProps) {
         <Breadcrumbs />
       </div>
 
-      {/* 📦 Product Grid (uses shared ProductCard) */}
-      <section className="pt-20 pb-20 px-4 sm:px-6 max-w-7xl mx-auto">
-        <h2 className="text-3xl font-serif font-semibold tracking-wide text-white text-center mb-8">
-          Watches
-        </h2>
-
-        {products.length === 0 ? (
-          <div className="text-center text-gray-400">No watches available.</div>
-        ) : (
-          <div
-            className="
-              grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4
-              gap-6
-              sm:justify-items-center lg:justify-items-stretch
-            "
-            style={{
-              ["--grid-gap" as any]: "24px", // gap-6
-              ["--page-pad" as any]: "16px", // px-4
-              ["--img-ratio-mobile" as any]: "1.30",
-              ["--mobile-font-scale" as any]: "0.84",
-            }}
-          >
-            {products.map((product) => {
-              const href =
-                product.slug &&
-                `/category/${(product.category || "watches").toLowerCase()}/${
-                  product.slug
-                }`;
-              return (
-                <ProductCard
-                  key={product.id}
-                  slug={product.slug || product.id}
-                  image={product.image}
-                  name={product.name}
-                  price={product.price}
-                  salePrice={product.salePrice ?? null}
-                  href={href || undefined}
-                  // ✅ Desktop-only: stretch card to column width
-                  className="lg:[--card-w:100%] lg:w-full"
-                  onAddToCart={() =>
-                    addToCart({
-                      id: product.id,
-                      slug: product.slug,
-                      name: product.name,
-                      price: product.price,
-                      discountedPrice: product.salePrice ?? undefined,
-                      image: product.image,
-                      quantity: 1,
-                    })
-                  }
-                />
-              );
-            })}
-          </div>
-        )}
-      </section>
+      {products.length === 0 ? (
+        <div className="text-center text-gray-400">No watches available.</div>
+      ) : (
+        <div
+          className="product-grid"
+          style={{
+            ["--page-pad" as any]: "16px", // section has px-4
+            // ["--grid-gap" as any]: "24px", // optional, defaults to 24px
+          }}
+        >
+          {products.map((product) => {
+            const href =
+              product.slug &&
+              `/category/${(product.category || "watches").toLowerCase()}/${
+                product.slug
+              }`;
+            return (
+              <ProductCard
+                key={product.id}
+                slug={product.slug || product.id}
+                image={product.image}
+                name={product.name}
+                price={product.price}
+                salePrice={product.salePrice ?? null}
+                href={href || undefined}
+                onAddToCart={() =>
+                  addToCart({
+                    id: product.id,
+                    slug: product.slug,
+                    name: product.name,
+                    price: product.price,
+                    discountedPrice: product.salePrice ?? undefined,
+                    image: product.image,
+                    quantity: 1,
+                  })
+                }
+              />
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

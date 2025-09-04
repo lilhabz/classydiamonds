@@ -168,14 +168,12 @@ export default function Home({ products }: HomeProps) {
               No featured items to display.
             </p>
           ) : (
-            /* 🔒 2 cols on phones (section hidden ≥sm) */
             <div
-              className="grid grid-cols-2 gap-4 justify-items-center"
+              className="product-grid"
               style={{
-                // mobile fit math: exact gap + page padding for this section
-                ["--grid-gap" as any]: "16px", // gap-4
+                // Match this section’s padding so mobile --card-w math is exact
                 ["--page-pad" as any]: "16px", // px-4
-                // tune mobile-only look (taller pics + smaller text)
+                // Optional phone tuning you already use:
                 ["--img-ratio-mobile" as any]: "1.3",
                 ["--mobile-font-scale" as any]: "0.82",
               }}
@@ -206,7 +204,7 @@ export default function Home({ products }: HomeProps) {
           )}
         </section>
 
-        {/* 🖥️ Desktop-Only “Featured” — unified/stretched cards */}
+        {/* 🖥️ Desktop-Only “Featured” — unified grid */}
         <section className="hidden sm:block py-16 sm:py-20 px-4 sm:px-6 max-w-7xl mx-auto">
           <h2 className="text-3xl sm:text-4xl font-serif font-semibold tracking-wide text-center mb-8">
             Featured Pieces
@@ -217,8 +215,14 @@ export default function Home({ products }: HomeProps) {
               No featured items to display.
             </p>
           ) : (
-            /* 🔒 Always 4 per row on desktop, 3 at sm/md */
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-10 sm:justify-items-center lg:justify-items-stretch">
+            <div
+              className="product-grid"
+              style={{
+                // Optional: if you want a wider/larger gap specifically here, set it:
+                // ["--grid-gap" as any]: "24px" // (defaults to 24px already)
+                ["--page-pad" as any]: "16px", // matches px-4 (not used on desktop math, but harmless)
+              }}
+            >
               {featured.map((item) => (
                 <ProductCard
                   key={item._id}
@@ -228,8 +232,6 @@ export default function Home({ products }: HomeProps) {
                   price={item.price}
                   salePrice={item.salePrice ?? null}
                   href={`/category/${item.category}/${item.slug}?scroll=true`}
-                  // ✅ Desktop-only: let the card fill its grid column
-                  className="lg:[--card-w:100%] lg:w-full"
                   onAddToCart={() =>
                     addToCart({
                       id: item._id,

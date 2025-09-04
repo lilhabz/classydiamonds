@@ -256,12 +256,17 @@ export default function CategoryPage({
             {products.length === 0 ? (
               <p className="text-white/80">No products found.</p>
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6 sm:justify-items-center lg:justify-items-stretch">
+              <div
+                className="product-grid"
+                style={{
+                  ["--page-pad" as any]: "16px", // section has px-4
+                  // ["--grid-gap" as any]: "24px", // optional override (24px is default)
+                }}
+              >
                 {products.map((p) => {
                   const href = `/category/${encodeURIComponent(
                     categorySlug
                   )}/${encodeURIComponent(p.slug)}`;
-
                   return (
                     <ProductCard
                       key={p.slug}
@@ -271,8 +276,6 @@ export default function CategoryPage({
                       price={p.price}
                       salePrice={p.salePrice ?? null}
                       href={href}
-                      // ✅ Desktop-only: stretch card to full column width
-                      className="lg:[--card-w:100%] lg:w-full"
                       onAddToCart={() =>
                         addToCart({
                           id: p._id || p.id || p.slug,

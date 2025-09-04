@@ -415,31 +415,21 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
           <div className="hidden lg:block">
             <FiltersSidebar mode="desktop" />
           </div>
-
           {/* Product Grid */}
           <div className="flex justify-center">
             {shown.length === 0 ? (
               <p className="text-white/80">No products found.</p>
             ) : (
               <div
-                className="
-                  grid grid-cols-2 gap-4 justify-items-center
-                  sm:grid-cols-3 sm:gap-6
-                  lg:grid-cols-4 lg:justify-items-stretch
-                  w-full
-                  max-w-none sm:max-w-[705px] lg:max-w-[948px]
-                  sm:mx-auto
-                "
-                style={
-                  {
-                    ["--grid-gap" as any]: "16px",
-                    ["--img-ratio-mobile" as any]: "1.28",
-                    ["--mobile-font-scale" as any]: "0.84",
-                  } as React.CSSProperties
-                }
+                className="product-grid w-full sm:mx-auto"
+                style={{
+                  // Use the same sitewide spacing; mobile math needs actual section padding:
+                  ["--page-pad" as any]: "0px", // this section uses px-0 on the grid container
+                  // ["--grid-gap" as any]: "24px", // optional, defaults to 24px already
+                }}
               >
                 {shown.slice(0, visibleCount).map((product) => {
-                  const category = canonicalizeCategory(product.category);
+                  const category = (product.category || "").toLowerCase();
                   const href = `/category/${category}/${product.slug}`;
                   return (
                     <ProductCard
@@ -450,12 +440,9 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
                       price={product.price}
                       salePrice={product.salePrice ?? null}
                       href={href}
-                      // ✅ Desktop-only: stretch to the grid column width
-                      className="lg:[--card-w:100%] lg:w-full"
                       onAddToCart={() => {
-                        if (isRingCategory(category)) {
+                        if ((category || "").includes("ring"))
                           return router.push(href);
-                        }
                         addToCart({
                           id: product.id,
                           slug: product.slug,
