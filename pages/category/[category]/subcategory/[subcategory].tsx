@@ -9,7 +9,6 @@ import clientPromise from "@/lib/mongodb";
 import FiltersSidebar from "@/components/FiltersSidebar";
 import HeroBanner from "@/components/HeroBanner";
 import Breadcrumbs from "@/components/Breadcrumbs";
-import { useCart } from "@/context/CartContext";
 import ProductCard from "@/components/ProductCard";
 import { CATEGORY_LABELS } from "@/data/taxonomy";
 
@@ -124,11 +123,10 @@ const resolveSubheader = (category: string, sub: string): string => {
   return specific || cat.default;
 };
 
-const isRingCategory = (cat?: string) =>
-  (cat ?? "").toLowerCase().includes("ring");
-
 /* ----------------------------- SSR ------------------------------ */
-export const getServerSideProps: GetServerSideProps<PageProps> = async (ctx) => {
+export const getServerSideProps: GetServerSideProps<PageProps> = async (
+  ctx
+) => {
   const categorySlug = String(ctx.params?.category || "").toLowerCase();
   const subcategorySlug = String(ctx.params?.subcategory || "").toLowerCase();
   if (!categorySlug || !subcategorySlug) return { notFound: true };
@@ -208,7 +206,7 @@ export const getServerSideProps: GetServerSideProps<PageProps> = async (ctx) => 
       name: d.name,
       price: d.price,
       salePrice: d.salePrice ?? null,
-      image: d.imageUrl || d.image || "", // ✅ fallback to imageUrl
+      image: d.imageUrl || d.image || "",
       category: (d.category || "").toLowerCase(),
       subcategory: (d.subcategory || d.subCategory || "").toLowerCase(),
       metal: (d.metal || "").toLowerCase(),
@@ -223,8 +221,6 @@ export const getServerSideProps: GetServerSideProps<PageProps> = async (ctx) => 
 
   const heroImage =
     HERO_BY_CATEGORY[categorySlug]?.image ?? "/hero-jewelry.jpg";
-
-  // 🔹 Compute a professional subheader for the hero (category + subcategory aware)
   const heroSubtitle = resolveSubheader(categorySlug, subcategorySlug);
 
   return {
@@ -250,7 +246,6 @@ export default function SubcategoryPage({
   products,
 }: PageProps) {
   const router = useRouter();
-  const { addToCart } = useCart();
   const [visibleCount, setVisibleCount] = useState(8);
 
   /* 🔝 Force open-from-top (unless ?scroll=true is set intentionally) */
@@ -294,6 +289,13 @@ export default function SubcategoryPage({
 
   // reset visible when route changes (matches jewelry behavior)
   useEffect(() => setVisibleCount(8), [categorySlug, subcategoryLabel]);
+
+  // Derive type label: prefer product subcategory; else use the page's category label
+  const typeLabelFrom = (p: Product) =>
+    (p.subcategory && p.subcategory !== "all"
+      ? titleCase(p.subcategory)
+      : categoryLabel.replace(/& Pendants/i, "Necklace")
+    ).trim();
 
   return (
     <div className="subcategory-page">
@@ -342,17 +344,16 @@ export default function SubcategoryPage({
             <FiltersSidebar />
           </div>
 
-          {/* Product grid — unified to 2→3→4 columns */}
+          {/* Product grid — unified to 2→3→4 columns (consistent sizing) */}
           <div>
             {products.length === 0 ? (
               <p className="text-white/80">No products found.</p>
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6 justify-items-center">
+              <div className="grid w-full gap-x-6 gap-y-10 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
                 {products.slice(0, visibleCount).map((p) => {
                   const href = `/category/${encodeURIComponent(
                     categorySlug
                   )}/${encodeURIComponent(p.slug)}`;
-
                   return (
                     <ProductCard
                       key={p._id || p.id || p.slug}
@@ -362,20 +363,8 @@ export default function SubcategoryPage({
                       price={p.price}
                       salePrice={p.salePrice ?? null}
                       href={href}
-                      onAddToCart={() => {
-                        if (isRingCategory(p.category)) {
-                          return router.push(href);
-                        }
-                        addToCart({
-                          id: p._id || p.id || p.slug,
-                          slug: p.slug,
-                          name: p.name,
-                          price: p.price,
-                          discountedPrice: p.salePrice ?? undefined,
-                          image: p.image,
-                          quantity: 1,
-                        });
-                      }}
+                      stockLabel="In Stock"
+                      typeLabel={typeLabelFrom(p)}
                     />
                   );
                 })}
