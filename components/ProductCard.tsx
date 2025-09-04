@@ -127,29 +127,21 @@ export default function ProductCard({
     >
       {/* Clickable top (image + text) */}
       <Link href={link} aria-label={name} className="block group">
-        {/* Framed image area (keeps rows even) */}
-        <div className="relative w-full aspect-[4/3] bg-[#d6e9ff]/60 p-3">
-          {/* Image clip area = the pale-green interior */}
-          <div
+        {/* Framed image area (keeps rows even) – now edge-to-edge image */}
+        <div className="relative w-full aspect-[4/3] overflow-hidden rounded-sm">
+          <Image
+            src={src}
+            alt={name}
+            fill
             className={
-              "absolute inset-2 rounded-sm overflow-hidden" +
+              "object-cover transition-transform duration-300 group-hover:scale-[1.03]" +
               (outOfStock ? " grayscale" : "")
             }
-          >
-            <Image
-              src={src}
-              alt={name}
-              fill
-              className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
-              unoptimized={unoptimized}
-              onError={handleImgError}
-              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-              priority={false}
-            />
-          </div>
-
-          {/* Optional: thin visual frame on top (doesn't block clicks) */}
-          <div className="pointer-events-none absolute inset-2 rounded-sm ring-1 ring-[#d8efc8]" />
+            unoptimized={unoptimized}
+            onError={handleImgError}
+            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+            priority={false}
+          />
         </div>
 
         {/* Tiny action row (♡ + spacer) — fixed height */}
