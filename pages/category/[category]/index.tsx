@@ -28,6 +28,7 @@ type Product = {
   shape?: string;
   carat?: number;
   slug: string;
+  inStock?: boolean; // ✅ real stock flag
 };
 
 type SubItem = { label: string; slug: string };
@@ -119,6 +120,9 @@ export const getServerSideProps: GetServerSideProps<PageProps> = async (
         shape: 1,
         carat: 1,
         slug: 1,
+        inStock: 1, // may or may not exist
+        stock: 1, // legacy boolean?
+        quantity: 1, // legacy numeric?
       })
       .toArray();
 
@@ -135,6 +139,15 @@ export const getServerSideProps: GetServerSideProps<PageProps> = async (
       shape: (d.shape || "").toLowerCase(),
       carat: typeof d.carat === "number" ? d.carat : undefined,
       slug: d.slug,
+      // ✅ derive real stock robustly
+      inStock:
+        typeof d.inStock === "boolean"
+          ? d.inStock
+          : typeof d.stock === "boolean"
+          ? d.stock
+          : typeof d.quantity === "number"
+          ? d.quantity > 0
+          : true,
     }));
   } catch {
     products = [];
@@ -344,7 +357,7 @@ export default function CategoryPage({
                       price={p.price}
                       salePrice={p.salePrice ?? null}
                       href={href}
-                      stockLabel="In Stock"
+                      inStock={p.inStock} // ✅ real stock to card
                       typeLabel={typeLabelFrom(p)}
                     />
                   );

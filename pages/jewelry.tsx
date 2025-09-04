@@ -5,7 +5,7 @@ import Image from "next/image";
 import Head from "next/head";
 // ❌ removed CartContext import (no add-to-cart from cards)
 // import { useCart } from "@/context/CartContext";
-import { useEffect, useMemo, useRef, useState, useLayoutEffect } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/router";
 import type { GetServerSideProps } from "next";
 import Breadcrumbs from "@/components/Breadcrumbs";
@@ -38,6 +38,7 @@ export type ProductType = {
   carat?: number | null;
   gender?: "unisex" | "him" | "her";
   description?: string;
+  inStock?: boolean; // ✅ real stock flag
 };
 
 type SubItem = { label: string; slug: string };
@@ -494,7 +495,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
                       price={product.price}
                       salePrice={product.salePrice ?? null}
                       href={href}
-                      stockLabel="In Stock"
+                      inStock={product.inStock} /* ✅ real stock */
                       typeLabel={typeFrom(product)}
                     />
                   );
@@ -596,6 +597,15 @@ export const getServerSideProps: GetServerSideProps = async () => {
         carat: typeof p.carat === "number" ? p.carat : null,
         gender: p.gender || "unisex",
         description: p.description || "",
+        // ✅ Real stock derivation (compatible with several backends)
+        inStock:
+          typeof p.inStock === "boolean"
+            ? p.inStock
+            : typeof p.stock === "boolean"
+            ? p.stock
+            : typeof p.quantity === "number"
+            ? p.quantity > 0
+            : true,
       } as ProductType;
     })
     .filter((p: ProductType) => ALLOWED_SET.has(p.category as any));

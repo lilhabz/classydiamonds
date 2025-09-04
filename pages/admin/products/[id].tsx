@@ -22,6 +22,10 @@ type ProductDoc = {
   audience?: string[];
   specs?: Record<string, any>;
   department?: Department;
+  // 🆕 stock-ish fields that may exist server-side
+  inStock?: boolean;
+  stock?: boolean;
+  quantity?: number;
 };
 
 type SpecField = { key: string; label: string; placeholder?: string };
@@ -46,6 +50,9 @@ export default function EditProductPage() {
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState<string>("");
   const [salePrice, setSalePrice] = useState<string>("");
+
+  // 🆕 Stock flag
+  const [inStock, setInStock] = useState<boolean>(true);
 
   const [audience, setAudience] = useState<string>("unisex");
 
@@ -244,6 +251,17 @@ export default function EditProductPage() {
         setSubcategory(p.subcategory ?? "");
         setAudience(p.audience?.[0] ?? "unisex");
 
+        // 🧠 Infer current stock
+        const inferredInStock =
+          typeof p.inStock === "boolean"
+            ? p.inStock
+            : typeof p.stock === "boolean"
+            ? p.stock
+            : typeof p.quantity === "number"
+            ? p.quantity > 0
+            : true;
+        setInStock(inferredInStock);
+
         const specsObj =
           p.specs && typeof p.specs === "object"
             ? (p.specs as Record<string, any>)
@@ -415,6 +433,8 @@ export default function EditProductPage() {
         audience: [audience],
         specs: merged,
         department: dept,
+        // 🆕 include stock
+        inStock,
       };
       if (nextImageUrl !== undefined) body.imageUrl = nextImageUrl;
 
@@ -432,6 +452,9 @@ export default function EditProductPage() {
       setImageUrl(p.imageUrl ?? PLACEHOLDER);
       setResetToPlaceholder(false);
       setImageFile(null);
+
+      // refresh inStock from server response if present
+      if (typeof p.inStock === "boolean") setInStock(p.inStock);
 
       const serverSpecs =
         p.specs && typeof p.specs === "object"
@@ -581,6 +604,23 @@ export default function EditProductPage() {
               className="mt-1 w-full px-3 py-2 rounded bg-[var(--bg-nav)]"
             />
           </label>
+
+          {/* 🆕 Stock */}
+          <div className="md:col-span-2">
+            <label className="inline-flex items-center gap-3">
+              <input
+                type="checkbox"
+                checked={inStock}
+                onChange={(e) => setInStock(e.target.checked)}
+                className="h-4 w-4"
+              />
+              <span className="font-medium">In Stock</span>
+            </label>
+            <p className="text-xs opacity-70 mt-1">
+              Uncheck to mark as out of stock (detail page will disable Add to
+              Cart).
+            </p>
+          </div>
 
           {/* Audience bubbles */}
           <div className="md:col-span-2">

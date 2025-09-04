@@ -22,6 +22,9 @@ export default function NewProductPage() {
   const [salePrice, setSalePrice] = useState<string>("");
   const [description, setDescription] = useState("");
 
+  // 🆕 Stock
+  const [inStock, setInStock] = useState<boolean>(true);
+
   // Audience bubbles
   const [audience, setAudience] = useState<string>("unisex");
 
@@ -341,6 +344,8 @@ export default function NewProductPage() {
         audience: [audience],
         specs,
         department: dept,
+        // 🆕 Stock flag sent to API
+        inStock,
       };
 
       const res = await fetch("/api/admin/products", {
@@ -360,6 +365,7 @@ export default function NewProductPage() {
       setSubcategory("");
       setImageFile(null);
       setSpecValues({});
+      setInStock(true);
     } catch (err: any) {
       setStatusMsg({
         ok: false,
@@ -498,6 +504,23 @@ export default function NewProductPage() {
             className="mt-1 w-full px-3 py-2 rounded bg-[var(--bg-nav)]"
           />
         </label>
+
+        {/* 🆕 Stock */}
+        <div className="md:col-span-2">
+          <label className="inline-flex items-center gap-3">
+            <input
+              type="checkbox"
+              checked={inStock}
+              onChange={(e) => setInStock(e.target.checked)}
+              className="h-4 w-4"
+            />
+            <span className="font-medium">In Stock</span>
+          </label>
+          <p className="text-xs opacity-70 mt-1">
+            Uncheck to mark as out of stock (detail page will disable Add to
+            Cart).
+          </p>
+        </div>
 
         {/* Audience bubbles */}
         <div className="md:col-span-2">

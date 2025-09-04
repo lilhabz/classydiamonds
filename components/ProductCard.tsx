@@ -16,10 +16,12 @@ export type ProductCardProps = {
   salePrice?: number | null;
   /** link override (defaults to /product/[slug]) */
   href?: string;
-  /** "In Stock" / "Out of Stock" etc. */
+  /** "In Stock" / "Out of Stock" etc. (used only if `inStock` is undefined) */
   stockLabel?: string;
   /** e.g., "Ring", "Watch", "Bracelet" */
   typeLabel?: string;
+  /** 🆕 Real stock flag; if set, overrides stockLabel text & styling */
+  inStock?: boolean;
   className?: string;
   style?: React.CSSProperties;
 };
@@ -49,6 +51,7 @@ export default function ProductCard({
   href,
   stockLabel = "In Stock",
   typeLabel,
+  inStock, // 🆕
   className = "",
   style,
 }: ProductCardProps) {
@@ -85,22 +88,32 @@ export default function ProductCard({
   const onHeartClick: React.MouseEventHandler<HTMLButtonElement> = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    if (!rehydrated) return; // avoid mismatch before we know the real state
+    if (!rehydrated) return;
     toggleFavorite(slug);
   };
+
+  // 🆕 Resolve stock label + styling based on boolean when provided
+  const resolvedInStock = typeof inStock === "boolean" ? inStock : undefined;
+  const resolvedStockText =
+    resolvedInStock !== undefined
+      ? resolvedInStock
+        ? "In Stock"
+        : "Out of Stock"
+      : stockLabel;
+
+  const outOfStock = resolvedInStock === false;
 
   return (
     <div
       className={
-        // White card + subtle border (matches luxury inspo)
         "group relative flex flex-col overflow-hidden rounded-xl border border-black/10 bg-white " +
+        (outOfStock ? "opacity-[0.92]" : "") +
+        " " +
         className
       }
       style={{
-        // ✅ Let the grid decide the width; we guarantee same internal heights.
         width: "100%",
         height: "auto",
-        // Row height constants so every card is identical across pages:
         ["--row-h-action" as any]: "36px",
         ["--row-h-title" as any]: "22px",
         ["--row-h-type" as any]: "20px",
@@ -110,6 +123,7 @@ export default function ProductCard({
         ["--fs-price" as any]: "16px",
         ...style,
       }}
+      aria-busy={false}
     >
       {/* Clickable top (image + text) */}
       <Link href={link} aria-label={name} className="block">
@@ -117,7 +131,11 @@ export default function ProductCard({
         <div className="relative w-full aspect-[4/3] bg-[#d6e9ff]/60 p-3">
           {/* Pale green inner frame */}
           <div className="absolute inset-2 rounded-sm bg-[#d8efc8]" />
-          <div className="relative h-full w-full">
+          <div
+            className={
+              "relative h-full w-full" + (outOfStock ? " grayscale" : "")
+            }
+          >
             <Image
               src={src}
               alt={name}
@@ -131,12 +149,12 @@ export default function ProductCard({
           </div>
         </div>
 
-        {/* Tiny action row (♡ + quick view) — fixed height */}
+        {/* Tiny action row (♡ + spacer) — fixed height */}
         <div
           className="flex items-center justify-center gap-6 text-neutral-500"
           style={{ height: "var(--row-h-action)" }}
         >
-          {/* 🆕 Heart button (persistent favorites) */}
+          {/* Heart */}
           <button
             type="button"
             onClick={onHeartClick}
@@ -151,7 +169,6 @@ export default function ProductCard({
             }
             title={fav ? "Saved to Favorites" : "Save to Favorites"}
           >
-            {/* same heart path; filled when active */}
             <svg
               width="20"
               height="20"
@@ -167,7 +184,6 @@ export default function ProductCard({
             </svg>
           </button>
 
-          {/* center dot spacer to match inspo */}
           <span aria-hidden="true" className="text-xs select-none">
             •
           </span>
@@ -180,14 +196,18 @@ export default function ProductCard({
         <div className="px-4 pb-4 pt-3 text-center">
           {/* Stock */}
           <p
-            className="uppercase tracking-wide text-neutral-600"
+            className={
+              "uppercase tracking-wide " +
+              (outOfStock ? "text-red-600" : "text-neutral-600")
+            }
             style={{
-              height: "16px", // small and steady; not counted in the locked rows below
+              height: "16px",
               fontSize: "12px",
               lineHeight: "16px",
+              fontWeight: 600,
             }}
           >
-            {stockLabel}
+            {resolvedStockText}
           </p>
 
           {/* Name (single line) */}

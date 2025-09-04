@@ -65,7 +65,7 @@ async function getProductsCollection() {
   return getCollection(name);
 }
 
-/** ----- Legacy normalization helpers ----- */
+/* ---------------- Legacy normalization helpers ---------------- */
 function inferDepartment(doc: any): "jewelry" | "watch" {
   const d = String(doc?.department || "").toLowerCase();
   if (d === "watch") return "watch";
@@ -79,6 +79,14 @@ function firstImage(doc: any): string {
     return String(doc.images[0]);
   if (doc?.image) return String(doc.image);
   return "";
+}
+
+/** 🧠 Robust in-stock inference used everywhere (lists & detail) */
+function inferInStock(doc: any): boolean {
+  if (typeof doc?.inStock === "boolean") return doc.inStock;
+  if (typeof doc?.stock === "boolean") return doc.stock;
+  if (typeof doc?.quantity === "number") return doc.quantity > 0;
+  return true; // default to visible for legacy items
 }
 
 /** Map raw Mongo doc -> typed Product (omit legacy `tags`) */
@@ -110,8 +118,8 @@ export function mapDbToProduct(doc: any): Product {
     featured: typeof doc.featured === "boolean" ? doc.featured : undefined,
     skuNumber: typeof doc.skuNumber === "number" ? doc.skuNumber : undefined,
 
-    /** 🆕 Stock flag (default true if missing/invalid) */
-    inStock: typeof doc.inStock === "boolean" ? doc.inStock : true,
+    /** ✅ Real stock flag (robust inference) */
+    inStock: inferInStock(doc),
 
     createdAt: doc.createdAt ? String(doc.createdAt) : undefined,
     updatedAt: doc.updatedAt ? String(doc.updatedAt) : undefined,
@@ -135,13 +143,16 @@ function normalizeForWrite(input: Partial<Product>): any {
     out.images = [out.imageUrl];
   }
 
+  // ensure boolean for inStock if present
+  if (out.inStock !== undefined) out.inStock = !!out.inStock;
+
   // remove undefined to avoid overwriting with undefined
   Object.keys(out).forEach((k) => out[k] === undefined && delete out[k]);
 
   return out;
 }
 
-/** ------------ Queries & CRUD ------------- */
+/* ---------------- Queries & CRUD ---------------- */
 type ListOptions = {
   sort?: Record<string, 1 | -1>;
   limit?: number;
@@ -179,8 +190,11 @@ export async function createProduct(input: LegacyCreate) {
   const now = new Date();
 
   const toInsert = normalizeForWrite({
-    // 🆕 default inStock true if absent
-    inStock: typeof clean.inStock === "boolean" ? clean.inStock : true,
+    // default true if absent (legacy)
+    inStock:
+      typeof clean.inStock === "boolean"
+        ? clean.inStock
+        : inferInStock(clean as any),
     ...clean,
     createdAt: now,
     updatedAt: now,
@@ -221,7 +235,7 @@ export async function deleteProduct(id: string) {
   return { ok: true };
 }
 
-/** ---------- Optional: query helpers compatible with your API ---------- */
+/* -------- Optional: query helpers compatible with your API -------- */
 export function buildSearchFilter(qs: {
   department?: string;
   category?: string;
