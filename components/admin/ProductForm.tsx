@@ -60,6 +60,11 @@ export default function ProductForm({ initial, onSaved, mode }: Props) {
   );
   const [description, setDescription] = useState(initial?.description || "");
 
+  // 🆕 stock
+  const [inStock, setInStock] = useState<boolean>(
+    typeof initial?.inStock === "boolean" ? !!initial?.inStock : true
+  );
+
   // specs
   const [specs, setSpecs] = useState<Specs>(initial?.specs || {});
   const [saving, setSaving] = useState(false);
@@ -97,6 +102,8 @@ export default function ProductForm({ initial, onSaved, mode }: Props) {
     setImageFile(null);
     setPreviewUrl("");
     setImageRemoved(false);
+    // 🆕 keep stock in sync on record switch
+    setInStock(typeof initial.inStock === "boolean" ? !!initial.inStock : true);
   }, [initial?._id]);
 
   // cascade: reset category/subCategory/specs when dept changes
@@ -149,7 +156,7 @@ export default function ProductForm({ initial, onSaved, mode }: Props) {
     return () => URL.revokeObjectURL(url);
   }, [imageFile]);
 
-  // ---------- NEW: helpers for submit flow ----------
+  // ---------- helpers for submit flow ----------
   async function uploadImageIfNeeded(): Promise<string | null> {
     if (!imageFile) return imageRemoved ? null : existingImage || null;
     const fd = new FormData();
@@ -180,6 +187,8 @@ export default function ProductForm({ initial, onSaved, mode }: Props) {
       audience: audience.length ? audience : ["unisex"],
       description,
       department,
+      // 🆕 include stock
+      inStock,
     };
   }
 
@@ -222,6 +231,8 @@ export default function ProductForm({ initial, onSaved, mode }: Props) {
           specs: specs || {},
           description,
           department,
+          // 🆕 include stock
+          inStock,
         };
         const res = await fetch(
           `/api/admin/products/${encodeURIComponent(id)}`,
@@ -324,6 +335,22 @@ export default function ProductForm({ initial, onSaved, mode }: Props) {
             inputMode="decimal"
           />
         </div>
+      </div>
+
+      {/* 🆕 In Stock */}
+      <div className="flex items-center gap-3">
+        <label className="inline-flex items-center gap-2 px-3 py-2 rounded bg-[var(--bg-nav)]">
+          <input
+            type="checkbox"
+            checked={!!inStock}
+            onChange={(e) => setInStock(e.target.checked)}
+          />
+          <span className="text-sm">In Stock</span>
+        </label>
+        <span className="text-xs opacity-70">
+          Uncheck to mark product as “Out of Stock” (storefront will show a
+          warning and disable purchase if you implement that later).
+        </span>
       </div>
 
       {/* Audience */}

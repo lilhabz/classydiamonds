@@ -324,8 +324,8 @@ const Navbar = () => {
                 <Link
                   key={name}
                   href={href}
-                  scroll={true}           // rely on Next.js scroll restore
-                  prefetch={false}        // optional; keeps navigation snappy/predictable
+                  scroll={true} // rely on Next.js scroll restore
+                  prefetch={false} // optional; keeps navigation snappy/predictable
                   className={`cursor-pointer text-[#e0e0e0] hover:text-white hover:scale-105 transition-transform duration-300 text-sm md:text-base ${
                     pathname === href
                       ? "text-white underline underline-offset-4"
@@ -374,6 +374,15 @@ const Navbar = () => {
                   >
                     Order History
                   </Link>
+
+                  {/* 🆕 Favorites link (desktop user dropdown) */}
+                  <Link
+                    href="/account/favorites"
+                    className="block w-full text-left px-4 py-2 hover:bg-[#2a374f]"
+                  >
+                    Favorites
+                  </Link>
+
                   {session?.user?.isAdmin && (
                     <button
                       onMouseDown={(e) => {
@@ -482,6 +491,15 @@ const Navbar = () => {
           >
             Order History
           </Link>
+
+          {/* 🆕 Favorites link (mobile user dropdown) */}
+          <Link
+            href="/account/favorites"
+            className="block px-4 py-2 hover:bg-[#2a374f]"
+          >
+            Favorites
+          </Link>
+
           {(session?.user as any)?.isAdmin && (
             <Link
               href="/admin"

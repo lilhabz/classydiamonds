@@ -38,6 +38,9 @@ type AdminProduct = {
   createdAt?: string;
   department?: "jewelry" | "watch";
   skuNumber?: number;
+
+  // 🆕 stock flag
+  inStock?: boolean;
 };
 
 type Ok =
@@ -76,6 +79,18 @@ const n = (v: any) => {
 };
 const toId = (x: any) =>
   typeof x === "string" ? x : x?.toString?.() ?? undefined;
+
+// 🆕 tolerant boolean parser
+function toBool(v: any, def = true): boolean {
+  if (typeof v === "boolean") return v;
+  const str = String(v ?? "")
+    .trim()
+    .toLowerCase();
+  if (!str) return def;
+  if (["1", "true", "yes", "on"].includes(str)) return true;
+  if (["0", "false", "no", "off"].includes(str)) return false;
+  return def;
+}
 
 function buildFilter(q: string) {
   if (!q) return {};
@@ -141,6 +156,9 @@ function adaptDb(doc: any): AdminProduct {
       : undefined,
     department: dept as any,
     skuNumber: typeof doc?.skuNumber === "number" ? doc.skuNumber : undefined,
+
+    // 🆕 include stock (default true)
+    inStock: typeof doc?.inStock === "boolean" ? doc.inStock : true,
   };
 }
 
@@ -196,6 +214,9 @@ function adaptLegacy(doc: any): AdminProduct {
       : undefined,
     department: dept as any,
     skuNumber: typeof doc?.skuNumber === "number" ? doc.skuNumber : undefined,
+
+    // 🆕 legacy assumed in stock unless explicitly false
+    inStock: doc?.inStock !== false,
   };
 }
 
@@ -445,6 +466,9 @@ export default async function handler(
       const specs = toSpecs(fields.specs);
       const description = s(fields.description);
 
+      // 🆕 stock parsing (default true)
+      const inStock = toBool(fields.inStock, true);
+
       // Optional image file
       let imageUrl: string | null = null;
       const file: any = (files as any)?.image;
@@ -506,6 +530,8 @@ export default async function handler(
           department === "watch" || department === "jewelry"
             ? department
             : undefined,
+        // 🆕 persist stock
+        inStock,
         skuNumber, // 👈 store the sequence
         createdAt: now,
         updatedAt: now,

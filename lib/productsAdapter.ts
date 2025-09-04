@@ -6,6 +6,7 @@ const DB_NAME = process.env.MONGODB_DB!;
 const COLL = process.env.PRODUCTS_COLLECTION || "products";
 
 export type Product = {
+  _id?: string;
 
   name: string;
   slug?: string;
@@ -14,7 +15,14 @@ export type Product = {
   category: string;
   subCategory?: string | null;
 
-  // ... other optional fields
+  image?: string | null;
+  imageUrl?: string | null;
+  images?: string[];
+  audience?: string[];
+  specs?: Record<string, unknown>;
+
+  /** 🆕 Stock flag (default true) */
+  inStock: boolean;
 };
 
 export async function getAllProductsMerged(): Promise<Product[]> {
@@ -48,14 +56,15 @@ export async function getAllProductsMerged(): Promise<Product[]> {
       specs: (d.specs as Record<string, unknown>) ?? undefined,
       images: (d.images as string[]) ?? undefined,
 
+      // 🆕 Ensure boolean; default to true
+      inStock: typeof d.inStock === "boolean" ? d.inStock : true,
     };
   });
 
   // Normalize legacy → Product (read-only)
   const legacyNormalized: Product[] = (legacyProducts as any[]).map((p) => {
-    const image = p.image ?? p.imageUrl ?? (p.images?.[0] ?? null);
+    const image = p.image ?? p.imageUrl ?? p.images?.[0] ?? null;
     return {
-
       name: p.name ?? p.title,
       slug: p.slug,
       price: Number(p.price ?? 0),
@@ -68,10 +77,11 @@ export async function getAllProductsMerged(): Promise<Product[]> {
       specs: p.specs,
       images: p.images,
 
+      // 🆕 Legacy products are assumed in stock
+      inStock: true,
     };
   });
 
   // Return Mongo first (source of truth), then legacy (read-only)
   return [...mongoNormalized, ...legacyNormalized];
 }
-

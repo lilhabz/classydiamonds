@@ -12,6 +12,9 @@ import IdleTimerProvider from "@/components/AutoLogout";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import "@/styles/tiffany-cards.css";
 
+// 🆕 Favorites context
+import { FavoritesProvider } from "../context/FavoritesContext";
+
 function App({ Component, pageProps: { session, ...pageProps } }: AppProps) {
   const router = useRouter();
 
@@ -100,8 +103,9 @@ function App({ Component, pageProps: { session, ...pageProps } }: AppProps) {
     else if (ua.includes("iphone 12")) body.classList.add("ua-iphone12");
     else if (ua.includes("iphone 14")) body.classList.add("ua-iphone14");
     else if (ua.includes("pixel 7")) body.classList.add("ua-pixel7");
-    else if (ua.includes("sm-g988")) body.classList.add("ua-s20ultra"); // Galaxy S20 Ultra UA code
-    else if (ua.includes("sm-g955")) body.classList.add("ua-s8plus");   // Galaxy S8+
+    else if (ua.includes("sm-g988"))
+      body.classList.add("ua-s20ultra"); // Galaxy S20 Ultra UA code
+    else if (ua.includes("sm-g955")) body.classList.add("ua-s8plus"); // Galaxy S8+
     // ➕ add more mappings as needed
 
     // Cleanup if hot reloaded
@@ -115,16 +119,19 @@ function App({ Component, pageProps: { session, ...pageProps } }: AppProps) {
 
   return (
     <SessionProvider session={session}>
-      <CartProvider>
-        <IdleTimerProvider>
-          <Navbar />
-          <div className="pt-20 flex flex-col min-h-screen bg-[#1f2a44] text-[#e0e0e0]">
-            <Component {...pageProps} />
-          </div>
-          <Footer />
-          <SpeedInsights />
-        </IdleTimerProvider>
-      </CartProvider>
+      {/* 🆕 Wrap the whole app so every component (Navbar, pages, etc.) can access favorites */}
+      <FavoritesProvider>
+        <CartProvider>
+          <IdleTimerProvider>
+            <Navbar />
+            <div className="pt-20 flex flex-col min-h-screen bg-[#1f2a44] text-[#e0e0e0]">
+              <Component {...pageProps} />
+            </div>
+            <Footer />
+            <SpeedInsights />
+          </IdleTimerProvider>
+        </CartProvider>
+      </FavoritesProvider>
     </SessionProvider>
   );
 }

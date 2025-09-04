@@ -67,8 +67,13 @@ const n = (v: any) => {
   return Number.isFinite(num) ? num : undefined;
 };
 function toBool(v: any) {
-  const x = String(v ?? "").toLowerCase();
-  return x === "true" || x === "1" || x === "yes";
+  const x = String(v ?? "")
+    .trim()
+    .toLowerCase();
+  if (!x) return false;
+  if (["1", "true", "yes", "on"].includes(x)) return true;
+  if (["0", "false", "no", "off"].includes(x)) return false;
+  return false;
 }
 function toAudience(v: any): string[] {
   if (Array.isArray(v)) return v.map(String);
@@ -181,6 +186,11 @@ export default async function handler(
       }
       if ("specs" in fields) {
         patch.specs = toSpecs(fields.specs);
+      }
+
+      // 🆕 stock: only set if provided to avoid unintended overwrite
+      if ("inStock" in fields) {
+        patch.inStock = toBool(fields.inStock);
       }
 
       // Image handling

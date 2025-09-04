@@ -34,6 +34,8 @@ type AdminProduct = {
   createdAt?: string;
   department?: "jewelry" | "watch";
   skuNumber?: number;
+  // 🆕 stock flag
+  inStock?: boolean;
 };
 
 type Department = "jewelry" | "watch";
@@ -69,7 +71,7 @@ function pickImage(p: AdminProduct): string {
     p.images?.[0] ||
     (p.image as string) ||
     (p.imageUrl as string) ||
-    "/products/gray-placeholder.jpg"; // fixed path
+    "/products/gray-placeholder.jpg";
   return thumb;
 }
 
@@ -93,6 +95,8 @@ type ApiProduct = {
   skuNumber?: number | null;
   isLegacy?: boolean;
   source?: "db" | "legacy";
+  // 🆕
+  inStock?: boolean | null;
 };
 
 function adaptApiProduct(p: ApiProduct): AdminProduct {
@@ -128,6 +132,8 @@ function adaptApiProduct(p: ApiProduct): AdminProduct {
     createdAt: (p.createdAt as any) ?? undefined,
     department: (p.department as any) ?? undefined,
     skuNumber: (p.skuNumber as any) ?? undefined,
+    // 🆕 default to true if missing
+    inStock: p.inStock !== false,
   };
 }
 
@@ -146,6 +152,9 @@ export default function AdminProductsList() {
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const specFields = getSpecFields(dept, cat, sub);
   const [specFilter, setSpecFilter] = useState<Record<string, any>>({});
+
+  // 🆕 stock filter
+  const [stock, setStock] = useState<"all" | "in" | "out">("all");
 
   // paging
   const [page, setPage] = useState(1);
@@ -180,17 +189,16 @@ export default function AdminProductsList() {
   useEffect(() => {
     setCat("");
     setSub("");
-    setSpecFilter({}); // reset spec filters on dept change
+    setSpecFilter({});
     setPage(1);
   }, [dept]);
 
   useEffect(() => {
     setSub("");
-    setSpecFilter({}); // reset spec filters on category change
+    setSpecFilter({});
     setPage(1);
   }, [cat]);
 
-  // header click sort toggle
   function toggleSort(key: SortKey) {
     if (sortKey === key) {
       setSortDir((d) => (d === "asc" ? "desc" : "asc"));
@@ -200,7 +208,6 @@ export default function AdminProductsList() {
     }
   }
 
-  // client filtering + sorting
   const filtered = useMemo(() => {
     const needle = q.trim().toLowerCase();
     const wantedSpecs = Object.fromEntries(
@@ -213,6 +220,10 @@ export default function AdminProductsList() {
         return false;
       const pSub = (p.subcategory ?? p.subCategory ?? "") as string;
       if (sub && pSub.toLowerCase() !== sub.toLowerCase()) return false;
+
+      // 🆕 stock filter
+      if (stock === "in" && p.inStock === false) return false;
+      if (stock === "out" && (p.inStock ?? true) === true) return false;
 
       if (needle) {
         const hay = `${p.title ?? ""} ${p.name ?? ""} ${p.description ?? ""} ${
@@ -268,12 +279,11 @@ export default function AdminProductsList() {
         const bs = typeof b.skuNumber === "number" ? b.skuNumber : -Infinity;
         return (as - bs) * dir;
       }
-      // createdAt default
       const at = a.createdAt ? new Date(a.createdAt).getTime() : 0;
       const bt = b.createdAt ? new Date(b.createdAt).getTime() : 0;
       return (at - bt) * dir;
     });
-  }, [allItems, dept, cat, sub, q, specFilter, sortKey, sortDir]);
+  }, [allItems, dept, cat, sub, q, specFilter, sortKey, sortDir, stock]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const current = filtered.slice((page - 1) * pageSize, page * pageSize);
@@ -318,13 +328,14 @@ export default function AdminProductsList() {
           archived: Boolean(p.archived),
           specs: p.specs ?? {},
           audience: p.audience ?? ["unisex"],
+          // keep stock true by default when migrating legacy
+          inStock: p.inStock !== false,
         }),
       });
       const data = await res.json();
       if (!res.ok || !data?.ok)
         throw new Error(data?.error || "Migration failed");
 
-      // 🔄 Reload from API (reads both collections) and normalize
       const reload = await fetch("/api/admin/products?includeLegacy=1").then(
         (r) => r.json()
       );
@@ -412,6 +423,17 @@ export default function AdminProductsList() {
           ))}
         </select>
 
+        {/* 🆕 Stock filter */}
+        <select
+          value={stock}
+          onChange={(e) => setStock(e.target.value as any)}
+          className="px-3 py-2 rounded bg-[var(--bg-nav)]"
+        >
+          <option value="all">All Stock</option>
+          <option value="in">In Stock</option>
+          <option value="out">Out of Stock</option>
+        </select>
+
         <input
           value={q}
           onChange={(e) => setQ(e.target.value)}
@@ -421,7 +443,6 @@ export default function AdminProductsList() {
 
         <span className="opacity-50 mx-2">|</span>
 
-        {/* Keep dropdown sort controls (optional) */}
         <label className="text-sm">Sort:</label>
         <select
           value={sortKey}
@@ -454,7 +475,7 @@ export default function AdminProductsList() {
             </summary>
             <div className="p-3 flex flex-wrap gap-3">
               {specFields.map(([key, def]) => {
-                const v = specFilter[key] ?? "";
+                const v = (specFilter as any)[key] ?? "";
                 if (def.type === "select") {
                   return (
                     <div key={key}>
@@ -588,7 +609,10 @@ export default function AdminProductsList() {
                     : "▼"
                   : ""}
               </th>
-              <th className="py-2 px-3">Audience</th>
+
+              {/* 🆕 Stock column */}
+              <th className="py-2 px-3">Stock</th>
+
               <th
                 className="py-2 px-3 cursor-pointer select-none"
                 onClick={() => toggleSort("unitPrice")}
@@ -611,19 +635,19 @@ export default function AdminProductsList() {
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={9} className="py-6 text-center">
+                <td colSpan={10} className="py-6 text-center">
                   Loading…
                 </td>
               </tr>
             ) : err ? (
               <tr>
-                <td colSpan={9} className="py-6 text-center text-red-300">
+                <td colSpan={10} className="py-6 text-center text-red-300">
                   Error: {err}
                 </td>
               </tr>
             ) : current.length === 0 ? (
               <tr>
-                <td colSpan={9} className="py-6 text-center">
+                <td colSpan={10} className="py-6 text-center">
                   No products.
                 </td>
               </tr>
@@ -668,20 +692,20 @@ export default function AdminProductsList() {
                     </td>
                     <td className="py-2 px-3">{p.category || "-"}</td>
                     <td className="py-2 px-3">{subCat || "-"}</td>
+
+                    {/* 🆕 Stock badge */}
                     <td className="py-2 px-3">
-                      <div className="flex flex-wrap gap-1">
-                        {(p.audience?.length ? p.audience : ["unisex"]).map(
-                          (a) => (
-                            <span
-                              key={a}
-                              className="text-xs px-2 py-0.5 rounded-full bg-[#364763]"
-                            >
-                              {a}
-                            </span>
-                          )
-                        )}
-                      </div>
+                      {p.inStock !== false ? (
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-green-500/20 text-green-300 border border-green-600/40">
+                          In Stock
+                        </span>
+                      ) : (
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-red-500/20 text-red-300 border border-red-600/40">
+                          Out of Stock
+                        </span>
+                      )}
                     </td>
+
                     <td className="py-2 px-3">${price.toFixed(2)}</td>
                     <td className="py-2 px-3 text-sm">
                       {p.createdAt

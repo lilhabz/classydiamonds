@@ -109,6 +109,10 @@ export function mapDbToProduct(doc: any): Product {
     specs: doc.specs && typeof doc.specs === "object" ? doc.specs : undefined,
     featured: typeof doc.featured === "boolean" ? doc.featured : undefined,
     skuNumber: typeof doc.skuNumber === "number" ? doc.skuNumber : undefined,
+
+    /** 🆕 Stock flag (default true if missing/invalid) */
+    inStock: typeof doc.inStock === "boolean" ? doc.inStock : true,
+
     createdAt: doc.createdAt ? String(doc.createdAt) : undefined,
     updatedAt: doc.updatedAt ? String(doc.updatedAt) : undefined,
   };
@@ -175,6 +179,8 @@ export async function createProduct(input: LegacyCreate) {
   const now = new Date();
 
   const toInsert = normalizeForWrite({
+    // 🆕 default inStock true if absent
+    inStock: typeof clean.inStock === "boolean" ? clean.inStock : true,
     ...clean,
     createdAt: now,
     updatedAt: now,

@@ -14,7 +14,9 @@ export type CanonicalAdminProduct = {
   isLegacy: boolean;
   createdAt?: string | Date | null;
   updatedAt?: string | Date | null;
-  // add anything else your UI needs (sku, availability, etc.)
+
+  /** 🆕 Stock flag (default true if missing) */
+  inStock?: boolean | null;
 };
 
 /** Safe string getter */
@@ -82,6 +84,7 @@ export function adaptLegacyProduct(doc: any): CanonicalAdminProduct {
     isLegacy: true,
     createdAt: doc?.createdAt || null,
     updatedAt: doc?.updatedAt || null,
+    inStock: doc?.inStock !== false, // default true for legacy
   };
 }
 
@@ -102,5 +105,6 @@ export function adaptNewProduct(doc: any): CanonicalAdminProduct {
     isLegacy: false,
     createdAt: doc?.createdAt || null,
     updatedAt: doc?.updatedAt || null,
+    inStock: doc?.inStock !== false, // default true if missing
   };
 }

@@ -5,6 +5,8 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+// 🆕 favorites
+import { useFavorites } from "../context/FavoritesContext";
 
 export type ProductCardProps = {
   slug: string;
@@ -57,6 +59,10 @@ export default function ProductCard({
   const [unoptimized, setUnoptimized] = useState(false);
   const [failedOnce, setFailedOnce] = useState(false);
 
+  // 🆕 favorites
+  const { rehydrated, isFavorite, toggleFavorite } = useFavorites();
+  const fav = rehydrated ? isFavorite(slug) : false;
+
   useEffect(() => {
     setSrc(initial);
     setUnoptimized(false);
@@ -75,6 +81,14 @@ export default function ProductCard({
 
   const displayPrice = salePrice ?? price;
 
+  // 🆕 stop link navigation when clicking the heart
+  const onHeartClick: React.MouseEventHandler<HTMLButtonElement> = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!rehydrated) return; // avoid mismatch before we know the real state
+    toggleFavorite(slug);
+  };
+
   return (
     <div
       className={
@@ -87,16 +101,6 @@ export default function ProductCard({
         width: "100%",
         height: "auto",
         // Row height constants so every card is identical across pages:
-        // tweak these to nudge the look globally.
-        // image keeps 4:3 ratio; rows below are fixed heights.
-        // Action row, title, type, price are locked so grids align.
-        // (You can fine-tune these if you later change font sizes.)
-        // --row-h-action: tiny icon row
-        // --row-h-title: single-line title
-        // --row-h-type: single-line type
-        // --row-h-price: single-line price
-        // Fonts are chosen to fit within those heights.
-        // (All rows are vertically centered via line-height = height)
         ["--row-h-action" as any]: "36px",
         ["--row-h-title" as any]: "22px",
         ["--row-h-type" as any]: "20px",
@@ -132,17 +136,27 @@ export default function ProductCard({
           className="flex items-center justify-center gap-6 text-neutral-500"
           style={{ height: "var(--row-h-action)" }}
         >
-          {/* inline SVG heart to avoid extra deps */}
+          {/* 🆕 Heart button (persistent favorites) */}
           <button
             type="button"
-            aria-label="Save to wishlist"
-            className="p-1 hover:text-neutral-700"
+            onClick={onHeartClick}
+            aria-label={fav ? "Remove from favorites" : "Save to wishlist"}
+            aria-pressed={fav}
+            disabled={!rehydrated}
+            className={
+              "p-1 transition-colors " +
+              (fav
+                ? "text-rose-600 hover:text-rose-700"
+                : "hover:text-neutral-700")
+            }
+            title={fav ? "Saved to Favorites" : "Save to Favorites"}
           >
+            {/* same heart path; filled when active */}
             <svg
               width="20"
               height="20"
               viewBox="0 0 24 24"
-              fill="none"
+              fill={fav ? "currentColor" : "none"}
               stroke="currentColor"
               strokeWidth="1.8"
               strokeLinecap="round"
@@ -152,7 +166,8 @@ export default function ProductCard({
               <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z" />
             </svg>
           </button>
-          <span className="sr-only">•</span>
+
+          {/* center dot spacer to match inspo */}
           <span aria-hidden="true" className="text-xs select-none">
             •
           </span>

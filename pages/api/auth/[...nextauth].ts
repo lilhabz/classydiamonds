@@ -1,4 +1,4 @@
-// 📄 pages/api/auth/[...nextauth].ts – Handles login, Google/Credentials providers, email confirmation enforcement, full session fields, and admin access 🛠️
+// 📄 pages/api/auth/[...nextauth].ts – Handles login, Google/Credentials providers, email confirmation enforcement, full session fields, admin access, and favorites 🛠️
 
 import NextAuth, { AuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
@@ -54,7 +54,7 @@ export const authOptions: AuthOptions = {
           email: user.email,
           isAdmin: user.isAdmin || false,
 
-          // 🆕 Raw splits for session
+          // 🧩 Raw splits for session
           firstName: user.firstName || "",
           lastName: user.lastName || "",
           phone: user.phone || "",
@@ -63,7 +63,10 @@ export const authOptions: AuthOptions = {
           state: user.state || "",
           zip: user.zip || "",
           country: user.country || "",
-        } as User;
+
+          // 🆕 Favorites from DB
+          favorites: Array.isArray(user.favorites) ? user.favorites : [],
+        } as User & { favorites?: string[] };
       },
     }),
   ],
@@ -84,14 +87,25 @@ export const authOptions: AuthOptions = {
     async jwt({
       token,
       user,
+      account,
+      profile,
+      trigger,
     }: {
       token: JWT;
-      user?: User & { firstName?: string; lastName?: string };
+      user?: User & {
+        firstName?: string;
+        lastName?: string;
+        favorites?: string[];
+      };
+      account?: any;
+      profile?: any;
+      trigger?: "signIn" | "signUp" | "update";
     }) {
+      // On first sign-in (Google or Credentials) we have a `user` object → hydrate token fully
       if (user) {
         token.id = user.id;
-        token.name = user.name!;
-        token.email = user.email!;
+        token.name = user.name ?? "";
+        token.email = user.email ?? "";
         token.isAdmin = (user as any).isAdmin || false;
 
         token.firstName = (user as any).firstName || "";
@@ -103,7 +117,34 @@ export const authOptions: AuthOptions = {
         token.state = (user as any).state || "";
         token.zip = (user as any).zip || "";
         token.country = (user as any).country || "";
+
+        // 🆕 Favorites (from DB at login)
+        token.favorites = Array.isArray(user.favorites) ? user.favorites : [];
+        return token;
       }
+
+      // If we already have favorites on token, keep them
+      if (Array.isArray((token as any).favorites)) {
+        return token;
+      }
+
+      // 🛟 Fallback: if token lacks favorites but we know the email, fetch once
+      if (token?.email) {
+        try {
+          const client = await clientPromise;
+          const db = client.db("classydiamonds");
+          const doc = await db
+            .collection("users")
+            .findOne({ email: token.email }, { projection: { favorites: 1 } });
+          (token as any).favorites = Array.isArray(doc?.favorites)
+            ? doc!.favorites
+            : [];
+        } catch {
+          // ignore DB errors; token continues without favorites
+          (token as any).favorites = [];
+        }
+      }
+
       return token;
     },
 
@@ -113,7 +154,11 @@ export const authOptions: AuthOptions = {
       token,
     }: {
       session: Session;
-      token: JWT & { firstName?: string; lastName?: string };
+      token: JWT & {
+        firstName?: string;
+        lastName?: string;
+        favorites?: string[];
+      };
     }) {
       if (session.user) {
         session.user.id = token.id!;
@@ -125,12 +170,17 @@ export const authOptions: AuthOptions = {
         (session.user as any).firstName = token.firstName || "";
         (session.user as any).lastName = token.lastName || "";
 
-        (session.user as any).phone = token.phone || "";
-        (session.user as any).address = token.address || "";
-        (session.user as any).city = token.city || "";
-        (session.user as any).state = token.state || "";
-        (session.user as any).zip = token.zip || "";
-        (session.user as any).country = token.country || "";
+        (session.user as any).phone = (token as any).phone || "";
+        (session.user as any).address = (token as any).address || "";
+        (session.user as any).city = (token as any).city || "";
+        (session.user as any).state = (token as any).state || "";
+        (session.user as any).zip = (token as any).zip || "";
+        (session.user as any).country = (token as any).country || "";
+
+        // 🆕 Favorites on session
+        (session.user as any).favorites = Array.isArray(token.favorites)
+          ? token.favorites
+          : [];
       }
       return session;
     },

@@ -142,6 +142,15 @@ export default function AccountPage({ user, orders }: any) {
             >
               🔑 Change Password
             </button>
+
+            {/* 🆕 Favorites entry (spans full width on small; fits grid cleanly) */}
+            <Link
+              href="/account/favorites"
+              className="sm:col-span-2 w-full bg-[#2a374f] hover:bg-[#364763] rounded-lg px-4 py-3 text-left"
+            >
+              ❤️ View Favorites
+            </Link>
+
             <div className="sm:col-span-2 flex flex-col sm:flex-row gap-4">
               <Link
                 href="/contact?open=custom#custom-form"
@@ -246,8 +255,7 @@ export default function AccountPage({ user, orders }: any) {
                               <div className="flex flex-col">
                                 <span className="text-white">{item.name}</span>
                                 <span className="text-gray-400">
-                                  x{item.quantity} – $
-                                  {item.price * item.quantity}
+                                  x{item.quantity} – ${item.price * item.quantity}
                                 </span>
                               </div>
                             </li>

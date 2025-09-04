@@ -1,4 +1,4 @@
-// 📄 types/next-auth.d.ts – Extended Session, User, and JWT Fields with Name Parts
+// 📄 types/next-auth.d.ts – Extended Session, User, and JWT Fields with Name Parts + Favorites
 
 import NextAuth, { DefaultSession, DefaultUser } from "next-auth";
 
@@ -21,6 +21,9 @@ declare module "next-auth" {
       state?: string;
       zip?: string;
       country?: string;
+
+      // 🆕 Favorites
+      favorites?: string[];
     };
   }
 
@@ -36,6 +39,9 @@ declare module "next-auth" {
     state?: string;
     zip?: string;
     country?: string;
+
+    // 🆕 Favorites
+    favorites?: string[];
   }
 }
 
@@ -56,5 +62,8 @@ declare module "next-auth/jwt" {
     state?: string;
     zip?: string;
     country?: string;
+
+    // 🆕 Favorites
+    favorites?: string[];
   }
 }

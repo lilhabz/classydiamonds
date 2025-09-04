@@ -18,11 +18,11 @@ export interface Product {
   slug?: string;
 
   // taxonomy
-  department: Department;        // "jewelry" | "watch"
-  category?: string;             // e.g., "rings", "bracelets", "watches"
-  subCategory?: string;          // e.g., "engagement", "tennis", etc.
+  department: Department; // "jewelry" | "watch"
+  category?: string; // e.g., "rings", "bracelets", "watches"
+  subCategory?: string; // e.g., "engagement", "tennis", etc.
 
-  audience?: Audience[];         // default ["unisex"]
+  audience?: Audience[]; // default ["unisex"]
   gender?: "unisex" | "him" | "her"; // used by admin pages
 
   // pricing (legacy tolerant)
@@ -33,8 +33,8 @@ export interface Product {
   unitPrice?: number | string;
 
   // media
-  imageUrl?: string;             // convenience/legacy primary image
-  images?: string[];             // gallery (first will mirror imageUrl)
+  imageUrl?: string; // convenience/legacy primary image
+  images?: string[]; // gallery (first will mirror imageUrl)
 
   // details
   description?: string;
@@ -45,6 +45,9 @@ export interface Product {
   // admin/meta (optional, used by some admin pages)
   featured?: boolean;
   skuNumber?: number;
+
+  /** 🆕 Stock flag (default true if missing) */
+  inStock?: boolean;
 
   // system
   createdAt?: string | Date;
