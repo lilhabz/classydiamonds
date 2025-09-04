@@ -3,7 +3,8 @@
 
 import Image from "next/image";
 import Head from "next/head";
-import { useCart } from "@/context/CartContext";
+// ❌ removed CartContext import (no add-to-cart from cards)
+// import { useCart } from "@/context/CartContext";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/router";
 import type { GetServerSideProps } from "next";
@@ -54,6 +55,13 @@ const isRingCategory = (cat?: string) =>
   (cat ?? "").toLowerCase().includes("ring");
 const toArray = (v: string | string[] | undefined): string[] =>
   !v ? [] : Array.isArray(v) ? v : [v];
+
+const TITLE = (s: string) =>
+  s
+    .replace(/[-_]/g, " ")
+    .replace(/\b\w/g, (m) => m.toUpperCase())
+    .replace(/\s{2,}/g, " ")
+    .trim();
 
 /* ------------------------------- Constants -------------------------------- */
 // ✅ Use canonical slug here too
@@ -117,12 +125,11 @@ const CATEGORY_LABELS: Record<CategorySlug, string> = {
 
 /* ---------------------------------- Page ---------------------------------- */
 export default function JewelryPage({ products }: { products: ProductType[] }) {
-  const { addToCart } = useCart();
+  // ❌ removed addToCart from context (no CTA on cards)
+  // const { addToCart } = useCart();
   const [visibleCount, setVisibleCount] = useState(50);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
-  // NOTE: We’re no longer using /jewelry?category=... navigation,
-  // but we’re keeping the following refs/effects intact to avoid regressions.
   const [activeCategorySlug, setActiveCategorySlug] =
     useState<CategorySlug | null>(null);
   const [activeSub, setActiveSub] = useState<string>("all");
@@ -285,7 +292,6 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
 
   const totalProducts = shown.length;
 
-  // NOTE: goCategory is no longer used (navigation handled by CategoryGrid links to /category/<slug>)
   const goSub = (slug: string) => {
     if (!activeCategorySlug) return;
     setActiveSub(slug);
@@ -301,6 +307,14 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
   const heading = activeCategorySlug
     ? CATEGORY_LABELS[activeCategorySlug]
     : "All Jewelry";
+
+  // Derive a friendly type label per product (prefer subcategory, else category)
+  const typeFrom = (p: ProductType) => {
+    const sub = (p.subcategory || "").trim();
+    if (sub && sub !== "all") return TITLE(sub);
+    const canon = canonicalizeCategory(p.category) as CategorySlug;
+    return CATEGORY_LABELS[canon] ?? TITLE(p.category || "");
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-[var(--bg-page)] text-[var(--foreground)]">
@@ -337,7 +351,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
         <Breadcrumbs />
       </div>
 
-      {/* 💎 Category Tiles — now LINK to /category/<slug> (no more ?category= on /jewelry) */}
+      {/* 💎 Category Tiles — link to /category/<slug> */}
       <section
         ref={headerRef}
         className="pt-6 pb-4 px-0 sm:px-0 w-full"
@@ -348,13 +362,11 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
           title="Shop by Category"
           fullBleedDesktop
           desktopCols={4}
-          // ✅ THIS LINE routes to /category/<slug>
           routeTo="/category"
-          // ❌ Removed onSelect + local router push
         />
       </section>
 
-      {/* 🔖 Subcategory UI (only appears if user deep-links to ?category=…) */}
+      {/* 🔖 Subcategory UI (only when deep-linked to ?category=…) */}
       {activeCategorySlug && (
         <section className="mt-2 mb-4">
           <div className="mx-auto max-w-7xl">
@@ -415,22 +427,25 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
           <div className="hidden lg:block">
             <FiltersSidebar mode="desktop" />
           </div>
+
           {/* Product Grid */}
           <div className="flex justify-center">
             {shown.length === 0 ? (
               <p className="text-white/80">No products found.</p>
             ) : (
               <div
-                className="product-grid w-full sm:mx-auto"
-                style={{
-                  // Use the same sitewide spacing; mobile math needs actual section padding:
-                  ["--page-pad" as any]: "0px", // this section uses px-0 on the grid container
-                  // ["--grid-gap" as any]: "24px", // optional, defaults to 24px already
-                }}
+                className="
+                  grid w-full sm:mx-auto
+                  gap-x-6 gap-y-10
+                  grid-cols-2 md:grid-cols-3 lg:grid-cols-4
+                "
               >
                 {shown.slice(0, visibleCount).map((product) => {
-                  const category = (product.category || "").toLowerCase();
+                  const category = canonicalizeCategory(
+                    product.category || ""
+                  ) as CategorySlug;
                   const href = `/category/${category}/${product.slug}`;
+
                   return (
                     <ProductCard
                       key={product.id}
@@ -440,24 +455,14 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
                       price={product.price}
                       salePrice={product.salePrice ?? null}
                       href={href}
-                      onAddToCart={() => {
-                        if ((category || "").includes("ring"))
-                          return router.push(href);
-                        addToCart({
-                          id: product.id,
-                          slug: product.slug,
-                          name: product.name,
-                          price: product.price,
-                          discountedPrice: product.salePrice ?? undefined,
-                          image: product.image,
-                          quantity: 1,
-                        });
-                      }}
+                      stockLabel="In Stock"
+                      typeLabel={typeFrom(product)}
                     />
                   );
                 })}
               </div>
             )}
+
             {visibleCount < totalProducts && shown.length > 0 && (
               <div className="flex justify-center mt-10">
                 <button

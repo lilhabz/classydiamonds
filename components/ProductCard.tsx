@@ -1,4 +1,5 @@
-// components/ProductCard.tsx – Tiffany-style card (no CTA on card)
+// components/ProductCard.tsx — Tiffany-style tile (uniform size, no CTA)
+// ✅ Framed image → tiny icon row → divider → In Stock / Name / Type / Price
 "use client";
 
 import Image from "next/image";
@@ -11,16 +12,19 @@ export type ProductCardProps = {
   name: string;
   price: number;
   salePrice?: number | null;
-  /** kept for compatibility but unused on the card */
-  onAddToCart?: () => void;
+  /** link override (defaults to /product/[slug]) */
   href?: string;
+  /** "In Stock" / "Out of Stock" etc. */
+  stockLabel?: string;
+  /** e.g., "Ring", "Watch", "Bracelet" */
+  typeLabel?: string;
   className?: string;
   style?: React.CSSProperties;
 };
 
 const PLACEHOLDER = "/gray-placeholder.jpg";
 
-/* 🔧 Path helpers (no forced /products/) */
+/* Path helpers (no forced /products/) */
 function normalizeLocalPath(src: string) {
   const trimmed = src.trim();
   if (!trimmed) return PLACEHOLDER;
@@ -41,6 +45,8 @@ export default function ProductCard({
   price,
   salePrice,
   href,
+  stockLabel = "In Stock",
+  typeLabel,
   className = "",
   style,
 }: ProductCardProps) {
@@ -72,30 +78,40 @@ export default function ProductCard({
   return (
     <div
       className={
-        // white card + subtle border like the screenshots
-        `product-card group relative flex flex-col overflow-hidden rounded-xl border border-black/10 bg-white ${className}`
+        // White card + subtle border (matches luxury inspo)
+        "group relative flex flex-col overflow-hidden rounded-xl border border-black/10 bg-white " +
+        className
       }
       style={{
-        // Let the grid own width; avoid fixed px so cards don't overlap
+        // ✅ Let the grid decide the width; we guarantee same internal heights.
         width: "100%",
         height: "auto",
+        // Row height constants so every card is identical across pages:
+        // tweak these to nudge the look globally.
+        // image keeps 4:3 ratio; rows below are fixed heights.
+        // Action row, title, type, price are locked so grids align.
+        // (You can fine-tune these if you later change font sizes.)
+        // --row-h-action: tiny icon row
+        // --row-h-title: single-line title
+        // --row-h-type: single-line type
+        // --row-h-price: single-line price
+        // Fonts are chosen to fit within those heights.
+        // (All rows are vertically centered via line-height = height)
+        ["--row-h-action" as any]: "36px",
+        ["--row-h-title" as any]: "22px",
+        ["--row-h-type" as any]: "20px",
+        ["--row-h-price" as any]: "24px",
+        ["--fs-title" as any]: "15px",
+        ["--fs-type" as any]: "15px",
+        ["--fs-price" as any]: "16px",
         ...style,
       }}
     >
-      {/* 🔗 Clickable top area */}
-      <Link
-        href={link}
-        aria-label={name}
-        className="pc-link block"
-        style={{
-          width: "100%",
-          // If you were using your CSS vars, this still respects --link-h (optional)
-          height: "var(--link-h, auto)",
-        }}
-      >
-        {/* 🖼️ Framed image area (4:3 keeps rows even; object-contain like jewelry sites) */}
+      {/* Clickable top (image + text) */}
+      <Link href={link} aria-label={name} className="block">
+        {/* Framed image area (keeps rows even) */}
         <div className="relative w-full aspect-[4/3] bg-[#d6e9ff]/60 p-3">
-          {/* pale green inner frame */}
+          {/* Pale green inner frame */}
           <div className="absolute inset-2 rounded-sm bg-[#d8efc8]" />
           <div className="relative h-full w-full">
             <Image
@@ -111,57 +127,111 @@ export default function ProductCard({
           </div>
         </div>
 
-        {/* (optional) spacer below image if you still rely on your vars */}
-        <div style={{ width: "100%", height: "var(--spacer, 0px)" }} />
-
-        {/* 🏷️ Title */}
-        <h3
-          className="px-4 text-center font-medium text-neutral-900 truncate"
-          style={{
-            height: "var(--title-h, auto)",
-            fontSize: "var(--title-fs, 15px)",
-            lineHeight: "var(--title-h, 1.2)",
-          }}
-          title={name}
+        {/* Tiny action row (♡ + quick view) — fixed height */}
+        <div
+          className="flex items-center justify-center gap-6 text-neutral-500"
+          style={{ height: "var(--row-h-action)" }}
         >
-          {name}
-        </h3>
+          {/* inline SVG heart to avoid extra deps */}
+          <button
+            type="button"
+            aria-label="Save to wishlist"
+            className="p-1 hover:text-neutral-700"
+          >
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z" />
+            </svg>
+          </button>
+          <span className="sr-only">•</span>
+          <span aria-hidden="true" className="text-xs select-none">
+            •
+          </span>
+        </div>
 
-        {/* 💲 Price row */}
-        <p
-          className="px-4 text-center text-neutral-900"
-          style={{
-            height: "var(--price-h, auto)",
-            fontSize: "var(--price-fs, 16px)",
-            lineHeight: "var(--price-h, 1.2)",
-          }}
-          title={
-            salePrice
-              ? `$${price.toLocaleString()} → $${displayPrice.toLocaleString()}`
-              : `$${displayPrice.toLocaleString()}`
-          }
-        >
-          {salePrice ? (
-            <>
-              <span className="mr-2 text-neutral-400 line-through">
-                ${price.toLocaleString()}
-              </span>
-              <span className="font-semibold">
+        {/* Hairline divider */}
+        <div className="mx-4 border-t border-neutral-200" />
+
+        {/* Centered meta (fixed row heights for perfect alignment) */}
+        <div className="px-4 pb-4 pt-3 text-center">
+          {/* Stock */}
+          <p
+            className="uppercase tracking-wide text-neutral-600"
+            style={{
+              height: "16px", // small and steady; not counted in the locked rows below
+              fontSize: "12px",
+              lineHeight: "16px",
+            }}
+          >
+            {stockLabel}
+          </p>
+
+          {/* Name (single line) */}
+          <p
+            className="truncate text-neutral-900"
+            style={{
+              height: "var(--row-h-title)",
+              fontSize: "var(--fs-title)",
+              lineHeight: "var(--row-h-title)",
+              fontWeight: 500,
+              marginTop: 4,
+            }}
+            title={name}
+          >
+            {name}
+          </p>
+
+          {/* Type (single line) */}
+          <p
+            className="truncate text-neutral-900"
+            style={{
+              height: "var(--row-h-type)",
+              fontSize: "var(--fs-type)",
+              lineHeight: "var(--row-h-type)",
+            }}
+            title={typeLabel}
+          >
+            {typeLabel ?? ""}
+          </p>
+
+          {/* Price (single line) */}
+          <p
+            className="text-neutral-900"
+            style={{
+              height: "var(--row-h-price)",
+              fontSize: "var(--fs-price)",
+              lineHeight: "var(--row-h-price)",
+              fontWeight: 600,
+              marginTop: 4,
+            }}
+            title={
+              salePrice
+                ? `$${price.toLocaleString()} → $${displayPrice.toLocaleString()}`
+                : `$${displayPrice.toLocaleString()}`
+            }
+          >
+            {salePrice ? (
+              <>
+                <span className="mr-2 text-neutral-400 line-through">
+                  ${price.toLocaleString()}
+                </span>
                 ${displayPrice.toLocaleString()}
-              </span>
-            </>
-          ) : (
-            <span className="font-semibold">
-              ${displayPrice.toLocaleString()}
-            </span>
-          )}
-        </p>
+              </>
+            ) : (
+              <>${displayPrice.toLocaleString()}</>
+            )}
+          </p>
+        </div>
       </Link>
-
-      {/* ─────────── Divider like inspo ─────────── */}
-      <div className="mx-4 my-3 border-t border-neutral-200" />
-      {/* If you want “In Stock / Brand / Type”, render them above the divider instead.
-          Kept minimal since your props don't include those fields. */}
     </div>
   );
 }

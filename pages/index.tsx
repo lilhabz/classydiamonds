@@ -6,7 +6,6 @@ import Link from "next/link";
 import Head from "next/head";
 import Image from "next/image";
 import { GetServerSideProps } from "next";
-import { useCart } from "@/context/CartContext";
 import clientPromise from "@/lib/mongodb";
 import { useRouter } from "next/router";
 import CategoryGrid from "@/components/CategoryGrid";
@@ -57,7 +56,6 @@ export const getServerSideProps: GetServerSideProps<HomeProps> = async () => {
 };
 
 export default function Home({ products }: HomeProps) {
-  const { addToCart } = useCart();
   const featured = products;
   const router = useRouter();
 
@@ -169,14 +167,11 @@ export default function Home({ products }: HomeProps) {
             </p>
           ) : (
             <div
-              className="product-grid"
-              style={{
-                // Match this section’s padding so mobile --card-w math is exact
-                ["--page-pad" as any]: "16px", // px-4
-                // Optional phone tuning you already use:
-                ["--img-ratio-mobile" as any]: "1.3",
-                ["--mobile-font-scale" as any]: "0.82",
-              }}
+              className="
+                grid w-full
+                gap-x-6 gap-y-10
+                grid-cols-2
+              "
             >
               {featured.map((item) => (
                 <ProductCard
@@ -187,16 +182,12 @@ export default function Home({ products }: HomeProps) {
                   price={item.price}
                   salePrice={item.salePrice ?? null}
                   href={`/category/${item.category}/${item.slug}?scroll=true`}
-                  onAddToCart={() =>
-                    addToCart({
-                      id: item._id,
-                      slug: item.slug,
-                      name: item.name,
-                      price: item.price,
-                      discountedPrice: item.salePrice ?? undefined,
-                      image: item.image,
-                      quantity: 1,
-                    })
+                  stockLabel="In Stock"
+                  typeLabel={
+                    item.category === "necklaces-pendants"
+                      ? "Necklace"
+                      : item.category.charAt(0).toUpperCase() +
+                        item.category.slice(1).replace("-", " ")
                   }
                 />
               ))}
@@ -216,12 +207,11 @@ export default function Home({ products }: HomeProps) {
             </p>
           ) : (
             <div
-              className="product-grid"
-              style={{
-                // Optional: if you want a wider/larger gap specifically here, set it:
-                // ["--grid-gap" as any]: "24px" // (defaults to 24px already)
-                ["--page-pad" as any]: "16px", // matches px-4 (not used on desktop math, but harmless)
-              }}
+              className="
+                grid w-full
+                gap-x-6 gap-y-10
+                grid-cols-2 md:grid-cols-3 lg:grid-cols-4
+              "
             >
               {featured.map((item) => (
                 <ProductCard
@@ -232,16 +222,12 @@ export default function Home({ products }: HomeProps) {
                   price={item.price}
                   salePrice={item.salePrice ?? null}
                   href={`/category/${item.category}/${item.slug}?scroll=true`}
-                  onAddToCart={() =>
-                    addToCart({
-                      id: item._id,
-                      slug: item.slug,
-                      name: item.name,
-                      price: item.price,
-                      discountedPrice: item.salePrice ?? undefined,
-                      image: item.image,
-                      quantity: 1,
-                    })
+                  stockLabel="In Stock"
+                  typeLabel={
+                    item.category === "necklaces-pendants"
+                      ? "Necklace"
+                      : item.category.charAt(0).toUpperCase() +
+                        item.category.slice(1).replace("-", " ")
                   }
                 />
               ))}

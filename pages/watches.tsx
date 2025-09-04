@@ -3,7 +3,6 @@
 
 import Image from "next/image";
 import Head from "next/head";
-import { useCart } from "@/context/CartContext";
 import { GetServerSideProps } from "next";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import ProductCard from "@/components/ProductCard";
@@ -26,8 +25,6 @@ interface WatchesProps {
 }
 
 export default function WatchesPage({ products }: WatchesProps) {
-  const { addToCart } = useCart();
-
   return (
     <div className="min-h-screen flex flex-col bg-[var(--bg-page)] text-[var(--foreground)]">
       <Head>
@@ -67,11 +64,12 @@ export default function WatchesPage({ products }: WatchesProps) {
         <div className="text-center text-gray-400">No watches available.</div>
       ) : (
         <div
-          className="product-grid"
-          style={{
-            ["--page-pad" as any]: "16px", // section has px-4
-            // ["--grid-gap" as any]: "24px", // optional, defaults to 24px
-          }}
+          className="
+            grid w-full sm:mx-auto
+            gap-x-6 gap-y-10
+            grid-cols-2 md:grid-cols-3 lg:grid-cols-4
+            px-4 sm:px-6 lg:px-8
+          "
         >
           {products.map((product) => {
             const href =
@@ -88,17 +86,8 @@ export default function WatchesPage({ products }: WatchesProps) {
                 price={product.price}
                 salePrice={product.salePrice ?? null}
                 href={href || undefined}
-                onAddToCart={() =>
-                  addToCart({
-                    id: product.id,
-                    slug: product.slug,
-                    name: product.name,
-                    price: product.price,
-                    discountedPrice: product.salePrice ?? undefined,
-                    image: product.image,
-                    quantity: 1,
-                  })
-                }
+                stockLabel="In Stock"
+                typeLabel="Watch"
               />
             );
           })}

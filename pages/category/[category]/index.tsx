@@ -7,7 +7,8 @@ import { useRouter } from "next/router";
 import clientPromise from "@/lib/mongodb";
 import FiltersSidebar from "@/components/FiltersSidebar";
 import Breadcrumbs from "@/components/Breadcrumbs";
-import { useCart } from "@/context/CartContext";
+// ❌ removed CartContext (no add-to-cart on cards)
+// import { useCart } from "@/context/CartContext";
 import ProductCard from "@/components/ProductCard";
 import { CATEGORY_LABELS, SUBCATEGORY_MAP } from "@/data/taxonomy";
 import SubcategoryCards from "@/components/SubcategoryCards";
@@ -165,7 +166,8 @@ export default function CategoryPage({
   products,
 }: PageProps) {
   const router = useRouter();
-  const { addToCart } = useCart();
+  // ❌ no addToCart from context
+  // const { addToCart } = useCart();
 
   // Keep ?scroll=true behavior
   useEffect(() => {
@@ -199,6 +201,17 @@ export default function CategoryPage({
     if (categorySlug === "necklaces-pendants")
       return "/category/necklace-cat.jpg";
     return "/category/ring-cat.jpg";
+  };
+
+  // Derive a friendly type label per product (prefer subcategory, else category)
+  const typeLabelFrom = (p: Product) => {
+    const sub = (p.subcategory || "").trim();
+    if (sub && sub !== "all")
+      return sub.replace(/-/g, " ").replace(/\b\w/g, (m) => m.toUpperCase());
+    const label =
+      CATEGORY_LABELS[categorySlug as keyof typeof CATEGORY_LABELS] ||
+      categorySlug;
+    return label.replace(/& Pendants/i, "Necklace"); // optional tweak if desired
   };
 
   return (
@@ -257,11 +270,11 @@ export default function CategoryPage({
               <p className="text-white/80">No products found.</p>
             ) : (
               <div
-                className="product-grid"
-                style={{
-                  ["--page-pad" as any]: "16px", // section has px-4
-                  // ["--grid-gap" as any]: "24px", // optional override (24px is default)
-                }}
+                className="
+                  grid w-full
+                  gap-x-6 gap-y-10
+                  grid-cols-2 md:grid-cols-3 lg:grid-cols-4
+                "
               >
                 {products.map((p) => {
                   const href = `/category/${encodeURIComponent(
@@ -276,17 +289,8 @@ export default function CategoryPage({
                       price={p.price}
                       salePrice={p.salePrice ?? null}
                       href={href}
-                      onAddToCart={() =>
-                        addToCart({
-                          id: p._id || p.id || p.slug,
-                          slug: p.slug,
-                          name: p.name,
-                          price: p.price,
-                          discountedPrice: p.salePrice ?? undefined,
-                          image: p.image,
-                          quantity: 1,
-                        })
-                      }
+                      stockLabel="In Stock"
+                      typeLabel={typeLabelFrom(p)}
                     />
                   );
                 })}

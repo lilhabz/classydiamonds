@@ -1,14 +1,13 @@
-// components/ProductGrid.tsx – responsive grid for ProductCard
+// components/ProductGrid.tsx — responsive grid for ProductCard (uniform sizing)
 "use client";
 
 import ProductCard, { ProductCardProps } from "./ProductCard";
 
+type GridItem = Omit<ProductCardProps, "style" | "className"> & {
+  className?: string;
+};
 type GridProps = {
-  items: (Omit<ProductCardProps, "onAddToCart"> & {
-    // explicitly no Add to Cart here
-    stockLabel?: string;
-    subtitle?: string;
-  })[];
+  items: GridItem[];
   className?: string;
 };
 
