@@ -18,6 +18,34 @@ type ProductLite = {
   href?: string;
 };
 
+// 🔑 helper to pick the most likely image field
+const pickImage = (p: any) =>
+  p.image ??
+  p.imageUrl ??
+  p.thumbnail ??
+  p.mainImage ??
+  p.coverImage ??
+  (Array.isArray(p.images) ? p.images[0] : undefined) ??
+  (Array.isArray(p.photos) ? p.photos[0]?.url || p.photos[0] : undefined) ??
+  null;
+
+const mapProduct = (p: any): ProductLite => ({
+  slug: p.slug ?? p.id ?? "",
+  image: pickImage(p),
+  name: p.name ?? p.title ?? p.slug ?? "Unnamed Product",
+  // show sale if present, otherwise base price
+  price: Number(p.salePrice ?? p.price ?? p.unitPrice ?? 0) || 0,
+  salePrice:
+    p.salePrice != null
+      ? Number(p.salePrice)
+      : p.discountPrice != null
+      ? Number(p.discountPrice)
+      : null,
+  inStock: typeof p.inStock === "boolean" ? p.inStock : undefined,
+  typeLabel: p.type ?? p.category ?? p.subcategory ?? undefined,
+  href: p.href ?? (p.slug ? `/product/${p.slug}` : undefined),
+});
+
 async function fetchProductsBySlugs(slugs: string[]): Promise<ProductLite[]> {
   if (!slugs.length) return [];
 
@@ -28,18 +56,8 @@ async function fetchProductsBySlugs(slugs: string[]): Promise<ProductLite[]> {
     );
     if (res.ok) {
       const data = await res.json();
-      // Expecting an array of products; map leniently
       if (Array.isArray(data)) {
-        return data.map((p: any) => ({
-          slug: p.slug ?? p.id ?? "",
-          image: p.image ?? p.images?.[0] ?? null,
-          name: p.name ?? p.title ?? p.slug ?? "Unnamed Product",
-          price: Number(p.salePrice ?? p.price ?? 0) || 0,
-          salePrice: p.salePrice != null ? Number(p.salePrice) : null,
-          inStock: typeof p.inStock === "boolean" ? p.inStock : undefined,
-          typeLabel: p.type ?? p.category ?? undefined,
-          href: p.href, // optional
-        })) as ProductLite[];
+        return data.map(mapProduct);
       }
     }
   } catch {}
@@ -54,16 +72,7 @@ async function fetchProductsBySlugs(slugs: string[]): Promise<ProductLite[]> {
     if (res.ok) {
       const data = await res.json();
       if (Array.isArray(data)) {
-        return data.map((p: any) => ({
-          slug: p.slug ?? p.id ?? "",
-          image: p.image ?? p.images?.[0] ?? null,
-          name: p.name ?? p.title ?? p.slug ?? "Unnamed Product",
-          price: Number(p.salePrice ?? p.price ?? 0) || 0,
-          salePrice: p.salePrice != null ? Number(p.salePrice) : null,
-          inStock: typeof p.inStock === "boolean" ? p.inStock : undefined,
-          typeLabel: p.type ?? p.category ?? undefined,
-          href: p.href,
-        })) as ProductLite[];
+        return data.map(mapProduct);
       }
     }
   } catch {}
