@@ -1,4 +1,4 @@
-// components/ProductCard.tsx – Tiffany mobile sizes (phones), auto-height card
+// components/ProductCard.tsx – Tiffany-style card (no CTA on card)
 "use client";
 
 import Image from "next/image";
@@ -11,11 +11,10 @@ export type ProductCardProps = {
   name: string;
   price: number;
   salePrice?: number | null;
-  onAddToCart: () => void;
+  /** kept for compatibility but unused on the card */
+  onAddToCart?: () => void;
   href?: string;
-  /** ✅ new: allow external classes (e.g. lg:[--card-w:100%]) */
   className?: string;
-  /** ✅ new: allow optional inline style overrides */
   style?: React.CSSProperties;
 };
 
@@ -41,10 +40,9 @@ export default function ProductCard({
   name,
   price,
   salePrice,
-  onAddToCart,
   href,
-  className = "", // ✅ new
-  style, // ✅ new
+  className = "",
+  style,
 }: ProductCardProps) {
   const link = href ?? `/product/${slug}`;
   const initial = useMemo(() => resolveImageSrc(image), [image]);
@@ -73,58 +71,56 @@ export default function ProductCard({
 
   return (
     <div
-      className={`product-card rounded-2xl bg-[#25304f] shadow-lg hover:shadow-xl transform-gpu transition-transform duration-300 md:hover:scale-105 no-touch-scale ${className}`}
+      className={
+        // white card + subtle border like the screenshots
+        `product-card group relative flex flex-col overflow-hidden rounded-xl border border-black/10 bg-white ${className}`
+      }
       style={{
-        width: "var(--card-w)",
-        // ✅ critical: let the card height be auto so the button never overlaps the next row
+        // Let the grid own width; avoid fixed px so cards don't overlap
+        width: "100%",
         height: "auto",
-        ...style, // allow caller overrides if provided
+        ...style,
       }}
     >
-      {/* 🔗 Clickable top area (Tiffany-sized per device) */}
+      {/* 🔗 Clickable top area */}
       <Link
         href={link}
         aria-label={name}
-        className="pc-link block mx-auto group"
+        className="pc-link block"
         style={{
-          width: "var(--card-inner-w)",
-          height: "var(--link-h)", // image + content area (per-device)
+          width: "100%",
+          // If you were using your CSS vars, this still respects --link-h (optional)
+          height: "var(--link-h, auto)",
         }}
       >
-        {/* 🖼️ Image */}
-        <div
-          className="pc-img overflow-hidden rounded-xl relative"
-          style={{
-            width: "var(--img)",
-            height: "var(--img-h, var(--img))", // phones use square
-            minHeight: 120,
-          }}
-        >
-          <Image
-            src={src}
-            alt={name}
-            fill
-            className="object-cover transform transition-transform duration-300 group-hover:scale-105"
-            unoptimized={unoptimized}
-            onError={handleImgError}
-            sizes="(max-width: 640px) 50vw, 195px"
-            priority={false}
-          />
+        {/* 🖼️ Framed image area (4:3 keeps rows even; object-contain like jewelry sites) */}
+        <div className="relative w-full aspect-[4/3] bg-[#d6e9ff]/60 p-3">
+          {/* pale green inner frame */}
+          <div className="absolute inset-2 rounded-sm bg-[#d8efc8]" />
+          <div className="relative h-full w-full">
+            <Image
+              src={src}
+              alt={name}
+              fill
+              className="object-contain transition-transform duration-300 group-hover:scale-[1.03]"
+              unoptimized={unoptimized}
+              onError={handleImgError}
+              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+              priority={false}
+            />
+          </div>
         </div>
 
-        {/* 🔢 Spacer below image inside link area */}
-        <div
-          style={{ width: "var(--card-inner-w)", height: "var(--spacer)" }}
-        />
+        {/* (optional) spacer below image if you still rely on your vars */}
+        <div style={{ width: "100%", height: "var(--spacer, 0px)" }} />
 
         {/* 🏷️ Title */}
         <h3
-          className="font-medium text-white truncate"
+          className="px-4 text-center font-medium text-neutral-900 truncate"
           style={{
-            width: "var(--card-inner-w)",
-            height: "var(--title-h)",
-            fontSize: "var(--title-fs)",
-            lineHeight: "var(--title-h)", // single-line, vertically centered like their tiles
+            height: "var(--title-h, auto)",
+            fontSize: "var(--title-fs, 15px)",
+            lineHeight: "var(--title-h, 1.2)",
           }}
           title={name}
         >
@@ -133,12 +129,11 @@ export default function ProductCard({
 
         {/* 💲 Price row */}
         <p
-          className="text-gray-200 truncate"
+          className="px-4 text-center text-neutral-900"
           style={{
-            width: "var(--card-inner-w)",
-            height: "var(--price-h)",
-            fontSize: "var(--price-fs)",
-            lineHeight: "var(--price-h)",
+            height: "var(--price-h, auto)",
+            fontSize: "var(--price-fs, 16px)",
+            lineHeight: "var(--price-h, 1.2)",
           }}
           title={
             salePrice
@@ -148,7 +143,7 @@ export default function ProductCard({
         >
           {salePrice ? (
             <>
-              <span className="mr-2 text-gray-300 line-through">
+              <span className="mr-2 text-neutral-400 line-through">
                 ${price.toLocaleString()}
               </span>
               <span className="font-semibold">
@@ -163,22 +158,10 @@ export default function ProductCard({
         </p>
       </Link>
 
-      {/* 🛒 CTA (outside the link; adds to total auto height) */}
-      <div className="w-full flex justify-center pb-2">
-        <button
-          onClick={onAddToCart}
-          className="rounded-xl text-white font-semibold focus:outline-none focus:ring-2 focus:ring-white/40 transition-colors duration-200 hover:bg-white/20"
-          style={{
-            width: "var(--card-inner-w)",
-            height: "var(--btn-h)",
-            background: "rgba(255,255,255,0.10)",
-            fontSize: "var(--btn-fs)",
-          }}
-          aria-label={`Add ${name} to cart`}
-        >
-          Add to Cart
-        </button>
-      </div>
+      {/* ─────────── Divider like inspo ─────────── */}
+      <div className="mx-4 my-3 border-t border-neutral-200" />
+      {/* If you want “In Stock / Brand / Type”, render them above the divider instead.
+          Kept minimal since your props don't include those fields. */}
     </div>
   );
 }
