@@ -307,3 +307,95 @@ export function buildSearchFilter(qs: {
 
   return filter;
 }
+
+/* ---------------- Compact mappers for lightweight APIs ---------------- */
+
+export type CompactProduct = {
+  slug: string;
+  name: string;
+  price: number;
+  salePrice?: number | null;
+  image: string | null;
+  category: string | null;
+  inStock?: boolean;
+  /** Convenience link for UI that expects /category/<category>/<slug> */
+  href?: string;
+};
+
+function toCompact(p: Product): CompactProduct {
+  const name = p.title || (p as any).name || p.slug || "Unnamed Product";
+  const price =
+    typeof p.price === "number"
+      ? p.price
+      : typeof p.unitPrice === "number"
+      ? (p.unitPrice as number)
+      : typeof p.salePrice === "number"
+      ? (p.salePrice as number)
+      : 0;
+
+  const image =
+    p.imageUrl && String(p.imageUrl).length
+      ? String(p.imageUrl)
+      : Array.isArray(p.images) && p.images.length
+      ? String(p.images[0])
+      : null;
+
+  // prefer explicit category; tolerate legacy
+  const category =
+    (p.category as string | undefined) ??
+    ((p as any).type as string | undefined) ??
+    null;
+
+  const href =
+    category && p.slug ? `/category/${category}/${p.slug}` : undefined;
+
+  return {
+    slug: String(p.slug || ""), // ✅ ensure string
+    name,
+    price,
+    salePrice:
+      typeof p.salePrice === "number"
+        ? p.salePrice
+        : typeof (p as any).discountedPrice === "number"
+        ? ((p as any).discountedPrice as number)
+        : null,
+    image,
+    category,
+    inStock: typeof p.inStock === "boolean" ? p.inStock : undefined,
+    href,
+  };
+}
+
+/** 🔍 Fast lookup by slugs, returning compact product objects for UI */
+export async function getProductsBySlugs(
+  slugs: string[]
+): Promise<CompactProduct[]> {
+  const cleaned = Array.from(
+    new Set((slugs || []).map((s) => String(s || "").trim()).filter(Boolean))
+  );
+  if (!cleaned.length) return [];
+
+  const col = await getProductsCollection();
+  const docs = await col
+    .find({ slug: { $in: cleaned } })
+    .project({
+      _id: 1,
+      slug: 1,
+      title: 1,
+      name: 1,
+      price: 1,
+      unitPrice: 1,
+      salePrice: 1,
+      discountedPrice: 1,
+      category: 1,
+      type: 1, // legacy
+      imageUrl: 1,
+      images: 1,
+      inStock: 1,
+      department: 1,
+      subCategory: 1,
+    })
+    .toArray();
+
+  return docs.map(mapDbToProduct).map(toCompact);
+}

@@ -14,7 +14,9 @@ type ProductLite = {
   price: number;
   salePrice?: number | null;
   inStock?: boolean;
+  /** we’ll treat this as category-ish for display & link building */
   typeLabel?: string;
+  /** final URL for the card */
   href?: string;
 };
 
@@ -29,6 +31,21 @@ const pickImage = (p: any) =>
   (Array.isArray(p.photos) ? p.photos[0]?.url || p.photos[0] : undefined) ??
   null;
 
+// Build a category-aware href when possible
+const buildHref = (p: any) => {
+  const slug = p.slug ?? p.id ?? "";
+  const category =
+    p.category ??
+    p.type ?? // tolerate legacy “type” as category
+    p.subcategory ??
+    p.subCategory;
+
+  if (p.href) return p.href;
+  if (category && slug) return `/category/${category}/${slug}`;
+  if (slug) return `/product/${slug}`;
+  return undefined;
+};
+
 const mapProduct = (p: any): ProductLite => ({
   slug: p.slug ?? p.id ?? "",
   image: pickImage(p),
@@ -42,27 +59,26 @@ const mapProduct = (p: any): ProductLite => ({
       ? Number(p.discountPrice)
       : null,
   inStock: typeof p.inStock === "boolean" ? p.inStock : undefined,
-  typeLabel: p.type ?? p.category ?? p.subcategory ?? undefined,
-  href: p.href ?? (p.slug ? `/product/${p.slug}` : undefined),
+  typeLabel:
+    p.type ?? p.category ?? p.subcategory ?? p.subCategory ?? undefined,
+  href: buildHref(p), // category-aware link
 });
 
 async function fetchProductsBySlugs(slugs: string[]): Promise<ProductLite[]> {
   if (!slugs.length) return [];
 
-  // Strategy 1: GET /api/products?slugs=a,b,c
+  // Prefer GET /api/products?slugs=a,b,c if you have it
   try {
     const res = await fetch(
       `/api/products?slugs=${encodeURIComponent(slugs.join(","))}`
     );
     if (res.ok) {
       const data = await res.json();
-      if (Array.isArray(data)) {
-        return data.map(mapProduct);
-      }
+      if (Array.isArray(data)) return data.map(mapProduct);
     }
   } catch {}
 
-  // Strategy 2: POST /api/products/bulk  { slugs }
+  // Fallback: POST /api/products/bulk  { slugs } (if you’ve added it)
   try {
     const res = await fetch(`/api/products/bulk`, {
       method: "POST",
@@ -71,18 +87,17 @@ async function fetchProductsBySlugs(slugs: string[]): Promise<ProductLite[]> {
     });
     if (res.ok) {
       const data = await res.json();
-      if (Array.isArray(data)) {
-        return data.map(mapProduct);
-      }
+      if (Array.isArray(data)) return data.map(mapProduct);
     }
   } catch {}
 
-  // Strategy 3: Fallback to minimal stubs (link works; image/price may be absent)
+  // Last resort: minimal stubs (name-only)
   return slugs.map((slug) => ({
     slug,
     name: slug,
     price: 0,
     image: null,
+    href: `/product/${slug}`,
   }));
 }
 
@@ -104,7 +119,7 @@ export default function FavoritesPage() {
         const list = await fetchProductsBySlugs(slugs);
         if (!alive) return;
         setProducts(list);
-      } catch (e) {
+      } catch {
         if (!alive) return;
         setError("Failed to load favorites.");
       } finally {
@@ -176,6 +191,7 @@ export default function FavoritesPage() {
 
                 return (
                   <div key={p.slug} className="relative">
+                    {/* ✅ category-aware link comes via p.href */}
                     <ProductCard
                       slug={p.slug}
                       image={p.image ?? undefined}
