@@ -21,6 +21,7 @@ type ProductType = {
   slug: string;
   category: string;
   subcategory?: string | null; // ✅ optional; safe if absent
+  inStock?: boolean | null; // 🆕 real stock flag
 };
 
 const PLACEHOLDER = "/gray-placeholder.jpg"; // must exist in /public
@@ -104,6 +105,7 @@ export default function ProductPage({ product }: { product: ProductType }) {
   }, [resolvedSrc]);
 
   const handleAddToCart = () => {
+    if (!product.inStock) return; // guard
     if (needsRingSize && !ringSize.trim()) {
       alert("Please enter a ring size before adding to cart.");
       return;
@@ -119,6 +121,22 @@ export default function ProductPage({ product }: { product: ProductType }) {
       quantity: 1,
       size: needsRingSize ? ringSize.trim() : undefined, // ✅ only attach for rings
     });
+  };
+
+  const StockPill = ({ inStock }: { inStock?: boolean | null }) => {
+    const ok = !!inStock;
+    return (
+      <span
+        className={
+          "inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium " +
+          (ok
+            ? "bg-green-500/15 text-green-300 border border-green-500/30"
+            : "bg-red-500/15 text-red-300 border border-red-500/30")
+        }
+      >
+        {ok ? "In Stock" : "Out of Stock"}
+      </span>
+    );
   };
 
   return (
@@ -164,14 +182,18 @@ export default function ProductPage({ product }: { product: ProductType }) {
           {/* 📄 Product Info */}
           <div className="flex flex-col justify-center space-y-8">
             <div>
-              <h1 className="text-4xl sm:text-5xl font-bold mb-4">
+              <h1 className="text-4xl sm:text-5xl font-bold mb-3">
                 {product.name}
               </h1>
-              {product.skuNumber && (
-                <p className="text-sm text-gray-400">
-                  Item Number: {String(product.skuNumber).padStart(5, "0")}
-                </p>
-              )}
+              <div className="flex items-center gap-3">
+                {product.skuNumber && (
+                  <p className="text-sm text-gray-400">
+                    Item Number: {String(product.skuNumber).padStart(5, "0")}
+                  </p>
+                )}
+                {/* 🆕 Stock pill */}
+                <StockPill inStock={product.inStock} />
+              </div>
             </div>
 
             {/* 💰 Price Display */}
@@ -207,6 +229,7 @@ export default function ProductPage({ product }: { product: ProductType }) {
                   placeholder="e.g., 6, 6.5, 7, or custom"
                   className="w-full px-3 py-2 bg-[var(--bg-nav)] border border-gray-500 rounded-lg text-white"
                   required
+                  disabled={!product.inStock}
                 />
                 <p className="text-xs opacity-70 mt-1">
                   Half sizes are OK (e.g., 6.5). If unsure, type “Help me size”
@@ -215,22 +238,41 @@ export default function ProductPage({ product }: { product: ProductType }) {
               </div>
             )}
 
-            {/* ✅ Availability / made-to-order notice above Add to Cart */}
+            {/* ✅ Availability / notice */}
             <div className="text-sm md:text-base leading-relaxed bg-[var(--bg-nav)]/60 border border-[var(--bg-nav)] rounded-xl p-4">
-              <strong>Items are subject to availability.</strong> Some pieces
-              are made to order &amp; can take up to 8 weeks for production. You
-              will receive an email within 48 hours of placing order with any
-              delivery delays, that are outside of standard processing time.
+              {product.inStock ? (
+                <>
+                  <strong>Items are subject to availability.</strong> Some
+                  pieces are made to order &amp; can take up to 8 weeks for
+                  production. You will receive an email within 48 hours with any
+                  delivery delays that are outside standard processing time.
+                </>
+              ) : (
+                <>
+                  <strong>Currently out of stock.</strong> Many pieces can be
+                  made to order (up to ~8 weeks). Use the contact page to
+                  request a custom order or timeline, and we’ll follow up within
+                  48 hours.
+                </>
+              )}
             </div>
 
-            {/* 🛒 Add to Cart — MATCHES /jewelry card button */}
+            {/* 🛒 Add to Cart — disabled if out of stock */}
             <button
               onClick={handleAddToCart}
-              className="mt-1 w-full rounded-xl bg-white/10 px-4 py-2.5 text-sm md:text-base font-semibold text-white backdrop-blur
-                         hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-white/40"
-              aria-label={`Add ${product.name} to cart`}
+              disabled={!product.inStock}
+              className={
+                "mt-1 w-full rounded-xl px-4 py-2.5 text-sm md:text-base font-semibold backdrop-blur " +
+                (product.inStock
+                  ? "bg-white/10 text-white hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-white/40"
+                  : "bg-white/5 text-white/50 cursor-not-allowed")
+              }
+              aria-label={
+                product.inStock ? `Add ${product.name} to cart` : "Out of stock"
+              }
+              aria-disabled={!product.inStock}
             >
-              Add to Cart
+              {product.inStock ? "Add to Cart" : "Out of Stock"}
             </button>
           </div>
         </section>
@@ -245,6 +287,19 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
   const p = await client.db().collection("products").findOne({ slug });
   if (!p) return { notFound: true };
 
+  // 🧠 Derive a robust inStock boolean from several possible fields:
+  // - boolean: inStock / stock
+  // - numeric: quantity > 0
+  // - default: true (to avoid hiding legacy items)
+  const inferredInStock =
+    typeof p.inStock === "boolean"
+      ? p.inStock
+      : typeof p.stock === "boolean"
+      ? p.stock
+      : typeof p.quantity === "number"
+      ? p.quantity > 0
+      : true;
+
   const product: ProductType = {
     id: p._id.toString(),
     skuNumber: p.skuNumber ?? null,
@@ -255,6 +310,7 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
     slug: p.slug,
     category: String(p.category || "").toLowerCase(),
     subcategory: p.subcategory ? String(p.subcategory).toLowerCase() : null, // ✅ optional
+    inStock: inferredInStock, // 🆕
   };
 
   return { props: { product } };
