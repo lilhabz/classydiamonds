@@ -36,6 +36,8 @@ type AdminProduct = {
   skuNumber?: number;
   // 🆕 stock flag
   inStock?: boolean;
+  // 🆕 featured flag
+  featured?: boolean;
 };
 
 type Department = "jewelry" | "watch";
@@ -45,7 +47,8 @@ type SortKey =
   | "unitPrice"
   | "subCategory"
   | "category"
-  | "skuNumber";
+  | "skuNumber"
+  | "featured";
 type SortDir = "asc" | "desc";
 
 const toNum = (v: unknown, d = 0) => {
@@ -97,6 +100,8 @@ type ApiProduct = {
   source?: "db" | "legacy";
   // 🆕
   inStock?: boolean | null;
+  // 🆕 (already supported by API)
+  featured?: boolean | null;
 };
 
 function adaptApiProduct(p: ApiProduct): AdminProduct {
@@ -134,6 +139,8 @@ function adaptApiProduct(p: ApiProduct): AdminProduct {
     skuNumber: (p.skuNumber as any) ?? undefined,
     // 🆕 default to true if missing
     inStock: p.inStock !== false,
+    // 🆕 default to false if missing
+    featured: p.featured === true,
   };
 }
 
@@ -279,6 +286,11 @@ export default function AdminProductsList() {
         const bs = typeof b.skuNumber === "number" ? b.skuNumber : -Infinity;
         return (as - bs) * dir;
       }
+      if (sortKey === "featured") {
+        const af = a.featured ? 1 : 0;
+        const bf = b.featured ? 1 : 0;
+        return (af - bf) * dir;
+      }
       const at = a.createdAt ? new Date(a.createdAt).getTime() : 0;
       const bt = b.createdAt ? new Date(b.createdAt).getTime() : 0;
       return (at - bt) * dir;
@@ -330,6 +342,8 @@ export default function AdminProductsList() {
           audience: p.audience ?? ["unisex"],
           // keep stock true by default when migrating legacy
           inStock: p.inStock !== false,
+          // 🆕 pass through featured if present (backend may ignore if unsupported)
+          featured: p.featured === true,
         }),
       });
       const data = await res.json();
@@ -455,6 +469,8 @@ export default function AdminProductsList() {
           <option value="category">Category</option>
           <option value="subCategory">Sub-Category</option>
           <option value="skuNumber">SKU</option>
+          {/* 🆕 Featured in dropdown */}
+          <option value="featured">Featured</option>
         </select>
         <select
           value={sortDir}
@@ -613,6 +629,16 @@ export default function AdminProductsList() {
               {/* 🆕 Stock column */}
               <th className="py-2 px-3">Stock</th>
 
+              {/* 🆕 Featured column (sortable) */}
+              <th
+                className="py-2 px-3 cursor-pointer select-none"
+                onClick={() => toggleSort("featured")}
+                title="Sort by Featured"
+              >
+                Featured{" "}
+                {sortKey === "featured" ? (sortDir === "asc" ? "▲" : "▼") : ""}
+              </th>
+
               <th
                 className="py-2 px-3 cursor-pointer select-none"
                 onClick={() => toggleSort("unitPrice")}
@@ -635,19 +661,19 @@ export default function AdminProductsList() {
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={10} className="py-6 text-center">
+                <td colSpan={11} className="py-6 text-center">
                   Loading…
                 </td>
               </tr>
             ) : err ? (
               <tr>
-                <td colSpan={10} className="py-6 text-center text-red-300">
+                <td colSpan={11} className="py-6 text-center text-red-300">
                   Error: {err}
                 </td>
               </tr>
             ) : current.length === 0 ? (
               <tr>
-                <td colSpan={10} className="py-6 text-center">
+                <td colSpan={11} className="py-6 text-center">
                   No products.
                 </td>
               </tr>
@@ -702,6 +728,25 @@ export default function AdminProductsList() {
                       ) : (
                         <span className="text-xs px-2 py-0.5 rounded-full bg-red-500/20 text-red-300 border border-red-600/40">
                           Out of Stock
+                        </span>
+                      )}
+                    </td>
+
+                    {/* 🆕 Featured badge/star */}
+                    <td className="py-2 px-3">
+                      {p.featured ? (
+                        <span
+                          className="inline-flex items-center gap-1 text-yellow-300"
+                          title="Featured"
+                        >
+                          ★ <span className="text-xs">Yes</span>
+                        </span>
+                      ) : (
+                        <span
+                          className="inline-flex items-center gap-1 text-white/60"
+                          title="Not Featured"
+                        >
+                          ☆ <span className="text-xs">No</span>
                         </span>
                       )}
                     </td>
