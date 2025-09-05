@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useSession } from "next-auth/react";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import { DEPARTMENTS, getCategories, getSubCategories } from "@/lib/taxonomy";
+// 🔎 Live product card preview
+import ProductCard from "@/components/ProductCard";
 
 type Department = "jewelry" | "watch";
 
@@ -33,9 +35,18 @@ export default function NewProductPage() {
 
   // Upload-only with preview (preview box ABOVE button)
   const [imageFile, setImageFile] = useState<File | null>(null);
-  const previewSrc = imageFile
-    ? URL.createObjectURL(imageFile)
-    : "/gray-placeholder.jpg";
+
+  // ✅ Live preview URL with safe cleanup (avoids memory leaks)
+  const [previewSrc, setPreviewSrc] = useState<string | null>(null);
+  useEffect(() => {
+    if (!imageFile) {
+      setPreviewSrc(null);
+      return;
+    }
+    const url = URL.createObjectURL(imageFile);
+    setPreviewSrc(url);
+    return () => URL.revokeObjectURL(url);
+  }, [imageFile]);
 
   const [statusMsg, setStatusMsg] = useState<{ ok?: boolean; text?: string }>(
     {}
@@ -384,6 +395,21 @@ export default function NewProductPage() {
   if (!session?.user?.isAdmin)
     return <div className="p-6 text-red-300">❌ Unauthorized</div>;
 
+  // --------- Live preview props (derived from form state) ---------
+  const slugPreview =
+    name?.trim().toLowerCase().replace(/\s+/g, "-") || "preview";
+
+  const pricePreview = Number.isFinite(parseFloat(price))
+    ? parseFloat(price)
+    : 0;
+
+  const salePreview: number | undefined =
+    salePrice && Number.isFinite(parseFloat(salePrice))
+      ? parseFloat(salePrice)
+      : undefined;
+
+  const typePreview = subcategory || category || "";
+
   return (
     <div className="p-6 min-h-screen bg-[var(--bg-page)] text-[var(--foreground)]">
       <Head>
@@ -570,12 +596,19 @@ export default function NewProductPage() {
         <div className="md:col-span-2">
           <label className="text-sm font-medium">Product Photo</label>
           <div className="mt-2 flex items-center gap-4">
-            {/* Preview box (always visible) */}
-            <img
-              src={previewSrc}
-              alt="Preview"
-              className="w-32 h-32 object-cover rounded border"
-            />
+            {/* 🔎 Live ProductCard preview (updates as you type/select) */}
+            <div className="w-40">
+              <ProductCard
+                slug={slugPreview}
+                image={previewSrc || null} // falls back to component placeholder if null
+                name={name || "Product Name"}
+                price={pricePreview}
+                salePrice={salePreview}
+                inStock={inStock}
+                typeLabel={typePreview}
+                stockLabel={inStock ? "In Stock" : "Out of Stock"}
+              />
+            </div>
 
             {/* Button-looking upload */}
             <label className="px-4 py-2 rounded bg-blue-600 cursor-pointer inline-block">

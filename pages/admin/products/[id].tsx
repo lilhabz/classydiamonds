@@ -8,6 +8,8 @@ import { useRouter } from "next/router";
 import { useSession } from "next-auth/react";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import { DEPARTMENTS, getCategories, getSubCategories } from "@/lib/taxonomy";
+// 🔎 Live product card preview
+import ProductCard from "@/components/ProductCard";
 
 type Department = "jewelry" | "watch";
 type ProductDoc = {
@@ -63,9 +65,21 @@ export default function EditProductPage() {
   const [imageUrl, setImageUrl] = useState<string | null>(PLACEHOLDER);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [resetToPlaceholder, setResetToPlaceholder] = useState(false);
-  const previewSrc = imageFile
-    ? URL.createObjectURL(imageFile)
-    : imageUrl || PLACEHOLDER;
+
+  // ✅ Live preview URL with safe cleanup (avoids memory leaks)
+  const [previewSrc, setPreviewSrc] = useState<string | null>(PLACEHOLDER);
+  useEffect(() => {
+    // Prefer newly selected file (object URL); otherwise show current server URL (or placeholder)
+    if (imageFile) {
+      const url = URL.createObjectURL(imageFile);
+      setPreviewSrc(url);
+      return () => URL.revokeObjectURL(url);
+    } else {
+      setPreviewSrc(imageUrl || PLACEHOLDER);
+      // no cleanup needed for normal URLs
+      return;
+    }
+  }, [imageFile, imageUrl]);
 
   const [specValues, setSpecValues] = useState<Record<string, string>>({});
   const hiddenSpecsRef = useRef<Record<string, string>>({});
@@ -485,6 +499,21 @@ export default function EditProductPage() {
   if (!session?.user?.isAdmin)
     return <div className="p-6 text-red-300">❌ Unauthorized</div>;
 
+  // --------- Live preview props (derived from form state) ---------
+  const slugPreview =
+    name?.trim().toLowerCase().replace(/\s+/g, "-") || "preview";
+
+  const pricePreview = Number.isFinite(parseFloat(price))
+    ? parseFloat(price)
+    : 0;
+
+  const salePreview: number | undefined =
+    salePrice && Number.isFinite(parseFloat(salePrice))
+      ? parseFloat(salePrice)
+      : undefined;
+
+  const typePreview = subcategory || category || "";
+
   return (
     <div className="p-6 min-h-screen bg-[var(--bg-page)] text-[var(--foreground)]">
       <Head>
@@ -674,12 +703,19 @@ export default function EditProductPage() {
           <div className="md:col-span-2 space-y-2">
             <label className="text-sm font-medium">Product Photo</label>
             <div className="mt-2 flex items-center gap-4">
-              {/* Preview first */}
-              <img
-                src={previewSrc}
-                alt="Preview"
-                className="w-32 h-32 object-cover rounded border"
-              />
+              {/* 🔎 Live ProductCard preview (updates as you type/select) */}
+              <div className="w-40">
+                <ProductCard
+                  slug={slugPreview}
+                  image={previewSrc || null} // falls back to component placeholder if null
+                  name={name || "Product Name"}
+                  price={pricePreview}
+                  salePrice={salePreview}
+                  inStock={inStock}
+                  typeLabel={typePreview}
+                  stockLabel={inStock ? "In Stock" : "Out of Stock"}
+                />
+              </div>
 
               {/* Button-looking upload */}
               <label className="px-4 py-2 rounded bg-blue-600 cursor-pointer inline-block">
