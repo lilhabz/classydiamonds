@@ -1,5 +1,5 @@
 // components/ProductCard.tsx — Tiffany-style tile (uniform size, no CTA)
-// ✅ Framed image → tiny icon row → divider → In Stock / Name / Type / Price
+// ✅ Framed image with floating heart (top-right) → divider → In Stock / Name / Type / Price
 "use client";
 
 import Image from "next/image";
@@ -106,7 +106,7 @@ export default function ProductCard({
   return (
     <div
       className={
-        "group relative flex flex-col overflow-hidden rounded-xl border border-black/10 bg-white " +
+        "group relative flex flex-col overflow-hidden rounded-xl border border-black/10 bg-gray-50 " + // bg was white → gray-50
         (outOfStock ? "opacity-[0.92]" : "") +
         " " +
         className
@@ -114,7 +114,7 @@ export default function ProductCard({
       style={{
         width: "100%",
         height: "auto",
-        ["--row-h-action" as any]: "36px",
+        // removed: --row-h-action (no tiny action row anymore)
         ["--row-h-title" as any]: "22px",
         ["--row-h-type" as any]: "20px",
         ["--row-h-price" as any]: "24px",
@@ -127,29 +127,14 @@ export default function ProductCard({
     >
       {/* Clickable top (image + text) */}
       <Link href={link} aria-label={name} className="block group">
-        {/* Framed image area (keeps rows even) – now edge-to-edge image */}
-        <div className="relative w-full aspect-[4/3] overflow-hidden rounded-sm">
-          <Image
-            src={src}
-            alt={name}
-            fill
-            className={
-              "object-cover transition-transform duration-300 group-hover:scale-[1.03]" +
-              (outOfStock ? " grayscale" : "")
-            }
-            unoptimized={unoptimized}
-            onError={handleImgError}
-            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-            priority={false}
-          />
-        </div>
-
-        {/* Tiny action row (♡ + spacer) — fixed height */}
+        {/* Framed image with floating heart
+            We replace aspect-[4/3] with an explicit padding-top that adds ~36px
+            so the image "drops down" to cover the old heart row space. */}
         <div
-          className="flex items-center justify-center gap-6 text-neutral-500"
-          style={{ height: "var(--row-h-action)" }}
+          className="relative w-full overflow-hidden rounded-sm"
+          style={{ paddingTop: "calc(75% + 36px)" }} // 4/3 (75%) + extra 36px height
         >
-          {/* Heart */}
+          {/* Heart button (OVER image, top-right) */}
           <button
             type="button"
             onClick={onHeartClick}
@@ -157,10 +142,11 @@ export default function ProductCard({
             aria-pressed={fav}
             disabled={!rehydrated}
             className={
-              "p-1 transition-colors " +
+              "absolute top-2 right-2 z-10 rounded-md bg-white/80 backdrop-blur px-2 py-1 " +
+              "transition-colors shadow-sm " +
               (fav
                 ? "text-rose-600 hover:text-rose-700"
-                : "hover:text-neutral-700")
+                : "text-neutral-500 hover:text-neutral-700")
             }
             title={fav ? "Saved to Favorites" : "Save to Favorites"}
           >
@@ -179,10 +165,23 @@ export default function ProductCard({
             </svg>
           </button>
 
-          <span aria-hidden="true" className="text-xs select-none">
-            •
-          </span>
+          {/* Image */}
+          <Image
+            src={src}
+            alt={name}
+            fill
+            className={
+              "absolute inset-0 object-cover transition-transform duration-300 group-hover:scale-[1.03]" +
+              (outOfStock ? " grayscale" : "")
+            }
+            unoptimized={unoptimized}
+            onError={handleImgError}
+            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+            priority={false}
+          />
         </div>
+
+        {/* ⛔ Removed: Tiny action row (heart + dot). Image now covers that space. */}
 
         {/* Hairline divider */}
         <div className="mx-4 border-t border-neutral-200" />
