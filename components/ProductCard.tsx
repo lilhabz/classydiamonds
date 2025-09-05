@@ -22,21 +22,35 @@ export type ProductCardProps = {
   typeLabel?: string;
   /** 🆕 Real stock flag; if set, overrides stockLabel text & styling */
   inStock?: boolean;
+  /** 🆕 When false, the card renders without a Link wrapper (useful for admin previews) */
+  interactive?: boolean;
   className?: string;
   style?: React.CSSProperties;
 };
 
 const PLACEHOLDER = "/gray-placeholder.jpg";
 
-/* Path helpers (no forced /products/) */
+/* -------------------------------------------------------
+   Path helpers
+   - Preserve any valid scheme (e.g., blob:, data:, http:, https:)
+   - Keep absolute /public paths ("/...") and make relative paths absolute
+------------------------------------------------------- */
+const SCHEME_RE = /^[a-z][a-z0-9+.-]*:/i; // ✅ matches blob:, data:, http:, https:, file:, etc.
+
 function normalizeLocalPath(src: string) {
   const trimmed = src.trim();
   if (!trimmed) return PLACEHOLDER;
-  if (/^(https?:)?\/\//i.test(trimmed) || trimmed.startsWith("data:"))
-    return trimmed;
-  if (trimmed.startsWith("/")) return trimmed; // absolute within /public
-  return `/${trimmed.replace(/^(\.\/)+/, "")}`; // make relative paths absolute
+
+  // 🆕 allow any URL scheme (includes blob:, data:, http:, https:, etc.)
+  if (SCHEME_RE.test(trimmed)) return trimmed;
+
+  // Keep absolute /public paths
+  if (trimmed.startsWith("/")) return trimmed;
+
+  // Make relative paths absolute
+  return `/${trimmed.replace(/^(\.\/)+/, "")}`;
 }
+
 function resolveImageSrc(raw?: string | null) {
   if (!raw || !raw.trim()) return PLACEHOLDER;
   return normalizeLocalPath(raw);
@@ -52,6 +66,7 @@ export default function ProductCard({
   stockLabel = "In Stock",
   typeLabel,
   inStock, // 🆕
+  interactive = true, // 🆕 default clickable
   className = "",
   style,
 }: ProductCardProps) {
@@ -103,6 +118,18 @@ export default function ProductCard({
 
   const outOfStock = resolvedInStock === false;
 
+  // 🆕 Wrapper: Link (interactive) or plain div (non-interactive)
+  const Wrapper: React.FC<{ children: React.ReactNode }> = ({ children }) =>
+    interactive ? (
+      <Link href={link} aria-label={name} className="block group">
+        {children}
+      </Link>
+    ) : (
+      <div aria-label={name} className="block group">
+        {children}
+      </div>
+    );
+
   return (
     <div
       className={
@@ -125,8 +152,8 @@ export default function ProductCard({
       }}
       aria-busy={false}
     >
-      {/* Clickable top (image + text) */}
-      <Link href={link} aria-label={name} className="block group">
+      {/* Clickable (or not) top (image + text) */}
+      <Wrapper>
         {/* Framed image with floating heart
             We replace aspect-[4/3] with an explicit padding-top that adds ~36px
             so the image "drops down" to cover the old heart row space. */}
@@ -180,8 +207,6 @@ export default function ProductCard({
             priority={false}
           />
         </div>
-
-        {/* ⛔ Removed: Tiny action row (heart + dot). Image now covers that space. */}
 
         {/* Hairline divider */}
         <div className="mx-4 border-t border-neutral-200" />
@@ -260,7 +285,7 @@ export default function ProductCard({
             )}
           </p>
         </div>
-      </Link>
+      </Wrapper>
     </div>
   );
 }

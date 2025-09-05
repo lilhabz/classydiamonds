@@ -311,6 +311,7 @@ export default function EditProductPage() {
   );
 
   // Spec fields (same as new.tsx)
+  // Spec fields (same as new.tsx)
   const specFieldsFor = (d: Department, cat: string): SpecField[] => {
     const c = (cat || "").toLowerCase();
     const baseJewelry: SpecField[] = [
@@ -714,6 +715,7 @@ export default function EditProductPage() {
                   inStock={inStock}
                   typeLabel={typePreview}
                   stockLabel={inStock ? "In Stock" : "Out of Stock"}
+                  interactive={false} // ⛔ make preview non-clickable
                 />
               </div>
 

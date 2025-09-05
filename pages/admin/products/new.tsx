@@ -607,6 +607,7 @@ export default function NewProductPage() {
                 inStock={inStock}
                 typeLabel={typePreview}
                 stockLabel={inStock ? "In Stock" : "Out of Stock"}
+                interactive={false} // ⛔ make preview non-clickable
               />
             </div>
 
