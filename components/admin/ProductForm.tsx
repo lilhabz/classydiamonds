@@ -2,7 +2,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { Product, Audience, Department, Specs } from "@/types/product";
+import type { Product, Department, Specs } from "@/types/product"; // ⬅️ removed Audience
 import {
   DEPARTMENTS,
   getCategories,
@@ -16,8 +16,21 @@ type Props = {
   mode: "create" | "edit";
 };
 
-const ALL_AUDIENCE: Audience[] = ["women", "men", "unisex", "kids"];
+/** Local, UI-safe audience union (keeps us decoupled from any global type changes) */
+type AudienceKey = "women" | "men" | "unisex" | "kids";
 
+/** Options for UI */
+const ALL_AUDIENCE = [
+  "women",
+  "men",
+  "unisex",
+  "kids",
+] as const satisfies readonly AudienceKey[];
+
+/** Helpful constant for defaulting */
+const DEFAULT_AUDIENCE_UNISEX: AudienceKey[] = ["unisex"];
+
+/** Utility parsers */
 const toNum = (v: unknown, d = 0) => {
   if (v == null || v === "") return d;
   if (typeof v === "number") return Number.isFinite(v) ? v : d;
@@ -49,11 +62,14 @@ export default function ProductForm({ initial, onSaved, mode }: Props) {
     (initial as any)?.subCategory || (initial as any)?.subcategory || ""
   );
 
-  const [audience, setAudience] = useState<Audience[]>(
-    Array.isArray(initial?.audience) && initial!.audience!.length
-      ? (initial!.audience as Audience[])
-      : ["unisex"]
-  );
+  // ✅ audience kept as local union (UI) → sent to API as string[]
+  const [audience, setAudience] = useState<AudienceKey[]>(() => {
+    const raw = (initial?.audience ?? []) as string[];
+    const filtered = raw.filter((a): a is AudienceKey =>
+      (ALL_AUDIENCE as readonly string[]).includes(a)
+    );
+    return filtered.length ? filtered : DEFAULT_AUDIENCE_UNISEX;
+  });
 
   const [unitPrice, setUnitPrice] = useState<string>(
     String(initial?.unitPrice ?? initial?.price ?? "")
@@ -98,11 +114,14 @@ export default function ProductForm({ initial, onSaved, mode }: Props) {
     setSubCategory(
       (initial as any).subCategory || (initial as any).subcategory || ""
     );
-    setAudience(
-      Array.isArray(initial.audience) && initial.audience.length
-        ? (initial.audience as Audience[])
-        : ["unisex"]
+
+    // ✅ normalize audience safely into our local union
+    const raw = (initial?.audience ?? []) as string[];
+    const filtered = raw.filter((a): a is AudienceKey =>
+      (ALL_AUDIENCE as readonly string[]).includes(a)
     );
+    setAudience(filtered.length ? filtered : DEFAULT_AUDIENCE_UNISEX);
+
     setUnitPrice(String(initial.unitPrice ?? initial.price ?? ""));
     setDescription(initial.description || "");
     setSpecs(initial.specs || {});
@@ -117,7 +136,7 @@ export default function ProductForm({ initial, onSaved, mode }: Props) {
         ? !!(initial as any).featured
         : false
     );
-  }, [initial?._id]);
+  }, [initial?._id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // cascade: reset category/subCategory/specs when dept changes
   useEffect(() => {
@@ -147,14 +166,16 @@ export default function ProductForm({ initial, onSaved, mode }: Props) {
     });
   }, [specFields]);
 
-  const toggleAudience = (val: Audience) => {
+  // ✅ audience toggler with "unisex" exclusivity
+  const toggleAudience = (val: AudienceKey) => {
     setAudience((prev) => {
       if (val === "unisex") return ["unisex"];
-      const set = new Set(prev);
+      const set = new Set<AudienceKey>(prev);
       set.delete("unisex");
       if (set.has(val)) set.delete(val);
       else set.add(val);
-      return Array.from(set) as Audience[];
+      const next = Array.from(set);
+      return next.length ? next : ["unisex"];
     });
   };
 
@@ -197,7 +218,9 @@ export default function ProductForm({ initial, onSaved, mode }: Props) {
       imageUrl,
       archived: false,
       specs: specs || {},
-      audience: audience.length ? audience : ["unisex"],
+      audience: (audience.length
+        ? audience
+        : DEFAULT_AUDIENCE_UNISEX) as string[], // ✅ API gets string[]
       description,
       department,
       // 🆕 include stock
@@ -242,7 +265,9 @@ export default function ProductForm({ initial, onSaved, mode }: Props) {
           category: category || undefined,
           subCategory: subCategory || undefined,
           imageUrl: imageRemoved ? null : finalImageUrl,
-          audience: audience.length ? audience : ["unisex"],
+          audience: (audience.length
+            ? audience
+            : DEFAULT_AUDIENCE_UNISEX) as string[],
           specs: specs || {},
           description,
           department,
@@ -365,8 +390,7 @@ export default function ProductForm({ initial, onSaved, mode }: Props) {
           <span className="text-sm">In Stock</span>
         </label>
         <span className="text-xs opacity-70">
-          Uncheck to mark product as “Out of Stock” (storefront will show a
-          warning and disable purchase if you implement that later).
+          Uncheck to mark product as “Out of Stock”.
         </span>
       </div>
 
@@ -400,6 +424,7 @@ export default function ProductForm({ initial, onSaved, mode }: Props) {
                 className={`px-3 py-1 rounded-full text-sm border ${
                   active ? "bg-blue-600 text-white" : "bg-[var(--bg-nav)]"
                 }`}
+                aria-pressed={active}
               >
                 {a[0].toUpperCase() + a.slice(1)}
               </button>

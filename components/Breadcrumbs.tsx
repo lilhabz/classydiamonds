@@ -1,13 +1,17 @@
-// 📂 components/Breadcrumbs.tsx – Jewelry/Watches-aware crumbs + left-aligned + hide "subcategory" + correct links
+// 📂 components/Breadcrumbs.tsx – audience-aware crumbs + left-aligned + hide "subcategory" + correct links
 import Link from "next/link";
 import { useRouter } from "next/router";
+
+type Audience = "him" | "her";
 
 export default function Breadcrumbs({
   customLabels = {},
   customPaths = {},
+  audience, // optional explicit audience from parent (e.g., ForHim page)
 }: {
   customLabels?: Record<string, string>;
   customPaths?: Record<string, string>;
+  audience?: Audience;
 }) {
   const router = useRouter();
 
@@ -41,6 +45,7 @@ export default function Breadcrumbs({
     bracelets: "/category/bracelets",
     necklaces: "/category/necklaces",
     "necklaces-and-pendants": "/category/necklaces-and-pendants",
+    "necklaces-pendants": "/category/necklaces-pendants",
     watch: "/watches",
     watches: "/watches",
   };
@@ -50,22 +55,55 @@ export default function Breadcrumbs({
     (s) => s !== "category" && s !== "subcategory" && s !== "subcatagory"
   );
 
-  // Gender param (applies to jewelry browsing — not watches)
-  const genderParam =
-    router.query.gender === "him"
-      ? "for-him"
-      : router.query.gender === "her"
-      ? "for-her"
-      : router.query.category === "for-him" ||
-        router.query.category === "for-her"
-      ? (router.query.category as string)
-      : null;
+  // ---- Audience detection ----
+  // 1) Prefer explicit prop from parent (e.g., /for-him page passes audience="him")
+  let audienceProp: Audience | undefined = audience;
+
+  // 2) Otherwise, derive from query (?audience=, legacy ?gender=)
+  if (!audienceProp) {
+    const raw = [
+      ...(Array.isArray(router.query.audience)
+        ? router.query.audience
+        : router.query.audience
+        ? [router.query.audience]
+        : []),
+      ...(Array.isArray(router.query.gender)
+        ? router.query.gender
+        : router.query.gender
+        ? [router.query.gender]
+        : []), // legacy
+    ]
+      .map((s) => String(s).toLowerCase().trim())
+      .filter(Boolean);
+
+    const hasHim =
+      raw.includes("him") ||
+      raw.includes("male") ||
+      raw.includes("men") ||
+      raw.includes("for-him") ||
+      raw.includes("unisex") ||
+      raw.includes("all") ||
+      raw.includes("any");
+    const hasHer =
+      raw.includes("her") ||
+      raw.includes("female") ||
+      raw.includes("women") ||
+      raw.includes("for-her") ||
+      raw.includes("unisex") ||
+      raw.includes("all") ||
+      raw.includes("any");
+
+    // Show a single audience crumb only if exactly one side is selected
+    if (hasHim && !hasHer) audienceProp = "him";
+    if (hasHer && !hasHim) audienceProp = "her";
+  }
 
   // Start with the segments we want to show
   let filteredSegments = [...displaySegments];
 
-  // If browsing gender-only (not product) and this is jewelry, only show gender crumb
-  if (!isWatchesPath && genderParam) {
+  // If browsing audience-only (not product) and this is jewelry, hide the path crumbs so we show Home > Jewelry > For X
+  const isAudienceContext = !!audienceProp && !isWatchesPath;
+  if (isAudienceContext) {
     filteredSegments = isProductPage ? displaySegments.slice(-1) : [];
   }
 
@@ -87,8 +125,6 @@ export default function Breadcrumbs({
 
     // 1) If the segment is a known top-level category, use its canonical page
     if (seg && CATEGORY_CANONICAL[seg]) {
-      // • On PDP (product page), first crumb should go to canonical category
-      // • On /category/... routes, first visible crumb should also go to canonical
       if (isProductPage && index === 0) return CATEGORY_CANONICAL[seg];
       if (isCategoryRoute && index === 0) return CATEGORY_CANONICAL[seg];
     }
@@ -110,7 +146,7 @@ export default function Breadcrumbs({
     <nav className="text-sm text-gray-400 mb-4 px-2">
       <ol className="flex flex-wrap items-center space-x-2">
         {/* Home */}
-        {!(!!genderParam && !isProductPage && !isWatchesPath) && (
+        {!(isAudienceContext && !isProductPage) && (
           <li>
             <Link href="/" className="hover:text-white text-white/80">
               Home
@@ -138,17 +174,15 @@ export default function Breadcrumbs({
           </li>
         )}
 
-        {/* Gender crumb (only for jewelry context) */}
-        {!isWatchesPath && genderParam && (
+        {/* Audience crumb (only for jewelry context; link to dedicated landing pages) */}
+        {!isWatchesPath && audienceProp && (
           <li className="flex items-center">
             <span className="mx-1">›</span>
             <Link
-              href={`/jewelry?gender=${
-                genderParam === "for-him" ? "him" : "her"
-              }&scroll=true`}
+              href={audienceProp === "him" ? "/for-him" : "/for-her"}
               className="hover:text-white text-white/70 capitalize"
             >
-              {genderParam === "for-him" ? "For Him" : "For Her"}
+              {audienceProp === "him" ? "For Him" : "For Her"}
             </Link>
           </li>
         )}

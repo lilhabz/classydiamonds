@@ -1,9 +1,12 @@
 // types/product.ts
 
-export type Audience = "women" | "men" | "unisex" | "kids";
+/** Supported audiences */
+export type Audience = "him" | "her";
+
+/** Department taxonomy */
 export type Department = "jewelry" | "watch";
 
-/** Spec fields vary by department/category/subCategory. */
+/** Spec fields vary by department/category/subCategory */
 export type SpecValue = string | number | boolean;
 export type Specs = Record<string, SpecValue>;
 
@@ -18,12 +21,15 @@ export interface Product {
   slug?: string;
 
   // taxonomy
-  department: Department; // "jewelry" | "watch"
-  category?: string; // e.g., "rings", "bracelets", "watches"
-  subCategory?: string; // e.g., "engagement", "tennis", etc.
+  department: Department;
+  category?: string;
+  subCategory?: string;
 
-  audience?: Audience[]; // default ["unisex"]
-  gender?: "unisex" | "him" | "her"; // used by admin pages
+  /** ✅ Unified audience array schema */
+  audience?: Audience[]; // e.g., ["him"], ["her"], or ["him","her"]
+
+  /** ⚠️ Legacy only — will be normalized into `audience` */
+  gender?: string;
 
   // pricing (legacy tolerant)
   price?: number | string;
@@ -42,7 +48,7 @@ export interface Product {
   // structured filters (category/subCategory-specific)
   specs?: Specs;
 
-  // admin/meta (optional, used by some admin pages)
+  // admin/meta
   featured?: boolean;
   skuNumber?: number;
 

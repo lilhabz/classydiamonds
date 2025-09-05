@@ -7,6 +7,7 @@ import Head from "next/head";
 import Image from "next/image";
 import { GetServerSideProps } from "next";
 import clientPromise from "@/lib/mongodb";
+import { useRouter } from "next/router";
 import CategoryGrid from "@/components/CategoryGrid";
 import ProductCard from "@/components/ProductCard";
 
@@ -56,22 +57,25 @@ export const getServerSideProps: GetServerSideProps<HomeProps> = async () => {
 
 export default function Home({ products }: HomeProps) {
   const featured = products;
+  const router = useRouter();
 
   type Gift = { name: string; image: string };
 
-  // ✅ Updated to link directly to /for-him and /for-her
   function GiftButton({ gift, index }: { gift: Gift; index: number }) {
     const slug = gift.name.toLowerCase().replace(/\s+/g, "-");
-    const href =
-      slug === "for-him"
-        ? "/for-him"
-        : slug === "for-her"
-        ? "/for-her"
-        : `/category/${slug}?scroll=true`;
-
+    const gender =
+      slug === "for-him" ? "him" : slug === "for-her" ? "her" : null;
     return (
-      <Link
-        href={href}
+      <button
+        type="button"
+        onClick={() => {
+          router.push({
+            pathname: "/jewelry",
+            query: gender
+              ? { gender, scroll: "true" }
+              : { category: slug, scroll: "true" },
+          });
+        }}
         className="group relative rounded-xl overflow-hidden shadow-md hover:shadow-2xl hover:scale-105 transition-transform duration-300 cursor-pointer"
       >
         <div className="relative aspect-[4/3] w-full">
@@ -87,7 +91,7 @@ export default function Home({ products }: HomeProps) {
             {gift.name}
           </span>
         </div>
-      </Link>
+      </button>
     );
   }
 

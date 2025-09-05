@@ -1,11 +1,15 @@
 // lib/productAdapter.ts
+export type Audience = "him" | "her";
+
+/** Canonical product shape used across admin + UI */
 export type CanonicalAdminProduct = {
   _id: string;
   name: string;
   slug?: string | null;
   category?: string | null;
   subCategory?: string | null;
-  audience?: string | null; // e.g. "unisex", "for-him", "for-her"
+  /** ✅ Unified array schema (replaces old string "unisex" | "for-him" | "for-her") */
+  audience?: Audience[] | null;
   price?: number | null;
   salePrice?: number | null;
   image?: string | null; // keep whatever your UI expects
@@ -32,7 +36,6 @@ function n(v: any): number | null {
 /** Normalize _id to string */
 function idStr(doc: any): string {
   const raw = doc?._id;
-  // Mongo ObjectId or string:
   if (!raw) return "";
   if (typeof raw === "string") return raw;
   if (typeof raw === "object" && typeof raw.toString === "function")
@@ -40,7 +43,78 @@ function idStr(doc: any): string {
   return String(raw);
 }
 
-/** Adapter for *legacy* docs with odd keys (e.g. 'acelet', 'cklace', etc.) */
+/** Map any audience-ish token to "him" | "her" | null */
+function mapTokenToAudience(token?: string | null): Audience | null {
+  const t = token?.toLowerCase().trim();
+  if (!t) return null;
+  if (t === "him" || t === "male" || t === "men" || t === "for-him")
+    return "him";
+  if (t === "her" || t === "female" || t === "women" || t === "for-her")
+    return "her";
+  return null;
+}
+
+/** Normalize a document's audience/gender fields to our array schema. */
+function normalizeAudience(doc: any): Audience[] | null {
+  // 1) If doc has array-like audience already
+  if (Array.isArray(doc?.audience)) {
+    const set = new Set<Audience>();
+    for (const x of doc.audience) {
+      const mapped = mapTokenToAudience(String(x));
+      if (mapped) set.add(mapped);
+      // treat unisex markers inside arrays as full audience
+      if (
+        String(x).toLowerCase() === "unisex" ||
+        String(x).toLowerCase() === "all" ||
+        String(x).toLowerCase() === "any"
+      ) {
+        set.add("him");
+        set.add("her");
+      }
+    }
+    if (set.size === 0) return ["him", "her"]; // fallback to unisex
+    return Array.from(set);
+  }
+
+  // 2) If doc has a single audience string
+  if (typeof doc?.audience === "string") {
+    const a = doc.audience.toLowerCase().trim();
+    if (a === "unisex" || a === "all" || a === "any") return ["him", "her"];
+    const mapped = mapTokenToAudience(a);
+    return mapped ? [mapped] : ["him", "her"]; // default to unisex if unknown
+  }
+
+  // 3) Legacy gender support
+  if (Array.isArray(doc?.gender)) {
+    const set = new Set<Audience>();
+    for (const g of doc.gender) {
+      const m = mapTokenToAudience(String(g));
+      if (m) set.add(m);
+    }
+    if (set.size === 0) return ["him", "her"];
+    return Array.from(set);
+  }
+  if (typeof doc?.gender === "string") {
+    const m = mapTokenToAudience(doc.gender);
+    return m ? [m] : ["him", "her"];
+  }
+
+  // 4) No hints → treat as unisex
+  return ["him", "her"];
+}
+
+/** Heuristics: decide if a doc "looks" legacy. */
+function looksLegacy(doc: any): boolean {
+  // obvious legacy clues
+  if (doc?.isLegacy === true) return true;
+  // odd keys often present in older sets, or only having 'gender' not 'audience'
+  const hasLegacyCatTypos = !!(doc?.catagory || doc?.subcatagory);
+  const hasGenderOnly = !!doc?.gender && !doc?.audience;
+  const legacyNameKeys = !!(doc?.Name || doc?.productName || doc?.title);
+  return hasLegacyCatTypos || hasGenderOnly || legacyNameKeys;
+}
+
+/** Adapter for *legacy* docs with odd keys */
 export function adaptLegacyProduct(doc: any): CanonicalAdminProduct {
   // Try a few common legacy field names
   const name =
@@ -48,14 +122,14 @@ export function adaptLegacyProduct(doc: any): CanonicalAdminProduct {
     s(doc?.title) ||
     s(doc?.productName) ||
     s(doc?.Name) ||
-    null;
+    "Untitled (legacy)";
 
   // Legacy might have typos/short keys for category
   const category =
     s(doc?.category) ||
     s(doc?.catagory) ||
     s(doc?.cat) ||
-    s(doc?.rings) || // sometimes the category name was stored as a key
+    s(doc?.rings) ||
     s(doc?.bracelets) ||
     s(doc?.necklaces) ||
     s(doc?.earrings) ||
@@ -71,11 +145,11 @@ export function adaptLegacyProduct(doc: any): CanonicalAdminProduct {
 
   return {
     _id: idStr(doc),
-    name: name || "Untitled (legacy)",
+    name,
     slug: s(doc?.slug) || null,
     category,
     subCategory,
-    audience: s(doc?.audience) || s(doc?.gender) || "unisex",
+    audience: normalizeAudience(doc), // ✅ array form
     price,
     salePrice,
     image,
@@ -95,8 +169,8 @@ export function adaptNewProduct(doc: any): CanonicalAdminProduct {
     name: s(doc?.name) || "Untitled",
     slug: s(doc?.slug) || null,
     category: s(doc?.category) || s(doc?.department) || null,
-    subCategory: s(doc?.subCategory) || null,
-    audience: s(doc?.audience) || "unisex",
+    subCategory: s(doc?.subCategory) || s(doc?.subcategory) || null,
+    audience: normalizeAudience(doc), // ✅ array form
     price: n(doc?.price),
     salePrice: n(doc?.salePrice),
     image: s(doc?.image) || s(doc?.imageUrl) || null,
@@ -107,4 +181,9 @@ export function adaptNewProduct(doc: any): CanonicalAdminProduct {
     updatedAt: doc?.updatedAt || null,
     inStock: doc?.inStock !== false, // default true if missing
   };
+}
+
+/** Convenience: choose legacy vs new automatically */
+export function adaptProduct(doc: any): CanonicalAdminProduct {
+  return looksLegacy(doc) ? adaptLegacyProduct(doc) : adaptNewProduct(doc);
 }

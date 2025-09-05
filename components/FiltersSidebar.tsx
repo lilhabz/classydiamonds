@@ -7,6 +7,7 @@ import { SUBCATEGORY_MAP, CATEGORY_LABELS, Category } from "@/data/taxonomy";
 
 type FacetKey = "metal" | "stone" | "shape";
 type RangeKey = "priceMin" | "priceMax" | "caratMin" | "caratMax";
+type Audience = "him" | "her";
 
 const FALLBACK_METALS = ["yellow-gold", "white-gold", "rose-gold", "platinum"];
 const FALLBACK_STONES = ["diamond", "lab-grown", "moissanite", "gemstone"];
@@ -62,6 +63,32 @@ type DynamicFacets = {
   extras?: Record<string, string[]>;
 };
 
+/** Normalize query audience (and legacy gender) → Set<"him"|"her"> */
+function normalizeAudienceFromQuery(q: {
+  audience?: string | string[];
+  gender?: string | string[];
+}): Set<Audience> {
+  const vals = [
+    ...toArray(q.audience),
+    ...toArray(q.gender), // legacy
+  ]
+    .map((s) => String(s).toLowerCase().trim())
+    .filter(Boolean);
+
+  const set = new Set<Audience>();
+  for (const v of vals) {
+    if (v === "him" || v === "male" || v === "men" || v === "for-him")
+      set.add("him");
+    if (v === "her" || v === "female" || v === "women" || v === "for-her")
+      set.add("her");
+    if (v === "unisex" || v === "all" || v === "any") {
+      set.add("him");
+      set.add("her");
+    }
+  }
+  return set;
+}
+
 export default function FiltersSidebar({
   className,
   mode = "desktop",
@@ -97,6 +124,16 @@ export default function FiltersSidebar({
   const stones = toArray(q.stone);
   const shapes = toArray(q.shape);
 
+  // 🎯 Audience from URL (normalize audience+gender)
+  const audienceSet = useMemo(
+    () =>
+      normalizeAudienceFromQuery({
+        audience: q.audience as any,
+        gender: q.gender as any,
+      }),
+    [q.audience, q.gender]
+  );
+
   // Range values from URL
   const priceMinQ = q.priceMin ? Number(q.priceMin) : undefined;
   const priceMaxQ = q.priceMax ? Number(q.priceMax) : undefined;
@@ -121,6 +158,10 @@ export default function FiltersSidebar({
         if (currentCategory) params.set("category", currentCategory);
         if (typeof subSelected === "string" && subSelected !== "all") {
           params.set("subcategory", subSelected);
+        }
+        // Optional: include audience for context-specific facets
+        if (audienceSet.size) {
+          params.set("audience", Array.from(audienceSet).join(","));
         }
         const res = await fetch(`/api/facets?${params.toString()}`);
         const data = await res.json();
@@ -153,7 +194,7 @@ export default function FiltersSidebar({
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentCategory, subSelected]);
+  }, [currentCategory, subSelected, audienceSet.size]);
 
   // Local slider state mirrors URL/range
   const [priceMin, setPriceMin] = useState<number>(
@@ -255,11 +296,13 @@ export default function FiltersSidebar({
       "caratMin",
       "caratMax",
       "sub",
-      // clear any extras if present
       "style",
       "color",
       "clarity",
       "cut",
+      // 🎯 also clear audience + legacy gender
+      "audience",
+      "gender",
     ].forEach((k) => delete (next as any)[k]);
     push(next);
   };
@@ -288,6 +331,31 @@ export default function FiltersSidebar({
     dyn.caratBounds!.max
   );
 
+  /** Toggle audience value and update query as comma-separated 'audience'; remove legacy 'gender'. */
+  const toggleAudience = (value: Audience) => {
+    const curr = normalizeAudienceFromQuery({
+      audience: q.audience as any,
+      gender: q.gender as any,
+    });
+    if (curr.has(value)) curr.delete(value);
+    else curr.add(value);
+
+    const next = { ...q };
+    if (curr.size === 0 || curr.size === 2) {
+      // no selection or both selected -> remove to show all/unisex
+      delete (next as any).audience;
+    } else {
+      next.audience = Array.from(curr).join(",");
+    }
+    // always remove legacy gender
+    delete (next as any).gender;
+
+    push(next);
+  };
+
+  const himChecked = audienceSet.has("him");
+  const herChecked = audienceSet.has("her");
+
   // --- UI content (shared between desktop + drawer) ---
   const Content = (
     <div className="p-4 rounded-xl bg-[#1b2440] border border-white/10">
@@ -300,6 +368,36 @@ export default function FiltersSidebar({
           Clear
         </button>
       </div>
+
+      {/* 🎯 Audience */}
+      <details className="mb-3" open>
+        <summary className="cursor-pointer select-none py-2 font-medium">
+          Audience
+        </summary>
+        <div className="mt-2 space-y-2">
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              className="accent-white"
+              checked={himChecked}
+              onChange={() => toggleAudience("him")}
+            />
+            <span>For Him</span>
+          </label>
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              className="accent-white"
+              checked={herChecked}
+              onChange={() => toggleAudience("her")}
+            />
+            <span>For Her</span>
+          </label>
+          <p className="text-xs text-white/60 pt-1">
+            Select one or both. Unselected shows all (including unisex).
+          </p>
+        </div>
+      </details>
 
       {/* Subcategory (only when a category is selected) */}
       {currentCategory && subOptions.length > 0 && (

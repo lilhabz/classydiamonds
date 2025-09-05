@@ -23,6 +23,8 @@ const canonicalizeCategory = (raw: string) => {
   return v;
 };
 
+export type Audience = "him" | "her";
+
 export type ProductType = {
   id: string;
   slug: string;
@@ -36,6 +38,9 @@ export type ProductType = {
   stone?: string;
   shape?: string;
   carat?: number | null;
+  /** ✅ New (preferred): audience array */
+  audience?: Audience[];
+  /** ⚠️ Legacy: kept for compat; normalized at runtime */
   gender?: "unisex" | "him" | "her";
   description?: string;
   inStock?: boolean; // ✅ real stock flag
@@ -63,6 +68,72 @@ const TITLE = (s: string) =>
     .replace(/\b\w/g, (m) => m.toUpperCase())
     .replace(/\s{2,}/g, " ")
     .trim();
+
+/** Normalize query audience (and legacy gender) → Set<"him"|"her"> */
+function normalizeAudienceFromQuery(q: {
+  audience?: string | string[];
+  gender?: string | string[];
+}): Set<Audience> | null {
+  const vals = [
+    ...toArray(q.audience),
+    ...toArray(q.gender), // legacy
+  ]
+    .map((s) => String(s).toLowerCase().trim())
+    .filter(Boolean);
+
+  if (vals.length === 0) return null;
+
+  const set = new Set<Audience>();
+  for (const v of vals) {
+    if (v === "him" || v === "male" || v === "men" || v === "for-him")
+      set.add("him");
+    if (v === "her" || v === "female" || v === "women" || v === "for-her")
+      set.add("her");
+    if (v === "unisex" || v === "all" || v === "any") {
+      set.add("him");
+      set.add("her");
+    }
+  }
+  return set.size ? set : null;
+}
+
+/** Determine a product's audience set from either audience[] or legacy gender */
+function productAudiences(p: ProductType): Set<Audience> {
+  const set = new Set<Audience>();
+  if (Array.isArray(p.audience) && p.audience.length) {
+    for (const a of p.audience) {
+      const v = String(a).toLowerCase();
+      if (v === "him" || v === "male" || v === "men" || v === "for-him")
+        set.add("him");
+      if (v === "her" || v === "female" || v === "women" || v === "for-her")
+        set.add("her");
+      if (v === "unisex" || v === "all" || v === "any") {
+        set.add("him");
+        set.add("her");
+      }
+    }
+  } else if (p.gender) {
+    const g = String(p.gender).toLowerCase();
+    if (g === "unisex" || g === "all" || g === "any") {
+      set.add("him");
+      set.add("her");
+    } else if (g === "him" || g === "male" || g === "men" || g === "for-him") {
+      set.add("him");
+    } else if (
+      g === "her" ||
+      g === "female" ||
+      g === "women" ||
+      g === "for-her"
+    ) {
+      set.add("her");
+    }
+  } else {
+    // No info → treat as unisex so it appears in both views
+    set.add("him");
+    set.add("her");
+  }
+  return set;
+}
 
 /* ------------------------------- Constants -------------------------------- */
 // ✅ Use canonical slug here too
@@ -243,10 +314,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
     }
   }, [activeCategorySlug]);
 
-  const pageTitle = "Jewelry Collection | Classy Diamonds";
-  const pageDesc =
-    "Explore timeless rings, earrings, bracelets, and necklaces & pendants.";
-
+  // 🔎 Parse URL filters
   const metals = toArray(router.query.metal as any).map((x) =>
     String(x).toLowerCase()
   );
@@ -270,6 +338,16 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
     ? Number(router.query.caratMax)
     : undefined;
 
+  // 🎯 NEW: audience filter from URL
+  const audienceWanted = useMemo(
+    () =>
+      normalizeAudienceFromQuery({
+        audience: router.query.audience as any,
+        gender: router.query.gender as any,
+      }),
+    [router.query.audience, router.query.gender]
+  );
+
   const shown = useMemo(() => {
     const allowedSet = new Set(ALLOWED);
     let base = products.filter((p) =>
@@ -285,6 +363,18 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
           (p) => (p.subcategory || "").toLowerCase() === activeSub
         );
       }
+    }
+
+    // 🎯 NEW: apply audience filter (supports array or legacy gender)
+    if (audienceWanted && audienceWanted.size) {
+      base = base.filter((p) => {
+        const pa = productAudiences(p);
+        // match if intersection is non-empty
+        for (const a of audienceWanted) {
+          if (pa.has(a)) return true;
+        }
+        return false;
+      });
     }
 
     const meets = (p: ProductType) => {
@@ -319,6 +409,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
     products,
     activeCategorySlug,
     activeSub,
+    audienceWanted,
     metals,
     stones,
     shapes,
@@ -354,6 +445,20 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
     return CATEGORY_LABELS[canon] ?? TITLE(p.category || "");
   };
 
+  // 🧭 Audience for breadcrumbs (only when exactly one audience is selected)
+  const breadcrumbAudience: Audience | undefined = useMemo(() => {
+    if (!audienceWanted) return undefined;
+    if (audienceWanted.size === 1) {
+      const only = Array.from(audienceWanted)[0];
+      return only;
+    }
+    return undefined;
+  }, [audienceWanted]);
+
+  const pageTitle = "Jewelry Collection | Classy Diamonds";
+  const pageDesc =
+    "Explore timeless rings, earrings, bracelets, and necklaces & pendants.";
+
   return (
     <div className="min-h-screen flex flex-col bg-[var(--bg-page)] text-[var(--foreground)]">
       <Head>
@@ -386,7 +491,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
 
       {/* 🧭 Breadcrumbs */}
       <div className="pl-4 pr-4 sm:pl-8 sm:pr-8 mt-8 mb-8">
-        <Breadcrumbs />
+        <Breadcrumbs audience={breadcrumbAudience} />
       </div>
 
       {/* 💎 Category Tiles — link to /category/<slug> */}
@@ -480,7 +585,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
                   grid-cols-2 md:grid-cols-3 lg:grid-cols-4
                 "
               >
-                {shown.slice(0, visibleCount).map((product) => {
+                {shown.slice(0, visibleCount).map((product: ProductType) => {
                   const category = canonicalizeCategory(
                     product.category || ""
                   ) as CategorySlug;
@@ -579,6 +684,53 @@ export const getServerSideProps: GetServerSideProps = async () => {
   const products: ProductType[] = rows
     .map((p: any) => {
       const cat = canonicalizeCategory(String(p.category || ""));
+      // Normalize audience from either p.audience (array/string) or legacy p.gender
+      let audienceArr: Audience[] | undefined;
+      if (Array.isArray(p.audience)) {
+        const set = new Set<Audience>();
+        for (const a of p.audience) {
+          const v = String(a).toLowerCase();
+          if (v === "him" || v === "male" || v === "men" || v === "for-him")
+            set.add("him");
+          if (v === "her" || v === "female" || v === "women" || v === "for-her")
+            set.add("her");
+          if (v === "unisex" || v === "all" || v === "any") {
+            set.add("him");
+            set.add("her");
+          }
+        }
+        audienceArr = Array.from(set);
+      } else if (typeof p.audience === "string") {
+        const v = String(p.audience).toLowerCase();
+        if (v === "unisex" || v === "all" || v === "any")
+          audienceArr = ["him", "her"];
+        else if (v === "him" || v === "male" || v === "men" || v === "for-him")
+          audienceArr = ["him"];
+        else if (
+          v === "her" ||
+          v === "female" ||
+          v === "women" ||
+          v === "for-her"
+        )
+          audienceArr = ["her"];
+      } else if (p.gender) {
+        const g = String(p.gender).toLowerCase();
+        if (g === "unisex" || g === "all" || g === "any")
+          audienceArr = ["him", "her"];
+        else if (g === "him" || g === "male" || g === "men" || g === "for-him")
+          audienceArr = ["him"];
+        else if (
+          g === "her" ||
+          g === "female" ||
+          g === "women" ||
+          g === "for-her"
+        )
+          audienceArr = ["her"];
+      }
+      // Default to unisex if nothing provided
+      if (!audienceArr || audienceArr.length === 0)
+        audienceArr = ["him", "her"];
+
       return {
         id: String(p._id),
         slug: p.slug,
@@ -595,7 +747,8 @@ export const getServerSideProps: GetServerSideProps = async () => {
         stone: (p.stone || "").toLowerCase(),
         shape: (p.shape || "").toLowerCase(),
         carat: typeof p.carat === "number" ? p.carat : null,
-        gender: p.gender || "unisex",
+        audience: audienceArr, // ✅ new array schema
+        gender: p.gender || "unisex", // ⚠️ legacy kept for compat
         description: p.description || "",
         // ✅ Real stock derivation (compatible with several backends)
         inStock:
