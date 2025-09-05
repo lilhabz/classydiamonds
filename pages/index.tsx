@@ -59,15 +59,26 @@ export default function Home({ products }: HomeProps) {
 
   type Gift = { name: string; image: string };
 
-  // ✅ Updated to link directly to /for-him and /for-her
+  // ✅ UPDATED: Route “For Him/Her” to /jewelry with audience filter
   function GiftButton({ gift, index }: { gift: Gift; index: number }) {
-    const slug = gift.name.toLowerCase().replace(/\s+/g, "-");
-    const href =
-      slug === "for-him"
-        ? "/for-him"
-        : slug === "for-her"
-        ? "/for-her"
-        : `/category/${slug}?scroll=true`;
+    const name = gift.name.trim().toLowerCase();
+
+    let href:
+      | string
+      | {
+          pathname: string;
+          query?: Record<string, string>;
+        };
+
+    if (name === "for him" || name.includes("for him")) {
+      href = { pathname: "/jewelry", query: { audience: "him" } };
+    } else if (name === "for her" || name.includes("for her")) {
+      href = { pathname: "/jewelry", query: { audience: "her" } };
+    } else {
+      // fallback (not used here, but keeps component generic)
+      const slug = name.replace(/\s+/g, "-");
+      href = { pathname: `/category/${slug}`, query: { scroll: "true" } };
+    }
 
     return (
       <Link

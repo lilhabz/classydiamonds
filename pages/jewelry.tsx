@@ -222,7 +222,7 @@ function IconClose(props: React.SVGProps<SVGSVGElement>) {
 }
 
 /* ---------------------------------- Page ---------------------------------- */
-// 🆕 accepts optional heroTitle / seoTitle overrides for audience pages
+// 🆕 accepts optional heroTitle / seoTitle overrides (legacy), but now derives from ?audience= by default
 export default function JewelryPage({
   products,
   heroTitle,
@@ -347,7 +347,7 @@ export default function JewelryPage({
     ? Number(router.query.caratMax)
     : undefined;
 
-  // 🎯 NEW: audience filter from URL
+  // 🎯 NEW: audience filter from URL (supports legacy ?gender=)
   const audienceWanted = useMemo(
     () =>
       normalizeAudienceFromQuery({
@@ -437,21 +437,10 @@ export default function JewelryPage({
     if (slug === "all") delete (next as any).sub;
     else (next as any).sub = slug;
     next.category = activeCategorySlug;
+    // ✅ preserves ?audience= in the URL automatically via spreading query
     router.push({ pathname: "/jewelry", query: next }, undefined, {
       shallow: true,
     });
-  };
-
-  const heading = activeCategorySlug
-    ? CATEGORY_LABELS[activeCategorySlug]
-    : heroTitle || "All Jewelry";
-
-  // Derive a friendly type label per product (prefer subcategory, else category)
-  const typeFrom = (p: ProductType) => {
-    const sub = (p.subcategory || "").trim();
-    if (sub && sub !== "all") return TITLE(sub);
-    const canon = canonicalizeCategory(p.category) as CategorySlug;
-    return CATEGORY_LABELS[canon] ?? TITLE(p.category || "");
   };
 
   // 🧭 Audience for breadcrumbs (only when exactly one audience is selected)
@@ -464,10 +453,36 @@ export default function JewelryPage({
     return undefined;
   }, [audienceWanted]);
 
-  const defaultSeoTitle = "Jewelry Collection | Classy Diamonds";
+  // 🆕 Derive friendly hero & SEO titles from audience (unless explicitly overridden via props)
+  const audienceLabel: string | null = useMemo(() => {
+    if (!breadcrumbAudience) return null;
+    return breadcrumbAudience === "him" ? "For Him" : "For Her";
+  }, [breadcrumbAudience]);
+
+  const computedHeroTitle =
+    heroTitle || (audienceLabel ? `${audienceLabel} Jewelry` : "Jewelry Collection");
+
+  const defaultSeoTitle = audienceLabel
+    ? `${audienceLabel} Jewelry | Classy Diamonds`
+    : "Jewelry Collection | Classy Diamonds";
+
   const pageTitle = seoTitle || defaultSeoTitle;
-  const pageDesc =
-    "Explore timeless rings, earrings, bracelets, and necklaces & pendants.";
+
+  const pageDesc = audienceLabel
+    ? `Explore ${audienceLabel.toLowerCase()} pieces across rings, earrings, bracelets, and necklaces & pendants.`
+    : "Explore timeless rings, earrings, bracelets, and necklaces & pendants.";
+
+  const heading = activeCategorySlug
+    ? CATEGORY_LABELS[activeCategorySlug]
+    : computedHeroTitle;
+
+  // Derive a friendly type label per product (prefer subcategory, else category)
+  const typeFrom = (p: ProductType) => {
+    const sub = (p.subcategory || "").trim();
+    if (sub && sub !== "all") return TITLE(sub);
+    const canon = canonicalizeCategory(p.category) as CategorySlug;
+    return CATEGORY_LABELS[canon] ?? TITLE(p.category || "");
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-[var(--bg-page)] text-[var(--foreground)]">
@@ -491,7 +506,7 @@ export default function JewelryPage({
         <div className="absolute inset-0 bg-black/50 pointer-events-none" />
         <div className="relative z-10 text-center px-4">
           <h1 className="text-3xl md:text-6xl font-serif font-bold tracking-wider leading-snug mb-4">
-            {heroTitle || "Jewelry Collection"}
+            {computedHeroTitle}
           </h1>
           <p className="text-base md:text-xl max-w-2xl mx-auto leading-relaxed tracking-wide">
             Discover timeless pieces crafted with passion.

@@ -174,12 +174,12 @@ export default function Breadcrumbs({
           </li>
         )}
 
-        {/* Audience crumb (only for jewelry context; link to dedicated landing pages) */}
+        {/* Audience crumb (only for jewelry context; now routes to /jewelry?audience=...) */}
         {!isWatchesPath && audienceProp && (
           <li className="flex items-center">
             <span className="mx-1">›</span>
             <Link
-              href={audienceProp === "him" ? "/for-him" : "/for-her"}
+              href={{ pathname: "/jewelry", query: { audience: audienceProp } }}
               className="hover:text-white text-white/70 capitalize"
             >
               {audienceProp === "him" ? "For Him" : "For Her"}
