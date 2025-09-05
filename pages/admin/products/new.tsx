@@ -25,6 +25,9 @@ export default function NewProductPage() {
   // 🆕 Stock
   const [inStock, setInStock] = useState<boolean>(true);
 
+  // 🆕 Featured flag (added)
+  const [featured, setFeatured] = useState<boolean>(false);
+
   // Audience bubbles
   const [audience, setAudience] = useState<string>("unisex");
 
@@ -346,6 +349,8 @@ export default function NewProductPage() {
         department: dept,
         // 🆕 Stock flag sent to API
         inStock,
+        // 🆕 Featured flag sent to API
+        featured,
       };
 
       const res = await fetch("/api/admin/products", {
@@ -366,6 +371,7 @@ export default function NewProductPage() {
       setImageFile(null);
       setSpecValues({});
       setInStock(true);
+      setFeatured(false); // reset featured
     } catch (err: any) {
       setStatusMsg({
         ok: false,
@@ -519,6 +525,23 @@ export default function NewProductPage() {
           <p className="text-xs opacity-70 mt-1">
             Uncheck to mark as out of stock (detail page will disable Add to
             Cart).
+          </p>
+        </div>
+
+        {/* 🆕 Featured toggle (added) */}
+        <div className="md:col-span-2">
+          <label className="inline-flex items-center gap-3">
+            <input
+              type="checkbox"
+              checked={featured}
+              onChange={(e) => setFeatured(e.target.checked)}
+              className="h-4 w-4"
+            />
+            <span className="font-medium">Featured on Home</span>
+          </label>
+          <p className="text-xs opacity-70 mt-1">
+            Flag to include in the curated home page “Featured” section. The API
+            enforces a maximum of 4 featured products.
           </p>
         </div>
 

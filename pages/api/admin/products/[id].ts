@@ -193,6 +193,33 @@ export default async function handler(
         patch.inStock = toBool(fields.inStock);
       }
 
+      // 🆕 featured: only set if provided — and enforce max 4 when turning on
+      if ("featured" in fields) {
+        const desiredFeatured = toBool(fields.featured);
+        if (desiredFeatured) {
+          // Resolve current document in the PRIMARY_COLLECTION to exclude it in the count
+          const current = await db
+            .collection(PRIMARY_COLLECTION)
+            .findOne(idFilter as any);
+          const excludeId =
+            current?._id instanceof ObjectId ? current._id : current?._id;
+
+          const currentFeaturedCount = await db
+            .collection(PRIMARY_COLLECTION)
+            .countDocuments({
+              featured: true,
+              ...(excludeId ? { _id: { $ne: excludeId } } : {}),
+            });
+
+          if (currentFeaturedCount >= 4) {
+            return res
+              .status(409)
+              .json({ ok: false, error: "Featured limit reached (max 4)." });
+          }
+        }
+        patch.featured = desiredFeatured;
+      }
+
       // Image handling
       const file: any = (files as any)?.image;
       const imageRemoved = toBool(fields.imageRemoved);

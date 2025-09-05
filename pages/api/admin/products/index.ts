@@ -41,6 +41,9 @@ type AdminProduct = {
 
   // 🆕 stock flag
   inStock?: boolean;
+
+  // 🆕 featured flag (NEW)
+  featured?: boolean;
 };
 
 type Ok =
@@ -159,6 +162,9 @@ function adaptDb(doc: any): AdminProduct {
 
     // 🆕 include stock (default true)
     inStock: typeof doc?.inStock === "boolean" ? doc.inStock : true,
+
+    // 🆕 include featured (default false)
+    featured: !!doc?.featured,
   };
 }
 
@@ -217,6 +223,9 @@ function adaptLegacy(doc: any): AdminProduct {
 
     // 🆕 legacy assumed in stock unless explicitly false
     inStock: doc?.inStock !== false,
+
+    // 🆕 legacy featured defaults to false unless explicitly true
+    featured: !!doc?.featured,
   };
 }
 
@@ -469,6 +478,9 @@ export default async function handler(
       // 🆕 stock parsing (default true)
       const inStock = toBool(fields.inStock, true);
 
+      // 🆕 featured parsing (default false)
+      const featured = toBool(fields.featured, false);
+
       // Optional image file
       let imageUrl: string | null = null;
       const file: any = (files as any)?.image;
@@ -503,6 +515,19 @@ export default async function handler(
         ? explicitSku
         : await getNextSkuNumber(db);
 
+      // 🛑 Enforce max 4 featured products (exclude same slug in upsert case)
+      if (featured) {
+        const currentFeaturedCount = await products.countDocuments({
+          featured: true,
+          slug: { $ne: slug },
+        });
+        if (currentFeaturedCount >= 4) {
+          return res
+            .status(409)
+            .json({ ok: false, error: "Featured limit reached (max 4)." });
+        }
+      }
+
       const now = new Date();
       const doc = {
         name: title,
@@ -518,7 +543,6 @@ export default async function handler(
         ...(normalized.style ? { style: normalized.style } : {}),
         ...(normalized.color ? { color: normalized.color } : {}),
         ...(normalized.clarity ? { clarity: normalized.clarity } : {}),
-        ...(normalized.cut ? { cut: normalized.cut } : {}),
         ...(normalized.carat !== undefined ? { carat: normalized.carat } : {}),
         imageUrl,
         images: imageUrl ? [imageUrl] : undefined,
@@ -532,6 +556,8 @@ export default async function handler(
             : undefined,
         // 🆕 persist stock
         inStock,
+        // 🆕 persist featured
+        featured,
         skuNumber, // 👈 store the sequence
         createdAt: now,
         updatedAt: now,

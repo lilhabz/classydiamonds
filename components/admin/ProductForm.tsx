@@ -65,6 +65,13 @@ export default function ProductForm({ initial, onSaved, mode }: Props) {
     typeof initial?.inStock === "boolean" ? !!initial?.inStock : true
   );
 
+  // 🆕 featured
+  const [featured, setFeatured] = useState<boolean>(
+    typeof (initial as any)?.featured === "boolean"
+      ? !!(initial as any)?.featured
+      : false
+  );
+
   // specs
   const [specs, setSpecs] = useState<Specs>(initial?.specs || {});
   const [saving, setSaving] = useState(false);
@@ -104,6 +111,12 @@ export default function ProductForm({ initial, onSaved, mode }: Props) {
     setImageRemoved(false);
     // 🆕 keep stock in sync on record switch
     setInStock(typeof initial.inStock === "boolean" ? !!initial.inStock : true);
+    // 🆕 keep featured in sync on record switch
+    setFeatured(
+      typeof (initial as any).featured === "boolean"
+        ? !!(initial as any).featured
+        : false
+    );
   }, [initial?._id]);
 
   // cascade: reset category/subCategory/specs when dept changes
@@ -189,6 +202,8 @@ export default function ProductForm({ initial, onSaved, mode }: Props) {
       department,
       // 🆕 include stock
       inStock,
+      // 🆕 include featured
+      featured,
     };
   }
 
@@ -233,6 +248,8 @@ export default function ProductForm({ initial, onSaved, mode }: Props) {
           department,
           // 🆕 include stock
           inStock,
+          // 🆕 include featured
+          featured,
         };
         const res = await fetch(
           `/api/admin/products/${encodeURIComponent(id)}`,
@@ -350,6 +367,22 @@ export default function ProductForm({ initial, onSaved, mode }: Props) {
         <span className="text-xs opacity-70">
           Uncheck to mark product as “Out of Stock” (storefront will show a
           warning and disable purchase if you implement that later).
+        </span>
+      </div>
+
+      {/* 🆕 Featured */}
+      <div className="flex items-center gap-3">
+        <label className="inline-flex items-center gap-2 px-3 py-2 rounded bg-[var(--bg-nav)]">
+          <input
+            type="checkbox"
+            checked={!!featured}
+            onChange={(e) => setFeatured(e.target.checked)}
+          />
+          <span className="text-sm">Featured on Home</span>
+        </label>
+        <span className="text-xs opacity-70">
+          Adds this product to your curated “Featured” section. (Server limits
+          to 4 total.)
         </span>
       </div>
 

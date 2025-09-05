@@ -26,6 +26,8 @@ type ProductDoc = {
   inStock?: boolean;
   stock?: boolean;
   quantity?: number;
+  // 🆕 featured flag (added)
+  featured?: boolean;
 };
 
 type SpecField = { key: string; label: string; placeholder?: string };
@@ -53,6 +55,8 @@ export default function EditProductPage() {
 
   // 🆕 Stock flag
   const [inStock, setInStock] = useState<boolean>(true);
+  // 🆕 Featured flag
+  const [featured, setFeatured] = useState<boolean>(false);
 
   const [audience, setAudience] = useState<string>("unisex");
 
@@ -262,6 +266,9 @@ export default function EditProductPage() {
             : true;
         setInStock(inferredInStock);
 
+        // 🆕 Load featured from server (default false)
+        setFeatured(!!p.featured);
+
         const specsObj =
           p.specs && typeof p.specs === "object"
             ? (p.specs as Record<string, any>)
@@ -435,6 +442,8 @@ export default function EditProductPage() {
         department: dept,
         // 🆕 include stock
         inStock,
+        // 🆕 include featured flag
+        featured,
       };
       if (nextImageUrl !== undefined) body.imageUrl = nextImageUrl;
 
@@ -453,8 +462,9 @@ export default function EditProductPage() {
       setResetToPlaceholder(false);
       setImageFile(null);
 
-      // refresh inStock from server response if present
+      // refresh inStock & featured from server response if present
       if (typeof p.inStock === "boolean") setInStock(p.inStock);
+      if (typeof p.featured === "boolean") setFeatured(p.featured);
 
       const serverSpecs =
         p.specs && typeof p.specs === "object"
@@ -619,6 +629,23 @@ export default function EditProductPage() {
             <p className="text-xs opacity-70 mt-1">
               Uncheck to mark as out of stock (detail page will disable Add to
               Cart).
+            </p>
+          </div>
+
+          {/* 🆕 Featured toggle (added) */}
+          <div className="md:col-span-2">
+            <label className="inline-flex items-center gap-3">
+              <input
+                type="checkbox"
+                checked={featured}
+                onChange={(e) => setFeatured(e.target.checked)}
+                className="h-4 w-4"
+              />
+              <span className="font-medium">Featured on Home</span>
+            </label>
+            <p className="text-xs opacity-70 mt-1">
+              Flag to include in the curated home page “Featured” section. The
+              API enforces a maximum of 4 featured products.
             </p>
           </div>
 
