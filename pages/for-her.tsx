@@ -57,18 +57,20 @@ export default function ForHer({ products }: { products: ProductType[] }) {
     <>
       <Head>
         <title>For Her | Classy Diamonds</title>
-        <meta
-          name="description"
-          content="Curated jewelry and watches for her."
-        />
+        <meta name="description" content="Curated jewelry for her." />
       </Head>
-      <JewelryPage products={products} />
+
+      <JewelryPage
+        products={products}
+        heroTitle="For Her"
+        seoTitle="For Her | Classy Diamonds"
+      />
     </>
   );
 }
 
 export const getServerSideProps: GetServerSideProps = async () => {
-  // Pull a generous set; filter to her/unisex in memory
+  // Pull a generous set; filter server-side to women-only (NO unisex)
   const rows = await listProducts({}, { sort: { createdAt: -1 }, limit: 2000 });
 
   const ALLOWED_SET = new Set([
@@ -78,34 +80,32 @@ export const getServerSideProps: GetServerSideProps = async () => {
     "necklaces-pendants",
   ]);
 
-  // Normalize assorted inputs to Audience[]
+  // Normalize to Audience[] strictly as "him" | "her"
   const toAudience = (v: any): Audience[] => {
     const arr = Array.isArray(v) ? v : v ? [v] : [];
     const set = new Set<Audience>();
-
     for (const raw of arr) {
       const t = String(raw || "")
         .toLowerCase()
         .trim();
       if (t === "her" || t === "female" || t === "women" || t === "for-her")
-        set.add("women" as Audience);
+        set.add("her");
       if (t === "him" || t === "male" || t === "men" || t === "for-him")
-        set.add("men" as Audience);
-      if (t === "kids" || t === "children") set.add("kids" as Audience);
-      if (t === "unisex" || t === "all" || t === "any")
-        set.add("unisex" as Audience);
+        set.add("him");
+      if (t === "unisex" || t === "all" || t === "any") {
+        set.add("him");
+        set.add("her");
+      }
     }
-
-    if (set.size === 0) set.add("unisex" as Audience); // default visibility
-    return Array.from(set) as Audience[];
+    return Array.from(set);
   };
 
   const products: ProductType[] = rows
     .map((p: any) => {
-      const cat = canonicalizeCategory(String(p.category || ""));
-      const aud: Audience[] = p.audience
+      const aud: Audience[] = Array.isArray(p.audience)
         ? toAudience(p.audience)
         : toAudience(p.gender);
+
       return {
         id: String(p._id),
         slug: p.slug,
@@ -116,7 +116,7 @@ export const getServerSideProps: GetServerSideProps = async () => {
           p.imageUrl ||
           (Array.isArray(p.images) && p.images.length ? p.images[0] : "") ||
           "",
-        category: cat,
+        category: canonicalizeCategory(String(p.category || "")),
         subcategory: String(p.subCategory ?? p.subcategory ?? "").toLowerCase(),
         metal: String(p.metal || "").toLowerCase(),
         stone: String(p.stone || "").toLowerCase(),
@@ -135,11 +135,11 @@ export const getServerSideProps: GetServerSideProps = async () => {
             : true,
       } as ProductType;
     })
-    .filter((p: ProductType) => ALLOWED_SET.has(p.category))
-    // Include women and unisex for "her"
-    .filter((p: ProductType) => {
-      const set = new Set(p.audience ?? ["unisex" as Audience]);
-      return set.has("women" as Audience) || set.has("unisex" as Audience);
+    .filter((p) => ALLOWED_SET.has(p.category))
+    // 🚫 Women-only: include items explicitly marked for "her" and NOT for "him"
+    .filter((p) => {
+      const set = new Set(p.audience ?? []);
+      return set.has("her") && !set.has("him");
     });
 
   return { props: { products } };

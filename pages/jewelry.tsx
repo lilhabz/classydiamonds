@@ -222,7 +222,16 @@ function IconClose(props: React.SVGProps<SVGSVGElement>) {
 }
 
 /* ---------------------------------- Page ---------------------------------- */
-export default function JewelryPage({ products }: { products: ProductType[] }) {
+// 🆕 accepts optional heroTitle / seoTitle overrides for audience pages
+export default function JewelryPage({
+  products,
+  heroTitle,
+  seoTitle,
+}: {
+  products: ProductType[];
+  heroTitle?: string;
+  seoTitle?: string;
+}) {
   // ❌ removed addToCart from context (no CTA on cards)
   // const { addToCart } = useCart();
   const [visibleCount, setVisibleCount] = useState(50);
@@ -435,7 +444,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
 
   const heading = activeCategorySlug
     ? CATEGORY_LABELS[activeCategorySlug]
-    : "All Jewelry";
+    : heroTitle || "All Jewelry";
 
   // Derive a friendly type label per product (prefer subcategory, else category)
   const typeFrom = (p: ProductType) => {
@@ -455,7 +464,8 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
     return undefined;
   }, [audienceWanted]);
 
-  const pageTitle = "Jewelry Collection | Classy Diamonds";
+  const defaultSeoTitle = "Jewelry Collection | Classy Diamonds";
+  const pageTitle = seoTitle || defaultSeoTitle;
   const pageDesc =
     "Explore timeless rings, earrings, bracelets, and necklaces & pendants.";
 
@@ -481,7 +491,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
         <div className="absolute inset-0 bg-black/50 pointer-events-none" />
         <div className="relative z-10 text-center px-4">
           <h1 className="text-3xl md:text-6xl font-serif font-bold tracking-wider leading-snug mb-4">
-            Jewelry Collection
+            {heroTitle || "Jewelry Collection"}
           </h1>
           <p className="text-base md:text-xl max-w-2xl mx-auto leading-relaxed tracking-wide">
             Discover timeless pieces crafted with passion.
@@ -558,7 +568,7 @@ export default function JewelryPage({ products }: { products: ProductType[] }) {
           </div>
           <button
             onClick={() => setMobileFiltersOpen(true)}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-sm font-medium transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg:white/5 hover:bg-white/10 text-sm font-medium transition-colors"
             aria-haspopup="dialog"
             aria-controls="filters-drawer"
           >

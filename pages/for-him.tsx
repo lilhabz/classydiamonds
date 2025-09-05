@@ -1,312 +1,147 @@
-// 📄 pages/index.tsx – Home Page using shared ProductCard for Featured (matches Jewelry) 💎✅
-
+// pages/for-him.tsx
 "use client";
 
-import Link from "next/link";
 import Head from "next/head";
-import Image from "next/image";
-import { GetServerSideProps } from "next";
-import clientPromise from "@/lib/mongodb";
+import type { GetServerSideProps } from "next";
+import { useEffect } from "react";
 import { useRouter } from "next/router";
-import CategoryGrid from "@/components/CategoryGrid";
-import ProductCard from "@/components/ProductCard";
+import { listProducts } from "../lib/products"; // keep relative path like for-her
+import JewelryPage from "./jewelry"; // reuse the shared page
 
-// 🔒 Canonical slugs helper (guards against legacy "necklaces")
+// Match the Audience type from jewelry.tsx
+type Audience = import("./jewelry").Audience;
+
+type ProductType = {
+  id: string;
+  slug: string;
+  name: string;
+  price: number;
+  salePrice?: number | null;
+  image: string;
+  category: string; // canonical
+  subcategory?: string;
+  metal?: string;
+  stone?: string;
+  shape?: string;
+  carat?: number | null;
+  audience?: Audience[];
+  gender?: "unisex" | "him" | "her"; // legacy passthrough
+  description?: string;
+  inStock?: boolean;
+};
+
+// Canonicalize legacy category slugs
 const canonicalizeCategory = (raw: string) => {
   const v = String(raw || "").toLowerCase();
   if (v === "necklaces") return "necklaces-pendants";
   return v;
 };
 
-interface Product {
-  _id: string;
-  name: string;
-  price: number;
-  salePrice?: number | null;
-  image: string;
-  category: string; // canonical slug
-  slug: string;
-}
-
-interface HomeProps {
-  products: Product[];
-}
-
-export const getServerSideProps: GetServerSideProps<HomeProps> = async () => {
-  const client = await clientPromise;
-  const db = client.db();
-  const featuredDocs = await db
-    .collection("products")
-    .find({ featured: true })
-    .limit(4)
-    .toArray();
-
-  const products: Product[] = featuredDocs.map((doc: any) => ({
-    _id: doc._id.toString(),
-    name: doc.name,
-    price: doc.price,
-    salePrice: doc.salePrice ?? null,
-    image: doc.imageUrl || doc.image,
-    // ✅ normalize to canonical slugs so links don't break
-    category: canonicalizeCategory(String(doc.category || "")),
-    slug: doc.slug,
-  }));
-
-  return { props: { products } };
-};
-
-export default function Home({ products }: HomeProps) {
-  const featured = products;
+export default function ForHim({ products }: { products: ProductType[] }) {
   const router = useRouter();
 
-  type Gift = { name: string; image: string };
-
-  function GiftButton({ gift, index }: { gift: Gift; index: number }) {
-    const slug = gift.name.toLowerCase().replace(/\s+/g, "-");
-    const gender =
-      slug === "for-him" ? "him" : slug === "for-her" ? "her" : null;
-    return (
-      <button
-        type="button"
-        onClick={() => {
-          router.push({
-            pathname: "/jewelry",
-            query: gender
-              ? { gender, scroll: "true" }
-              : { category: slug, scroll: "true" },
-          });
-        }}
-        className="group relative rounded-xl overflow-hidden shadow-md hover:shadow-2xl hover:scale-105 transition-transform duration-300 cursor-pointer"
-      >
-        <div className="relative aspect-[4/3] w-full">
-          <Image
-            src={gift.image}
-            alt={gift.name}
-            fill
-            priority={index < 1}
-            className="object-cover rounded-xl group-hover:scale-110 transition-transform duration-300"
-          />
-          <div className="absolute inset-0 bg-black/40 z-10" />
-          <span className="absolute inset-0 flex items-center justify-center text-sm sm:text-base font-semibold text-white z-20">
-            {gift.name}
-          </span>
-        </div>
-      </button>
-    );
-  }
-
-  // ✅ Use canonical slug for Necklaces & Pendants
-  const CATEGORY_ITEMS = [
-    { label: "Rings", slug: "rings", image: "/category/ring-cat.jpg" },
-    { label: "Earrings", slug: "earrings", image: "/category/earring-cat.jpg" },
-    {
-      label: "Bracelets",
-      slug: "bracelets",
-      image: "/category/bracelet-cat.jpg",
-    },
-    {
-      label: "Necklaces & Pendants",
-      slug: "necklaces-pendants", // ✅ fixed
-      image: "/category/necklace-cat.jpg",
-    },
-  ];
+  // Reflect audience=him in the URL (shallow) to keep filters consistent
+  useEffect(() => {
+    if (!router.isReady) return;
+    const curr = router.query;
+    if (curr.audience !== "him") {
+      router.replace(
+        { pathname: "/for-him", query: { ...curr, audience: "him" } },
+        undefined,
+        { shallow: true }
+      );
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [router.isReady]);
 
   return (
     <>
       <Head>
-        <title>Classy Diamonds - Fine Jewelry</title>
-        <meta
-          name="description"
-          content="Explore elegant rings, earrings, bracelets, and necklaces & pendants."
-        />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>For Him | Classy Diamonds</title>
+        <meta name="description" content="Curated jewelry for him." />
       </Head>
 
-      <main className="flex flex-col min-h-screen bg-[var(--bg-page)] text-[var(--foreground)] overflow-x-hidden">
-        {/* ⭐ Hero Section */}
-        <section className="-mt-20 relative w-full h-[80vh] flex items-center justify-center overflow-hidden">
-          <Image
-            src="/hero-home.jpg"
-            alt="Hero"
-            fill
-            className="object-cover"
-          />
-          <div className="absolute inset-0 bg-black/50" />
-          <div className="relative z-10 text-center px-4">
-            <h1 className="text-3xl sm:text-4xl md:text-6xl font-serif font-bold tracking-wider leading-snug text-[#e0e0e0] mb-6">
-              Timeless Elegance
-            </h1>
-            <p className="text-base sm:text-lg md:text-xl text-[#e0e0e0] mb-8 max-w-2xl mx-auto leading-relaxed">
-              Discover handcrafted fine jewelry made to be worn and loved.
-            </p>
-            <Link href={{ pathname: "/jewelry", query: { scroll: "true" } }}>
-              <button className="px-8 py-4 bg-[#e0e0e0] text-[#1f2a44] rounded-full shadow hover:shadow-lg hover:scale-105 transition">
-                Shop Now
-              </button>
-            </Link>
-          </div>
-        </section>
-
-        {/* 🛍️ Shared Category Grid */}
-        <CategoryGrid
-          items={CATEGORY_ITEMS}
-          title="Shop by Category"
-          fullBleedDesktop
-          className="mt-12 md:mt-16"
-        />
-
-        {/* 🛍️ Mobile-Only “Featured” */}
-        <section className="sm:hidden px-4 mt-2 mb-8">
-          <h2 className="text-2xl font-serif font-semibold tracking-wide text-center mb-4 text-white">
-            Featured Pieces
-          </h2>
-
-          {featured.length === 0 ? (
-            <p className="text-white text-center w-full">
-              No featured items to display.
-            </p>
-          ) : (
-            <div
-              className="
-                grid w-full
-                gap-x-6 gap-y-10
-                grid-cols-2
-              "
-            >
-              {featured.map((item) => (
-                <ProductCard
-                  key={item._id}
-                  slug={item.slug}
-                  image={item.image}
-                  name={item.name}
-                  price={item.price}
-                  salePrice={item.salePrice ?? null}
-                  href={`/category/${item.category}/${item.slug}?scroll=true`}
-                  stockLabel="In Stock"
-                  typeLabel={
-                    item.category === "necklaces-pendants"
-                      ? "Necklace"
-                      : item.category.charAt(0).toUpperCase() +
-                        item.category.slice(1).replace("-", " ")
-                  }
-                />
-              ))}
-            </div>
-          )}
-        </section>
-
-        {/* 🖥️ Desktop-Only “Featured” — unified grid */}
-        <section className="hidden sm:block py-16 sm:py-20 px-4 sm:px-6 max-w-7xl mx-auto">
-          <h2 className="text-3xl sm:text-4xl font-serif font-semibold tracking-wide text-center mb-8">
-            Featured Pieces
-          </h2>
-
-          {featured.length === 0 ? (
-            <p className="text-white text-center">
-              No featured items to display.
-            </p>
-          ) : (
-            <div
-              className="
-                grid w-full
-                gap-x-6 gap-y-10
-                grid-cols-2 md:grid-cols-3 lg:grid-cols-4
-              "
-            >
-              {featured.map((item) => (
-                <ProductCard
-                  key={item._id}
-                  slug={item.slug}
-                  image={item.image}
-                  name={item.name}
-                  price={item.price}
-                  salePrice={item.salePrice ?? null}
-                  href={`/category/${item.category}/${item.slug}?scroll=true`}
-                  stockLabel="In Stock"
-                  typeLabel={
-                    item.category === "necklaces-pendants"
-                      ? "Necklace"
-                      : item.category.charAt(0).toUpperCase() +
-                        item.category.slice(1).replace("-", " ")
-                  }
-                />
-              ))}
-            </div>
-          )}
-        </section>
-
-        {/* 🎁 Gifts for Him & Her */}
-        <section className="py-16 sm:py-20 px-4 sm:px-10 w-full">
-          <h2 className="text-2xl sm:text-3xl font-serif font-semibold tracking-wide text-center mb-12 sm:mb-16">
-            Gifts for Him & Her
-          </h2>
-          <div className="grid grid-cols-2 gap-4 justify-center max-w-2xl mx-auto">
-            {[
-              { name: "For Him", image: "/category/his-gift-cat.jpg" },
-              { name: "For Her", image: "/category/her-gift-cat.jpg" },
-            ].map((gift, index) => (
-              <GiftButton key={gift.name} gift={gift} index={index} />
-            ))}
-          </div>
-        </section>
-
-        {/* 🛠️ About Section */}
-        <section className="py-16 sm:py-20 px-4 sm:px-6 --bg-page">
-          <div className="max-w-4xl mx-auto text-center">
-            <h2 className="text-2xl sm:text-3xl font-serif font-semibold mb-6 sm:mb-8 tracking-wide">
-              Craftsmanship You Can Trust
-            </h2>
-            <p className="text-base sm:text-lg text-[#cfd2d6] leading-relaxed">
-              Classy Diamonds was founded on a promise: to create jewelry that
-              stands the test of time. Every piece we offer is designed with
-              precision, built from premium materials, and backed by a legacy of
-              trust. This isn’t just jewelry — it’s generational craftsmanship
-              you can count on.
-            </p>
-          </div>
-        </section>
-
-        {/* 💎 Why Choose Us Section */}
-        <section className="py-16 sm:py-20 px-4 sm:px-6 --bg-page">
-          <div className="max-w-4xl mx-auto text-center">
-            <h2 className="text-3xl sm:text-4xl font-serif font-bold mb-8 sm:mb-10 tracking-wide">
-              Why Choose Classy Diamonds?
-            </h2>
-            <p className="text-base sm:text-lg text-[#cfd2d6] leading-relaxed">
-              With over 30 years in the jewelry industry, we’ve built our name
-              on excellence, independence, and unmatched attention to detail.
-              Our clients—from London to Australia—choose us because we deliver
-              personal service, ethical sourcing, and timeless beauty in every
-              creation.
-            </p>
-          </div>
-        </section>
-
-        {/* ✍️ Custom Jewelry CTA */}
-        <section className="--bg-page py-16 sm:py-20 px-4 sm:px-6">
-          <div className="max-w-5xl mx-auto text-center">
-            <h2 className="text-3xl sm:text-4xl font-serif font-bold mb-8 tracking-wide">
-              Bring Your Vision to Life
-            </h2>
-            <p className="text-base sm:text-lg text-[#cfd2d6] mb-8 leading-relaxed">
-              Whether you’re imagining a one-of-a-kind engagement ring or
-              redesigning a meaningful family heirloom, Ned brings decades of
-              expertise to every detail. At Classy Diamonds, custom jewelry
-              isn’t just made — it’s imagined with you, for you, and crafted by
-              hand with heart.
-            </p>
-            <Link
-              href="/custom"
-              className="inline-block mt-4 px-8 py-4 bg-[#e0e0e0] text-[#1f2a44] rounded-full font-semibold text-base sm:text-lg hover:bg:white hover:scale-105 transition-transform duration-300"
-            >
-              Start Your Custom Piece
-            </Link>
-          </div>
-        </section>
-
-        {/* 🧩 Tailwind Purge Safeguard for Swipe Snap */}
-        <div className="hidden hidden-scroll-snap-include" />
-      </main>
+      <JewelryPage
+        products={products}
+        heroTitle="For Him"
+        seoTitle="For Him | Classy Diamonds"
+      />
     </>
   );
 }
+
+export const getServerSideProps: GetServerSideProps = async () => {
+  // Fetch a generous set server-side, then filter to MEN-ONLY (exclude unisex)
+  const rows = await listProducts({}, { sort: { createdAt: -1 }, limit: 2000 });
+
+  const ALLOWED_SET = new Set([
+    "rings",
+    "earrings",
+    "bracelets",
+    "necklaces-pendants",
+  ]);
+
+  // Normalize to Audience[] strictly as "him" | "her" (unisex => both)
+  const toAudience = (v: any): Audience[] => {
+    const arr = Array.isArray(v) ? v : v ? [v] : [];
+    const set = new Set<Audience>();
+    for (const raw of arr) {
+      const t = String(raw || "")
+        .toLowerCase()
+        .trim();
+      if (t === "her" || t === "female" || t === "women" || t === "for-her")
+        set.add("her");
+      if (t === "him" || t === "male" || t === "men" || t === "for-him")
+        set.add("him");
+      if (t === "unisex" || t === "all" || t === "any") {
+        set.add("him");
+        set.add("her");
+      }
+    }
+    return Array.from(set);
+  };
+
+  const products: ProductType[] = rows
+    .map((p: any) => {
+      const aud: Audience[] = Array.isArray(p.audience)
+        ? toAudience(p.audience)
+        : toAudience(p.gender);
+
+      return {
+        id: String(p._id),
+        slug: p.slug,
+        name: p.title || p.name || "",
+        price: p.price ?? p.unitPrice ?? 0,
+        salePrice: p.salePrice ?? p.discountedPrice ?? null,
+        image:
+          p.imageUrl ||
+          (Array.isArray(p.images) && p.images.length ? p.images[0] : "") ||
+          "",
+        category: canonicalizeCategory(String(p.category || "")),
+        subcategory: String(p.subCategory ?? p.subcategory ?? "").toLowerCase(),
+        metal: String(p.metal || "").toLowerCase(),
+        stone: String(p.stone || "").toLowerCase(),
+        shape: String(p.shape || "").toLowerCase(),
+        carat: typeof p.carat === "number" ? p.carat : null,
+        audience: aud,
+        gender: p.gender || "unisex",
+        description: p.description || "",
+        inStock:
+          typeof p.inStock === "boolean"
+            ? p.inStock
+            : typeof p.stock === "boolean"
+            ? p.stock
+            : typeof p.quantity === "number"
+            ? p.quantity > 0
+            : true,
+      } as ProductType;
+    })
+    .filter((p) => ALLOWED_SET.has(p.category))
+    // ✅ Men-only: include items explicitly for "him" and NOT for "her"
+    .filter((p) => {
+      const set = new Set(p.audience ?? []);
+      return set.has("him") && !set.has("her");
+    });
+
+  return { props: { products } };
+};
