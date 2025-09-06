@@ -24,10 +24,16 @@ export type ProductCardProps = {
   inStock?: boolean;
   /** 🆕 When false, the card renders without a Link wrapper (useful for admin previews) */
   interactive?: boolean;
+  /** 🆕 Color to use for the fallback swatch when no image is available */
+  fallbackColor?: string;
   className?: string;
   style?: React.CSSProperties;
 };
 
+/**
+ * We keep this constant only as a sentinel value to detect "no image".
+ * We DO NOT render this file anymore; instead we paint a color block.
+ */
 const PLACEHOLDER = "/gray-placeholder.jpg";
 
 /* -------------------------------------------------------
@@ -56,6 +62,33 @@ function resolveImageSrc(raw?: string | null) {
   return normalizeLocalPath(raw);
 }
 
+/* -------------------------------------------------------
+   Fallback color selection
+   - Use explicit `fallbackColor` if provided.
+   - Else choose a gentle, category-inspired default from `typeLabel`.
+------------------------------------------------------- */
+function pickDefaultColor(typeLabel?: string): string {
+  const key = String(typeLabel || "").trim().toLowerCase();
+  // Soft, subtle pastels that fit the brand vibe
+  const palette: Record<string, string> = {
+    ring: "#E0F2FE", // light sky
+    rings: "#E0F2FE",
+    bracelet: "#FCE7F3", // light pink
+    bracelets: "#FCE7F3",
+    earring: "#EDE9FE", // light violet
+    earrings: "#EDE9FE",
+    "necklace": "#FEF3C7", // light amber
+    "necklaces": "#FEF3C7",
+    "necklaces & pendants": "#FEF3C7",
+    "pendant": "#FEF3C7",
+    "pendants": "#FEF3C7",
+    watch: "#E5E7EB", // neutral
+    watches: "#E5E7EB",
+    default: "#E6EEF5", // soft blue-gray fallback
+  };
+  return palette[key] || palette.default;
+}
+
 export default function ProductCard({
   slug,
   image,
@@ -67,6 +100,7 @@ export default function ProductCard({
   typeLabel,
   inStock, // 🆕
   interactive = true, // 🆕 default clickable
+  fallbackColor,
   className = "",
   style,
 }: ProductCardProps) {
@@ -92,6 +126,7 @@ export default function ProductCard({
       setFailedOnce(true);
       setUnoptimized(true);
     } else {
+      // Second failure → mark as "no image": we will render a color swatch.
       setSrc(PLACEHOLDER);
       setUnoptimized(false);
     }
@@ -118,6 +153,10 @@ export default function ProductCard({
 
   const outOfStock = resolvedInStock === false;
 
+  // 🆕 Decide whether to render a color swatch instead of an <Image />
+  const isColorFallback = src === PLACEHOLDER;
+  const swatchColor = fallbackColor || pickDefaultColor(typeLabel);
+
   // 🆕 Wrapper: Link (interactive) or plain div (non-interactive)
   const Wrapper: React.FC<{ children: React.ReactNode }> = ({ children }) =>
     interactive ? (
@@ -133,7 +172,7 @@ export default function ProductCard({
   return (
     <div
       className={
-        "group relative flex flex-col overflow-hidden rounded-xl border border-black/10 bg-gray-50 " + // bg was white → gray-50
+        "group relative flex flex-col overflow-hidden rounded-xl border border-black/10 bg-gray-50 " +
         (outOfStock ? "opacity-[0.92]" : "") +
         " " +
         className
@@ -154,14 +193,13 @@ export default function ProductCard({
     >
       {/* Clickable (or not) top (image + text) */}
       <Wrapper>
-        {/* Framed image with floating heart
-            We replace aspect-[4/3] with an explicit padding-top that adds ~36px
-            so the image "drops down" to cover the old heart row space. */}
+        {/* Framed media area with floating heart
+            We keep the same height calc so the grid alignment doesn't change. */}
         <div
           className="relative w-full overflow-hidden rounded-sm"
           style={{ paddingTop: "calc(75% + 36px)" }} // 4/3 (75%) + extra 36px height
         >
-          {/* Heart button (OVER image, top-right) */}
+          {/* Heart button (OVER image/swatch, top-right) */}
           <button
             type="button"
             onClick={onHeartClick}
@@ -192,20 +230,33 @@ export default function ProductCard({
             </svg>
           </button>
 
-          {/* Image */}
-          <Image
-            src={src}
-            alt={name}
-            fill
-            className={
-              "absolute inset-0 object-cover transition-transform duration-300 group-hover:scale-[1.03]" +
-              (outOfStock ? " grayscale" : "")
-            }
-            unoptimized={unoptimized}
-            onError={handleImgError}
-            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-            priority={false}
-          />
+          {/* Media: either a Next/Image or a solid color swatch */}
+          {isColorFallback ? (
+            <div
+              className={
+                "absolute inset-0 transition-transform duration-300 group-hover:scale-[1.03]"
+              }
+              // Use inline style for precise brand-friendly hues
+              style={{
+                backgroundColor: swatchColor,
+              }}
+              aria-hidden="true"
+            />
+          ) : (
+            <Image
+              src={src}
+              alt={name}
+              fill
+              className={
+                "absolute inset-0 object-cover transition-transform duration-300 group-hover:scale-[1.03]" +
+                (outOfStock ? " grayscale" : "")
+              }
+              unoptimized={unoptimized}
+              onError={handleImgError}
+              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+              priority={false}
+            />
+          )}
         </div>
 
         {/* Hairline divider */}

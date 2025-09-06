@@ -127,7 +127,7 @@ type ApiProduct = {
   subCategory?: string | null;
   image?: string | null;
   imageUrl?: string | null;
-  audience?: string | string[] | null;
+  audience?: string | string | null | string[];
   specs?: Record<string, any> | null;
   archived?: boolean | null;
   createdAt?: string | null;
@@ -252,6 +252,9 @@ export default function AdminProductsList() {
 
   // 🆕 quick-create busy flags
   const [creatingKey, setCreatingKey] = useState<string | null>(null);
+
+  // 🆕 quantity for quick-create (1–100)
+  const [qty, setQty] = useState<number>(1);
 
   useEffect(() => {
     if (!session?.user?.isAdmin) return;
@@ -543,11 +546,33 @@ export default function AdminProductsList() {
           subcategory: subcategory ?? null,
           audience,
           baseName,
+          quantity: qty, // ✅ allow multi-create
         }),
       });
       const data = await res.json();
+
       if (!res.ok || !data?.ok) throw new Error(data?.error || "Create failed");
-      await router.push(data.editPath || `/admin/products/${data.id}`);
+
+      // ✅ Stay on list: refresh table instead of navigating away
+      const reload = await fetch("/api/admin/products?includeLegacy=1").then(
+        (r) => r.json()
+      );
+      const reList: ApiProduct[] = Array.isArray(reload.items)
+        ? reload.items
+        : [];
+      setAllItems(reList.map(adaptApiProduct));
+
+      // Friendly success note
+      const created: Array<{ name?: string }> = Array.isArray(data.created)
+        ? data.created
+        : data.id
+        ? [{ name: data.name }]
+        : [];
+      const namesPreview = created.slice(0, 5).map((c) => c.name).filter(Boolean).join(", ");
+      const more = created.length > 5 ? ` (+${created.length - 5} more)` : "";
+      alert(
+        `✅ Created ${data.count ?? created.length ?? 1} placeholder${(data.count ?? created.length ?? 1) === 1 ? "" : "s"}${namesPreview ? `: ${namesPreview}${more}` : ""}`
+      );
     } catch (e: any) {
       alert("❌ " + (e?.message || "Quick-create failed"));
     } finally {
@@ -642,6 +667,24 @@ export default function AdminProductsList() {
           <span className="opacity-50 mx-2">|</span>
           <span className="text-sm opacity-75">Quick-create:</span>
 
+          {/* 🆕 Qty input (kept tiny/minimal) */}
+          <label className="ml-2 text-xs opacity-80">
+            Qty
+            <input
+              type="number"
+              min={1}
+              max={100}
+              value={qty}
+              onChange={(e) =>
+                setQty(
+                  Math.max(1, Math.min(100, Number(e.target.value) || 1))
+                )
+              }
+              className="ml-1 w-14 px-2 py-1 rounded bg-[var(--bg-nav)]"
+              title="Number of placeholders to create (1–100)"
+            />
+          </label>
+
           {/* Replaced Links with instant-create buttons */}
           <button
             type="button"
@@ -655,7 +698,7 @@ export default function AdminProductsList() {
             }
             className="text-xs px-3 py-1 rounded bg-emerald-700 hover:bg-emerald-600 disabled:opacity-50"
             disabled={creatingKey === "aud:him"}
-            title="Instantly create a placeholder for Him"
+            title="Instantly create placeholder(s) for Him"
           >
             {creatingKey === "aud:him" ? "Creating…" : "+ New for Him"}
           </button>
@@ -672,7 +715,7 @@ export default function AdminProductsList() {
             }
             className="text-xs px-3 py-1 rounded bg-rose-700 hover:bg-rose-600 disabled:opacity-50"
             disabled={creatingKey === "aud:her"}
-            title="Instantly create a placeholder for Her"
+            title="Instantly create placeholder(s) for Her"
           >
             {creatingKey === "aud:her" ? "Creating…" : "+ New for Her"}
           </button>
@@ -689,7 +732,7 @@ export default function AdminProductsList() {
             }
             className="text-xs px-3 py-1 rounded bg-indigo-700 hover:bg-indigo-600 disabled:opacity-50"
             disabled={creatingKey === "aud:unisex"}
-            title="Instantly create a placeholder for Unisex"
+            title="Instantly create placeholder(s) for Unisex"
           >
             {creatingKey === "aud:unisex" ? "Creating…" : "+ New Unisex"}
           </button>
@@ -713,7 +756,7 @@ export default function AdminProductsList() {
           })}
           <span className="opacity-50 mx-2">|</span>
 
-          {/* Replaced Link with instant-create button (uses current audience filter if set, else unisex) */}
+          {/* Instant-create button (uses current audience filter if set, else unisex) */}
           <button
             type="button"
             onClick={() =>
@@ -764,7 +807,7 @@ export default function AdminProductsList() {
             })}
             <span className="opacity-50 mx-2">|</span>
 
-            {/* Replaced Link with instant-create button */}
+            {/* Instant-create in subcategory */}
             <button
               type="button"
               onClick={() =>

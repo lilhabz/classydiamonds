@@ -9,8 +9,10 @@ import {
   syncSkuCounterToMax,
 } from "@/lib/sku";
 
+type CreatedItem = { id: string; slug: string; name: string; editPath: string };
+
 type Ok =
-  | { ok: true; id: string; slug: string; name: string; editPath: string }
+  | { ok: true; count: number; created: CreatedItem[] }
   | { ok: false; error: string };
 
 type Department = "jewelry" | "watch";
@@ -117,12 +119,16 @@ export default async function handler(
       subcategory,
       audience,
       baseName: clientBaseName,
+      quantity,
+      qty,
     } = (req.body || {}) as {
       department?: Department;
       category?: string;
       subcategory?: string | null;
       audience?: "him" | "her" | "unisex";
       baseName?: string;
+      quantity?: number;
+      qty?: number;
     };
 
     if (!category) {
@@ -145,12 +151,32 @@ export default async function handler(
       .trim();
     const baseName = base.length ? base : dept === "watch" ? "Watch" : "Item";
 
-    // Find the next sequential number for "Base N"
+    // Desired count (cap to a reasonable upper bound)
+    const countRaw = Number.isFinite(quantity) ? quantity : qty;
+    const count = Math.max(1, Math.min(100, Number(countRaw) || 1));
+
+    // Helper: ensure unique slug across PRIMARY and (optional) "products"
+    async function slugExists(slug: string) {
+      const inPrimary = await products.findOne(
+        { slug },
+        { projection: { _id: 1 } }
+      );
+      if (inPrimary) return true;
+      if (alsoProducts) {
+        const inSecondary = await alsoProducts.findOne(
+          { slug },
+          { projection: { _id: 1 } }
+        );
+        if (inSecondary) return true;
+      }
+      return false;
+    }
+
+    // Find the starting number for "Base N" (scan by name pattern in PRIMARY)
     const rx = new RegExp(`^${escapeRegex(baseName)}\\s+(\\d+)$`, "i");
     const matchQuery = {
       name: { $regex: `^${escapeRegex(baseName)}\\s+\\d+$`, $options: "i" },
     };
-
     const existing = await products
       .find(matchQuery, { projection: { name: 1 } })
       .toArray();
@@ -165,63 +191,94 @@ export default async function handler(
     }
     let nextNum = maxN + 1;
 
-    // Ensure unique slug across PRIMARY and (optional) "products"
-    async function slugExists(slug: string) {
-      const inPrimary = await products.findOne({ slug }, { projection: { _id: 1 } });
-      if (inPrimary) return true;
-      if (alsoProducts) {
-        const inSecondary = await alsoProducts.findOne({ slug }, { projection: { _id: 1 } });
-        if (inSecondary) return true;
-      }
-      return false;
-    }
-
-    let name = `${baseName} ${nextNum}`;
-    let slug = slugify(name);
-    // Bump until slug is unique
-    while (await slugExists(slug)) {
-      nextNum += 1;
-      name = `${baseName} ${nextNum}`;
-      slug = slugify(name);
-    }
-
     // SKU prep (sync to current max just like your multipart POST)
     await ensureSkuCounter(db);
     await syncSkuCounterToMax(db, PRIMARY_COLLECTION);
-    const skuNumber = await getNextSkuNumber(db);
 
     const now = new Date();
-    const doc = {
-      name,
-      title: name,
-      slug,
-      price: 0,
-      salePrice: null as number | null,
-      category,
-      subCategory: subcategory || null,
-      imageUrl: null as string | null,
-      images: [] as string[],
-      archived: false,
-      specs: {} as Record<string, any>,
-      audience: [audience || "unisex"],
-      description: "",
-      department: dept,
-      inStock: true,
-      featured: false,
-      skuNumber,
-      createdAt: now,
-      updatedAt: now,
-    };
 
-    const insert = await products.insertOne(doc);
-    const id = String(insert.insertedId);
+    // Build docs (unique name/slug + unique SKU per doc)
+    const docs: any[] = [];
+    const planned: { name: string; slug: string }[] = [];
+
+    for (let i = 0; i < count; i++) {
+      // Propose name/slug and bump until slug is unique globally
+      let name = `${baseName} ${nextNum}`;
+      let slug = slugify(name);
+      while (await slugExists(slug)) {
+        nextNum += 1;
+        name = `${baseName} ${nextNum}`;
+        slug = slugify(name);
+      }
+
+      const skuNumber = await getNextSkuNumber(db);
+
+      const doc = {
+        name,
+        title: name,
+        slug,
+        price: 0,
+        salePrice: null as number | null,
+
+        // ✅ Correctly persist subcategory in lowercase (and keep legacy camelled for safety)
+        category,
+        subcategory: subcategory ?? null, // <-- frontend reads this
+        subCategory: subcategory ?? null, // <-- temporary back-compat; can be removed later
+
+        imageUrl: null as string | null,
+        images: [] as string[],
+        archived: false,
+        specs: {} as Record<string, any>,
+        audience: [audience || "unisex"],
+        description: "",
+        department: dept,
+        inStock: true,
+        featured: false,
+        skuNumber,
+        createdAt: now,
+        updatedAt: now,
+      };
+
+      docs.push(doc);
+      planned.push({ name, slug });
+
+      nextNum += 1; // advance for the next proposal
+    }
+
+    // Insert
+    let created: CreatedItem[] = [];
+    if (docs.length === 1) {
+      const insert = await products.insertOne(docs[0]);
+      const id = String(insert.insertedId);
+      created = [
+        {
+          id,
+          slug: planned[0].slug,
+          name: planned[0].name,
+          editPath: `/admin/products/${id}`,
+        },
+      ];
+    } else {
+      const insertManyRes = await products.insertMany(docs);
+      // insertMany returns an object map of index -> ObjectId
+      created = Object.keys(insertManyRes.insertedIds)
+        .sort((a, b) => Number(a) - Number(b))
+        .map((k) => {
+          const idx = Number(k);
+          const id = String(insertManyRes.insertedIds[idx]);
+          return {
+            id,
+            slug: planned[idx].slug,
+            name: planned[idx].name,
+            editPath: `/admin/products/${id}`,
+          };
+        });
+    }
 
     return res.status(200).json({
       ok: true,
-      id,
-      slug,
-      name,
-      editPath: `/admin/products/${id}`,
+      count: created.length,
+      created,
     });
   } catch (e: any) {
     console.error("quick-create error:", e);
