@@ -311,7 +311,6 @@ export default function EditProductPage() {
   );
 
   // Spec fields (same as new.tsx)
-  // Spec fields (same as new.tsx)
   const specFieldsFor = (d: Department, cat: string): SpecField[] => {
     const c = (cat || "").toLowerCase();
     const baseJewelry: SpecField[] = [
@@ -515,18 +514,43 @@ export default function EditProductPage() {
 
   const typePreview = subcategory || category || "";
 
+  // --- Live labels for UI (used by <Head>, Breadcrumbs, header) ---
+  const productId = id ? String(id) : "";
+  const liveProductName = (name || "").trim();
+
   return (
     <div className="p-6 min-h-screen bg-[var(--bg-page)] text-[var(--foreground)]">
       <Head>
-        <title>Edit Product | Admin</title>
+        <title>
+          {liveProductName
+            ? `Edit: ${liveProductName} | Admin`
+            : "Edit Product | Admin"}
+        </title>
+        <meta
+          name="description"
+          content={
+            liveProductName
+              ? `Editing product: ${liveProductName}`
+              : "Edit a product in the admin dashboard."
+          }
+        />
       </Head>
 
       <div className="pl-2 pr-2 sm:pl-4 sm:pr-4 -mt-2 mb-6">
-        <Breadcrumbs />
+        <Breadcrumbs
+          customLabels={
+            liveProductName && productId ? { [productId]: liveProductName } : {}
+          }
+        />
       </div>
 
       <div className="flex items-center justify-between mb-4">
-        <h1 className="text-2xl font-serif font-bold">✏️ Edit Product</h1>
+        <h1 className="text-2xl font-serif font-bold">
+          ✏️ Edit Product
+          {liveProductName && (
+            <span className="text-white/70"> — {liveProductName}</span>
+          )}
+        </h1>
         <Link
           href="/admin/products"
           className="px-3 py-2 rounded bg-[var(--bg-nav)]"
