@@ -359,6 +359,9 @@ export default function CategoryPage({
                       href={href}
                       inStock={p.inStock} // ✅ real stock to card
                       typeLabel={typeLabelFrom(p)}
+                      /* 🆕 provide context so the card can render a color swatch if no image */
+                      categorySlug={categorySlug}
+                      subcategorySlug={p.subcategory || null}
                     />
                   );
                 })}

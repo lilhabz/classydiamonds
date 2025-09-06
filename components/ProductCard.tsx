@@ -27,15 +27,13 @@ export type ProductCardProps = {
   /** 🆕 Color to use for the fallback swatch when no image is available */
   fallbackColor?: string;
   /** 🆕 Canonical slugs to auto-pick swatch colors */
-  categorySlug?: string | null;     // e.g. "engagement", "necklaces-pendants", "bracelets"
-  subcategorySlug?: string | null;  // e.g. "halo", "solitaire", "tennis"
+  categorySlug?: string | null;     // e.g. "rings", "necklaces-pendants", "bracelets"
+  subcategorySlug?: string | null;  // e.g. "engagement", "halo", "tennis"
   className?: string;
   style?: React.CSSProperties;
 };
 
-/**
- * Sentinel only — we don't render this file; it signals "no image".
- */
+/** Signal "no image" — used only as sentinel inside the component */
 const PLACEHOLDER = "/gray-placeholder.jpg";
 
 /* -------------------------------------------------------
@@ -58,33 +56,63 @@ function resolveImageSrc(raw?: string | null) {
 
 /* -------------------------------------------------------
    Swatch color selection (subcategory → category → type → default)
-   - Extend these maps as your taxonomy grows.
+   - Extended to cover ring subcategories + plural/singular variants.
+   - Tweak shades freely to fit your palette.
 ------------------------------------------------------- */
 const CATEGORY_COLORS: Record<string, string> = {
   // primary categories
-  "engagement": "#E0F2FE",          // light sky
-  "rings": "#DBEAFE",               // light cornflower
-  "bracelets": "#FCE7F3",           // light pink
-  "necklaces-pendants": "#FEF3C7",  // light amber
-  "earrings": "#EDE9FE",            // light violet
-  "for-him": "#E5E7EB",             // neutral
-  "for-her": "#F5F3FF",             // lavender
-  "watches": "#E5E7EB",             // neutral
+  rings: "#DBEAFE",                // light cornflower
+  "necklaces-pendants": "#FEF3C7", // light amber
+  bracelets: "#FCE7F3",            // light pink
+  earrings: "#EDE9FE",             // light violet
+  watches: "#E5E7EB",              // neutral
+  chains: "#E9E3D2",               // soft khaki
+  "for-him": "#E5E7EB",            // neutral
+  "for-her": "#F5F3FF",            // lavender
+  // some folks link directly to these rails as “categories”
+  engagement: "#E0F2FE",
+  "wedding-bands": "#FDE68A",
 };
 
 const SUBCATEGORY_COLORS: Record<string, string> = {
   // format: "<category>:<subcategory>"
-  "engagement:solitaire": "#C7F2FF",
-  "engagement:halo": "#FBCFE8",
-  "engagement:three-stone": "#DDD6FE",
-  "engagement:pave": "#FEF9C3",
+
+  /* ---------- Rings family ---------- */
+  "rings:engagement": "#C7D2FE",
+  "rings:wedding": "#FDE68A",
+  "rings:wedding-bands": "#FDE68A",
   "rings:eternity": "#E9D5FF",
-  "bracelets:tennis": "#FDE68A",
-  "bracelets:bangle": "#D1FAE5",
+  "rings:promise": "#FBCFE8",
+  "rings:fashion": "#F5D0FE",
+  "rings:halo": "#FBCFE8",
+  "rings:solitaire": "#C7F2FF",
+  "rings:three-stone": "#DDD6FE",
+  "rings:bridal-set": "#BDE2FF",
+
+  /* ---------- Earrings ---------- */
   "earrings:studs": "#D1FAE5",
   "earrings:hoops": "#A7F3D0",
+  "earrings:drops": "#C7F9CC",
+  "earrings:drop": "#C7F9CC",
+  "earrings:huggies": "#BBF7D0",
+
+  /* ---------- Bracelets ---------- */
+  "bracelets:tennis": "#FDE68A",
+  "bracelets:bangle": "#D1FAE5",
+  "bracelets:bangles": "#D1FAE5",
+  "bracelets:cuff": "#E6F4EA",
+  "bracelets:cuffs": "#E6F4EA",
+
+  /* ---------- Necklaces & Pendants ---------- */
   "necklaces-pendants:pendant": "#FEF9C3",
-  "necklaces-pendants:initial": "#FFEDD5",
+  "necklaces-pendants:pendants": "#FEF9C3",
+  "necklaces-pendants:solitaire": "#E0F2FE",
+  "necklaces-pendants:station": "#FDE2E4",
+  "necklaces-pendants:nameplate": "#FFEDD5",
+  "necklaces-pendants:nameplates": "#FFEDD5",
+  "necklaces-pendants:pearl": "#E2E8F0",
+
+  /* ---------- Watches ---------- */
   "watches:mens": "#E5E7EB",
   "watches:womens": "#F3F4F6",
 };
@@ -95,34 +123,6 @@ function slugify(v?: string | null): string {
     .replace(/&/g, "and")
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/(^-|-$)/g, "");
-}
-
-function pickSwatchColor(opts: {
-  fallbackColor?: string;
-  categorySlug?: string | null;
-  subcategorySlug?: string | null;
-  typeLabel?: string;
-}): string {
-  const { fallbackColor, categorySlug, subcategorySlug, typeLabel } = opts;
-
-  if (fallbackColor) return fallbackColor;
-
-  const cat = slugify(categorySlug);
-  const sub = slugify(subcategorySlug);
-
-  if (cat && sub) {
-    const key = `${cat}:${sub}`;
-    if (SUBCATEGORY_COLORS[key]) return SUBCATEGORY_COLORS[key];
-  }
-
-  if (cat && CATEGORY_COLORS[cat]) return CATEGORY_COLORS[cat];
-
-  // As a final hint, try typeLabel buckets
-  const t = slugify(typeLabel);
-  if (CATEGORY_COLORS[t]) return CATEGORY_COLORS[t];
-
-  // brand-friendly default
-  return "#E6EEF5";
 }
 
 export default function ProductCard({
@@ -148,7 +148,7 @@ export default function ProductCard({
   const [src, setSrc] = useState<string>(initial);
   const [unoptimized, setUnoptimized] = useState(false);
 
-  // 🆕 favorites
+  // 🧡 favorites
   const { rehydrated, isFavorite, toggleFavorite } = useFavorites();
   const fav = rehydrated ? isFavorite(slug) : false;
 
@@ -157,7 +157,7 @@ export default function ProductCard({
     setUnoptimized(false);
   }, [initial]);
 
-  // Simplified: on first error, flip to swatch immediately.
+  // On first error, flip to color swatch immediately.
   const handleImgError = () => {
     setSrc(PLACEHOLDER);
     setUnoptimized(false);
@@ -183,6 +183,44 @@ export default function ProductCard({
   const outOfStock = resolvedInStock === false;
 
   const isColorFallback = src === PLACEHOLDER;
+
+  // ---------- Swatch selection ----------
+  function pickSwatchColor(opts: {
+    fallbackColor?: string;
+    categorySlug?: string | null;
+    subcategorySlug?: string | null;
+    typeLabel?: string;
+  }): string {
+    const { fallbackColor, categorySlug, subcategorySlug, typeLabel } = opts;
+
+    if (fallbackColor) return fallbackColor;
+
+    const cat = slugify(categorySlug);
+    const sub = slugify(subcategorySlug);
+
+    // prefer subcategory-specific color (handles ring subcats)
+    if (cat && sub) {
+      const key = `${cat}:${sub}`;
+      if (SUBCATEGORY_COLORS[key]) return SUBCATEGORY_COLORS[key];
+
+      // 🪄 light plural→singular fallback (drops trailing "s")
+      if (sub.endsWith("s")) {
+        const altKey = `${cat}:${sub.replace(/s$/, "")}`;
+        if (SUBCATEGORY_COLORS[altKey]) return SUBCATEGORY_COLORS[altKey];
+      }
+    }
+
+    // then category color
+    if (cat && CATEGORY_COLORS[cat]) return CATEGORY_COLORS[cat];
+
+    // finally, try type label bucket
+    const t = slugify(typeLabel);
+    if (CATEGORY_COLORS[t]) return CATEGORY_COLORS[t];
+
+    // brand-friendly default
+    return "#E6EEF5";
+  }
+
   const swatchColor = pickSwatchColor({
     fallbackColor,
     categorySlug,

@@ -57,6 +57,61 @@ function singularizeBasic(word: string): string {
   return w;
 }
 
+/* ----------------------- Storefront canonicalization ---------------------- */
+/** Ring subcategories used on the storefront (add as needed) */
+const RING_SUBCATS = new Set([
+  "engagement",
+  "wedding",
+  "eternity",
+  "promise",
+  "fashion",
+  "anniversary",
+  "halo",
+  "solitaire",
+  "three-stone",
+  "bridal-set",
+]);
+
+/** Return storefront-friendly { category, subcategory } */
+function canonicalizeCategoryAndSubcategory(
+  rawCategory?: string | null,
+  rawSubcategory?: string | null
+): { category: string; subcategory: string | null } {
+  const c = String(rawCategory || "").toLowerCase();
+  const s = (rawSubcategory == null ? null : String(rawSubcategory).toLowerCase()) || null;
+
+  // If admin passed a ring *subcategory* as "category", treat it as rings/<sub>
+  if (RING_SUBCATS.has(c)) {
+    return { category: "rings", subcategory: c };
+  }
+
+  // Known singular→plural / canonical merges
+  if (c === "ring" || c === "rings") return { category: "rings", subcategory: s };
+  if (c === "earring" || c === "earrings") return { category: "earrings", subcategory: s };
+  if (c === "bracelet" || c === "bracelets") return { category: "bracelets", subcategory: s };
+  if (c === "watch" || c === "watches") return { category: "watches", subcategory: s };
+  if (c === "chain" || c === "chains") return { category: "chains", subcategory: s };
+
+  // Necklaces + pendants are merged on storefront
+  if (
+    c === "necklace" ||
+    c === "pendant" ||
+    c === "necklaces" ||
+    c === "pendants" ||
+    c === "necklaces-pendants"
+  ) {
+    return { category: "necklaces-pendants", subcategory: s };
+  }
+
+  // Gender rails are already storefront categories
+  if (c === "for-him" || c === "for-her") {
+    return { category: c, subcategory: s };
+  }
+
+  // Fallback: leave as-is (still lowercased)
+  return { category: c, subcategory: s };
+}
+
 /** Mirrors the front-end heuristic so base names are consistent */
 function baseNameFor(
   dept: Department,
@@ -115,8 +170,8 @@ export default async function handler(
     // Input (from index.tsx quickCreate)
     const {
       department,
-      category,
-      subcategory,
+      category: rawCategory,
+      subcategory: rawSubcategory,
       audience,
       baseName: clientBaseName,
       quantity,
@@ -131,19 +186,21 @@ export default async function handler(
       qty?: number;
     };
 
-    if (!category) {
+    if (!rawCategory) {
       return res
         .status(400)
         .json({ ok: false, error: "Missing required field: category" });
     }
 
-    // Normalize dept
+    // ✅ Canonical storefront slugs
+    const { category, subcategory } = canonicalizeCategoryAndSubcategory(
+      rawCategory,
+      rawSubcategory
+    );
+
+    // Normalize dept after canonicalization
     const dept: Department =
-      department === "watch" ||
-      String(category).toLowerCase() === "watch" ||
-      String(category).toLowerCase() === "watches"
-        ? "watch"
-        : "jewelry";
+      category === "watches" ? "watch" : department === "watch" ? "watch" : "jewelry";
 
     // Compute base name (prefer client’s, else infer)
     const base = (clientBaseName || baseNameFor(dept, category, subcategory))
@@ -220,10 +277,10 @@ export default async function handler(
         price: 0,
         salePrice: null as number | null,
 
-        // ✅ Correctly persist subcategory in lowercase (and keep legacy camelled for safety)
-        category,
-        subcategory: subcategory ?? null, // <-- frontend reads this
-        subCategory: subcategory ?? null, // <-- temporary back-compat; can be removed later
+        // ✅ Storefront-canonical fields
+        category,                          // e.g., "rings", "necklaces-pendants"
+        subcategory: subcategory ?? null,  // e.g., "engagement"
+        subCategory: subcategory ?? null,  // (temporary) back-compat
 
         imageUrl: null as string | null,
         images: [] as string[],

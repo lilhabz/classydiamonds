@@ -279,6 +279,7 @@ function IconClose(props: React.SVGProps<SVGSVGElement>) {
 export default function SubcategoryPage({
   categorySlug,
   categoryLabel,
+  subcategorySlug,   // ✅ include this from SSR
   subcategoryLabel,
   heroImage,
   heroSubtitle,
@@ -432,6 +433,9 @@ export default function SubcategoryPage({
                       href={href}
                       inStock={p.inStock} // ✅ real stock to card
                       typeLabel={typeLabelFrom(p)}
+                      /* 🆕 provide context so the card can render a color swatch if no image */
+                      categorySlug={categorySlug}
+                      subcategorySlug={p.subcategory || subcategorySlug}
                     />
                   );
                 })}
