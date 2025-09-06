@@ -231,7 +231,6 @@ export default function JewelryPage({
   seoTitle?: string;
 }) {
   // const { addToCart } = useCart();
-  const [visibleCount, setVisibleCount] = useState(50);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
   const [activeCategorySlug, setActiveCategorySlug] =
@@ -241,8 +240,6 @@ export default function JewelryPage({
   const heroRef = useRef<HTMLDivElement>(null);
   const headerRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
-
-  const resetCount = () => setVisibleCount(50);
 
   // Strip stray ?scroll=true when no category is present (safe no-op now)
   useEffect(() => {
@@ -299,8 +296,6 @@ export default function JewelryPage({
       setActiveSub("all");
     }
 
-    resetCount();
-
     if (scroll === "true" && typeof category === "string" && heroRef.current) {
       const offset = heroRef.current.offsetTop + heroRef.current.offsetHeight;
       window.scrollTo({ top: offset, behavior: "smooth" });
@@ -315,7 +310,6 @@ export default function JewelryPage({
       return;
     }
     if (activeCategorySlug) {
-      resetCount();
       headerRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     }
   }, [activeCategorySlug]);
@@ -424,8 +418,6 @@ export default function JewelryPage({
     caratMin,
     caratMax,
   ]);
-
-  const totalProducts = shown.length;
 
   const goSub = (slug: string) => {
     if (!activeCategorySlug) return;
@@ -595,13 +587,13 @@ export default function JewelryPage({
             <FiltersSidebar mode="desktop" />
           </div>
 
-          {/* Right column (grid + load more) */}
-          <div>
+          {/* Right column (grid) */}
+          <div className="jewelry-fixed">
             {shown.length === 0 ? (
               <p className="text-white/80">No products found.</p>
             ) : (
               <ProductGrid
-                items={shown.slice(0, visibleCount).map((product) => {
+                items={shown.map((product) => {
                   const category = canonicalizeCategory(
                     product.category || ""
                   ) as CategorySlug;
@@ -620,17 +612,6 @@ export default function JewelryPage({
                   };
                 })}
               />
-            )}
-
-            {visibleCount < totalProducts && shown.length > 0 && (
-              <div className="flex justify-center mt-10">
-                <button
-                  onClick={() => setVisibleCount((v) => v + 50)}
-                  className="px-8 py-4 bg-[var(--foreground)] text-[var(--bg-nav)] rounded-full"
-                >
-                  Load More
-                </button>
-              </div>
             )}
           </div>
         </div>
@@ -682,6 +663,23 @@ export default function JewelryPage({
           </div>
         </div>
       )}
+
+      {/* 🔧 Page-scoped override: force explicit 2→3→4 columns ONLY here */}
+      <style jsx>{`
+        .jewelry-fixed :global(.product-grid) {
+          grid-template-columns: repeat(2, minmax(var(--card-w), 1fr));
+        }
+        @media (min-width: 768px) {
+          .jewelry-fixed :global(.product-grid) {
+            grid-template-columns: repeat(3, minmax(var(--card-w), 1fr));
+          }
+        }
+        @media (min-width: 1024px) {
+          .jewelry-fixed :global(.product-grid) {
+            grid-template-columns: repeat(4, minmax(var(--card-w), 1fr));
+          }
+        }
+      `}</style>
     </div>
   );
 }
