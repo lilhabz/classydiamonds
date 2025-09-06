@@ -174,7 +174,7 @@ export default function Home({ products }: HomeProps) {
             </p>
           ) : (
             // ✅ Uniform grid
-            <div className="product-grid">
+            <div className="product-grid grid gap-x-6 gap-y-10 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
               {featured.map((item) => (
                 <ProductCard
                   key={item._id}
@@ -209,7 +209,7 @@ export default function Home({ products }: HomeProps) {
             </p>
           ) : (
             // ✅ Uniform grid
-            <div className="product-grid">
+            <div className="product-grid grid gap-x-6 gap-y-10 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
               {featured.map((item) => (
                 <ProductCard
                   key={item._id}

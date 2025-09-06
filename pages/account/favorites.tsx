@@ -181,7 +181,7 @@ export default function FavoritesPage() {
         ) : (
           <>
             {/* ✅ Uniform card sizing via shared grid */}
-            <div className="product-grid">
+            <div className="product-grid grid gap-x-6 gap-y-10 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
               {products.map((p) => {
                 const stockLabel =
                   typeof p.inStock === "boolean"

@@ -417,7 +417,7 @@ export default function SubcategoryPage({
             {products.length === 0 ? (
               <p className="text-white/80">No products found.</p>
             ) : (
-              <div className="product-grid">
+              <div className="product-grid grid gap-x-6 gap-y-10 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
                 {products.slice(0, visibleCount).map((p) => {
                   const href = `/category/${encodeURIComponent(
                     categorySlug

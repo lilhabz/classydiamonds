@@ -603,7 +603,7 @@ export default function JewelryPage({
             {shown.length === 0 ? (
               <p className="text-white/80">No products found.</p>
             ) : (
-              <div className="product-grid">
+              <div className="product-grid grid gap-x-6 gap-y-10 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
                 {shown.slice(0, visibleCount).map((product: ProductType) => {
                   const category = canonicalizeCategory(
                     product.category || ""

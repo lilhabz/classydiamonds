@@ -67,7 +67,7 @@ export default function WatchesPage({ products }: WatchesProps) {
         <section className="py-10 px-4 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-7xl">
             {/* ✅ Use shared, uniform grid */}
-            <div className="product-grid">
+            <div className="product-grid grid gap-x-6 gap-y-10 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
               {products.map((product) => {
                 const href =
                   product.slug &&
