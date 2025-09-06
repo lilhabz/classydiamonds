@@ -162,75 +162,63 @@ export default function Home({ products }: HomeProps) {
           className="mt-12 md:mt-16"
         />
 
-        {/* 🛍️ Mobile-Only “Featured” */}
         <section className="sm:hidden px-4 mt-2 mb-8">
-          <h2 className="text-2xl font-serif font-semibold tracking-wide text-center mb-4 text-white">
-            Featured Pieces
-          </h2>
+  <h2 className="text-2xl ...">Featured Pieces</h2>
 
-          {featured.length === 0 ? (
-            <p className="text-white text-center w-full">
-              No featured items to display.
-            </p>
-          ) : (
-            // ✅ Uniform grid via shared component
-            <ProductGrid
-              items={featured.map((item) => ({
-                slug: item.slug,
-                image: item.image,
-                name: item.name,
-                price: item.price,
-                salePrice: item.salePrice ?? null,
-                href: `/category/${item.category}/${item.slug}?scroll=true`,
-                stockLabel: "In Stock",
-                typeLabel:
-                  item.category === "necklaces-pendants"
-                    ? "Necklace"
-                    : item.category
-                        .charAt(0)
-                        .toUpperCase() +
-                      item.category.slice(1).replace("-", " "),
-                categorySlug: item.category, // helps color swatch fallback
-              }))}
-              className=""
-            />
-          )}
-        </section>
+  {featured.length === 0 ? (
+    <p className="text-white text-center w-full">No featured items to display.</p>
+  ) : (
+    <div className="home-featured-fixed">
+      <ProductGrid
+        items={featured.map((item) => ({
+          slug: item.slug,
+          image: item.image,
+          name: item.name,
+          price: item.price,
+          salePrice: item.salePrice ?? null,
+          href: `/category/${item.category}/${item.slug}?scroll=true`,
+          stockLabel: "In Stock",
+          typeLabel:
+            item.category === "necklaces-pendants"
+              ? "Necklace"
+              : item.category.charAt(0).toUpperCase() +
+                item.category.slice(1).replace("-", " "),
+          categorySlug: item.category,
+        }))}
+      />
+    </div>
+  )}
+</section>
 
-        {/* 🖥️ Desktop-Only “Featured” — unified grid */}
+
         <section className="hidden sm:block py-16 sm:py-20 px-4 sm:px-6 max-w-7xl mx-auto">
-          <h2 className="text-3xl sm:text-4xl font-serif font-semibold tracking-wide text-center mb-8">
-            Featured Pieces
-          </h2>
+  <h2 className="text-3xl ...">Featured Pieces</h2>
 
-          {featured.length === 0 ? (
-            <p className="text-white text-center">
-              No featured items to display.
-            </p>
-          ) : (
-            // ✅ Uniform grid via shared component
-            <ProductGrid
-              items={featured.map((item) => ({
-                slug: item.slug,
-                image: item.image,
-                name: item.name,
-                price: item.price,
-                salePrice: item.salePrice ?? null,
-                href: `/category/${item.category}/${item.slug}?scroll=true`,
-                stockLabel: "In Stock",
-                typeLabel:
-                  item.category === "necklaces-pendants"
-                    ? "Necklace"
-                    : item.category
-                        .charAt(0)
-                        .toUpperCase() +
-                      item.category.slice(1).replace("-", " "),
-                categorySlug: item.category, // helps color swatch fallback
-              }))}
-              className=""
-            />
-          )}
-        </section>
+  {featured.length === 0 ? (
+    <p className="text-white text-center">No featured items to display.</p>
+  ) : (
+    <div className="home-featured-fixed">
+      <ProductGrid
+        items={featured.map((item) => ({
+          slug: item.slug,
+          image: item.image,
+          name: item.name,
+          price: item.price,
+          salePrice: item.salePrice ?? null,
+          href: `/category/${item.category}/${item.slug}?scroll=true`,
+          stockLabel: "In Stock",
+          typeLabel:
+            item.category === "necklaces-pendants"
+              ? "Necklace"
+              : item.category.charAt(0).toUpperCase() +
+                item.category.slice(1).replace("-", " "),
+          categorySlug: item.category,
+        }))}
+      />
+    </div>
+  )}
+</section>
+
 
         {/* 🎁 Gifts for Him & Her */}
         <section className="py-16 sm:py-20 px-4 sm:px-10 w-full">
