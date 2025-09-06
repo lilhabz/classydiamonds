@@ -18,7 +18,7 @@ export type ProductCardProps = {
   href?: string;
   /** "In Stock" / "Out of Stock" etc. (used only if `inStock` is undefined) */
   stockLabel?: string;
-  /** e.g., "Ring", "Watch", "Bracelet" */
+  /** e.g., "Ring", "Watch", "Bracelet" (human label) */
   typeLabel?: string;
   /** 🆕 Real stock flag; if set, overrides stockLabel text & styling */
   inStock?: boolean;
@@ -26,34 +26,28 @@ export type ProductCardProps = {
   interactive?: boolean;
   /** 🆕 Color to use for the fallback swatch when no image is available */
   fallbackColor?: string;
+  /** 🆕 Canonical slugs to auto-pick swatch colors */
+  categorySlug?: string | null;     // e.g. "engagement", "necklaces-pendants", "bracelets"
+  subcategorySlug?: string | null;  // e.g. "halo", "solitaire", "tennis"
   className?: string;
   style?: React.CSSProperties;
 };
 
 /**
- * We keep this constant only as a sentinel value to detect "no image".
- * We DO NOT render this file anymore; instead we paint a color block.
+ * Sentinel only — we don't render this file; it signals "no image".
  */
 const PLACEHOLDER = "/gray-placeholder.jpg";
 
 /* -------------------------------------------------------
    Path helpers
-   - Preserve any valid scheme (e.g., blob:, data:, http:, https:)
-   - Keep absolute /public paths ("/...") and make relative paths absolute
 ------------------------------------------------------- */
-const SCHEME_RE = /^[a-z][a-z0-9+.-]*:/i; // ✅ matches blob:, data:, http:, https:, file:, etc.
+const SCHEME_RE = /^[a-z][a-z0-9+.-]*:/i;
 
 function normalizeLocalPath(src: string) {
   const trimmed = src.trim();
   if (!trimmed) return PLACEHOLDER;
-
-  // 🆕 allow any URL scheme (includes blob:, data:, http:, https:, etc.)
   if (SCHEME_RE.test(trimmed)) return trimmed;
-
-  // Keep absolute /public paths
   if (trimmed.startsWith("/")) return trimmed;
-
-  // Make relative paths absolute
   return `/${trimmed.replace(/^(\.\/)+/, "")}`;
 }
 
@@ -63,30 +57,72 @@ function resolveImageSrc(raw?: string | null) {
 }
 
 /* -------------------------------------------------------
-   Fallback color selection
-   - Use explicit `fallbackColor` if provided.
-   - Else choose a gentle, category-inspired default from `typeLabel`.
+   Swatch color selection (subcategory → category → type → default)
+   - Extend these maps as your taxonomy grows.
 ------------------------------------------------------- */
-function pickDefaultColor(typeLabel?: string): string {
-  const key = String(typeLabel || "").trim().toLowerCase();
-  // Soft, subtle pastels that fit the brand vibe
-  const palette: Record<string, string> = {
-    ring: "#E0F2FE", // light sky
-    rings: "#E0F2FE",
-    bracelet: "#FCE7F3", // light pink
-    bracelets: "#FCE7F3",
-    earring: "#EDE9FE", // light violet
-    earrings: "#EDE9FE",
-    "necklace": "#FEF3C7", // light amber
-    "necklaces": "#FEF3C7",
-    "necklaces & pendants": "#FEF3C7",
-    "pendant": "#FEF3C7",
-    "pendants": "#FEF3C7",
-    watch: "#E5E7EB", // neutral
-    watches: "#E5E7EB",
-    default: "#E6EEF5", // soft blue-gray fallback
-  };
-  return palette[key] || palette.default;
+const CATEGORY_COLORS: Record<string, string> = {
+  // primary categories
+  "engagement": "#E0F2FE",          // light sky
+  "rings": "#DBEAFE",               // light cornflower
+  "bracelets": "#FCE7F3",           // light pink
+  "necklaces-pendants": "#FEF3C7",  // light amber
+  "earrings": "#EDE9FE",            // light violet
+  "for-him": "#E5E7EB",             // neutral
+  "for-her": "#F5F3FF",             // lavender
+  "watches": "#E5E7EB",             // neutral
+};
+
+const SUBCATEGORY_COLORS: Record<string, string> = {
+  // format: "<category>:<subcategory>"
+  "engagement:solitaire": "#C7F2FF",
+  "engagement:halo": "#FBCFE8",
+  "engagement:three-stone": "#DDD6FE",
+  "engagement:pave": "#FEF9C3",
+  "rings:eternity": "#E9D5FF",
+  "bracelets:tennis": "#FDE68A",
+  "bracelets:bangle": "#D1FAE5",
+  "earrings:studs": "#D1FAE5",
+  "earrings:hoops": "#A7F3D0",
+  "necklaces-pendants:pendant": "#FEF9C3",
+  "necklaces-pendants:initial": "#FFEDD5",
+  "watches:mens": "#E5E7EB",
+  "watches:womens": "#F3F4F6",
+};
+
+function slugify(v?: string | null): string {
+  const s = String(v ?? "").toLowerCase();
+  return s
+    .replace(/&/g, "and")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+}
+
+function pickSwatchColor(opts: {
+  fallbackColor?: string;
+  categorySlug?: string | null;
+  subcategorySlug?: string | null;
+  typeLabel?: string;
+}): string {
+  const { fallbackColor, categorySlug, subcategorySlug, typeLabel } = opts;
+
+  if (fallbackColor) return fallbackColor;
+
+  const cat = slugify(categorySlug);
+  const sub = slugify(subcategorySlug);
+
+  if (cat && sub) {
+    const key = `${cat}:${sub}`;
+    if (SUBCATEGORY_COLORS[key]) return SUBCATEGORY_COLORS[key];
+  }
+
+  if (cat && CATEGORY_COLORS[cat]) return CATEGORY_COLORS[cat];
+
+  // As a final hint, try typeLabel buckets
+  const t = slugify(typeLabel);
+  if (CATEGORY_COLORS[t]) return CATEGORY_COLORS[t];
+
+  // brand-friendly default
+  return "#E6EEF5";
 }
 
 export default function ProductCard({
@@ -98,9 +134,11 @@ export default function ProductCard({
   href,
   stockLabel = "In Stock",
   typeLabel,
-  inStock, // 🆕
-  interactive = true, // 🆕 default clickable
+  inStock,
+  interactive = true,
   fallbackColor,
+  categorySlug,
+  subcategorySlug,
   className = "",
   style,
 }: ProductCardProps) {
@@ -109,7 +147,6 @@ export default function ProductCard({
 
   const [src, setSrc] = useState<string>(initial);
   const [unoptimized, setUnoptimized] = useState(false);
-  const [failedOnce, setFailedOnce] = useState(false);
 
   // 🆕 favorites
   const { rehydrated, isFavorite, toggleFavorite } = useFavorites();
@@ -118,23 +155,16 @@ export default function ProductCard({
   useEffect(() => {
     setSrc(initial);
     setUnoptimized(false);
-    setFailedOnce(false);
   }, [initial]);
 
+  // Simplified: on first error, flip to swatch immediately.
   const handleImgError = () => {
-    if (!failedOnce) {
-      setFailedOnce(true);
-      setUnoptimized(true);
-    } else {
-      // Second failure → mark as "no image": we will render a color swatch.
-      setSrc(PLACEHOLDER);
-      setUnoptimized(false);
-    }
+    setSrc(PLACEHOLDER);
+    setUnoptimized(false);
   };
 
   const displayPrice = salePrice ?? price;
 
-  // 🆕 stop link navigation when clicking the heart
   const onHeartClick: React.MouseEventHandler<HTMLButtonElement> = (e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -142,7 +172,6 @@ export default function ProductCard({
     toggleFavorite(slug);
   };
 
-  // 🆕 Resolve stock label + styling based on boolean when provided
   const resolvedInStock = typeof inStock === "boolean" ? inStock : undefined;
   const resolvedStockText =
     resolvedInStock !== undefined
@@ -153,11 +182,14 @@ export default function ProductCard({
 
   const outOfStock = resolvedInStock === false;
 
-  // 🆕 Decide whether to render a color swatch instead of an <Image />
   const isColorFallback = src === PLACEHOLDER;
-  const swatchColor = fallbackColor || pickDefaultColor(typeLabel);
+  const swatchColor = pickSwatchColor({
+    fallbackColor,
+    categorySlug,
+    subcategorySlug,
+    typeLabel,
+  });
 
-  // 🆕 Wrapper: Link (interactive) or plain div (non-interactive)
   const Wrapper: React.FC<{ children: React.ReactNode }> = ({ children }) =>
     interactive ? (
       <Link href={link} aria-label={name} className="block group">
@@ -180,7 +212,6 @@ export default function ProductCard({
       style={{
         width: "100%",
         height: "auto",
-        // removed: --row-h-action (no tiny action row anymore)
         ["--row-h-title" as any]: "22px",
         ["--row-h-type" as any]: "20px",
         ["--row-h-price" as any]: "24px",
@@ -191,15 +222,13 @@ export default function ProductCard({
       }}
       aria-busy={false}
     >
-      {/* Clickable (or not) top (image + text) */}
       <Wrapper>
-        {/* Framed media area with floating heart
-            We keep the same height calc so the grid alignment doesn't change. */}
+        {/* Media area (+36px to preserve previous heart-row space) */}
         <div
           className="relative w-full overflow-hidden rounded-sm"
-          style={{ paddingTop: "calc(75% + 36px)" }} // 4/3 (75%) + extra 36px height
+          style={{ paddingTop: "calc(75% + 36px)" }}
         >
-          {/* Heart button (OVER image/swatch, top-right) */}
+          {/* Heart button (over image/swatch) */}
           <button
             type="button"
             onClick={onHeartClick}
@@ -230,16 +259,11 @@ export default function ProductCard({
             </svg>
           </button>
 
-          {/* Media: either a Next/Image or a solid color swatch */}
+          {/* Media: either Next/Image or a solid color swatch */}
           {isColorFallback ? (
             <div
-              className={
-                "absolute inset-0 transition-transform duration-300 group-hover:scale-[1.03]"
-              }
-              // Use inline style for precise brand-friendly hues
-              style={{
-                backgroundColor: swatchColor,
-              }}
+              className="absolute inset-0 transition-transform duration-300 group-hover:scale-[1.03]"
+              style={{ backgroundColor: swatchColor }}
               aria-hidden="true"
             />
           ) : (
@@ -262,9 +286,8 @@ export default function ProductCard({
         {/* Hairline divider */}
         <div className="mx-4 border-t border-neutral-200" />
 
-        {/* Centered meta (fixed row heights for perfect alignment) */}
+        {/* Meta */}
         <div className="px-4 pb-4 pt-3 text-center">
-          {/* Stock */}
           <p
             className={
               "uppercase tracking-wide " +
@@ -280,7 +303,6 @@ export default function ProductCard({
             {resolvedStockText}
           </p>
 
-          {/* Name (single line) */}
           <p
             className="truncate text-neutral-900"
             style={{
@@ -295,7 +317,6 @@ export default function ProductCard({
             {name}
           </p>
 
-          {/* Type (single line) */}
           <p
             className="truncate text-neutral-900"
             style={{
@@ -308,7 +329,6 @@ export default function ProductCard({
             {typeLabel ?? ""}
           </p>
 
-          {/* Price (single line) */}
           <p
             className="text-neutral-900"
             style={{
@@ -320,8 +340,8 @@ export default function ProductCard({
             }}
             title={
               salePrice
-                ? `$${price.toLocaleString()} → $${displayPrice.toLocaleString()}`
-                : `$${displayPrice.toLocaleString()}`
+                ? `$${price.toLocaleString()} → $${(salePrice ?? price).toLocaleString()}`
+                : `$${price.toLocaleString()}`
             }
           >
             {salePrice ? (
@@ -329,10 +349,10 @@ export default function ProductCard({
                 <span className="mr-2 text-neutral-400 line-through">
                   ${price.toLocaleString()}
                 </span>
-                ${displayPrice.toLocaleString()}
+                ${(salePrice ?? price).toLocaleString()}
               </>
             ) : (
-              <>${displayPrice.toLocaleString()}</>
+              <>${price.toLocaleString()}</>
             )}
           </p>
         </div>
