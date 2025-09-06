@@ -9,6 +9,7 @@ import {
   getSubCategories,
   getSpecFields,
 } from "@/lib/taxonomy";
+import ProductCard from "@/components/ProductCard";
 
 type Props = {
   initial?: Partial<Product>;
@@ -295,6 +296,16 @@ export default function ProductForm({ initial, onSaved, mode }: Props) {
       setSaving(false);
     }
   }
+
+  // ---------- admin preview helpers ----------
+  const previewSlug =
+    (initial as any)?.slug || (title ? slugify(title) : "preview-item");
+  const previewImage = previewUrl || (imageRemoved ? "" : existingImage) || "";
+  const previewType =
+    (subCategory || category || department || "product")
+      .replace(/-/g, " ")
+      .replace(/\b\w/g, (m) => m.toUpperCase());
+  const stockLabel = inStock ? "In Stock" : "Out of Stock";
 
   return (
     <form onSubmit={onSubmit} className="space-y-4">
@@ -615,6 +626,28 @@ export default function ProductForm({ initial, onSaved, mode }: Props) {
           rows={5}
           className="w-full px-3 py-2 rounded bg-[var(--bg-nav)] text-white"
         />
+      </div>
+
+      {/* 🔎 Live storefront card preview — uses shared .product-grid for consistent sizing */}
+      <div className="mt-6">
+        <div className="flex items-baseline justify-between">
+          <h3 className="text-sm opacity-80">Preview</h3>
+          <span className="text-xs opacity-60">
+            Matches storefront card sizing (via <code>.product-grid</code>)
+          </span>
+        </div>
+        <div className="product-grid mt-2">
+          <ProductCard
+            slug={previewSlug}
+            image={previewImage || undefined}
+            name={title || "Untitled Product"}
+            price={toNum(unitPrice)}
+            salePrice={null}
+            href={undefined} // avoid navigation in admin
+            stockLabel={stockLabel}
+            typeLabel={previewType}
+          />
+        </div>
       </div>
 
       {err && <p className="text-red-400">❌ {err}</p>}

@@ -138,7 +138,7 @@ export default function Home({ products }: HomeProps) {
             fill
             className="object-cover"
           />
-          <div className="absolute inset-0 bg-black/50" />
+        <div className="absolute inset-0 bg-black/50" />
           <div className="relative z-10 text-center px-4">
             <h1 className="text-3xl sm:text-4xl md:text-6xl font-serif font-bold tracking-wider leading-snug text-[#e0e0e0] mb-6">
               Timeless Elegance
@@ -173,13 +173,8 @@ export default function Home({ products }: HomeProps) {
               No featured items to display.
             </p>
           ) : (
-            <div
-              className="
-                grid w-full
-                gap-x-6 gap-y-10
-                grid-cols-2
-              "
-            >
+            // ✅ Uniform grid
+            <div className="product-grid">
               {featured.map((item) => (
                 <ProductCard
                   key={item._id}
@@ -213,13 +208,8 @@ export default function Home({ products }: HomeProps) {
               No featured items to display.
             </p>
           ) : (
-            <div
-              className="
-                grid w-full
-                gap-x-6 gap-y-10
-                grid-cols-2 md:grid-cols-3 lg:grid-cols-4
-              "
-            >
+            // ✅ Uniform grid
+            <div className="product-grid">
               {featured.map((item) => (
                 <ProductCard
                   key={item._id}

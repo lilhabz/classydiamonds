@@ -279,7 +279,7 @@ function IconClose(props: React.SVGProps<SVGSVGElement>) {
 export default function SubcategoryPage({
   categorySlug,
   categoryLabel,
-  subcategorySlug,   // ✅ include this from SSR
+  subcategorySlug, // ✅ include this from SSR
   subcategoryLabel,
   heroImage,
   heroSubtitle,
@@ -412,12 +412,12 @@ export default function SubcategoryPage({
             <FiltersSidebar mode="desktop" />
           </div>
 
-          {/* Product grid — unified to 2→3→4 columns (consistent sizing) */}
+          {/* Product grid — now using shared .product-grid for uniform sizing */}
           <div>
             {products.length === 0 ? (
               <p className="text-white/80">No products found.</p>
             ) : (
-              <div className="grid w-full gap-x-6 gap-y-10 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+              <div className="product-grid">
                 {products.slice(0, visibleCount).map((p) => {
                   const href = `/category/${encodeURIComponent(
                     categorySlug

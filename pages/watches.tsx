@@ -66,13 +66,8 @@ export default function WatchesPage({ products }: WatchesProps) {
         /* 🔒 Clamp width like Jewelry/Category pages */
         <section className="py-10 px-4 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-7xl">
-            <div
-              className="
-                grid w-full
-                gap-x-6 gap-y-10
-                grid-cols-2 md:grid-cols-3 lg:grid-cols-4
-              "
-            >
+            {/* ✅ Use shared, uniform grid */}
+            <div className="product-grid">
               {products.map((product) => {
                 const href =
                   product.slug &&
@@ -132,4 +127,3 @@ export const getServerSideProps: GetServerSideProps<
 
   return { props: { products } };
 };
-//111

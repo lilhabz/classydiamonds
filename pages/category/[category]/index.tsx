@@ -337,13 +337,8 @@ export default function CategoryPage({
             {products.length === 0 ? (
               <p className="text-white/80">No products found.</p>
             ) : (
-              <div
-                className="
-                  grid w-full
-                  gap-x-6 gap-y-10
-                  grid-cols-2 md:grid-cols-3 lg:grid-cols-4
-                "
-              >
+              // ✅ Uniform baseline via shared grid
+              <div className="product-grid">
                 {products.map((p) => {
                   const href = `/category/${encodeURIComponent(
                     categorySlug

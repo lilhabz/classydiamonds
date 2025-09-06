@@ -599,17 +599,11 @@ export default function JewelryPage({
           </div>
 
           {/* Product Grid */}
-          <div className="flex justify-center">
+          <div>
             {shown.length === 0 ? (
               <p className="text-white/80">No products found.</p>
             ) : (
-              <div
-                className="
-                  grid w-full sm:mx-auto
-                  gap-x-6 gap-y-10
-                  grid-cols-2 md:grid-cols-3 lg:grid-cols-4
-                "
-              >
+              <div className="product-grid">
                 {shown.slice(0, visibleCount).map((product: ProductType) => {
                   const category = canonicalizeCategory(
                     product.category || ""

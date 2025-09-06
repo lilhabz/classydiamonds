@@ -140,7 +140,7 @@ export default function FavoritesPage() {
         <Breadcrumbs />
       </div>
 
-      <div className="max-w-6xl mx-auto">
+      <div className="max-w-7xl mx-auto">
         <h1 className="text-2xl md:text-3xl font-bold mb-4">
           Your Favorites ❤️
         </h1>
@@ -180,7 +180,8 @@ export default function FavoritesPage() {
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {/* ✅ Uniform card sizing via shared grid */}
+            <div className="product-grid">
               {products.map((p) => {
                 const stockLabel =
                   typeof p.inStock === "boolean"
@@ -191,13 +192,13 @@ export default function FavoritesPage() {
 
                 return (
                   <div key={p.slug} className="relative">
-                    {/* ✅ category-aware link comes via p.href */}
+                    {/* category-aware link comes via p.href */}
                     <ProductCard
                       slug={p.slug}
                       image={p.image ?? undefined}
                       name={p.name}
                       price={p.price}
-                      salePrice={p.salePrice ?? undefined}
+                      salePrice={p.salePrice ?? null}
                       stockLabel={stockLabel}
                       typeLabel={p.typeLabel}
                       href={p.href}
