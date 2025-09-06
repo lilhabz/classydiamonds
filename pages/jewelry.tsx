@@ -230,7 +230,6 @@ export default function JewelryPage({
   heroTitle?: string;
   seoTitle?: string;
 }) {
-  // ❌ removed addToCart from context (no CTA on cards)
   // const { addToCart } = useCart();
   const [visibleCount, setVisibleCount] = useState(50);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
@@ -596,12 +595,11 @@ export default function JewelryPage({
             <FiltersSidebar mode="desktop" />
           </div>
 
-          {/* Product Grid */}
+          {/* Right column (grid + load more) */}
           <div>
             {shown.length === 0 ? (
               <p className="text-white/80">No products found.</p>
             ) : (
-              // ✅ Uniform ProductGrid (replaces manual grid wrapper)
               <ProductGrid
                 items={shown.slice(0, visibleCount).map((product) => {
                   const category = canonicalizeCategory(
@@ -621,7 +619,6 @@ export default function JewelryPage({
                     subcategorySlug: product.subcategory ?? null,
                   };
                 })}
-                className=""
               />
             )}
 
