@@ -62,6 +62,7 @@ function singularizeBasic(word: string): string {
 const RING_SUBCATS = new Set([
   "engagement",
   "wedding",
+  "wedding-bands",
   "eternity",
   "promise",
   "fashion",
@@ -70,7 +71,51 @@ const RING_SUBCATS = new Set([
   "solitaire",
   "three-stone",
   "bridal-set",
+  "mens",
 ]);
+
+/**
+ * Normalize ring subcategory to storefront routes while keeping a base alias:
+ * - "engagement" => route "engagement-rings", base "engagement"
+ * - "wedding"    => route "wedding-bands",   base "wedding-bands"
+ * - already-suffixed (e.g., "engagement-rings") stays as route and base trims "-rings"
+ * - categories like "mens" remain as-is (no "-rings")
+ */
+function normalizeRingSubcategory(
+  sub: string | null
+): { route: string | null; base: string | null } {
+  if (!sub) return { route: null, base: null };
+  let s = sub.trim().toLowerCase();
+  if (!s) return { route: null, base: null };
+
+  // Standardize "wedding" → "wedding-bands"
+  if (s === "wedding") s = "wedding-bands";
+
+  // If already suffixed with "-rings", keep it; base = trimmed
+  if (/-rings$/.test(s)) {
+    return { route: s, base: s.replace(/-rings$/, "") };
+  }
+
+  // Subcats that get the "-rings" route suffix
+  const suffixable = new Set([
+    "engagement",
+    "eternity",
+    "promise",
+    "fashion",
+    "anniversary",
+    "halo",
+    "solitaire",
+    "three-stone",
+    "bridal-set",
+  ]);
+
+  if (suffixable.has(s)) {
+    return { route: `${s}-rings`, base: s };
+  }
+
+  // Non-suffix categories (e.g., "wedding-bands", "mens")
+  return { route: s, base: s };
+}
 
 /** Return storefront-friendly { category, subcategory } */
 function canonicalizeCategoryAndSubcategory(
@@ -78,15 +123,22 @@ function canonicalizeCategoryAndSubcategory(
   rawSubcategory?: string | null
 ): { category: string; subcategory: string | null } {
   const c = String(rawCategory || "").toLowerCase();
-  const s = (rawSubcategory == null ? null : String(rawSubcategory).toLowerCase()) || null;
+  const s =
+    (rawSubcategory == null
+      ? null
+      : String(rawSubcategory).toLowerCase()) || null;
 
   // If admin passed a ring *subcategory* as "category", treat it as rings/<sub>
   if (RING_SUBCATS.has(c)) {
-    return { category: "rings", subcategory: c };
+    const { route } = normalizeRingSubcategory(c);
+    return { category: "rings", subcategory: route };
   }
 
   // Known singular→plural / canonical merges
-  if (c === "ring" || c === "rings") return { category: "rings", subcategory: s };
+  if (c === "ring" || c === "rings") {
+    const { route } = normalizeRingSubcategory(s);
+    return { category: "rings", subcategory: route };
+  }
   if (c === "earring" || c === "earrings") return { category: "earrings", subcategory: s };
   if (c === "bracelet" || c === "bracelets") return { category: "bracelets", subcategory: s };
   if (c === "watch" || c === "watches") return { category: "watches", subcategory: s };
@@ -192,18 +244,23 @@ export default async function handler(
         .json({ ok: false, error: "Missing required field: category" });
     }
 
-    // ✅ Canonical storefront slugs
-    const { category, subcategory } = canonicalizeCategoryAndSubcategory(
-      rawCategory,
-      rawSubcategory
-    );
+    // ✅ Canonical storefront slugs (rings subcats get normalized route slugs)
+    const { category, subcategory: subFromCanon } =
+      canonicalizeCategoryAndSubcategory(rawCategory, rawSubcategory);
+
+    // For rings, compute both the route slug (with -rings where applicable)
+    // and a base alias (without -rings) for backward compatibility.
+    const isRings = category === "rings";
+    const { route: subcategoryRoute, base: subcategoryBase } = isRings
+      ? normalizeRingSubcategory(subFromCanon)
+      : { route: subFromCanon, base: subFromCanon };
 
     // Normalize dept after canonicalization
     const dept: Department =
       category === "watches" ? "watch" : department === "watch" ? "watch" : "jewelry";
 
     // Compute base name (prefer client’s, else infer)
-    const base = (clientBaseName || baseNameFor(dept, category, subcategory))
+    const base = (clientBaseName || baseNameFor(dept, category, subcategoryRoute))
       .toString()
       .trim();
     const baseName = base.length ? base : dept === "watch" ? "Watch" : "Item";
@@ -278,9 +335,9 @@ export default async function handler(
         salePrice: null as number | null,
 
         // ✅ Storefront-canonical fields
-        category,                          // e.g., "rings", "necklaces-pendants"
-        subcategory: subcategory ?? null,  // e.g., "engagement"
-        subCategory: subcategory ?? null,  // (temporary) back-compat
+        category,                             // e.g., "rings", "necklaces-pendants"
+        subcategory: subcategoryRoute,        // e.g., "engagement-rings"
+        subCategory: subcategoryBase,         // e.g., "engagement" (back-compat alias)
 
         imageUrl: null as string | null,
         images: [] as string[],

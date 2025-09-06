@@ -8,7 +8,7 @@ import Image from "next/image";
 import { GetServerSideProps } from "next";
 import clientPromise from "@/lib/mongodb";
 import CategoryGrid from "@/components/CategoryGrid";
-import ProductCard from "@/components/ProductCard";
+import ProductGrid from "@/components/ProductGrid"; // ✅ use shared grid
 
 // 🔒 Canonical slugs helper (guards against legacy "necklaces")
 const canonicalizeCategory = (raw: string) => {
@@ -138,7 +138,7 @@ export default function Home({ products }: HomeProps) {
             fill
             className="object-cover"
           />
-        <div className="absolute inset-0 bg-black/50" />
+          <div className="absolute inset-0 bg-black/50" />
           <div className="relative z-10 text-center px-4">
             <h1 className="text-3xl sm:text-4xl md:text-6xl font-serif font-bold tracking-wider leading-snug text-[#e0e0e0] mb-6">
               Timeless Elegance
@@ -173,27 +173,27 @@ export default function Home({ products }: HomeProps) {
               No featured items to display.
             </p>
           ) : (
-            // ✅ Uniform grid
-            <div className="product-grid grid gap-x-6 gap-y-10 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-              {featured.map((item) => (
-                <ProductCard
-                  key={item._id}
-                  slug={item.slug}
-                  image={item.image}
-                  name={item.name}
-                  price={item.price}
-                  salePrice={item.salePrice ?? null}
-                  href={`/category/${item.category}/${item.slug}?scroll=true`}
-                  stockLabel="In Stock"
-                  typeLabel={
-                    item.category === "necklaces-pendants"
-                      ? "Necklace"
-                      : item.category.charAt(0).toUpperCase() +
-                        item.category.slice(1).replace("-", " ")
-                  }
-                />
-              ))}
-            </div>
+            // ✅ Uniform grid via shared component
+            <ProductGrid
+              items={featured.map((item) => ({
+                slug: item.slug,
+                image: item.image,
+                name: item.name,
+                price: item.price,
+                salePrice: item.salePrice ?? null,
+                href: `/category/${item.category}/${item.slug}?scroll=true`,
+                stockLabel: "In Stock",
+                typeLabel:
+                  item.category === "necklaces-pendants"
+                    ? "Necklace"
+                    : item.category
+                        .charAt(0)
+                        .toUpperCase() +
+                      item.category.slice(1).replace("-", " "),
+                categorySlug: item.category, // helps color swatch fallback
+              }))}
+              className=""
+            />
           )}
         </section>
 
@@ -208,27 +208,27 @@ export default function Home({ products }: HomeProps) {
               No featured items to display.
             </p>
           ) : (
-            // ✅ Uniform grid
-            <div className="product-grid grid gap-x-6 gap-y-10 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-              {featured.map((item) => (
-                <ProductCard
-                  key={item._id}
-                  slug={item.slug}
-                  image={item.image}
-                  name={item.name}
-                  price={item.price}
-                  salePrice={item.salePrice ?? null}
-                  href={`/category/${item.category}/${item.slug}?scroll=true`}
-                  stockLabel="In Stock"
-                  typeLabel={
-                    item.category === "necklaces-pendants"
-                      ? "Necklace"
-                      : item.category.charAt(0).toUpperCase() +
-                        item.category.slice(1).replace("-", " ")
-                  }
-                />
-              ))}
-            </div>
+            // ✅ Uniform grid via shared component
+            <ProductGrid
+              items={featured.map((item) => ({
+                slug: item.slug,
+                image: item.image,
+                name: item.name,
+                price: item.price,
+                salePrice: item.salePrice ?? null,
+                href: `/category/${item.category}/${item.slug}?scroll=true`,
+                stockLabel: "In Stock",
+                typeLabel:
+                  item.category === "necklaces-pendants"
+                    ? "Necklace"
+                    : item.category
+                        .charAt(0)
+                        .toUpperCase() +
+                      item.category.slice(1).replace("-", " "),
+                categorySlug: item.category, // helps color swatch fallback
+              }))}
+              className=""
+            />
           )}
         </section>
 

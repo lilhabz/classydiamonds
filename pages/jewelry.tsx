@@ -11,7 +11,7 @@ import type { GetServerSideProps } from "next";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import CategoryGrid, { CategoryItem } from "@/components/CategoryGrid";
 import FiltersSidebar from "@/components/FiltersSidebar";
-import ProductCard from "@/components/ProductCard";
+import ProductGrid from "@/components/ProductGrid"; // ✅ use shared grid
 import { listProducts } from "@/lib/products";
 import SubcategoryGrid from "@/components/SubcategoryGrid";
 
@@ -601,35 +601,28 @@ export default function JewelryPage({
             {shown.length === 0 ? (
               <p className="text-white/80">No products found.</p>
             ) : (
-              <div
-                className="
-                  product-grid grid gap-x-6 gap-y-10
-                  grid-cols-[repeat(2,minmax(var(--card-w),1fr))]
-                  md:grid-cols-[repeat(3,minmax(var(--card-w),1fr))]
-                  lg:grid-cols-[repeat(4,minmax(var(--card-w),1fr))]
-                "
-              >
-                {shown.slice(0, visibleCount).map((product: ProductType) => {
+              // ✅ Uniform ProductGrid (replaces manual grid wrapper)
+              <ProductGrid
+                items={shown.slice(0, visibleCount).map((product) => {
                   const category = canonicalizeCategory(
                     product.category || ""
                   ) as CategorySlug;
                   const href = `/category/${category}/${product.slug}`;
-
-                  return (
-                    <ProductCard
-                      key={product.id}
-                      slug={product.slug}
-                      image={product.image}
-                      name={product.name}
-                      price={product.price}
-                      salePrice={product.salePrice ?? null}
-                      href={href}
-                      inStock={product.inStock} /* ✅ real stock */
-                      typeLabel={typeFrom(product)}
-                    />
-                  );
+                  return {
+                    slug: product.slug,
+                    image: product.image,
+                    name: product.name,
+                    price: product.price,
+                    salePrice: product.salePrice ?? null,
+                    href,
+                    inStock: product.inStock, // ✅ real stock
+                    typeLabel: typeFrom(product),
+                    categorySlug: category, // helps color swatch fallback
+                    subcategorySlug: product.subcategory ?? null,
+                  };
                 })}
-              </div>
+                className=""
+              />
             )}
 
             {visibleCount < totalProducts && shown.length > 0 && (

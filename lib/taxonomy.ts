@@ -20,7 +20,7 @@ export const SUBCATEGORIES: Record<string, string[]> = {
   // RINGS
   "jewelry:ring": [
     "engagement",
-    "wedding",
+    "wedding-bands", // ✅ canonical (was "wedding")
     "promise",
     "eternity",
     "birthstone",
@@ -142,7 +142,8 @@ const JEWELRY_SUB_TO_PARENT: Record<
   };
 
   // rings
-  ["engagement", "wedding", "promise", "eternity", "birthstone", "signet", "mens"].forEach((s) =>
+  add("wedding-bands", "ring", ["wedding"]); // ✅ canonical + legacy alias
+  ["engagement", "promise", "eternity", "birthstone", "signet", "mens"].forEach((s) =>
     add(s, "ring")
   );
 
@@ -160,12 +161,69 @@ const JEWELRY_SUB_TO_PARENT: Record<
   return map as Record<string, "ring" | "earring" | "bracelet" | "necklace-pendant">;
 })();
 
+/** ---------- Storefront route vs admin base helpers for ring subs ---------- */
+// Subcats that get a "-rings" route on the storefront
+export const RING_SUFFIXABLE_SUBS = new Set([
+  "engagement",
+  "eternity",
+  "promise",
+  "fashion",
+  "anniversary",
+  "halo",
+  "solitaire",
+  "three-stone",
+  "bridal-set",
+]);
+
+/** Convert an admin base sub to the storefront route sub (e.g., "engagement" → "engagement-rings"). */
+export function toRouteSubcategory(category?: string, sub?: string | null): string | null {
+  const c = (category || "").toLowerCase().trim();
+  let s = (sub || "").toLowerCase().trim();
+  if (!s) return s || null;
+
+  if (c === "ring" || c === "rings") {
+    if (s === "wedding") s = "wedding-bands";
+    if (s === "wedding-bands" || s === "mens") return s; // no -rings suffix
+    return RING_SUFFIXABLE_SUBS.has(s) ? `${s}-rings` : s;
+  }
+  return s;
+}
+
+/** Convert a storefront route sub back to the admin base sub (e.g., "engagement-rings" → "engagement"). */
+export function toBaseSubcategory(category?: string, sub?: string | null): string | null {
+  const c = (category || "").toLowerCase().trim();
+  let s = (sub || "").toLowerCase().trim();
+  if (!s) return s || null;
+
+  if (c === "ring" || c === "rings") {
+    if (s.endsWith("-rings")) s = s.replace(/-rings$/, "");
+    if (s === "wedding") s = "wedding-bands";
+    return s;
+  }
+  return s;
+}
+
 export function normalizeJewelryCategoryPair(
   category?: string,
   subCategory?: string
 ): { category?: string; subCategory?: string } {
-  const cat = (category || "").toLowerCase().trim();
-  const sub = (subCategory || "").toLowerCase().trim();
+  let cat = (category || "").toLowerCase().trim();
+  let sub = (subCategory || "").toLowerCase().trim();
+
+  // Accept route-style ring subs (e.g., "engagement-rings") and normalize to base.
+  if (cat === "ring" || cat === "rings") {
+    sub = toBaseSubcategory(cat, sub) || "";
+    cat = "ring"; // admin canonical is singular
+  }
+
+  // If category itself is a route-style ring sub (e.g., "engagement-rings"), treat it as a sub
+  if (/-rings$/.test(cat)) {
+    const base = cat.replace(/-rings$/, "");
+    if (JEWELRY_SUB_TO_PARENT[base]) {
+      cat = "ring";
+      sub = base;
+    }
+  }
 
   const isValidCategory = CATEGORIES.jewelry.includes(cat as any);
   const isValidSubForCat =
@@ -187,9 +245,13 @@ export function normalizeJewelryCategoryPair(
   }
 
   // subCategory is valid under some jewelry parent → infer parent
-  if (sub && JEWELRY_SUB_TO_PARENT[sub]) {
-    const parent = JEWELRY_SUB_TO_PARENT[sub];
-    return { category: parent, subCategory: sub };
+  if (sub) {
+    // also tolerate route-style input here
+    const baseSub = toBaseSubcategory("ring", sub) || sub;
+    if (JEWELRY_SUB_TO_PARENT[baseSub]) {
+      const parent = JEWELRY_SUB_TO_PARENT[baseSub];
+      return { category: parent, subCategory: baseSub };
+    }
   }
 
   // fallback: keep category only if it’s one of the 4 jewelry categories

@@ -4,7 +4,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useFavorites } from "@/context/FavoritesContext";
-import ProductCard from "@/components/ProductCard";
+import ProductGrid from "@/components/ProductGrid"; // ✅ use shared grid
 import Breadcrumbs from "@/components/Breadcrumbs";
 
 type ProductLite = {
@@ -102,7 +102,7 @@ async function fetchProductsBySlugs(slugs: string[]): Promise<ProductLite[]> {
 }
 
 export default function FavoritesPage() {
-  const { rehydrated, favorites, toggleFavorite } = useFavorites();
+  const { rehydrated, favorites } = useFavorites();
   const [loading, setLoading] = useState(true);
   const [products, setProducts] = useState<ProductLite[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -131,8 +131,6 @@ export default function FavoritesPage() {
       alive = false;
     };
   }, [rehydrated, slugs]);
-
-  const remove = (slug: string) => toggleFavorite(slug);
 
   return (
     <div className="min-h-screen px-4 py-10 bg-[var(--bg-page)] text-[var(--foreground)]">
@@ -180,44 +178,27 @@ export default function FavoritesPage() {
           </div>
         ) : (
           <>
-            {/* ✅ Uniform card sizing via shared grid */}
-            <div className="product-grid grid gap-x-6 gap-y-10 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-              {products.map((p) => {
-                const stockLabel =
+            {/* ✅ Uniform card sizing via shared grid; use card’s built-in ♡ to remove */}
+            <ProductGrid
+              items={products.map((p) => ({
+                slug: p.slug,
+                image: p.image ?? undefined,
+                name: p.name,
+                price: p.price,
+                salePrice: p.salePrice ?? null,
+                href: p.href,
+                stockLabel:
                   typeof p.inStock === "boolean"
                     ? p.inStock
                       ? "In Stock"
                       : "Out of Stock"
-                    : "In Stock";
+                    : "In Stock",
+                typeLabel: p.typeLabel,
+              }))}
+              className=""
+            />
 
-                return (
-                  <div key={p.slug} className="relative">
-                    {/* category-aware link comes via p.href */}
-                    <ProductCard
-                      slug={p.slug}
-                      image={p.image ?? undefined}
-                      name={p.name}
-                      price={p.price}
-                      salePrice={p.salePrice ?? null}
-                      stockLabel={stockLabel}
-                      typeLabel={p.typeLabel}
-                      href={p.href}
-                    />
-                    {/* Quick remove pill */}
-                    <button
-                      onClick={() => remove(p.slug)}
-                      className="absolute top-2 right-2 text-xs bg-white/90 text-black px-2 py-1 rounded-md hover:bg-white"
-                      aria-label={`Remove ${p.name} from favorites`}
-                      title="Remove"
-                    >
-                      Remove
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Little count + clear-all affordance (optional) */}
+            {/* Little count summary */}
             <div className="mt-6 text-sm text-gray-300">
               {products.length} item{products.length === 1 ? "" : "s"} saved
             </div>

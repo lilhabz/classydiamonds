@@ -5,7 +5,7 @@ import Image from "next/image";
 import Head from "next/head";
 import { GetServerSideProps } from "next";
 import Breadcrumbs from "@/components/Breadcrumbs";
-import ProductCard from "@/components/ProductCard";
+import ProductGrid from "@/components/ProductGrid"; // ✅ use shared grid
 
 // ✅ unified data source
 import { listProducts } from "@/lib/products";
@@ -66,29 +66,27 @@ export default function WatchesPage({ products }: WatchesProps) {
         /* 🔒 Clamp width like Jewelry/Category pages */
         <section className="py-10 px-4 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-screen-2xl">
-            {/* ✅ Use uniform 2/3/4 grid (don’t rely on .product-grid alone) */}
-            <div className="product-grid grid gap-x-6 gap-y-10 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-              {products.map((product) => {
+            {/* ✅ Uniform grid via shared component */}
+            <ProductGrid
+              items={products.map((product) => {
+                const category = (product.category || "watches").toLowerCase();
                 const href =
                   product.slug &&
-                  `/category/${(product.category || "watches").toLowerCase()}/${
-                    product.slug
-                  }`;
-                return (
-                  <ProductCard
-                    key={product.id}
-                    slug={product.slug || product.id}
-                    image={product.image}
-                    name={product.name}
-                    price={product.price}
-                    salePrice={product.salePrice ?? null}
-                    href={href || undefined}
-                    stockLabel="In Stock"
-                    typeLabel="Watch"
-                  />
-                );
+                  `/category/${category}/${product.slug}`;
+                return {
+                  slug: product.slug || product.id,
+                  image: product.image,
+                  name: product.name,
+                  price: product.price,
+                  salePrice: product.salePrice ?? null,
+                  href: href || undefined,
+                  stockLabel: "In Stock",
+                  typeLabel: "Watch",
+                  categorySlug: category, // helps color swatch fallback
+                };
               })}
-            </div>
+              className=""
+            />
           </div>
         </section>
       )}
