@@ -125,9 +125,7 @@ const resolveSubheader = (category: string, sub: string): string => {
 };
 
 /* ----------------------------- SSR ------------------------------ */
-export const getServerSideProps: GetServerSideProps<PageProps> = async (
-  ctx
-) => {
+export const getServerSideProps: GetServerSideProps<PageProps> = async (ctx) => {
   const categorySlug = String(ctx.params?.category || "").toLowerCase();
   const subcategorySlug = String(ctx.params?.subcategory || "").toLowerCase();
   if (!categorySlug || !subcategorySlug) return { notFound: true };
@@ -232,8 +230,7 @@ export const getServerSideProps: GetServerSideProps<PageProps> = async (
     products = [];
   }
 
-  const heroImage =
-    HERO_BY_CATEGORY[categorySlug]?.image ?? "/hero-jewelry.jpg";
+  const heroImage = HERO_BY_CATEGORY[categorySlug]?.image ?? "/hero-jewelry.jpg";
   const heroSubtitle = resolveSubheader(categorySlug, subcategorySlug);
 
   return {
@@ -354,8 +351,7 @@ export default function SubcategoryPage({
       <Head>
         <title>
           {subcategoryLabel}
-          {categoryLabel !== subcategoryLabel ? ` | ${categoryLabel}` : ""} |
-          Classy Diamonds
+          {categoryLabel !== subcategoryLabel ? ` | ${categoryLabel}` : ""} | Classy Diamonds
         </title>
         <meta
           name="description"
@@ -389,7 +385,7 @@ export default function SubcategoryPage({
       <div id="subcategory-header" className="sr-only" aria-hidden="true" />
 
       {/* Main content: Sidebar + Grid */}
-      <section className="mt-6 px-4 sm:px-6 max-w-7xl mx-auto mb-20">
+      <section className="mt-6 px-4 sm:px-6 lg:px-8 max-w-screen-2xl mx-auto mb-20">
         {/* Mobile: count + Filters button */}
         <div className="flex items-center justify-between mb-4 lg:hidden">
           <div className="text-sm text-white/80">
@@ -412,12 +408,12 @@ export default function SubcategoryPage({
             <FiltersSidebar mode="desktop" />
           </div>
 
-          {/* Product grid — now using shared .product-grid for uniform sizing */}
+          {/* Product grid — explicit 2/3/4 columns; no `.product-grid` class */}
           <div>
             {products.length === 0 ? (
               <p className="text-white/80">No products found.</p>
             ) : (
-              <div className="product-grid grid gap-x-6 gap-y-10 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+              <div className="grid gap-x-6 gap-y-10 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
                 {products.slice(0, visibleCount).map((p) => {
                   const href = `/category/${encodeURIComponent(
                     categorySlug

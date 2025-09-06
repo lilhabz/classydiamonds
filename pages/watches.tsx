@@ -65,8 +65,8 @@ export default function WatchesPage({ products }: WatchesProps) {
       ) : (
         /* 🔒 Clamp width like Jewelry/Category pages */
         <section className="py-10 px-4 sm:px-6 lg:px-8">
-          <div className="mx-auto max-w-7xl">
-            {/* ✅ Use shared, uniform grid */}
+          <div className="mx-auto max-w-screen-2xl">
+            {/* ✅ Use uniform 2/3/4 grid (don’t rely on .product-grid alone) */}
             <div className="product-grid grid gap-x-6 gap-y-10 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
               {products.map((product) => {
                 const href =
@@ -97,9 +97,7 @@ export default function WatchesPage({ products }: WatchesProps) {
 }
 
 /* 🧠 Server-side data loader — unified via lib/products */
-export const getServerSideProps: GetServerSideProps<
-  WatchesProps
-> = async () => {
+export const getServerSideProps: GetServerSideProps<WatchesProps> = async () => {
   // Pull all watch docs, regardless of legacy field names
   const rows = await listProducts(
     {

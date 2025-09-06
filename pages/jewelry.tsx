@@ -57,8 +57,6 @@ const ALLOWED: readonly CategorySlug[] = [
 ] as const;
 
 /* --------------------------------- Helpers -------------------------------- */
-const isRingCategory = (cat?: string) =>
-  (cat ?? "").toLowerCase().includes("ring");
 const toArray = (v: string | string[] | undefined): string[] =>
   !v ? [] : Array.isArray(v) ? v : [v];
 
@@ -574,8 +572,8 @@ export default function JewelryPage({
       </div>
 
       {/* 🧰 SIDEBAR + GRID */}
-      {/* ⬇️ CHANGED: added px-4 on mobile so cards don't touch screen edge */}
-      <section className="mt-6 px-4 sm:px-6 lg:pl-0 lg:pr-8 max-w-none sm:max-w-7xl sm:mx-auto mb-20">
+      {/* ⬇️ CHANGED: clamp widened so 4-up fits beside the sidebar */}
+      <section className="mt-6 px-4 sm:px-6 lg:px-8 max-w-screen-2xl mx-auto mb-20">
         {/* Mobile filters trigger */}
         <div className="flex items-center justify-between mb-4 lg:hidden">
           <div className="text-sm text-white/80">
@@ -603,7 +601,14 @@ export default function JewelryPage({
             {shown.length === 0 ? (
               <p className="text-white/80">No products found.</p>
             ) : (
-              <div className="product-grid grid gap-x-6 gap-y-10 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+              <div
+                className="
+                  product-grid grid gap-x-6 gap-y-10
+                  grid-cols-[repeat(2,minmax(var(--card-w),1fr))]
+                  md:grid-cols-[repeat(3,minmax(var(--card-w),1fr))]
+                  lg:grid-cols-[repeat(4,minmax(var(--card-w),1fr))]
+                "
+              >
                 {shown.slice(0, visibleCount).map((product: ProductType) => {
                   const category = canonicalizeCategory(
                     product.category || ""

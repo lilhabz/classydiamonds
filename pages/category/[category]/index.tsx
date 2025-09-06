@@ -45,15 +45,12 @@ const pretty = (slug: string) =>
   slug.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 
 /* ----------------------------- SERVER DATA ------------------------------ */
-export const getServerSideProps: GetServerSideProps<PageProps> = async (
-  ctx
-) => {
+export const getServerSideProps: GetServerSideProps<PageProps> = async (ctx) => {
   const categorySlug = String(ctx.params?.category || "").toLowerCase();
   if (!categorySlug) return { notFound: true };
 
   const categoryLabel =
-    CATEGORY_LABELS[categorySlug as keyof typeof CATEGORY_LABELS] ??
-    categorySlug;
+    CATEGORY_LABELS[categorySlug as keyof typeof CATEGORY_LABELS] ?? categorySlug;
 
   // Optional filters
   const sub =
@@ -207,9 +204,6 @@ export default function CategoryPage({
   const router = useRouter();
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
-  // ❌ no addToCart from context
-  // const { addToCart } = useCart();
-
   // Keep ?scroll=true behavior
   useEffect(() => {
     const { scroll } = router.query as { scroll?: string };
@@ -250,8 +244,7 @@ export default function CategoryPage({
     }
     if (categorySlug === "earrings") return "/category/earring-cat.jpg";
     if (categorySlug === "bracelets") return "/category/bracelet-cat.jpg";
-    if (categorySlug === "necklaces-pendants")
-      return "/category/necklace-cat.jpg";
+    if (categorySlug === "necklaces-pendants") return "/category/necklace-cat.jpg";
     return "/category/ring-cat.jpg";
   };
 
@@ -261,8 +254,7 @@ export default function CategoryPage({
     if (sub && sub !== "all")
       return sub.replace(/-/g, " ").replace(/\b\w/g, (m) => m.toUpperCase());
     const label =
-      CATEGORY_LABELS[categorySlug as keyof typeof CATEGORY_LABELS] ||
-      categorySlug;
+      CATEGORY_LABELS[categorySlug as keyof typeof CATEGORY_LABELS] || categorySlug;
     return label.replace(/& Pendants/i, "Necklace"); // optional tweak if desired
   };
 
@@ -291,7 +283,7 @@ export default function CategoryPage({
       {/* Subcategory photo row (slides on mobile, one line on desktop) */}
       {subcategories.length > 0 && (
         <div className="mt-4 px-4 sm:px-6">
-          <div className="mx-auto max-w-7xl">
+          <div className="mx-auto max-w-screen-2xl">
             <SubcategoryCards
               category={categorySlug}
               subcategories={subcategories.map((s) => ({
@@ -309,8 +301,8 @@ export default function CategoryPage({
       <div id="category-header" className="sr-only" aria-hidden="true" />
 
       {/* Main content: Sidebar + Grid */}
-      <section className="mt-6 sm:mt-10 px-4 sm:px-6 pb-12">
-        <div className="mx-auto max-w-7xl">
+      <section className="mt-6 sm:mt-10 px-4 sm:px-6 lg:px-8 pb-12">
+        <div className="mx-auto max-w-screen-2xl">
           {/* Mobile: count + Filters button */}
           <div className="flex items-center justify-between mb-4 md:hidden">
             <div className="text-sm text-white/80">
@@ -337,8 +329,15 @@ export default function CategoryPage({
             {products.length === 0 ? (
               <p className="text-white/80">No products found.</p>
             ) : (
-              // ✅ Uniform baseline via shared grid
-              <div className="product-grid grid gap-x-6 gap-y-10 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+              // ✅ Explicit 2/3/4 columns with min card width; avoids auto-fit surprises
+              <div
+                className="
+                  grid gap-x-6 gap-y-10
+                  grid-cols-[repeat(2,minmax(var(--card-w),1fr))]
+                  md:grid-cols-[repeat(3,minmax(var(--card-w),1fr))]
+                  lg:grid-cols-[repeat(4,minmax(var(--card-w),1fr))]
+                "
+              >
                 {products.map((p) => {
                   const href = `/category/${encodeURIComponent(
                     categorySlug
