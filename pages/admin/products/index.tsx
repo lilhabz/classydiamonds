@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import Head from "next/head";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
+import { useRouter } from "next/router";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import {
   DEPARTMENTS,
@@ -180,8 +181,41 @@ function adaptApiProduct(p: ApiProduct): AdminProduct {
   };
 }
 
+/* ----------------------------- Quick-create helpers ----------------------------- */
+function normalizeAudience(aud: "all" | "him" | "her" | "unisex"): "him" | "her" | "unisex" {
+  return aud === "all" ? "unisex" : aud;
+}
+
+function baseNameFor(dept: Department, category?: string | null, sub?: string | null): string {
+  const c = (category || "").toLowerCase();
+  const s = (sub || "").toLowerCase();
+
+  if (dept === "watch" || c === "watch" || c === "watches") return "Watch";
+
+  // subcategory hints first
+  if (s.includes("pendant")) return "Pendant";
+  if (s.includes("necklace")) return "Necklace";
+  if (s.includes("bracelet")) return "Bracelet";
+  if (s.includes("earring")) return "Earring";
+  if (s.includes("ring")) return "Ring";
+
+  // category-wide defaults
+  if (c.includes("engagement")) return "Ring";
+  if (c.includes("rings")) return "Ring";
+  if (c.includes("bracelet")) return "Bracelet";
+  if (c.includes("necklace")) return "Necklace";
+  if (c.includes("pendant")) return "Pendant";
+  if (c.includes("earring")) return "Earring";
+  if (c.includes("for-him")) return "Jewelry";
+  if (c.includes("for-her")) return "Jewelry";
+
+  // fallback
+  return "Item";
+}
+
 export default function AdminProductsList() {
   const { data: session, status: authStatus } = useSession();
+  const router = useRouter();
   const [allItems, setAllItems] = useState<AdminProduct[]>([]);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string>("");
@@ -215,6 +249,9 @@ export default function AdminProductsList() {
   const [dryPreview, setDryPreview] = useState<Record<string, number> | null>(null);
   const [confirmText, setConfirmText] = useState("");
   const [bulkBusy, setBulkBusy] = useState<"idle" | "preview" | "delete">("idle");
+
+  // 🆕 quick-create busy flags
+  const [creatingKey, setCreatingKey] = useState<string | null>(null);
 
   useEffect(() => {
     if (!session?.user?.isAdmin) return;
@@ -475,12 +512,50 @@ export default function AdminProductsList() {
     }
   }
 
-  if (authStatus === "loading")
-    return <div className="p-6">Checking access…</div>;
-  if (!session?.user?.isAdmin)
-    return <div className="p-6 text-red-300">❌ Unauthorized</div>;
+  /* ----------------------------- Instant quick-create ----------------------------- */
+  async function quickCreate(opts: {
+    audience?: "him" | "her" | "unisex";
+    category?: string;
+    subcategory?: string;
+    key: string; // UI key to track which button is busy
+  }) {
+    if (!session?.user?.isAdmin) {
+      alert("Unauthorized");
+      return;
+    }
+    const category = (opts.category || cat || "").trim();
+    if (!category) {
+      alert("Pick a category first.");
+      return;
+    }
+    const subcategory = (opts.subcategory || sub || "").trim() || undefined;
+    const audience = opts.audience || normalizeAudience(aud);
+    const baseName = baseNameFor(dept, category, subcategory);
 
-  // Build quick-create URL helper
+    try {
+      setCreatingKey(opts.key);
+      const res = await fetch("/api/admin/products/quick", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          department: dept,
+          category,
+          subcategory: subcategory ?? null,
+          audience,
+          baseName,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data?.ok) throw new Error(data?.error || "Create failed");
+      await router.push(data.editPath || `/admin/products/${data.id}`);
+    } catch (e: any) {
+      alert("❌ " + (e?.message || "Quick-create failed"));
+    } finally {
+      setCreatingKey(null);
+    }
+  }
+
+  // Build quick-create URL helper (kept for manual add page link)
   const newUrl = ({
     department,
     category,
@@ -500,6 +575,11 @@ export default function AdminProductsList() {
     return `/admin/products/new?${params.toString()}`;
   };
 
+  if (authStatus === "loading")
+    return <div className="p-6">Checking access…</div>;
+  if (!session?.user?.isAdmin)
+    return <div className="p-6 text-red-300">❌ Unauthorized</div>;
+
   return (
     <div className="p-6 min-h-screen bg-[var(--bg-page)] text-[var(--foreground)]">
       <Head>
@@ -512,6 +592,7 @@ export default function AdminProductsList() {
       <div className="flex flex-col gap-3 mb-4 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-2xl font-serif font-bold">🛠 Products</h1>
         <div className="flex gap-2">
+          {/* Keep manual form available */}
           <Link
             href="/admin/products/new"
             className="bg-blue-600 px-4 py-2 rounded"
@@ -560,27 +641,58 @@ export default function AdminProductsList() {
 
           <span className="opacity-50 mx-2">|</span>
           <span className="text-sm opacity-75">Quick-create:</span>
-          <Link
-            href={newUrl({ department: dept, audience: "him", category: cat || undefined, subcategory: sub || undefined })}
-            className="text-xs px-3 py-1 rounded bg-emerald-700 hover:bg-emerald-600"
-            title="Start a new product preset for Him"
+
+          {/* Replaced Links with instant-create buttons */}
+          <button
+            type="button"
+            onClick={() =>
+              quickCreate({
+                audience: "him",
+                category: cat || undefined,
+                subcategory: sub || undefined,
+                key: "aud:him",
+              })
+            }
+            className="text-xs px-3 py-1 rounded bg-emerald-700 hover:bg-emerald-600 disabled:opacity-50"
+            disabled={creatingKey === "aud:him"}
+            title="Instantly create a placeholder for Him"
           >
-            + New for Him
-          </Link>
-          <Link
-            href={newUrl({ department: dept, audience: "her", category: cat || undefined, subcategory: sub || undefined })}
-            className="text-xs px-3 py-1 rounded bg-rose-700 hover:bg-rose-600"
-            title="Start a new product preset for Her"
+            {creatingKey === "aud:him" ? "Creating…" : "+ New for Him"}
+          </button>
+
+          <button
+            type="button"
+            onClick={() =>
+              quickCreate({
+                audience: "her",
+                category: cat || undefined,
+                subcategory: sub || undefined,
+                key: "aud:her",
+              })
+            }
+            className="text-xs px-3 py-1 rounded bg-rose-700 hover:bg-rose-600 disabled:opacity-50"
+            disabled={creatingKey === "aud:her"}
+            title="Instantly create a placeholder for Her"
           >
-            + New for Her
-          </Link>
-          <Link
-            href={newUrl({ department: dept, audience: "unisex", category: cat || undefined, subcategory: sub || undefined })}
-            className="text-xs px-3 py-1 rounded bg-indigo-700 hover:bg-indigo-600"
-            title="Start a new Unisex product"
+            {creatingKey === "aud:her" ? "Creating…" : "+ New for Her"}
+          </button>
+
+          <button
+            type="button"
+            onClick={() =>
+              quickCreate({
+                audience: "unisex",
+                category: cat || undefined,
+                subcategory: sub || undefined,
+                key: "aud:unisex",
+              })
+            }
+            className="text-xs px-3 py-1 rounded bg-indigo-700 hover:bg-indigo-600 disabled:opacity-50"
+            disabled={creatingKey === "aud:unisex"}
+            title="Instantly create a placeholder for Unisex"
           >
-            + New Unisex
-          </Link>
+            {creatingKey === "aud:unisex" ? "Creating…" : "+ New Unisex"}
+          </button>
         </div>
 
         {/* Category quick-create */}
@@ -600,13 +712,26 @@ export default function AdminProductsList() {
             );
           })}
           <span className="opacity-50 mx-2">|</span>
-          <Link
-            href={newUrl({ department: dept, category: cat || undefined })}
+
+          {/* Replaced Link with instant-create button (uses current audience filter if set, else unisex) */}
+          <button
+            type="button"
+            onClick={() =>
+              quickCreate({
+                audience: normalizeAudience(aud),
+                category: cat || undefined,
+                key: "cat:new",
+              })
+            }
             className="text-xs px-3 py-1 rounded bg-blue-700 hover:bg-blue-600 disabled:opacity-50"
-            title="Start a new product in this category"
+            disabled={!cat || creatingKey === "cat:new"}
+            title={cat ? "Instantly create in this category" : "Pick a category first"}
           >
-            + New in {cat ? cat : "category…"}
-          </Link>
+            {creatingKey === "cat:new"
+              ? "Creating…"
+              : `+ New in ${cat ? cat : "category…"}`}
+          </button>
+
           <button
             type="button"
             onClick={() => {
@@ -638,18 +763,26 @@ export default function AdminProductsList() {
               );
             })}
             <span className="opacity-50 mx-2">|</span>
-            <Link
-              href={newUrl({
-                department: dept,
-                category: cat,
-                subcategory: sub || undefined,
-              })}
-              className="text-xs px-3 py-1 rounded bg-blue-700 hover:bg-blue-600"
-              title="Start a new product in this sub-category"
+
+            {/* Replaced Link with instant-create button */}
+            <button
+              type="button"
+              onClick={() =>
+                quickCreate({
+                  audience: normalizeAudience(aud),
+                  category: cat,
+                  subcategory: sub || undefined,
+                  key: "sub:new",
+                })
+              }
+              className="text-xs px-3 py-1 rounded bg-blue-700 hover:bg-blue-600 disabled:opacity-50"
+              disabled={creatingKey === "sub:new"}
+              title="Instantly create in this sub-category"
             >
-              + New in {cat}
-              {sub ? ` → ${sub}` : ""}
-            </Link>
+              {creatingKey === "sub:new"
+                ? "Creating…"
+                : `+ New in ${cat}${sub ? ` → ${sub}` : ""}`}
+            </button>
           </div>
         )}
       </div>
@@ -1071,20 +1204,20 @@ export default function AdminProductsList() {
       )}
 
       {/* 🆕 Bulk Delete Modal */}
-{deleteOpen && (
-  <div className="fixed inset-0 z-50">
-    {/* backdrop */}
-    <div
-      className="absolute inset-0 bg-black/60"
-      onClick={() => bulkBusy === "idle" && setDeleteOpen(false)}
-    />
-    {/* dialog */}
-    <div className="absolute left-1/2 top-1/2 w-[min(640px,95vw)] -translate-x-1/2 -translate-y-1/2 rounded-xl border border-red-800 bg-[#1b2238] p-5 shadow-2xl">
-      <h2 className="text-xl font-semibold mb-2">Delete ALL products</h2>
-      <p className="text-sm text-red-200 mb-3">
-        This will permanently remove items from the selected collections. You can
-        run a <b>Dry Run</b> first to see counts. Type <code>DELETE</code> to enable the button.
-      </p>
+      {deleteOpen && (
+        <div className="fixed inset-0 z-50">
+          {/* backdrop */}
+          <div
+            className="absolute inset-0 bg-black/60"
+            onClick={() => bulkBusy === "idle" && setDeleteOpen(false)}
+          />
+          {/* dialog */}
+          <div className="absolute left-1/2 top-1/2 w-[min(640px,95vw)] -translate-x-1/2 -translate-y-1/2 rounded-xl border border-red-800 bg-[#1b2238] p-5 shadow-2xl">
+            <h2 className="text-xl font-semibold mb-2">Delete ALL products</h2>
+            <p className="text-sm text-red-200 mb-3">
+              This will permanently remove items from the selected collections. You can
+              run a <b>Dry Run</b> first to see counts. Type <code>DELETE</code> to enable the button.
+            </p>
 
             <div className="grid sm:grid-cols-2 gap-3 mb-4">
               <div>
