@@ -7,6 +7,7 @@ import Breadcrumbs from "@/components/Breadcrumbs";
 import { DEPARTMENTS, getCategories, getSubCategories } from "@/lib/taxonomy";
 // 🔎 Live product card preview
 import ProductCard from "@/components/ProductCard";
+import { useRouter } from "next/router";
 
 type Department = "jewelry" | "watch";
 
@@ -14,6 +15,7 @@ type SpecField = { key: string; label: string; placeholder?: string };
 
 export default function NewProductPage() {
   const { data: session, status } = useSession();
+  const router = useRouter();
 
   const [dept, setDept] = useState<Department>("jewelry");
   const [category, setCategory] = useState<string>("");
@@ -48,14 +50,62 @@ export default function NewProductPage() {
     return () => URL.revokeObjectURL(url);
   }, [imageFile]);
 
-  const [statusMsg, setStatusMsg] = useState<{ ok?: boolean; text?: string }>(
-    {}
-  );
+  const [statusMsg, setStatusMsg] = useState<{ ok?: boolean; text?: string }>({});
 
+  // ---- Prefill from query params (department/category/subcategory/audience) ----
+  const [suppressNextDeptAutoSet, setSuppressNextDeptAutoSet] = useState(false);
   useEffect(() => {
+    if (!router.isReady) return;
+
+    const q = router.query;
+
+    // department
+    const qDept = String(q.department ?? "").toLowerCase();
+    const nextDept: Department =
+      qDept === "watch" ? "watch" : qDept === "jewelry" ? "jewelry" : dept;
+
+    // categories valid for the (possibly) overridden dept
+    const cats = getCategories(nextDept);
+    const findCI = (list: string[], val: string) =>
+      list.find((x) => x.toLowerCase() === val.toLowerCase());
+
+    // category
+    const qCatRaw = String(q.category ?? "");
+    const qCat = qCatRaw && findCI(cats, qCatRaw);
+    const catFinal = qCat || (category || cats[0] || "");
+
+    // subcategory (only if it belongs to chosen category)
+    const subs = getSubCategories(nextDept, catFinal);
+    const qSubRaw = String(q.subcategory ?? q.subCategory ?? "");
+    const qSub = qSubRaw && findCI(subs, qSubRaw);
+    const subFinal = qSub || "";
+
+    // audience
+    const audRaw = String(q.audience ?? "").toLowerCase();
+    const audFinal = ["him", "her", "unisex", "kids"].includes(audRaw)
+      ? audRaw
+      : audience;
+
+    // Apply in a safe order; avoid triggering the dept-change default reset
+    if (nextDept !== dept) {
+      setSuppressNextDeptAutoSet(true);
+      setDept(nextDept);
+    }
+    setCategory(catFinal);
+    setSubcategory(subFinal);
+    setAudience(audFinal);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [router.isReady]); // run once when the router is ready
+
+  // When dept changes (user clicks tab), pick a default category unless we just prefilled via query.
+  useEffect(() => {
+    if (suppressNextDeptAutoSet) {
+      setSuppressNextDeptAutoSet(false);
+      return;
+    }
     setCategory(getCategories(dept)[0] ?? "");
     setSubcategory("");
-  }, [dept]);
+  }, [dept, suppressNextDeptAutoSet]);
 
   // -------- Dropdown option sets (used by some spec fields) --------
   const METAL_OPTIONS = [
@@ -91,32 +141,8 @@ export default function NewProductPage() {
     "Peridot",
     "No Stone",
   ];
-  const COLOR_OPTIONS = [
-    "D",
-    "E",
-    "F",
-    "G",
-    "H",
-    "I",
-    "J",
-    "K",
-    "L",
-    "M",
-    "N",
-    "O–Z",
-  ];
-  const CLARITY_OPTIONS = [
-    "FL",
-    "IF",
-    "VVS1",
-    "VVS2",
-    "VS1",
-    "VS2",
-    "SI1",
-    "SI2",
-    "I1",
-    "I2",
-  ];
+  const COLOR_OPTIONS = ["D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O–Z"];
+  const CLARITY_OPTIONS = ["FL", "IF", "VVS1", "VVS2", "VS1", "VS2", "SI1", "SI2", "I1", "I2"];
   const CUT_OPTIONS = ["Excellent", "Very Good", "Good", "Fair"];
   const SHAPE_OPTIONS = [
     "Round",
@@ -151,21 +177,8 @@ export default function NewProductPage() {
   ];
   // Watch-ish:
   const MOVEMENT_OPTIONS = ["Automatic", "Manual", "Quartz"];
-  const CASE_MATERIAL_OPTIONS = [
-    "Stainless Steel",
-    "Gold",
-    "Titanium",
-    "Ceramic",
-    "Two-Tone",
-  ];
-  const BAND_MATERIAL_OPTIONS = [
-    "Stainless Steel",
-    "Gold",
-    "Leather",
-    "Rubber",
-    "NATO",
-    "Two-Tone",
-  ];
+  const CASE_MATERIAL_OPTIONS = ["Stainless Steel", "Gold", "Titanium", "Ceramic", "Two-Tone"];
+  const BAND_MATERIAL_OPTIONS = ["Stainless Steel", "Gold", "Leather", "Rubber", "NATO", "Two-Tone"];
   const DIAL_COLOR_OPTIONS = [
     "Black",
     "White",
@@ -176,14 +189,7 @@ export default function NewProductPage() {
     "Mother of Pearl",
   ];
   const CRYSTAL_OPTIONS = ["Sapphire", "Mineral", "Acrylic"];
-  const CONDITION_OPTIONS = [
-    "New",
-    "Like New",
-    "Excellent",
-    "Very Good",
-    "Good",
-    "Fair",
-  ];
+  const CONDITION_OPTIONS = ["New", "Like New", "Excellent", "Very Good", "Good", "Fair"];
   const BOX_PAPERS_OPTIONS = ["Yes", "No"];
 
   // -------- Spec field definitions (what to show) --------
@@ -245,16 +251,8 @@ export default function NewProductPage() {
       { key: "band-material", label: "Band Material" },
       { key: "dial-color", label: "Dial Color" },
       { key: "crystal", label: "Crystal" },
-      {
-        key: "water-resistance",
-        label: "Water Resistance",
-        placeholder: "e.g., 100 m",
-      },
-      {
-        key: "power-reserve",
-        label: "Power Reserve",
-        placeholder: "e.g., 70 h",
-      },
+      { key: "water-resistance", label: "Water Resistance", placeholder: "e.g., 100 m" },
+      { key: "power-reserve", label: "Power Reserve", placeholder: "e.g., 70 h" },
       { key: "year", label: "Year", placeholder: "e.g., 2021" },
       { key: "condition", label: "Condition" },
       { key: "box-papers", label: "Box/Papers" },
@@ -267,10 +265,7 @@ export default function NewProductPage() {
     return baseJewelry;
   };
 
-  const specFields = useMemo(
-    () => specFieldsFor(dept, category),
-    [dept, category]
-  );
+  const specFields = useMemo(() => specFieldsFor(dept, category), [dept, category]);
   const [specValues, setSpecValues] = useState<Record<string, string>>({});
   useEffect(() => {
     setSpecValues((prev) => {
@@ -396,12 +391,9 @@ export default function NewProductPage() {
     return <div className="p-6 text-red-300">❌ Unauthorized</div>;
 
   // --------- Live preview props (derived from form state) ---------
-  const slugPreview =
-    name?.trim().toLowerCase().replace(/\s+/g, "-") || "preview";
+  const slugPreview = name?.trim().toLowerCase().replace(/\s+/g, "-") || "preview";
 
-  const pricePreview = Number.isFinite(parseFloat(price))
-    ? parseFloat(price)
-    : 0;
+  const pricePreview = Number.isFinite(parseFloat(price)) ? parseFloat(price) : 0;
 
   const salePreview: number | undefined =
     salePrice && Number.isFinite(parseFloat(salePrice))
@@ -422,10 +414,7 @@ export default function NewProductPage() {
 
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-2xl font-serif font-bold">➕ Add Product</h1>
-        <Link
-          href="/admin/products"
-          className="px-3 py-2 rounded bg-[var(--bg-nav)]"
-        >
+        <Link href="/admin/products" className="px-3 py-2 rounded bg-[var(--bg-nav)]">
           ← Back to Products
         </Link>
       </div>
@@ -549,8 +538,7 @@ export default function NewProductPage() {
             <span className="font-medium">In Stock</span>
           </label>
           <p className="text-xs opacity-70 mt-1">
-            Uncheck to mark as out of stock (detail page will disable Add to
-            Cart).
+            Uncheck to mark as out of stock (detail page will disable Add to Cart).
           </p>
         </div>
 
@@ -566,8 +554,8 @@ export default function NewProductPage() {
             <span className="font-medium">Featured on Home</span>
           </label>
           <p className="text-xs opacity-70 mt-1">
-            Flag to include in the curated home page “Featured” section. The API
-            enforces a maximum of 4 featured products.
+            Flag to include in the curated home page “Featured” section. The API enforces a
+            maximum of 4 featured products.
           </p>
         </div>
 
@@ -633,7 +621,7 @@ export default function NewProductPage() {
             {specFields.map((f) => {
               const opts = getDropdownOptionsForKey(f.key);
               const val = specValues[f.key] ?? "";
-              const isOther = opts && val && !opts.includes(val);
+              const isOther = !!opts && !!val && !opts.includes(val);
 
               return (
                 <div key={f.key} className="space-y-1">
@@ -662,7 +650,7 @@ export default function NewProductPage() {
                         <option value="OTHER">Other…</option>
                       </select>
                       {/* Custom value field when "Other…" or non-listed value */}
-                      {(isOther || (val === "" && "OTHER" === "OTHER")) && (
+                      {(isOther || val === "") && (
                         <input
                           value={val}
                           onChange={(e) =>
@@ -695,10 +683,7 @@ export default function NewProductPage() {
           </div>
         </details>
 
-        <button
-          type="submit"
-          className="md:col-span-2 bg-blue-600 px-4 py-2 rounded"
-        >
+        <button type="submit" className="md:col-span-2 bg-blue-600 px-4 py-2 rounded">
           Create
         </button>
       </form>

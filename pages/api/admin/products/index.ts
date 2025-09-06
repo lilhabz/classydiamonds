@@ -64,6 +64,15 @@ type Ok =
       ok: true;
       product: any;
       productId: string;
+    }
+  // 🆕 bulk delete response
+  | {
+      ok: true;
+      deleted: Record<string, number>;
+      collectionsTargeted: string[];
+      dryRun?: boolean;
+      scope: string;
+      includeLegacy?: boolean;
     };
 
 type Err = { ok: false; error: string };
@@ -355,7 +364,7 @@ export default async function handler(
 
     for (const colName of collectionsToQuery) {
       try {
-        const docs = await db.collection(colName).find(filter).toArray();
+        const docs = await (await getDb()).collection(colName).find(filter).toArray();
         const mapped = docs.map(adaptDb);
         results.push(...mapped);
         if (colName === PRIMARY_COLLECTION) primaryCount = mapped.length;
@@ -371,7 +380,7 @@ export default async function handler(
     let legacyCount = 0;
     if (includeLegacy) {
       try {
-        const legacyDocs = await db
+        const legacyDocs = await (await getDb())
           .collection("legacyProducts")
           .find(filter)
           .toArray();
@@ -581,6 +590,90 @@ export default async function handler(
     }
   }
 
-  res.setHeader("Allow", "GET, POST");
+  // -------------------- BULK DELETE (DELETE) --------------------
+  // ⚠️ Uses query params (body parser is disabled). Safe defaults + dryRun support.
+  if (req.method === "DELETE") {
+    try {
+      const db = await getDb();
+
+      // Require an explicit "all" flag so accidental deletes don't happen.
+      const all = toBool((req.query as any).all, false);
+      if (!all) {
+        return res.status(400).json({
+          ok: false,
+          error:
+            "Refused. Pass ?all=1 to confirm bulk deletion. Optionally add &dryRun=1 first.",
+        });
+      }
+
+      // scope: which collections to target
+      // - "primary" (default): PRIMARY_COLLECTION only
+      // - "both": PRIMARY_COLLECTION + "products" (if different)
+      // - "products": "products" only
+      // - "all": PRIMARY_COLLECTION + "products" (+ legacy if includeLegacy=1)
+      const scope = String((req.query as any).scope ?? "primary").toLowerCase();
+      const includeLegacy = toBool((req.query as any).includeLegacy, false);
+      const dryRun = toBool((req.query as any).dryRun, false);
+
+      const targets: string[] = [];
+      const addIf = (name: string) => {
+        if (!targets.includes(name)) targets.push(name);
+      };
+
+      if (scope === "primary") {
+        addIf(PRIMARY_COLLECTION);
+      } else if (scope === "products") {
+        addIf("products");
+      } else if (scope === "both") {
+        addIf(PRIMARY_COLLECTION);
+        if (PRIMARY_COLLECTION !== "products") addIf("products");
+      } else if (scope === "all") {
+        addIf(PRIMARY_COLLECTION);
+        if (PRIMARY_COLLECTION !== "products") addIf("products");
+        if (includeLegacy) addIf("legacyProducts");
+      } else {
+        // unknown scope -> default to primary for safety
+        addIf(PRIMARY_COLLECTION);
+      }
+
+      // If legacy requested explicitly with another scope
+      if (includeLegacy && !targets.includes("legacyProducts")) {
+        // only add legacy when user asked for it
+        addIf("legacyProducts");
+      }
+
+      const deleted: Record<string, number> = {};
+      for (const col of targets) {
+        try {
+          if (dryRun) {
+            // count only
+            deleted[col] = await db.collection(col).countDocuments({});
+          } else {
+            const result = await db.collection(col).deleteMany({});
+            deleted[col] = result.deletedCount ?? 0;
+          }
+        } catch (e) {
+          // If the collection doesn't exist, report zero
+          deleted[col] = 0;
+        }
+      }
+
+      return res.status(200).json({
+        ok: true,
+        deleted,
+        collectionsTargeted: targets,
+        dryRun: dryRun || undefined,
+        scope,
+        includeLegacy: includeLegacy || undefined,
+      });
+    } catch (e: any) {
+      console.error("bulk delete error:", e);
+      return res
+        .status(500)
+        .json({ ok: false, error: e?.message || "Bulk delete failed" });
+    }
+  }
+
+  res.setHeader("Allow", "GET, POST, DELETE");
   return res.status(405).json({ ok: false, error: "Method not allowed" });
 }

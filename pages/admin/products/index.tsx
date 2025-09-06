@@ -51,6 +51,42 @@ type SortKey =
   | "featured";
 type SortDir = "asc" | "desc";
 
+// 🧩 tiny helper chips for consistent styling
+function Chip({
+  active,
+  children,
+  onClick,
+  className = "",
+  title,
+  disabled,
+}: {
+  active?: boolean;
+  children: React.ReactNode;
+  onClick?: () => void;
+  className?: string;
+  title?: string;
+  disabled?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      title={title}
+      disabled={disabled}
+      onClick={onClick}
+      className={[
+        "px-3 py-1 rounded-full text-sm border transition",
+        active
+          ? "bg-yellow-500 text-black border-yellow-600"
+          : "bg-[var(--bg-nav)] text-white border-[var(--bg-nav)] hover:border-blue-400/50",
+        disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer",
+        className,
+      ].join(" ")}
+    >
+      {children}
+    </button>
+  );
+}
+
 const toNum = (v: unknown, d = 0) => {
   if (v == null || v === "") return d;
   if (typeof v === "number") return Number.isFinite(v) ? v : d;
@@ -163,11 +199,22 @@ export default function AdminProductsList() {
   // 🆕 stock filter
   const [stock, setStock] = useState<"all" | "in" | "out">("all");
 
+  // 🆕 audience filter
+  const [aud, setAud] = useState<"all" | "him" | "her" | "unisex">("all");
+
   // paging
   const [page, setPage] = useState(1);
   const pageSize = 12;
 
   const [deleting, setDeleting] = useState<Record<string, boolean>>({});
+
+  // 🆕 bulk delete modal state
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [delScope, setDelScope] = useState<"primary" | "both" | "products" | "all">("primary");
+  const [includeLegacy, setIncludeLegacy] = useState(false);
+  const [dryPreview, setDryPreview] = useState<Record<string, number> | null>(null);
+  const [confirmText, setConfirmText] = useState("");
+  const [bulkBusy, setBulkBusy] = useState<"idle" | "preview" | "delete">("idle");
 
   useEffect(() => {
     if (!session?.user?.isAdmin) return;
@@ -232,6 +279,18 @@ export default function AdminProductsList() {
       if (stock === "in" && p.inStock === false) return false;
       if (stock === "out" && (p.inStock ?? true) === true) return false;
 
+      // 🆕 audience filter
+      if (aud !== "all") {
+        const auds = (p.audience || []).map((a) => String(a).toLowerCase());
+        if (aud === "unisex") {
+          if (!auds.includes("unisex")) return false;
+        } else if (aud === "him") {
+          if (!auds.includes("him") && !auds.includes("men") && !auds.includes("male")) return false;
+        } else if (aud === "her") {
+          if (!auds.includes("her") && !auds.includes("women") && !auds.includes("female")) return false;
+        }
+      }
+
       if (needle) {
         const hay = `${p.title ?? ""} ${p.name ?? ""} ${p.description ?? ""} ${
           p.category ?? ""
@@ -295,7 +354,7 @@ export default function AdminProductsList() {
       const bt = b.createdAt ? new Date(b.createdAt).getTime() : 0;
       return (at - bt) * dir;
     });
-  }, [allItems, dept, cat, sub, q, specFilter, sortKey, sortDir, stock]);
+  }, [allItems, dept, cat, sub, q, specFilter, sortKey, sortDir, stock, aud]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const current = filtered.slice((page - 1) * pageSize, page * pageSize);
@@ -334,7 +393,7 @@ export default function AdminProductsList() {
           price: Number(p.unitPrice ?? p.price ?? 0),
           salePrice: p.salePrice ?? null,
           category:
-            p.category || (inferDept(p) === "watch" ? "watches" : "jewelry"),
+            p.category || (inferDept(p) === "watch" ? "watch" : "jewelry"),
           subcategory: (p.subcategory ?? p.subCategory) || null,
           imageUrl: pickImage(p),
           archived: Boolean(p.archived),
@@ -364,10 +423,82 @@ export default function AdminProductsList() {
     }
   }
 
+  // 🆕 bulk delete helpers
+  async function doDryRun() {
+    try {
+      setBulkBusy("preview");
+      setDryPreview(null);
+      const url = `/api/admin/products?all=1&dryRun=1&scope=${encodeURIComponent(
+        delScope
+      )}${includeLegacy ? "&includeLegacy=1" : ""}`;
+      const res = await fetch(url, { method: "DELETE" });
+      const data = await res.json();
+      if (!res.ok || data?.ok === false) throw new Error(data?.error || "Dry run failed");
+      setDryPreview(data.deleted || {});
+    } catch (e: any) {
+      alert("❌ " + (e?.message || "Dry run failed"));
+    } finally {
+      setBulkBusy("idle");
+    }
+  }
+
+  async function confirmBulkDelete() {
+    if (confirmText !== "DELETE") return;
+    try {
+      setBulkBusy("delete");
+      const url = `/api/admin/products?all=1&scope=${encodeURIComponent(
+        delScope
+      )}${includeLegacy ? "&includeLegacy=1" : ""}`;
+      const res = await fetch(url, { method: "DELETE" });
+      const data = await res.json();
+      if (!res.ok || data?.ok === false) throw new Error(data?.error || "Bulk delete failed");
+
+      // Refresh list after deletion
+      const reload = await fetch("/api/admin/products?includeLegacy=1").then(
+        (r) => r.json()
+      );
+      const reList: ApiProduct[] = Array.isArray(reload.items)
+        ? reload.items
+        : [];
+      setAllItems(reList.map(adaptApiProduct));
+
+      setDeleteOpen(false);
+      setDryPreview(null);
+      setConfirmText("");
+      setDelScope("primary");
+      setIncludeLegacy(false);
+      alert("✅ Bulk deletion complete.");
+    } catch (e: any) {
+      alert("❌ " + (e?.message || "Bulk delete failed"));
+    } finally {
+      setBulkBusy("idle");
+    }
+  }
+
   if (authStatus === "loading")
     return <div className="p-6">Checking access…</div>;
   if (!session?.user?.isAdmin)
     return <div className="p-6 text-red-300">❌ Unauthorized</div>;
+
+  // Build quick-create URL helper
+  const newUrl = ({
+    department,
+    category,
+    subcategory,
+    audience,
+  }: {
+    department?: string;
+    category?: string;
+    subcategory?: string;
+    audience?: "him" | "her" | "unisex";
+  }) => {
+    const params = new URLSearchParams();
+    if (department) params.set("department", department);
+    if (category) params.set("category", category);
+    if (subcategory) params.set("subcategory", subcategory);
+    if (audience) params.set("audience", audience);
+    return `/admin/products/new?${params.toString()}`;
+  };
 
   return (
     <div className="p-6 min-h-screen bg-[var(--bg-page)] text-[var(--foreground)]">
@@ -378,37 +509,152 @@ export default function AdminProductsList() {
         <Breadcrumbs />
       </div>
 
-      <div className="flex justify-between items-center mb-4">
+      <div className="flex flex-col gap-3 mb-4 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-2xl font-serif font-bold">🛠 Products</h1>
-        <Link
-          href="/admin/products/new"
-          className="bg-blue-600 px-4 py-2 rounded"
-        >
-          + Add Product
-        </Link>
+        <div className="flex gap-2">
+          <Link
+            href="/admin/products/new"
+            className="bg-blue-600 px-4 py-2 rounded"
+          >
+            + Add Product
+          </Link>
+
+          {/* 🆕 Delete All */}
+          <button
+            type="button"
+            onClick={() => setDeleteOpen(true)}
+            className="bg-red-700 hover:bg-red-600 px-4 py-2 rounded"
+            title="Delete all products"
+          >
+            🗑 Delete All
+          </button>
+        </div>
       </div>
 
       {/* Department tabs */}
-      <div className="flex gap-2 mb-4">
+      <div className="flex gap-2 mb-3">
         {DEPARTMENTS.map((d) => {
           const active = dept === (d as Department);
           return (
-            <button
+            <Chip
               key={d}
+              active={active}
               onClick={() => setDept(d as Department)}
-              className={`px-3 py-1 rounded-full text-sm border ${
-                active
-                  ? "bg-yellow-500 text-black"
-                  : "bg-[var(--bg-nav)] text-white"
-              }`}
+              title={`Show ${d}`}
             >
               {d[0].toUpperCase() + d.slice(1)}
-            </button>
+            </Chip>
           );
         })}
       </div>
 
-      {/* Filters */}
+      {/* 🆕 Quick-create rows */}
+      <div className="mb-4 space-y-3">
+        {/* Audience quick-create + filter */}
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-sm opacity-75 mr-1">Audience:</span>
+          <Chip active={aud === "all"} onClick={() => setAud("all")}>All</Chip>
+          <Chip active={aud === "him"} onClick={() => setAud("him")}>Him</Chip>
+          <Chip active={aud === "her"} onClick={() => setAud("her")}>Her</Chip>
+          <Chip active={aud === "unisex"} onClick={() => setAud("unisex")}>Unisex</Chip>
+
+          <span className="opacity-50 mx-2">|</span>
+          <span className="text-sm opacity-75">Quick-create:</span>
+          <Link
+            href={newUrl({ department: dept, audience: "him", category: cat || undefined, subcategory: sub || undefined })}
+            className="text-xs px-3 py-1 rounded bg-emerald-700 hover:bg-emerald-600"
+            title="Start a new product preset for Him"
+          >
+            + New for Him
+          </Link>
+          <Link
+            href={newUrl({ department: dept, audience: "her", category: cat || undefined, subcategory: sub || undefined })}
+            className="text-xs px-3 py-1 rounded bg-rose-700 hover:bg-rose-600"
+            title="Start a new product preset for Her"
+          >
+            + New for Her
+          </Link>
+          <Link
+            href={newUrl({ department: dept, audience: "unisex", category: cat || undefined, subcategory: sub || undefined })}
+            className="text-xs px-3 py-1 rounded bg-indigo-700 hover:bg-indigo-600"
+            title="Start a new Unisex product"
+          >
+            + New Unisex
+          </Link>
+        </div>
+
+        {/* Category quick-create */}
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-sm opacity-75 mr-1">Categories:</span>
+          {getCategories(dept).map((c) => {
+            const active = cat.toLowerCase() === c.toLowerCase();
+            return (
+              <Chip
+                key={c}
+                active={active}
+                onClick={() => setCat((v) => (v === c ? "" : c))}
+                title={`Filter by ${c}`}
+              >
+                {c}
+              </Chip>
+            );
+          })}
+          <span className="opacity-50 mx-2">|</span>
+          <Link
+            href={newUrl({ department: dept, category: cat || undefined })}
+            className="text-xs px-3 py-1 rounded bg-blue-700 hover:bg-blue-600 disabled:opacity-50"
+            title="Start a new product in this category"
+          >
+            + New in {cat ? cat : "category…"}
+          </Link>
+          <button
+            type="button"
+            onClick={() => {
+              setCat("");
+              setSub("");
+            }}
+            className="text-xs px-3 py-1 rounded bg-[var(--bg-nav)] hover:bg-blue-500/50"
+            title="Reset category/subcategory filters"
+          >
+            Reset
+          </button>
+        </div>
+
+        {/* Subcategory quick-create (only when category chosen) */}
+        {!!cat && (
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-sm opacity-75 mr-1">Sub-categories:</span>
+            {getSubCategories(dept, cat).map((s) => {
+              const active = sub.toLowerCase() === s.toLowerCase();
+              return (
+                <Chip
+                  key={s}
+                  active={active}
+                  onClick={() => setSub((v) => (v === s ? "" : s))}
+                  title={`Filter by ${s}`}
+                >
+                  {s}
+                </Chip>
+              );
+            })}
+            <span className="opacity-50 mx-2">|</span>
+            <Link
+              href={newUrl({
+                department: dept,
+                category: cat,
+                subcategory: sub || undefined,
+              })}
+              className="text-xs px-3 py-1 rounded bg-blue-700 hover:bg-blue-600"
+              title="Start a new product in this sub-category"
+            >
+              + New in {cat}
+              {sub ? ` → ${sub}` : ""}
+            </Link>
+          </div>
+        )}
+      </div>
+
+      {/* Filters row (existing) */}
       <div className="flex flex-wrap gap-3 mb-4 items-center">
         <select
           value={cat}
@@ -446,6 +692,18 @@ export default function AdminProductsList() {
           <option value="all">All Stock</option>
           <option value="in">In Stock</option>
           <option value="out">Out of Stock</option>
+        </select>
+
+        {/* 🆕 Audience filter mirror */}
+        <select
+          value={aud}
+          onChange={(e) => setAud(e.target.value as any)}
+          className="px-3 py-2 rounded bg-[var(--bg-nav)]"
+        >
+          <option value="all">All Audiences</option>
+          <option value="him">Him</option>
+          <option value="her">Her</option>
+          <option value="unisex">Unisex</option>
         </select>
 
         <input
@@ -809,6 +1067,111 @@ export default function AdminProductsList() {
               {i + 1}
             </button>
           ))}
+        </div>
+      )}
+
+      {/* 🆕 Bulk Delete Modal */}
+{deleteOpen && (
+  <div className="fixed inset-0 z-50">
+    {/* backdrop */}
+    <div
+      className="absolute inset-0 bg-black/60"
+      onClick={() => bulkBusy === "idle" && setDeleteOpen(false)}
+    />
+    {/* dialog */}
+    <div className="absolute left-1/2 top-1/2 w-[min(640px,95vw)] -translate-x-1/2 -translate-y-1/2 rounded-xl border border-red-800 bg-[#1b2238] p-5 shadow-2xl">
+      <h2 className="text-xl font-semibold mb-2">Delete ALL products</h2>
+      <p className="text-sm text-red-200 mb-3">
+        This will permanently remove items from the selected collections. You can
+        run a <b>Dry Run</b> first to see counts. Type <code>DELETE</code> to enable the button.
+      </p>
+
+            <div className="grid sm:grid-cols-2 gap-3 mb-4">
+              <div>
+                <label className="block text-xs opacity-75 mb-1">Scope</label>
+                <select
+                  value={delScope}
+                  onChange={(e) =>
+                    setDelScope(e.target.value as "primary" | "both" | "products" | "all")
+                  }
+                  className="w-full px-3 py-2 rounded bg-[var(--bg-nav)]"
+                >
+                  <option value="primary">Primary collection only</option>
+                  <option value="both">Primary + "products"</option>
+                  <option value="products">"products" only</option>
+                  <option value="all">All (plus legacy with toggle)</option>
+                </select>
+              </div>
+              <label className="flex items-center gap-2 pt-6">
+                <input
+                  type="checkbox"
+                  checked={includeLegacy}
+                  onChange={(e) => setIncludeLegacy(e.target.checked)}
+                />
+                <span className="text-sm">Also delete legacyProducts</span>
+              </label>
+            </div>
+
+            <div className="flex flex-wrap items-end gap-3 mb-3">
+              <button
+                type="button"
+                onClick={doDryRun}
+                disabled={bulkBusy !== "idle"}
+                className="px-3 py-2 rounded bg-[var(--bg-nav)] hover:bg-blue-600 disabled:opacity-50"
+              >
+                {bulkBusy === "preview" ? "Running Dry Run…" : "Dry Run (preview counts)"}
+              </button>
+
+              <div className="flex-1" />
+
+              <div>
+                <label className="block text-xs opacity-75 mb-1">
+                  Type <code>DELETE</code> to confirm
+                </label>
+                <input
+                  value={confirmText}
+                  onChange={(e) => setConfirmText(e.target.value)}
+                  placeholder="DELETE"
+                  className="px-3 py-2 rounded bg-[var(--bg-nav)]"
+                />
+              </div>
+
+              <button
+                type="button"
+                onClick={confirmBulkDelete}
+                disabled={confirmText !== "DELETE" || bulkBusy !== "idle"}
+                className="px-4 py-2 rounded bg-red-700 hover:bg-red-600 disabled:opacity-50"
+                title="This cannot be undone"
+              >
+                {bulkBusy === "delete" ? "Deleting…" : "Delete All"}
+              </button>
+            </div>
+
+            {/* Dry run results */}
+            {dryPreview && (
+              <div className="rounded border border-[var(--bg-nav)] p-3 bg-[#192039]">
+                <div className="text-sm font-medium mb-1">Dry run results:</div>
+                <ul className="text-sm space-y-1">
+                  {Object.entries(dryPreview).map(([col, count]) => (
+                    <li key={col}>
+                      <span className="opacity-75">{col}:</span>{" "}
+                      <span className="font-mono">{count}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            <div className="mt-4 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setDeleteOpen(false)}
+                className="px-3 py-2 rounded bg-[var(--bg-nav)] hover:bg-blue-600"
+              >
+                Close
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
