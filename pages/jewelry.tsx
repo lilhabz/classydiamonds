@@ -19,7 +19,9 @@ import SubcategoryCards from "@/components/SubcategoryCards";
 /* ----------------------------- Canonical helper ---------------------------- */
 // 🔒 Canonical slugs guard: maps legacy "necklaces" → "necklaces-pendants"
 const canonicalizeCategory = (raw: string) => {
-  const v = String(raw || "").toLowerCase();
+  const v = String(raw || "")
+    .trim()
+    .toLowerCase(); // ✅ trim added
   if (v === "necklaces") return "necklaces-pendants";
   return v;
 };
@@ -521,7 +523,7 @@ export default function JewelryPage({
           title="Shop by Category"
           fullBleedDesktop
           desktopCols={4}
-          routeTo="/jewelry" // ✅ changed from "/category" → keeps navigation on jewelry.tsx
+          routeTo="/jewelry" // ✅ keeps navigation on jewelry.tsx
         />
       </section>
 

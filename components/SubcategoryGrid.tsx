@@ -66,8 +66,9 @@ export default function SubcategoryGrid({
     <div
       className="relative rounded-xl overflow-hidden"
       style={{
-        width: "var(--img)",
-        height: "var(--img-h, var(--img))",
+        // ✅ CSS var fallbacks: if page defines --img/--img-h, they win; else these keep cards visible
+        width: "var(--img, 195px)",
+        height: "var(--img-h, var(--img, 150px))",
         margin: "0 auto",
       }}
     >
@@ -111,8 +112,9 @@ export default function SubcategoryGrid({
       "group relative rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-transform duration-300 " +
       "inline-block align-top flex-none sm:flex-initial bg-[#25304f]";
     const style = {
-      width: "var(--card-w)",
-      height: "var(--card-h)",
+      // ✅ CSS var fallbacks: respect page-level --card-w/--card-h if present
+      width: "var(--card-w, 195px)",
+      height: "var(--card-h, 150px)",
     } as React.CSSProperties;
 
     if (onSelect) {

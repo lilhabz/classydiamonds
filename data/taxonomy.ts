@@ -59,7 +59,7 @@ export const isWatch = (cat: Category) => cat === "watches";
 export const isJewelry = (cat: Category) =>
   (JEWELRY_CATEGORIES as readonly string[]).includes(cat as any);
 
-// ✅ NEW: tiny helper to canonicalize URL params to taxonomy keys
+// ✅ Canonicalize URL/category inputs to our taxonomy keys
 const CANONICALIZE_TABLE: Record<string, Category> = {
   ring: "rings",
   rings: "rings",
