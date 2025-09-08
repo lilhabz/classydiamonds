@@ -35,6 +35,15 @@ export async function getNextSkuNumber(db: Db): Promise<number> {
   return Number(res.value?.seq ?? 1);
 }
 
+/** Reset SKU counter back to 0 (idempotent). Use after a full product purge. */
+export async function resetSkuCounter(db: Db) {
+  await counterCol(db).updateOne(
+    { _id: COUNTER_ID },
+    { $set: { seq: 0 } },
+    { upsert: true }
+  );
+}
+
 /** Bump counter to >= max existing skuNumber (idempotent). */
 export async function syncSkuCounterToMax(db: Db, collectionName: string) {
   const products = db.collection<ProductDoc>(collectionName);

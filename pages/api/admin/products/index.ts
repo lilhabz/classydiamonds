@@ -5,11 +5,12 @@ import { authOptions } from "../../auth/[...nextauth]";
 import { getDb } from "@/lib/mongodb"; // ✅ unified DB helper
 import formidable, { Fields, Files } from "formidable";
 import { v2 as cloudinary } from "cloudinary";
-// 👇 NEW: sku helpers
+// 👇 SKU helpers
 import {
   ensureSkuCounter,
   getNextSkuNumber,
   syncSkuCounterToMax,
+  resetSkuCounter, // 👈 NEW
 } from "@/lib/sku";
 
 export const config = { api: { bodyParser: false } };
@@ -73,6 +74,8 @@ type Ok =
       dryRun?: boolean;
       scope: string;
       includeLegacy?: boolean;
+      // 👇 NEW: visibility into counter handling
+      skuCounterReset?: boolean;
     };
 
 type Err = { ok: false; error: string };
@@ -364,7 +367,10 @@ export default async function handler(
 
     for (const colName of collectionsToQuery) {
       try {
-        const docs = await (await getDb()).collection(colName).find(filter).toArray();
+        const docs = await (await getDb())
+          .collection(colName)
+          .find(filter)
+          .toArray();
         const mapped = docs.map(adaptDb);
         results.push(...mapped);
         if (colName === PRIMARY_COLLECTION) primaryCount = mapped.length;
@@ -608,8 +614,8 @@ export default async function handler(
 
       // scope: which collections to target
       // - "primary" (default): PRIMARY_COLLECTION only
-      // - "both": PRIMARY_COLLECTION + "products" (if different)
       // - "products": "products" only
+      // - "both": PRIMARY_COLLECTION + "products" (if different)
       // - "all": PRIMARY_COLLECTION + "products" (+ legacy if includeLegacy=1)
       const scope = String((req.query as any).scope ?? "primary").toLowerCase();
       const includeLegacy = toBool((req.query as any).includeLegacy, false);
@@ -638,7 +644,6 @@ export default async function handler(
 
       // If legacy requested explicitly with another scope
       if (includeLegacy && !targets.includes("legacyProducts")) {
-        // only add legacy when user asked for it
         addIf("legacyProducts");
       }
 
@@ -658,6 +663,14 @@ export default async function handler(
         }
       }
 
+      // ✅ Reset SKU counter only on real purges of the PRIMARY collection
+      // (scope includes PRIMARY_COLLECTION and not a dry-run).
+      let skuCounterReset = false;
+      if (!dryRun && targets.includes(PRIMARY_COLLECTION)) {
+        await resetSkuCounter(db);
+        skuCounterReset = true;
+      }
+
       return res.status(200).json({
         ok: true,
         deleted,
@@ -665,6 +678,7 @@ export default async function handler(
         dryRun: dryRun || undefined,
         scope,
         includeLegacy: includeLegacy || undefined,
+        skuCounterReset, // 👈 visibility in response
       });
     } catch (e: any) {
       console.error("bulk delete error:", e);
