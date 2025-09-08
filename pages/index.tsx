@@ -199,12 +199,13 @@ export default function Home({ products }: HomeProps) {
           </div>
         </section>
 
-        {/* 🛍️ Shared Category Grid */}
+        {/* 🛍️ Shared Category Grid — stay on /jewelry via querystring */}
         <CategoryGrid
           items={CATEGORY_ITEMS}
           title="Shop by Category"
           fullBleedDesktop
           className="mt-12 md:mt-16"
+          routeTo="/jewelry" // ✅ added: keeps navigation on jewelry.tsx (e.g., /jewelry?category=rings)
         />
 
         {/* 💎 Featured – Mobile (uses same grid recipe as Jewelry) */}
