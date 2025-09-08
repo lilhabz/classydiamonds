@@ -66,7 +66,7 @@ export default function SubcategoryGrid({
     <div
       className="relative rounded-xl overflow-hidden"
       style={{
-        // ✅ CSS var fallbacks: if page defines --img/--img-h, they win; else these keep cards visible
+        // Fallbacks so elements have dimensions even if CSS vars are missing
         width: "var(--img, 195px)",
         height: "var(--img-h, var(--img, 150px))",
         margin: "0 auto",
@@ -112,7 +112,7 @@ export default function SubcategoryGrid({
       "group relative rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-transform duration-300 " +
       "inline-block align-top flex-none sm:flex-initial bg-[#25304f]";
     const style = {
-      // ✅ CSS var fallbacks: respect page-level --card-w/--card-h if present
+      // Respect page-level vars when present; otherwise use harmless fallbacks
       width: "var(--card-w, 195px)",
       height: "var(--card-h, 150px)",
     } as React.CSSProperties;
@@ -189,7 +189,6 @@ export default function SubcategoryGrid({
 
   // ---------- Layouts ----------
   if (layout === "row") {
-    // Mobile swipe (and natural wrap on desktop if you render it there)
     return (
       <section className="px-4 mt-2 mb-6">
         <h3 className="sr-only">Subcategories</h3>
@@ -203,7 +202,6 @@ export default function SubcategoryGrid({
   }
 
   if (layout === "desktop-grid") {
-    // sm+ only: show a fixed grid with smaller photo cards (6-up by default)
     const cols =
       desktopCols === 6
         ? "grid-cols-6"
@@ -213,7 +211,6 @@ export default function SubcategoryGrid({
         ? "grid-cols-4"
         : "grid-cols-3";
 
-    // scale the desktop card a bit smaller than category tiles
     const scale = Math.max(0.7, Math.min(1, desktopCardScale));
 
     return (
@@ -221,7 +218,6 @@ export default function SubcategoryGrid({
         className="hidden sm:block"
         style={
           {
-            // Tweak spacing and internal sizing via CSS vars for this section scope
             ["--subgrid-gap" as any]: `${desktopGapPx}px`,
             ["--subgrid-scale" as any]: `${scale}`,
           } as React.CSSProperties
@@ -232,7 +228,6 @@ export default function SubcategoryGrid({
             <div
               key={s.slug}
               style={{
-                // scale card content a touch smaller without breaking layout
                 transform: "scale(var(--subgrid-scale))",
                 transformOrigin: "top left",
               }}
@@ -245,7 +240,7 @@ export default function SubcategoryGrid({
     );
   }
 
-  // (kept for completeness) Mobile-only 2-col grid
+  // Mobile-only 2-col grid (kept for completeness)
   return (
     <section
       className="sm:hidden px-0 mt-2 mb-6"

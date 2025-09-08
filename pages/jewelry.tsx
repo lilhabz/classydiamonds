@@ -305,6 +305,39 @@ export default function JewelryPage({
     }
   }, [router.isReady, router.query]);
 
+  // ✅ Fallback init in case router.query isn't ready on first paint
+  useEffect(() => {
+    if (activeCategorySlug) return; // already set
+    if (typeof window === "undefined") return;
+
+    const sp = new URLSearchParams(window.location.search);
+    const rawCategory = sp.get("category");
+    if (!rawCategory) return;
+
+    const cat = canonicalizeCategory(rawCategory) as CategorySlug;
+    if (!ALLOWED.includes(cat)) return;
+
+    setActiveCategorySlug(cat);
+
+    const rawSub = sp.get("sub");
+    const subs = SUBS[cat];
+    if (
+      rawSub &&
+      subs?.some((s) => s.slug.toLowerCase() === rawSub.toLowerCase())
+    ) {
+      setActiveSub(rawSub.toLowerCase());
+    } else {
+      setActiveSub("all");
+    }
+
+    // optional: smooth-scroll if ?scroll=true was in the URL
+    const doScroll = sp.get("scroll") === "true";
+    if (doScroll && heroRef.current) {
+      const offset = heroRef.current.offsetTop + heroRef.current.offsetHeight;
+      window.scrollTo({ top: offset, behavior: "smooth" });
+    }
+  }, [activeCategorySlug]);
+
   // Do NOT auto-scroll on initial mount when no category is selected.
   const firstRunRef = useRef<boolean>(true);
   useEffect(() => {
