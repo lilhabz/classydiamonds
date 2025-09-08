@@ -85,6 +85,10 @@ const PRIMARY_COLLECTION =
   process.env.NEXT_PUBLIC_PRODUCTS_COLLECTION ||
   "products";
 
+/* -------------------------------------------------------------------------- */
+/*                            🧼 Normalization utils                           */
+/* -------------------------------------------------------------------------- */
+
 const s = (v: any) => (typeof v === "string" ? v : v == null ? "" : String(v));
 const n = (v: any) => {
   if (v == null || v === "") return undefined;
@@ -107,6 +111,120 @@ function toBool(v: any, def = true): boolean {
   return def;
 }
 
+// Slugify
+const toSlug = (val: any) =>
+  (val ?? "").toString().trim().toLowerCase().replace(/\s+/g, "-");
+
+// 🧭 Canonical category map (plural/aliases → canonical)
+const CATEGORY_CANON_MAP: Record<string, string> = {
+  rings: "ring",
+  ring: "ring",
+  bracelets: "bracelet",
+  bracelet: "bracelet",
+  earrings: "earring",
+  earring: "earring",
+  necklaces: "necklaces-pendants", // ✅ per your canonicalization
+  necklace: "necklaces-pendants",
+  "necklaces-pendants": "necklaces-pendants",
+  watch: "watch",
+  watches: "watch",
+  // Add any other aliases here as you encounter them:
+  // "men-rings": "ring",
+  // "women-rings": "ring",
+};
+
+// Some legacy rows stuff subcategory into category, like: "ring/engagement" or "ring > engagement"
+function splitCategoryMaybe(catRaw: string): { cat?: string; sub?: string } {
+  const raw = s(catRaw).trim();
+  if (!raw) return {};
+  const sep = [">", "/", "\\", "|", ":"];
+  let cat = raw;
+  let sub = "";
+
+  for (const ch of sep) {
+    if (raw.includes(ch)) {
+      const parts = raw.split(ch).map((t) => t.trim());
+      if (parts.length >= 2) {
+        cat = parts[0];
+        sub = parts.slice(1).join(" ");
+      }
+      break;
+    }
+  }
+  // Also handle "Ring - Engagement" pattern
+  if (!sub && /-/.test(raw)) {
+    const parts = raw.split("-").map((t) => t.trim());
+    if (parts.length >= 2) {
+      cat = parts[0];
+      sub = parts.slice(1).join(" ");
+    }
+  }
+
+  const catCanon = CATEGORY_CANON_MAP[toSlug(cat)] || toSlug(cat);
+  const subCanon = sub ? toSlug(sub) : undefined;
+  return { cat: catCanon, sub: subCanon };
+}
+
+// 🧑‍🤝‍🧑 Normalize audience tokens to: "him" | "her" | "unisex"
+function normalizeAudienceTokens(aud: any): string[] {
+  const arr = Array.isArray(aud)
+    ? aud
+    : typeof aud === "string"
+    ? [aud]
+    : ["unisex"];
+
+  const mapped = arr
+    .map((v) => toSlug(v))
+    .map((tok) => {
+      if (["him", "male", "man", "mens", "for-him", "m"].includes(tok))
+        return "him";
+      if (["her", "female", "woman", "womens", "for-her", "f"].includes(tok))
+        return "her";
+      if (
+        [
+          "unisex",
+          "any",
+          "all",
+          "both",
+          "adult",
+          "couple",
+          "everyone",
+        ].includes(tok)
+      )
+        return "unisex";
+      // Unknown tokens default to unisex, but keep "kids" etc. as unisex for admin filter consistency
+      return "unisex";
+    });
+
+  // De-dup with stable order: prioritize single-gender if exclusively present
+  const set = new Set(mapped);
+  if (set.has("him") && !set.has("her") && !set.has("unisex")) return ["him"];
+  if (set.has("her") && !set.has("him") && !set.has("unisex")) return ["her"];
+  return ["unisex"]; // if mixed/unknown → admin expects one of "him" | "her" | "unisex"
+}
+
+// 🧭 Normalize category + subcategory pair from doc
+function normalizeCategoryPair(
+  categoryRaw?: any,
+  subRaw?: any
+): { category?: string; subcategory?: string | undefined } {
+  const catStr = s(categoryRaw).trim();
+  const subStr = s(subRaw).trim();
+
+  // If category embeds subcategory (e.g., "ring/engagement")
+  const split = splitCategoryMaybe(catStr);
+  let cat =
+    split.cat ||
+    (catStr ? CATEGORY_CANON_MAP[toSlug(catStr)] || toSlug(catStr) : undefined);
+  let sub = subStr ? toSlug(subStr) : split.sub || undefined;
+
+  // Example: legacy had plural in sub and empty cat; we won't guess parents here if cat is empty
+  return {
+    category: cat,
+    subcategory: sub || undefined,
+  };
+}
+
 function buildFilter(q: string) {
   if (!q) return {};
   const rx = {
@@ -127,6 +245,10 @@ function buildFilter(q: string) {
   };
 }
 
+/* -------------------------------------------------------------------------- */
+/*                               Adapters (GET)                                */
+/* -------------------------------------------------------------------------- */
+
 function adaptDb(doc: any): AdminProduct {
   const id = toId(doc?._id);
   const name = s(doc?.name) || undefined;
@@ -134,16 +256,17 @@ function adaptDb(doc: any): AdminProduct {
   const salePrice = doc?.salePrice == null ? null : n(doc?.salePrice) ?? null;
   const image = s(doc?.image) || s(doc?.imageUrl) || null;
   const images = Array.isArray(doc?.images) ? doc.images.map(String) : null;
-  const audience = Array.isArray(doc?.audience)
-    ? doc.audience.map(String)
-    : doc?.audience
-    ? [String(doc.audience)]
-    : ["unisex"];
 
-  const cat = s(doc?.category);
+  const { category, subcategory } = normalizeCategoryPair(
+    doc?.category,
+    doc?.subCategory ?? doc?.subcategory
+  );
+
+  const audience = normalizeAudienceTokens(doc?.audience);
+
   const dept =
     s(doc?.department).toLowerCase() === "watch" ||
-    ["watch", "watches"].includes(cat.toLowerCase())
+    ["watch", "watches"].includes(s(doc?.category).toLowerCase())
       ? "watch"
       : "jewelry";
 
@@ -156,9 +279,9 @@ function adaptDb(doc: any): AdminProduct {
     price,
     unitPrice: price,
     salePrice,
-    category: cat || undefined,
-    subCategory: s(doc?.subCategory) || undefined,
-    subcategory: s(doc?.subCategory) || undefined,
+    category: category || undefined,
+    subCategory: subcategory || undefined, // keep both keys for UI compatibility
+    subcategory: subcategory || undefined,
     imageUrl: s(doc?.imageUrl) || image,
     image: s(doc?.image) || image,
     images,
@@ -186,7 +309,9 @@ function adaptLegacy(doc: any): AdminProduct {
     s(doc?.name) || s(doc?.title) || s(doc?.productName) || "Untitled (legacy)";
   const price = n(doc?.unitPrice ?? doc?.price);
   const img = s(doc?.image) || s(doc?.img) || s(doc?.imageUrl) || null;
-  const cat =
+
+  // Gather legacy category inputs (lots of possibilities)
+  const rawCat =
     s(doc?.category) ||
     s(doc?.catagory) ||
     s(doc?.cat) ||
@@ -195,16 +320,16 @@ function adaptLegacy(doc: any): AdminProduct {
     s(doc?.necklaces) ||
     s(doc?.earrings) ||
     "";
-  const sub =
+  const rawSub =
     s(doc?.subCategory) || s(doc?.subcategory) || s(doc?.subcatagory) || "";
-  const audience = Array.isArray(doc?.audience)
-    ? doc.audience.map(String)
-    : doc?.audience
-    ? [String(doc.audience)]
-    : ["unisex"];
+
+  const { category, subcategory } = normalizeCategoryPair(rawCat, rawSub);
+
+  const audience = normalizeAudienceTokens(doc?.audience);
+
   const dept =
     s(doc?.department).toLowerCase() === "watch" ||
-    ["watch", "watches"].includes(cat.toLowerCase())
+    ["watch", "watches"].includes(s(rawCat).toLowerCase())
       ? "watch"
       : "jewelry";
 
@@ -217,9 +342,9 @@ function adaptLegacy(doc: any): AdminProduct {
     price,
     unitPrice: price,
     salePrice: n(doc?.salePrice) ?? null,
-    category: cat || undefined,
-    subCategory: sub || undefined,
-    subcategory: sub || undefined,
+    category: category || undefined,
+    subCategory: subcategory || undefined,
+    subcategory: subcategory || undefined,
     imageUrl: s(doc?.imageUrl) || img,
     image: s(doc?.image) || img,
     images: null,
@@ -241,6 +366,10 @@ function adaptLegacy(doc: any): AdminProduct {
   };
 }
 
+/* -------------------------------------------------------------------------- */
+/*                              Multipart parsing                               */
+/* -------------------------------------------------------------------------- */
+
 function parseForm(
   req: NextApiRequest
 ): Promise<{ fields: Fields; files: Files }> {
@@ -257,6 +386,7 @@ function parseForm(
 }
 
 function toAudience(v: any): string[] {
+  // Accept array, JSON string, or single value
   if (Array.isArray(v)) return v.map(String);
   if (typeof v === "string") {
     try {
@@ -284,6 +414,10 @@ cloudinary.config({
   api_key: process.env.CLOUDINARY_API_KEY as string,
   api_secret: process.env.CLOUDINARY_API_SECRET as string,
 });
+
+/* -------------------------------------------------------------------------- */
+/*                               Sorting helpers                               */
+/* -------------------------------------------------------------------------- */
 
 function getSortKeyAndDir(req: NextApiRequest) {
   const allowed = new Set([
@@ -335,6 +469,10 @@ function valFor(p: AdminProduct, key: string): any {
   }
 }
 
+/* -------------------------------------------------------------------------- */
+/*                                  Handler                                    */
+/* -------------------------------------------------------------------------- */
+
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<Ok | Err>
@@ -355,7 +493,6 @@ export default async function handler(
       String(req.query.includeLegacy ?? "1").toLowerCase() !== "false";
     const filter = buildFilter(q);
     const { sort, dir } = getSortKeyAndDir(req);
-    const dirMul = dir === "asc" ? 1 : -1;
 
     const collectionsToQuery = Array.from(
       new Set([PRIMARY_COLLECTION, "products"])
@@ -415,6 +552,7 @@ export default async function handler(
 
     // Final items, sorted
     const items = Array.from(seen.values()).sort((a, b) => {
+      const { dir } = getSortKeyAndDir(req);
       const av = valFor(a, sort);
       const bv = valFor(b, sort);
 
@@ -477,8 +615,14 @@ export default async function handler(
       }
 
       const department = s(fields.department);
-      const category = s(fields.category) || undefined;
-      const subCategory = s(fields.subCategory || fields.subcategory) || "";
+      // 🧼 Normalize category + subcategory on create
+      const normPair = normalizeCategoryPair(
+        s(fields.category),
+        s(fields.subCategory || fields.subcategory)
+      );
+      const category = normPair.category || undefined;
+      const subCategory = normPair.subcategory || "";
+
       const price = n(fields.unitPrice ?? fields.price) ?? 0;
       const salePrice =
         fields.salePrice == null ? null : n(fields.salePrice) ?? null;
@@ -486,7 +630,9 @@ export default async function handler(
         ? String(fields.archived).toLowerCase() === "true" ||
           String(fields.archived) === "1"
         : false;
-      const audience = toAudience(fields.audience);
+
+      // 🧼 Normalize audience on create
+      const audience = normalizeAudienceTokens(toAudience(fields.audience));
       const specs = toSpecs(fields.specs);
       const description = s(fields.description);
 
@@ -509,9 +655,6 @@ export default async function handler(
       }
 
       // 🔁 Normalize select specs to top-level fields used by storefront filters
-      const toSlug = (val: any) =>
-        (val ?? "").toString().trim().toLowerCase().replace(/\s+/g, "-");
-
       const normalized: Record<string, any> = {};
       if (specs.metal) normalized.metal = toSlug(specs.metal);
       if (specs.stone) normalized.stone = toSlug(specs.stone);
@@ -563,7 +706,7 @@ export default async function handler(
         images: imageUrl ? [imageUrl] : undefined,
         archived,
         specs, // full specs for PDP
-        audience: audience.length ? audience : ["unisex"],
+        audience, // ✅ normalized audience
         description,
         department:
           department === "watch" || department === "jewelry"
