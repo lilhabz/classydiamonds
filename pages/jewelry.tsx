@@ -449,7 +449,8 @@ export default function JewelryPage({
   }, [breadcrumbAudience]);
 
   const computedHeroTitle =
-    heroTitle || (audienceLabel ? `${audienceLabel} Jewelry` : "Jewelry Collection");
+    heroTitle ||
+    (audienceLabel ? `${audienceLabel} Jewelry` : "Jewelry Collection");
 
   const defaultSeoTitle = audienceLabel
     ? `${audienceLabel} Jewelry | Classy Diamonds`
@@ -508,7 +509,7 @@ export default function JewelryPage({
         <Breadcrumbs audience={breadcrumbAudience} />
       </div>
 
-      {/* 💎 Category Tiles — link to /category/<slug> */}
+      {/* 💎 Category Tiles — now stay on /jewelry via querystring */}
       <section
         ref={headerRef}
         className="pt-6 pb-4 px-0 sm:px-0 w-full"
@@ -519,7 +520,7 @@ export default function JewelryPage({
           title="Shop by Category"
           fullBleedDesktop
           desktopCols={4}
-          routeTo="/category"
+          routeTo="/jewelry" // ✅ changed from "/category" → keeps navigation on jewelry.tsx
         />
       </section>
 
