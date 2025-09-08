@@ -125,7 +125,9 @@ const resolveSubheader = (category: string, sub: string): string => {
 };
 
 /* ----------------------------- SSR ------------------------------ */
-export const getServerSideProps: GetServerSideProps<PageProps> = async (ctx) => {
+export const getServerSideProps: GetServerSideProps<PageProps> = async (
+  ctx
+) => {
   const categorySlug = String(ctx.params?.category || "").toLowerCase();
   const subcategorySlug = String(ctx.params?.subcategory || "").toLowerCase();
   if (!categorySlug || !subcategorySlug) return { notFound: true };
@@ -230,7 +232,8 @@ export const getServerSideProps: GetServerSideProps<PageProps> = async (ctx) => 
     products = [];
   }
 
-  const heroImage = HERO_BY_CATEGORY[categorySlug]?.image ?? "/hero-jewelry.jpg";
+  const heroImage =
+    HERO_BY_CATEGORY[categorySlug]?.image ?? "/hero-jewelry.jpg";
   const heroSubtitle = resolveSubheader(categorySlug, subcategorySlug);
 
   return {
@@ -351,7 +354,8 @@ export default function SubcategoryPage({
       <Head>
         <title>
           {subcategoryLabel}
-          {categoryLabel !== subcategoryLabel ? ` | ${categoryLabel}` : ""} | Classy Diamonds
+          {categoryLabel !== subcategoryLabel ? ` | ${categoryLabel}` : ""} |
+          Classy Diamonds
         </title>
         <meta
           name="description"
