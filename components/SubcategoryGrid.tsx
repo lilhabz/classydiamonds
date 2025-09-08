@@ -36,6 +36,44 @@ type Props = {
   desktopCardScale?: number; // scale relative to category card look (default 0.85)
 };
 
+/* --------------------------- Fallback image helper -------------------------- */
+// Cycles through candidate srcs until one loads.
+function ImageWithFallback({
+  srcList,
+  alt,
+  fill,
+  className,
+  sizes,
+  priority = false,
+}: {
+  srcList: string[];
+  alt: string;
+  fill?: boolean;
+  className?: string;
+  sizes?: string;
+  priority?: boolean;
+}) {
+  const [idx, setIdx] = React.useState(0);
+  const src = srcList[Math.min(idx, srcList.length - 1)];
+
+  // We render <Image> with a key so Next re-initializes when src changes
+  return (
+    <Image
+      key={src}
+      src={src}
+      alt={alt}
+      fill={fill}
+      className={className}
+      sizes={sizes}
+      priority={priority}
+      onError={() => {
+        // advance to next fallback (if any)
+        setIdx((i) => (i + 1 < srcList.length ? i + 1 : i));
+      }}
+    />
+  );
+}
+
 export default function SubcategoryGrid({
   category,
   subcategories,
@@ -52,33 +90,33 @@ export default function SubcategoryGrid({
 }: Props) {
   if (!subcategories?.length) return null;
 
-  const imgFor = (s: Subcat) =>
-    s.image ||
-    `/subcategory/${category}-${s.slug}.jpg` ||
-    `/category/${category}-cat.jpg` ||
-    `/gray-placeholder.jpg`;
+  // Build ordered candidates; do NOT use "a || b || c" (all non-empty strings are truthy).
+  const candidatesFor = (s: Subcat): string[] => [
+    ...(s.image ? [s.image] : []),
+    `/subcategory/${category}-${s.slug}.jpg`,
+    `/category/${category}-cat.jpg`,
+    `/products/placeholder.jpg`,
+  ];
 
   const isActive = (slug: string) =>
     (activeSlug || "all").toLowerCase() === slug.toLowerCase();
 
-  // ---------- Shared card contents ----------
+  /* ------------------------------ Card inners ------------------------------ */
   const CardInnerRow = ({ s }: { s: Subcat }) => (
     <div
       className="relative rounded-xl overflow-hidden"
       style={{
-        // Fallbacks so elements have dimensions even if CSS vars are missing
         width: "var(--img, 195px)",
         height: "var(--img-h, var(--img, 150px))",
         margin: "0 auto",
       }}
     >
-      <Image
-        src={imgFor(s)}
+      <ImageWithFallback
+        srcList={candidatesFor(s)}
         alt={s.label}
         fill
         className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
         sizes="(max-width: 640px) 50vw, 195px"
-        priority={false}
       />
       <div className="absolute inset-0 bg-black/20" />
       <div className="absolute inset-0 flex items-end justify-center">
@@ -91,13 +129,12 @@ export default function SubcategoryGrid({
 
   const CardInnerDesktop = ({ s }: { s: Subcat }) => (
     <div className="relative w-full bg-[#25304f] aspect-[5/4] rounded-xl overflow-hidden">
-      <Image
-        src={imgFor(s)}
+      <ImageWithFallback
+        srcList={candidatesFor(s)}
         alt={s.label}
         fill
         className="object-cover"
         sizes="(min-width: 640px) 16vw, 100vw"
-        priority={false}
       />
       <div className="absolute inset-0 bg-black/40 group-hover:bg-black/30 transition-colors z-10" />
       <span className="absolute inset-0 flex items-center justify-center z-30 font-semibold text-white text-center px-3 drop-shadow-[0_1px_2px_rgba(0,0,0,0.7)] text-[13px]">
@@ -106,19 +143,19 @@ export default function SubcategoryGrid({
     </div>
   );
 
-  // ---------- Render helpers ----------
+  /* ----------------------------- Render helpers ---------------------------- */
   const renderRowCard = (s: Subcat) => {
+    const active = isActive(s.slug);
     const cls =
       "group relative rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-transform duration-300 " +
-      "inline-block align-top flex-none sm:flex-initial bg-[#25304f]";
+      "inline-block align-top flex-none sm:flex-initial bg-[#25304f] " +
+      (active ? "ring-2 ring-white" : "");
     const style = {
-      // Respect page-level vars when present; otherwise use harmless fallbacks
       width: "var(--card-w, 195px)",
       height: "var(--card-h, 150px)",
     } as React.CSSProperties;
 
     if (onSelect) {
-      const active = isActive(s.slug);
       return (
         <button
           key={s.slug}
@@ -153,10 +190,11 @@ export default function SubcategoryGrid({
   };
 
   const renderDesktopCard = (s: Subcat) => {
+    const active = isActive(s.slug);
     const cls =
-      "group relative rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-transform duration-150 hover:scale-[1.03]";
+      "group relative rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-transform duration-150 hover:scale-[1.03] " +
+      (active ? "ring-2 ring-white" : "");
     if (onSelect) {
-      const active = isActive(s.slug);
       return (
         <button
           key={s.slug}
@@ -187,7 +225,7 @@ export default function SubcategoryGrid({
     );
   };
 
-  // ---------- Layouts ----------
+  /* -------------------------------- Layouts -------------------------------- */
   if (layout === "row") {
     return (
       <section className="px-4 mt-2 mb-6">
@@ -271,13 +309,12 @@ export default function SubcategoryGrid({
               className="relative w-full"
               style={{ aspectRatio: `${imgRatioMobile}` }}
             >
-              <Image
-                src={imgFor(s)}
+              <ImageWithFallback
+                srcList={candidatesFor(s)}
                 alt={s.label}
                 fill
                 className="object-cover"
                 sizes="(max-width: 640px) 50vw, 240px"
-                priority={false}
               />
               <div className="absolute inset-0 bg-black/35 group-hover:bg-black/30 transition-colors" />
               <span

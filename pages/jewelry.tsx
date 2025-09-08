@@ -14,7 +14,8 @@ import FiltersSidebar from "@/components/FiltersSidebar";
 import ProductGrid from "@/components/ProductGrid"; // ✅ use shared grid
 import { listProducts } from "@/lib/products";
 import SubcategoryGrid from "@/components/SubcategoryGrid";
-import SubcategoryCards from "@/components/SubcategoryCards";
+// NOTE: SubcategoryCards import kept but unused; safe to remove later if not needed.
+// import SubcategoryCards from "@/components/SubcategoryCards";
 
 /* ----------------------------- Canonical helper ---------------------------- */
 // 🔒 Canonical slugs guard: maps legacy "necklaces" → "necklaces-pendants"
@@ -49,7 +50,7 @@ export type ProductType = {
   inStock?: boolean; // ✅ real stock flag
 };
 
-type SubItem = { label: string; slug: string };
+type SubItem = { label: string; slug: string; image?: string };
 // ✅ include canonical "necklaces-pendants"
 type CategorySlug = "rings" | "earrings" | "bracelets" | "necklaces-pendants";
 const ALLOWED: readonly CategorySlug[] = [
@@ -75,10 +76,7 @@ function normalizeAudienceFromQuery(q: {
   audience?: string | string[];
   gender?: string | string[];
 }): Set<Audience> | null {
-  const vals = [
-    ...toArray(q.audience),
-    ...toArray(q.gender), // legacy
-  ]
+  const vals = [...toArray(q.audience), ...toArray(q.gender)] // legacy
     .map((s) => String(s).toLowerCase().trim())
     .filter(Boolean);
 
@@ -196,31 +194,8 @@ const CATEGORY_LABELS: Record<CategorySlug, string> = {
   "necklaces-pendants": "Necklaces & Pendants",
 };
 
-/* --------------------------- Inline icon components ------------------------ */
-function IconHamburger(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" {...props}>
-      <path
-        d="M3 6h18M3 12h18M3 18h18"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-}
-function IconClose(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" {...props}>
-      <path
-        d="M6 6l12 12M18 6L6 18"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-}
+// ✅ Simple universal placeholder that exists in your repo
+const SUBCAT_IMG_PLACEHOLDER = "/products/placeholder.jpg";
 
 /* ---------------------------------- Page ---------------------------------- */
 // 🆕 accepts optional heroTitle / seoTitle overrides (legacy), but now derives from ?audience= by default
@@ -242,9 +217,10 @@ export default function JewelryPage({
 
   const heroRef = useRef<HTMLDivElement>(null);
   const headerRef = useRef<HTMLDivElement>(null);
+  const catSectionRef = useRef<HTMLElement>(null);
   const router = useRouter();
 
-  // Strip stray ?scroll=true when no category is present (safe no-op now)
+  /* -------------------- 1) Clean up stray ?scroll=true  -------------------- */
   useEffect(() => {
     if (!router.isReady) return;
     const { scroll, category } = router.query as {
@@ -258,9 +234,10 @@ export default function JewelryPage({
         shallow: true,
       });
     }
-  }, [router.isReady, router.query]);
+    // Depend on precise keys, not the entire object (prevents missed updates)
+  }, [router.isReady, router.query.category, router.query.scroll]);
 
-  // Lock body scroll when drawer is open
+  /* ------- 2) Lock body scroll when drawer is open (unchanged behavior) ---- */
   useEffect(() => {
     if (mobileFiltersOpen) {
       const original = document.body.style.overflow;
@@ -271,19 +248,25 @@ export default function JewelryPage({
     }
   }, [mobileFiltersOpen]);
 
-  // Sync URL -> state (kept for backward-compat deep links; harmless otherwise)
+  /* -------- 3) Robust URL → state sync (watch specific keys only) ---------- */
   useEffect(() => {
     if (!router.isReady) return;
-    const { category, sub, scroll } = router.query;
+    const category =
+      typeof router.query.category === "string"
+        ? router.query.category
+        : undefined;
+    const sub =
+      typeof router.query.sub === "string" ? router.query.sub : undefined;
+    const scroll = router.query.scroll === "true";
 
-    if (typeof category === "string") {
+    if (category) {
       const cat = canonicalizeCategory(category) as CategorySlug;
       if (ALLOWED.includes(cat)) {
         setActiveCategorySlug(cat);
 
         const subs = SUBS[cat];
         if (
-          typeof sub === "string" &&
+          sub &&
           subs?.some((s) => s.slug.toLowerCase() === sub.toLowerCase())
         ) {
           setActiveSub(sub.toLowerCase());
@@ -299,13 +282,18 @@ export default function JewelryPage({
       setActiveSub("all");
     }
 
-    if (scroll === "true" && typeof category === "string" && heroRef.current) {
+    if (scroll && category && heroRef.current) {
       const offset = heroRef.current.offsetTop + heroRef.current.offsetHeight;
       window.scrollTo({ top: offset, behavior: "smooth" });
     }
-  }, [router.isReady, router.query]);
+  }, [
+    router.isReady,
+    router.query.category,
+    router.query.sub,
+    router.query.scroll,
+  ]);
 
-  // ✅ Fallback init in case router.query isn't ready on first paint
+  /* ---- 4) Fallback init if router.query isn't ready on first paint -------- */
   useEffect(() => {
     if (activeCategorySlug) return; // already set
     if (typeof window === "undefined") return;
@@ -338,7 +326,7 @@ export default function JewelryPage({
     }
   }, [activeCategorySlug]);
 
-  // Do NOT auto-scroll on initial mount when no category is selected.
+  /* --------- 5) Smooth scroll to header when category changes -------------- */
   const firstRunRef = useRef<boolean>(true);
   useEffect(() => {
     if (firstRunRef.current) {
@@ -350,7 +338,7 @@ export default function JewelryPage({
     }
   }, [activeCategorySlug]);
 
-  // 🔎 Parse URL filters
+  /* --------- 6) Parse URL filters (metal/stone/shape/price/carat) ---------- */
   const metals = toArray(router.query.metal as any).map((x) =>
     String(x).toLowerCase()
   );
@@ -405,7 +393,6 @@ export default function JewelryPage({
     if (audienceWanted && audienceWanted.size) {
       base = base.filter((p) => {
         const pa = productAudiences(p);
-        // match if intersection is non-empty
         for (const a of audienceWanted) {
           if (pa.has(a)) return true;
         }
@@ -455,6 +442,7 @@ export default function JewelryPage({
     caratMax,
   ]);
 
+  /* ----------------- URL writer for subcategory selection ------------------ */
   const goSub = (slug: string) => {
     if (!activeCategorySlug) return;
     setActiveSub(slug);
@@ -467,6 +455,45 @@ export default function JewelryPage({
       shallow: true,
     });
   };
+
+  /* ------------- Instant local update when user clicks a category ---------- *
+   * This uses event delegation on the Category section wrapper so we do NOT
+   * need to edit CategoryGrid right now. It:
+   *  - parses the clicked <a> with ?category=...,
+   *  - updates local state immediately (so subcategory grid mounts instantly),
+   *  - lets Next.js shallow push update the URL as usual.
+   */
+  const onCategorySectionClick: React.MouseEventHandler<HTMLElement> = (e) => {
+    const el = (e.target as HTMLElement)?.closest("a[href]");
+    if (!el) return;
+    try {
+      const href = (el as HTMLAnchorElement).href;
+      const url = new URL(href, window.location.origin);
+      const catParam = url.searchParams.get("category");
+      if (!catParam) return;
+      const cat = canonicalizeCategory(catParam) as CategorySlug;
+      if (!ALLOWED.includes(cat)) return;
+
+      // Instant local update
+      setActiveCategorySlug(cat);
+      setActiveSub("all");
+    } catch {
+      // ignore parse errors
+    }
+  };
+
+  /* --------------------- Subcategory images w/ fallback -------------------- *
+   * The repo doesn't have /public/subcategory/* assets. To avoid 404s,
+   * we enrich the subcategory objects with a guaranteed-safe placeholder image.
+   * Swap this later to real images without changing SubcategoryGrid props.
+   */
+  const subcatsWithImages: SubItem[] | null = useMemo(() => {
+    if (!activeCategorySlug) return null;
+    return SUBS[activeCategorySlug].map((s) => ({
+      ...s,
+      image: SUBCAT_IMG_PLACEHOLDER, // ✅ safe, exists in repo
+    }));
+  }, [activeCategorySlug]);
 
   // 🧭 Audience for breadcrumbs (only when exactly one audience is selected)
   const breadcrumbAudience: Audience | undefined = useMemo(() => {
@@ -547,7 +574,8 @@ export default function JewelryPage({
 
       {/* 💎 Category Tiles — now stay on /jewelry via querystring */}
       <section
-        ref={headerRef}
+        ref={catSectionRef}
+        onClick={onCategorySectionClick} // ✅ instant local update without touching CategoryGrid
         className="pt-6 pb-4 px-0 sm:px-0 w-full"
         style={{ scrollMarginTop: "40px" }}
       >
@@ -557,10 +585,11 @@ export default function JewelryPage({
           fullBleedDesktop
           desktopCols={4}
           routeTo="/jewelry" // ✅ keeps navigation on jewelry.tsx
+          // When you're ready, we can pass activeSlug/onSelect once CategoryGrid accepts them.
         />
       </section>
 
-      {/* 🔖 Subcategory UI (only when deep-linked to ?category=…) */}
+      {/* 🔖 Subcategory UI (only when a category is active) */}
       {activeCategorySlug && (
         <section className="mt-2 mb-4">
           <div className="mx-auto max-w-7xl">
@@ -568,7 +597,7 @@ export default function JewelryPage({
             <div className="sm:hidden">
               <SubcategoryGrid
                 category={activeCategorySlug}
-                subcategories={SUBS[activeCategorySlug]}
+                subcategories={subcatsWithImages ?? SUBS[activeCategorySlug]}
                 activeSlug={activeSub}
                 onSelect={(slug) => goSub(slug)}
                 layout="row"
@@ -579,7 +608,7 @@ export default function JewelryPage({
             <div className="hidden sm:block">
               <SubcategoryGrid
                 category={activeCategorySlug}
-                subcategories={SUBS[activeCategorySlug]}
+                subcategories={subcatsWithImages ?? SUBS[activeCategorySlug]}
                 activeSlug={activeSub}
                 onSelect={(slug) => goSub(slug)}
                 layout="desktop-grid"
@@ -600,7 +629,6 @@ export default function JewelryPage({
       </div>
 
       {/* 🧰 SIDEBAR + GRID */}
-      {/* ⬇️ CHANGED: clamp widened so 4-up fits beside the sidebar */}
       <section className="mt-6 px-4 sm:px-6 lg:px-8 max-w-screen-2xl mx-auto mb-20">
         {/* Mobile filters trigger */}
         <div className="flex items-center justify-between mb-4 lg:hidden">
@@ -798,7 +826,6 @@ export const getServerSideProps: GetServerSideProps = async () => {
         carat: typeof p.carat === "number" ? p.carat : null,
         audience: audienceArr, // ✅ new array schema
         gender: p.gender || "unisex", // ⚠️ legacy kept for compat
-        description: p.description || "",
         // ✅ Real stock derivation (compatible with several backends)
         inStock:
           typeof p.inStock === "boolean"
@@ -814,3 +841,29 @@ export const getServerSideProps: GetServerSideProps = async () => {
 
   return { props: { products } };
 };
+
+/* --------------------------- Inline icon components ------------------------ */
+function IconHamburger(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" {...props}>
+      <path
+        d="M3 6h18M3 12h18M3 18h18"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+function IconClose(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" {...props}>
+      <path
+        d="M6 6l12 12M18 6L6 18"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
