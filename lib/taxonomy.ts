@@ -173,6 +173,7 @@ export const RING_SUFFIXABLE_SUBS = new Set([
   "solitaire",
   "three-stone",
   "bridal-set",
+  "signet"
 ]);
 
 /** Convert an admin base sub to the storefront route sub (e.g., "engagement" → "engagement-rings"). */
@@ -183,11 +184,13 @@ export function toRouteSubcategory(category?: string, sub?: string | null): stri
 
   if (c === "ring" || c === "rings") {
     if (s === "wedding") s = "wedding-bands";
-    if (s === "wedding-bands" || s === "mens") return s; // no -rings suffix
+    if (s === "wedding-bands") return "wedding-rings"; // ⬅️ CHANGED: storefront slug
+    if (s === "mens") return s;                        // keep as-is (no -rings)
     return RING_SUFFIXABLE_SUBS.has(s) ? `${s}-rings` : s;
   }
   return s;
 }
+
 
 /** Convert a storefront route sub back to the admin base sub (e.g., "engagement-rings" → "engagement"). */
 export function toBaseSubcategory(category?: string, sub?: string | null): string | null {

@@ -213,6 +213,8 @@ function baseNameFor(dept: Department, category?: string | null, sub?: string | 
   return "Item";
 }
 
+const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+
 export default function AdminProductsList() {
   const { data: session, status: authStatus } = useSession();
   const router = useRouter();
@@ -233,7 +235,7 @@ export default function AdminProductsList() {
   // 🆕 stock filter
   const [stock, setStock] = useState<"all" | "in" | "out">("all");
 
-  // 🆕 audience filter
+  // 🆕 audience filter (also feeds quick-create)
   const [aud, setAud] = useState<"all" | "him" | "her" | "unisex">("all");
 
   // paging
@@ -422,98 +424,89 @@ export default function AdminProductsList() {
     }
   }
 
-  async function onMigrate(p: AdminProduct) {
-    try {
-      const res = await fetch("/api/admin/products/migrate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: p.name ?? p.title ?? "Untitled",
-          slug: p.slug,
-          price: Number(p.unitPrice ?? p.price ?? 0),
-          salePrice: p.salePrice ?? null,
-          category:
-            p.category || (inferDept(p) === "watch" ? "watch" : "jewelry"),
-          subcategory: (p.subcategory ?? p.subCategory) || null,
-          imageUrl: pickImage(p),
-          archived: Boolean(p.archived),
-          specs: p.specs ?? {},
-          audience: p.audience ?? ["unisex"],
-          // keep stock true by default when migrating legacy
-          inStock: p.inStock !== false,
-          // 🆕 pass through featured if present (backend may ignore if unsupported)
-          featured: p.featured === true,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok || !data?.ok)
-        throw new Error(data?.error || "Migration failed");
-
-      const reload = await fetch("/api/admin/products?includeLegacy=1").then(
-        (r) => r.json()
-      );
-      const reList: ApiProduct[] = Array.isArray(reload.items)
-        ? reload.items
-        : [];
-      setAllItems(reList.map(adaptApiProduct));
-
-      alert(`Migrated "${p.name ?? p.title}" into DB.`);
-    } catch (e: any) {
-      alert("❌ " + (e?.message || "Migration failed"));
-    }
+  // --- Bulk delete helpers (modal handlers) ---
+async function doDryRun() {
+  try {
+    setBulkBusy("preview");
+    setDryPreview(null);
+    const url = `/api/admin/products?all=1&dryRun=1&scope=${encodeURIComponent(
+      delScope
+    )}${includeLegacy ? "&includeLegacy=1" : ""}`;
+    const res = await fetch(url, { method: "DELETE" });
+    const data = await res.json();
+    if (!res.ok || data?.ok === false) throw new Error(data?.error || "Dry run failed");
+    setDryPreview(data.deleted || {});
+  } catch (e: any) {
+    alert("❌ " + (e?.message || "Dry run failed"));
+  } finally {
+    setBulkBusy("idle");
   }
+}
 
-  // 🆕 bulk delete helpers
-  async function doDryRun() {
-    try {
-      setBulkBusy("preview");
-      setDryPreview(null);
-      const url = `/api/admin/products?all=1&dryRun=1&scope=${encodeURIComponent(
-        delScope
-      )}${includeLegacy ? "&includeLegacy=1" : ""}`;
-      const res = await fetch(url, { method: "DELETE" });
-      const data = await res.json();
-      if (!res.ok || data?.ok === false) throw new Error(data?.error || "Dry run failed");
-      setDryPreview(data.deleted || {});
-    } catch (e: any) {
-      alert("❌ " + (e?.message || "Dry run failed"));
-    } finally {
-      setBulkBusy("idle");
-    }
+async function confirmBulkDelete() {
+  if (confirmText !== "DELETE") return;
+  try {
+    setBulkBusy("delete");
+    const url = `/api/admin/products?all=1&scope=${encodeURIComponent(
+      delScope
+    )}${includeLegacy ? "&includeLegacy=1" : ""}`;
+    const res = await fetch(url, { method: "DELETE" });
+    const data = await res.json();
+    if (!res.ok || data?.ok === false) throw new Error(data?.error || "Bulk delete failed");
+
+    const reload = await fetch("/api/admin/products?includeLegacy=1").then((r) => r.json());
+    const reList: ApiProduct[] = Array.isArray(reload.items) ? reload.items : [];
+    setAllItems(reList.map(adaptApiProduct));
+
+    setDeleteOpen(false);
+    setDryPreview(null);
+    setConfirmText("");
+    setDelScope("primary");
+    setIncludeLegacy(false);
+    alert("✅ Bulk deletion complete.");
+  } catch (e: any) {
+    alert("❌ " + (e?.message || "Bulk delete failed"));
+  } finally {
+    setBulkBusy("idle");
   }
+}
 
-  async function confirmBulkDelete() {
-    if (confirmText !== "DELETE") return;
-    try {
-      setBulkBusy("delete");
-      const url = `/api/admin/products?all=1&scope=${encodeURIComponent(
-        delScope
-      )}${includeLegacy ? "&includeLegacy=1" : ""}`;
-      const res = await fetch(url, { method: "DELETE" });
-      const data = await res.json();
-      if (!res.ok || data?.ok === false) throw new Error(data?.error || "Bulk delete failed");
+// --- Migrate legacy → DB ---
+async function onMigrate(p: AdminProduct) {
+  try {
+    const res = await fetch("/api/admin/products/migrate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: p.name ?? p.title ?? "Untitled",
+        slug: p.slug,
+        price: Number(p.unitPrice ?? p.price ?? 0),
+        salePrice: p.salePrice ?? null,
+        category: p.category || (inferDept(p) === "watch" ? "watch" : "jewelry"),
+        subcategory: (p.subcategory ?? p.subCategory) || null,
+        imageUrl: pickImage(p),
+        archived: Boolean(p.archived),
+        specs: p.specs ?? {},
+        audience: p.audience ?? ["unisex"],
+        // keep stock true by default when migrating legacy
+        inStock: p.inStock !== false,
+        // pass through featured if present
+        featured: p.featured === true,
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok || !data?.ok) throw new Error(data?.error || "Migration failed");
 
-      // Refresh list after deletion
-      const reload = await fetch("/api/admin/products?includeLegacy=1").then(
-        (r) => r.json()
-      );
-      const reList: ApiProduct[] = Array.isArray(reload.items)
-        ? reload.items
-        : [];
-      setAllItems(reList.map(adaptApiProduct));
+    // refresh list
+    const reload = await fetch("/api/admin/products?includeLegacy=1").then((r) => r.json());
+    const reList: ApiProduct[] = Array.isArray(reload.items) ? reload.items : [];
+    setAllItems(reList.map(adaptApiProduct));
 
-      setDeleteOpen(false);
-      setDryPreview(null);
-      setConfirmText("");
-      setDelScope("primary");
-      setIncludeLegacy(false);
-      alert("✅ Bulk deletion complete.");
-    } catch (e: any) {
-      alert("❌ " + (e?.message || "Bulk delete failed"));
-    } finally {
-      setBulkBusy("idle");
-    }
+    alert(`Migrated "${p.name ?? p.title}" into DB.`);
+  } catch (e: any) {
+    alert("❌ " + (e?.message || "Migration failed"));
   }
+}
 
   /* ----------------------------- Instant quick-create ----------------------------- */
   async function quickCreate(opts: {
@@ -568,10 +561,16 @@ export default function AdminProductsList() {
         : data.id
         ? [{ name: data.name }]
         : [];
-      const namesPreview = created.slice(0, 5).map((c) => c.name).filter(Boolean).join(", ");
+      const namesPreview = created
+        .slice(0, 5)
+        .map((c) => c.name)
+        .filter(Boolean)
+        .join(", ");
       const more = created.length > 5 ? ` (+${created.length - 5} more)` : "";
       alert(
-        `✅ Created ${data.count ?? created.length ?? 1} placeholder${(data.count ?? created.length ?? 1) === 1 ? "" : "s"}${namesPreview ? `: ${namesPreview}${more}` : ""}`
+        `✅ Created ${data.count ?? created.length ?? 1} placeholder${
+          (data.count ?? created.length ?? 1) === 1 ? "" : "s"
+        }${namesPreview ? `: ${namesPreview}${more}` : ""}`
       );
     } catch (e: any) {
       alert("❌ " + (e?.message || "Quick-create failed"));
@@ -656,7 +655,7 @@ export default function AdminProductsList() {
 
       {/* 🆕 Quick-create rows */}
       <div className="mb-4 space-y-3">
-        {/* Audience quick-create + filter */}
+        {/* Audience chips control BOTH filter and quick-create */}
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-sm opacity-75 mr-1">Audience:</span>
           <Chip active={aud === "all"} onClick={() => setAud("all")}>All</Chip>
@@ -665,9 +664,8 @@ export default function AdminProductsList() {
           <Chip active={aud === "unisex"} onClick={() => setAud("unisex")}>Unisex</Chip>
 
           <span className="opacity-50 mx-2">|</span>
-          <span className="text-sm opacity-75">Quick-create:</span>
 
-          {/* 🆕 Qty input (kept tiny/minimal) */}
+          {/* 🆕 Qty input */}
           <label className="ml-2 text-xs opacity-80">
             Qty
             <input
@@ -676,65 +674,31 @@ export default function AdminProductsList() {
               max={100}
               value={qty}
               onChange={(e) =>
-                setQty(
-                  Math.max(1, Math.min(100, Number(e.target.value) || 1))
-                )
+                setQty(Math.max(1, Math.min(100, Number(e.target.value) || 1)))
               }
               className="ml-1 w-14 px-2 py-1 rounded bg-[var(--bg-nav)]"
               title="Number of placeholders to create (1–100)"
             />
           </label>
 
-          {/* Replaced Links with instant-create buttons */}
+          {/* 🆕 Single quick-create button using the selected Audience chip */}
           <button
             type="button"
             onClick={() =>
               quickCreate({
-                audience: "him",
+                audience: normalizeAudience(aud),
                 category: cat || undefined,
                 subcategory: sub || undefined,
-                key: "aud:him",
+                key: "aud:new",
               })
             }
             className="text-xs px-3 py-1 rounded bg-emerald-700 hover:bg-emerald-600 disabled:opacity-50"
-            disabled={creatingKey === "aud:him"}
-            title="Instantly create placeholder(s) for Him"
+            disabled={!cat || creatingKey === "aud:new"}
+            title={cat ? `Create ${capitalize(normalizeAudience(aud))} in ${cat}${sub ? ` → ${sub}` : ""}` : "Pick a category first"}
           >
-            {creatingKey === "aud:him" ? "Creating…" : "+ New for Him"}
-          </button>
-
-          <button
-            type="button"
-            onClick={() =>
-              quickCreate({
-                audience: "her",
-                category: cat || undefined,
-                subcategory: sub || undefined,
-                key: "aud:her",
-              })
-            }
-            className="text-xs px-3 py-1 rounded bg-rose-700 hover:bg-rose-600 disabled:opacity-50"
-            disabled={creatingKey === "aud:her"}
-            title="Instantly create placeholder(s) for Her"
-          >
-            {creatingKey === "aud:her" ? "Creating…" : "+ New for Her"}
-          </button>
-
-          <button
-            type="button"
-            onClick={() =>
-              quickCreate({
-                audience: "unisex",
-                category: cat || undefined,
-                subcategory: sub || undefined,
-                key: "aud:unisex",
-              })
-            }
-            className="text-xs px-3 py-1 rounded bg-indigo-700 hover:bg-indigo-600 disabled:opacity-50"
-            disabled={creatingKey === "aud:unisex"}
-            title="Instantly create placeholder(s) for Unisex"
-          >
-            {creatingKey === "aud:unisex" ? "Creating…" : "+ New Unisex"}
+            {creatingKey === "aud:new"
+              ? "Creating…"
+              : `+ New (${capitalize(normalizeAudience(aud))})`}
           </button>
         </div>
 
@@ -756,7 +720,7 @@ export default function AdminProductsList() {
           })}
           <span className="opacity-50 mx-2">|</span>
 
-          {/* Instant-create button (uses current audience filter if set, else unisex) */}
+          {/* Instant-create button (uses current audience chip) */}
           <button
             type="button"
             onClick={() =>
@@ -807,7 +771,7 @@ export default function AdminProductsList() {
             })}
             <span className="opacity-50 mx-2">|</span>
 
-            {/* Instant-create in subcategory */}
+            {/* Instant-create in subcategory (uses current audience chip) */}
             <button
               type="button"
               onClick={() =>
@@ -926,7 +890,7 @@ export default function AdminProductsList() {
             <div className="p-3 flex flex-wrap gap-3">
               {specFields.map(([key, def]) => {
                 const v = (specFilter as any)[key] ?? "";
-                if (def.type === "select") {
+                if ((def as any).type === "select") {
                   return (
                     <div key={key}>
                       <label className="block text-xs opacity-75 mb-1">
@@ -943,7 +907,7 @@ export default function AdminProductsList() {
                         className="px-3 py-2 rounded bg-[var(--bg-nav)] text-white"
                       >
                         <option value="">Any</option>
-                        {def.options.map((opt: string) => (
+                        {(def as any).options.map((opt: string) => (
                           <option key={opt} value={opt}>
                             {opt}
                           </option>
@@ -952,16 +916,16 @@ export default function AdminProductsList() {
                     </div>
                   );
                 }
-                if (def.type === "number") {
+                if ((def as any).type === "number") {
                   return (
                     <div key={key}>
                       <label className="block text-xs opacity-75 mb-1">
                         {key}
-                        {def.unit ? ` (${def.unit})` : ""}
+                        {(def as any).unit ? ` (${(def as any).unit})` : ""}
                       </label>
                       <input
                         type="number"
-                        step={def.step ?? 1}
+                        step={(def as any).step ?? 1}
                         value={v === "" ? "" : Number(v)}
                         onChange={(e) =>
                           setSpecFilter((m) => ({
@@ -977,7 +941,7 @@ export default function AdminProductsList() {
                     </div>
                   );
                 }
-                if (def.type === "boolean") {
+                if ((def as any).type === "boolean") {
                   return (
                     <label
                       key={key}
@@ -993,7 +957,7 @@ export default function AdminProductsList() {
                           }))
                         }
                       />
-                      <span className="text-sm">{def.label || key}</span>
+                      <span className="text-sm">{(def as any).label || key}</span>
                     </label>
                   );
                 }

@@ -1,4 +1,5 @@
 // 📄 pages/category/[category]/[slug].tsx – Text Ring Size + Availability + Robust Image Src (synced button style)
+// + Breadcrumb category crumb now links to correct ring subcategory routes (e.g., /category/ring/signet-rings)
 
 "use client";
 
@@ -10,6 +11,7 @@ import Head from "next/head";
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import { productsData } from "@/data/productsData";
+import { toRouteSubcategory } from "@/lib/taxonomy"; // ⬅️ NEW: use storefront slug mapping
 
 type ProductType = {
   id: string;
@@ -78,6 +80,16 @@ function isRingish(category?: string | null, subcategory?: string | null) {
   return families.test(c) || families.test(s);
 }
 
+// Pretty label for subcategory slugs like "signet-rings" -> "Signet Rings"
+function prettySubLabel(routeSub?: string | null) {
+  if (!routeSub) return "";
+  if (routeSub.endsWith("-rings")) {
+    const base = routeSub.replace(/-rings$/, "");
+    return base.replace(/(^|[-\s])\w/g, (m) => m.toUpperCase()).replace(/-/g, " ") + " Rings";
+  }
+  return routeSub.replace(/(^|[-\s])\w/g, (m) => m.toUpperCase()).replace(/-/g, " ");
+}
+
 export default function ProductPage({ product }: { product: ProductType }) {
   const { addToCart } = useCart();
   const [ringSize, setRingSize] = useState("");
@@ -98,6 +110,27 @@ export default function ProductPage({ product }: { product: ProductType }) {
   );
 
   const resolvedSrc = useMemo(() => resolveImageSrc(product), [product]);
+
+  // 🧭 Route subcategory slug for storefront (e.g., "signet" -> "signet-rings", "wedding-bands" -> "wedding-rings")
+  const routeSub = useMemo(
+    () => toRouteSubcategory(product.category, product.subcategory ?? null),
+    [product.category, product.subcategory]
+  );
+
+  // 🎯 Breadcrumb category crumb: if ring with a recognized sub, show/link to that subcategory page
+  const categoryCrumbLabel = useMemo(() => {
+    if (product.category === "ring" && routeSub) {
+      return prettySubLabel(routeSub);
+    }
+    return capitalizedCategory;
+  }, [product.category, routeSub, capitalizedCategory]);
+
+  const categoryCrumbPath = useMemo(() => {
+    if (product.category === "ring" && routeSub) {
+      return `/category/ring/${routeSub}`;
+    }
+    return `/category/${product.category}`;
+  }, [product.category, routeSub]);
 
   // ✅ set image src safely when it changes
   useEffect(() => {
@@ -152,11 +185,11 @@ export default function ProductPage({ product }: { product: ProductType }) {
         <div className="px-4 sm:px-8 mt-6 mb-6">
           <Breadcrumbs
             customLabels={{
-              [product.category]: capitalizedCategory,
+              [product.category]: categoryCrumbLabel, // may display "Signet Rings" / "Wedding Rings"
               [product.slug]: product.name,
             }}
             customPaths={{
-              [product.category]: `/category/${product.category}`,
+              [product.category]: categoryCrumbPath, // links to /category/ring/{routeSub} when applicable
               [product.slug]: `/category/${product.category}/${product.slug}`,
             }}
           />

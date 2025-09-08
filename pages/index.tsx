@@ -1,14 +1,14 @@
-// 📄 pages/index.tsx – Home Page using shared ProductCard for Featured (matches Jewelry) 💎✅
+// 📄 pages/index.tsx – Home Page using ProductCard for Featured (matches Jewelry grid) 💎✅
 
 "use client";
 
 import Link from "next/link";
 import Head from "next/head";
 import Image from "next/image";
-import { GetServerSideProps } from "next";
+import type { GetServerSideProps } from "next";
 import clientPromise from "@/lib/mongodb";
 import CategoryGrid from "@/components/CategoryGrid";
-import ProductGrid from "@/components/ProductGrid"; // ✅ use shared grid
+import ProductCard from "@/components/ProductCard"; // render cards directly with explicit grid
 
 // 🔒 Canonical slugs helper (guards against legacy "necklaces")
 const canonicalizeCategory = (raw: string) => {
@@ -37,7 +37,7 @@ export const getServerSideProps: GetServerSideProps<HomeProps> = async () => {
   const featuredDocs = await db
     .collection("products")
     .find({ featured: true })
-    .limit(4)
+    .limit(4) // ⬅️ exactly four
     .toArray();
 
   const products: Product[] = featuredDocs.map((doc: any) => ({
@@ -102,6 +102,51 @@ export default function Home({ products }: HomeProps) {
     );
   }
 
+  // 🏷️ type label helper (keeps Necklaces singular)
+  const typeLabelFromCategory = (cat: string) =>
+    cat === "necklaces-pendants"
+      ? "Necklace"
+      : cat.charAt(0).toUpperCase() + cat.slice(1).replace("-", " ");
+
+  // 🎯 Featured grid (same column pattern as Jewelry page)
+  function FeaturedGrid({ items }: { items: Product[] }) {
+    if (items.length === 0) {
+      return (
+        <p className="text-white text-center w-full">
+          No featured items to display.
+        </p>
+      );
+    }
+    return (
+      <div className="max-w-7xl mx-auto">
+        <div
+          className="
+            grid
+            grid-cols-[repeat(2,minmax(var(--card-w),1fr))]
+            md:grid-cols-[repeat(3,minmax(var(--card-w),1fr))]
+            lg:grid-cols-[repeat(4,minmax(var(--card-w),1fr))]
+            gap-4 sm:gap-6
+          "
+        >
+          {items.map((item) => (
+            <div key={item._id}>
+              <ProductCard
+                slug={item.slug}
+                image={item.image}
+                name={item.name}
+                price={item.price}
+                salePrice={item.salePrice ?? null}
+                href={`/category/${item.category}/${item.slug}?scroll=true`}
+                stockLabel="In Stock"
+                typeLabel={typeLabelFromCategory(item.category)}
+              />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   // ✅ Use canonical slug for Necklaces & Pendants
   const CATEGORY_ITEMS = [
     { label: "Rings", slug: "rings", image: "/category/ring-cat.jpg" },
@@ -162,63 +207,21 @@ export default function Home({ products }: HomeProps) {
           className="mt-12 md:mt-16"
         />
 
+        {/* 💎 Featured – Mobile (uses same grid recipe as Jewelry) */}
         <section className="sm:hidden px-4 mt-2 mb-8">
-  <h2 className="text-2xl ...">Featured Pieces</h2>
+          <h2 className="text-2xl font-serif font-semibold tracking-wide mb-4">
+            Featured Pieces
+          </h2>
+          <FeaturedGrid items={featured} />
+        </section>
 
-  {featured.length === 0 ? (
-    <p className="text-white text-center w-full">No featured items to display.</p>
-  ) : (
-    <div className="home-featured-fixed">
-      <ProductGrid
-        items={featured.map((item) => ({
-          slug: item.slug,
-          image: item.image,
-          name: item.name,
-          price: item.price,
-          salePrice: item.salePrice ?? null,
-          href: `/category/${item.category}/${item.slug}?scroll=true`,
-          stockLabel: "In Stock",
-          typeLabel:
-            item.category === "necklaces-pendants"
-              ? "Necklace"
-              : item.category.charAt(0).toUpperCase() +
-                item.category.slice(1).replace("-", " "),
-          categorySlug: item.category,
-        }))}
-      />
-    </div>
-  )}
-</section>
-
-
+        {/* 💎 Featured – Desktop (same grid recipe, 4-up at lg) */}
         <section className="hidden sm:block py-16 sm:py-20 px-4 sm:px-6 max-w-7xl mx-auto">
-  <h2 className="text-3xl ...">Featured Pieces</h2>
-
-  {featured.length === 0 ? (
-    <p className="text-white text-center">No featured items to display.</p>
-  ) : (
-    <div className="home-featured-fixed">
-      <ProductGrid
-        items={featured.map((item) => ({
-          slug: item.slug,
-          image: item.image,
-          name: item.name,
-          price: item.price,
-          salePrice: item.salePrice ?? null,
-          href: `/category/${item.category}/${item.slug}?scroll=true`,
-          stockLabel: "In Stock",
-          typeLabel:
-            item.category === "necklaces-pendants"
-              ? "Necklace"
-              : item.category.charAt(0).toUpperCase() +
-                item.category.slice(1).replace("-", " "),
-          categorySlug: item.category,
-        }))}
-      />
-    </div>
-  )}
-</section>
-
+          <h2 className="text-3xl font-serif font-semibold tracking-wide mb-8">
+            Featured Pieces
+          </h2>
+          <FeaturedGrid items={featured} />
+        </section>
 
         {/* 🎁 Gifts for Him & Her */}
         <section className="py-16 sm:py-20 px-4 sm:px-10 w-full">
