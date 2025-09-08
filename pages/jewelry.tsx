@@ -14,6 +14,7 @@ import FiltersSidebar from "@/components/FiltersSidebar";
 import ProductGrid from "@/components/ProductGrid"; // ✅ use shared grid
 import { listProducts } from "@/lib/products";
 import SubcategoryGrid from "@/components/SubcategoryGrid";
+import SubcategoryCards from "@/components/SubcategoryCards";
 
 /* ----------------------------- Canonical helper ---------------------------- */
 // 🔒 Canonical slugs guard: maps legacy "necklaces" → "necklaces-pendants"
