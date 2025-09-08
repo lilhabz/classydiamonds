@@ -9,7 +9,11 @@ import clientPromise from "@/lib/mongodb";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import ProductCard from "@/components/ProductCard";
 import SubcategoryCards from "@/components/SubcategoryCards";
-import { CATEGORY_LABELS, SUBCATEGORY_MAP } from "@/data/taxonomy";
+import {
+  CATEGORY_LABELS,
+  SUBCATEGORY_MAP,
+  canonicalizeCategory,
+} from "@/data/taxonomy";
 
 /* ------------------------------ Types ------------------------------ */
 type Product = {
@@ -33,7 +37,7 @@ type SubItem = { label: string; slug: string };
 
 type PageProps = {
   categoryUi: string; // from URL (e.g., "rings")
-  categoryLabel: string; // pretty label from taxonomy
+  categoryLabel: string; // pretty label from taxonomy (canonical)
   products: Product[];
   subcategories: SubItem[]; // for the subcategory card row
 };
@@ -72,14 +76,17 @@ export const getServerSideProps: GetServerSideProps<PageProps> = async (
   const categoryUi = String(ctx.params?.category || "").toLowerCase();
   if (!categoryUi) return { notFound: true };
 
-  // Pretty label for category
-  const categoryLabel =
-    CATEGORY_LABELS[categoryUi as keyof typeof CATEGORY_LABELS] ??
-    titleCase(categoryUi);
+  // ✅ Canonical key for taxonomy lookups
+  const catKey = canonicalizeCategory(categoryUi) || (categoryUi as any);
 
-  // Build subcategory list for the row
+  // Pretty label for category (from canonical)
+  const categoryLabel =
+    CATEGORY_LABELS[catKey as keyof typeof CATEGORY_LABELS] ??
+    titleCase(catKey);
+
+  // Build subcategory list for the row (from canonical)
   const subSlugs =
-    SUBCATEGORY_MAP[categoryUi as keyof typeof SUBCATEGORY_MAP] || [];
+    SUBCATEGORY_MAP[catKey as keyof typeof SUBCATEGORY_MAP] || [];
   const subcategories: SubItem[] = subSlugs.map((slug) => ({
     slug,
     label: prettySub(slug),
@@ -268,9 +275,6 @@ export default function CategoryLanding({
                 key: s.slug,
                 label: s.label,
                 image: subcatImage(s.slug),
-                href: `/category/${encodeURIComponent(
-                  categoryUi
-                )}/${encodeURIComponent(s.slug)}?scroll=true`,
               }))}
             />
           </div>

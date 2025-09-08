@@ -57,4 +57,23 @@ export const subcategoryOptionsFor = (cat: Category) => {
 
 export const isWatch = (cat: Category) => cat === "watches";
 export const isJewelry = (cat: Category) =>
-  (JEWELRY_CATEGORIES as readonly string[]).includes(cat);
+  (JEWELRY_CATEGORIES as readonly string[]).includes(cat as any);
+
+// ✅ NEW: tiny helper to canonicalize URL params to taxonomy keys
+const CANONICALIZE_TABLE: Record<string, Category> = {
+  ring: "rings",
+  rings: "rings",
+  earring: "earrings",
+  earrings: "earrings",
+  bracelet: "bracelets",
+  bracelets: "bracelets",
+  necklace: "necklaces-pendants",
+  necklaces: "necklaces-pendants",
+  "necklaces-pendants": "necklaces-pendants",
+  watches: "watches",
+};
+
+export function canonicalizeCategory(raw: string): Category | null {
+  const k = String(raw || "").toLowerCase();
+  return CANONICALIZE_TABLE[k] ?? null;
+}
