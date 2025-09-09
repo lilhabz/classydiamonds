@@ -1,6 +1,7 @@
 // pages/api/products/index.ts
 import type { NextApiRequest, NextApiResponse } from "next";
 import { listProducts } from "@/lib/products";
+import { categoryCandidatesFor } from "@/data/taxonomy";
 
 type Audience = "him" | "her";
 
@@ -33,8 +34,13 @@ export default async function handler(
 
   const filter: any = {};
 
-  if (category) filter.category = category;
-  // accept both spellings
+  // ✅ Category: tolerant matching (fixes "necklace-pendant" vs "necklaces-pendants")
+  if (category) {
+    const candidates = categoryCandidatesFor(category);
+    filter.category = { $in: candidates };
+  }
+
+  // accept both spellings of subcategory key
   const sub = subcategory ?? subCategory;
   if (typeof sub === "string" && sub) {
     filter.$or = [

@@ -60,6 +60,7 @@ export const isJewelry = (cat: Category) =>
   (JEWELRY_CATEGORIES as readonly string[]).includes(cat as any);
 
 // ✅ Canonicalize URL/category inputs to our taxonomy keys (plural canonical)
+// ➕ Added tolerant synonyms for the admin label "necklace-pendant" (and plural variant)
 const CANONICALIZE_TABLE: Record<string, Category> = {
   ring: "rings",
   rings: "rings",
@@ -69,6 +70,8 @@ const CANONICALIZE_TABLE: Record<string, Category> = {
   bracelets: "bracelets",
   necklace: "necklaces-pendants",
   necklaces: "necklaces-pendants",
+  "necklace-pendant": "necklaces-pendants", // ← added
+  "necklace-pendants": "necklaces-pendants", // ← added
   "necklaces-pendants": "necklaces-pendants",
   watches: "watches",
 };
@@ -83,7 +86,7 @@ export function canonicalizeCategory(raw: string): Category | null {
  * Returns a tolerant set of category strings to match in the DB:
  * - canonical plural (e.g., "rings")
  * - common singular (e.g., "ring")
- * - legacy plural (e.g., "necklaces") for necklaces-pendants
+ * - legacy/alternate forms used in admin or old data
  * - the raw incoming value
  */
 export function categoryCandidatesFor(raw: string): string[] {
@@ -98,8 +101,12 @@ export function categoryCandidatesFor(raw: string): string[] {
     watches: "watch",
   };
 
-  // Legacy aliases for necklaces-pendants
-  const legacyForNecklaces = ["necklaces"];
+  // Legacy/alternate aliases for necklaces-pendants (observed in admin/data)
+  const legacyForNecklaces = [
+    "necklaces", // old plural-only
+    "necklace-pendant", // admin single form (problem case)
+    "necklace-pendants", // plural hyphenated
+  ];
 
   const set = new Set<string>([incoming, canon]);
 
@@ -149,15 +156,15 @@ export function toBaseSubcategory(subSlug: string, category: string): string {
     canonicalizeCategory(String(category || "").toLowerCase()) ??
     String(category || "").toLowerCase();
 
-  // ✅ Hard corrections for known typos & variants you mentioned
+  // ✅ Hard corrections for known typos & variants
   const corrections: Record<string, string> = {
     // rings
-    "weddings-rings": "wedding-bands", // typo plural
+    "weddings-rings": "wedding-bands",
     "wedding-rings": "wedding-bands",
     "engagement-rings": "engagement",
-    "eterity-rings": "eternity", // typo
+    "eterity-rings": "eternity",
     "eternity-rings": "eternity",
-    "signant-rings": "signet", // typo
+    "signant-rings": "signet",
     "signet-rings": "signet",
     "promise-rings": "promise",
     "birthstone-rings": "birthstone",
@@ -182,8 +189,8 @@ export function toBaseSubcategory(subSlug: string, category: string): string {
 
   // ✅ Generic suffix trimming by family
   if (catCanon === "rings") {
-    if (s.endsWith("-rings")) s = s.slice(0, -6); // remove "-rings"
-    if (s.endsWith("-ring")) s = s.slice(0, -5); // remove "-ring"
+    if (s.endsWith("-rings")) s = s.slice(0, -6);
+    if (s.endsWith("-ring")) s = s.slice(0, -5);
     if (s === "wedding") s = "wedding-bands";
   }
 
@@ -194,7 +201,7 @@ export function toBaseSubcategory(subSlug: string, category: string): string {
 
   if (catCanon === "necklaces-pendants") {
     // normalize plurals → singular bases
-    if (s.endsWith("s")) s = s.slice(0, -1); // pendants→pendant, chains→chain, lockets→locket, nameplates→nameplate
+    if (s.endsWith("s")) s = s.slice(0, -1);
   }
 
   return s;
