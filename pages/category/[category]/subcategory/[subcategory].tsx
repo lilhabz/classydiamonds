@@ -12,6 +12,10 @@ import Breadcrumbs from "@/components/Breadcrumbs";
 import ProductCard from "@/components/ProductCard";
 import { CATEGORY_LABELS } from "@/data/taxonomy";
 
+// 🆕 Imports for subcategory nav (added)
+import SubcategoryCards from "@/components/SubcategoryCards";
+import { SUBCATEGORY_MAP, canonicalizeCategory } from "@/data/taxonomy";
+
 /* ------------------------------ Types ------------------------------ */
 type Product = {
   _id?: string;
@@ -38,6 +42,8 @@ type PageProps = {
   heroImage: string;
   heroSubtitle?: string;
   products: Product[];
+  // 🆕 Sibling subcategories for the nav row
+  subcategories: { slug: string; label: string }[];
 };
 
 /* ------------------------- Helpers / Hero -------------------------- */
@@ -136,6 +142,15 @@ export const getServerSideProps: GetServerSideProps<PageProps> = async (
     CATEGORY_LABELS[categorySlug as keyof typeof CATEGORY_LABELS] ??
     titleCase(categorySlug);
   const subcategoryLabel = titleCase(subcategorySlug);
+
+  // 🆕 Build sibling subcategory list from taxonomy (canonical key)
+  const catKey = canonicalizeCategory(categorySlug) || (categorySlug as any);
+  const siblingSlugs =
+    SUBCATEGORY_MAP[catKey as keyof typeof SUBCATEGORY_MAP] || [];
+  const subcategories = siblingSlugs.map((slug) => ({
+    slug,
+    label: titleCase(slug),
+  }));
 
   // Optional query filters so FiltersSidebar works here too
   const metal = ctx.query.metal
@@ -245,6 +260,8 @@ export const getServerSideProps: GetServerSideProps<PageProps> = async (
       heroImage,
       heroSubtitle,
       products,
+      // 🆕 pass sibling subcategories to the page
+      subcategories,
     },
   };
 };
@@ -284,6 +301,7 @@ export default function SubcategoryPage({
   heroImage,
   heroSubtitle,
   products,
+  subcategories, // ✅ siblings for nav row
 }: PageProps) {
   const router = useRouter();
   const [visibleCount, setVisibleCount] = useState(8);
@@ -349,6 +367,20 @@ export default function SubcategoryPage({
       : categoryLabel.replace(/& Pendants/i, "Necklace")
     ).trim();
 
+  // 🆕 Local helper for subcategory thumbnail selection (mirrors category landing)
+  const subcatImage = (slug: string) => {
+    if (categorySlug === "rings") {
+      if (slug === "engagement-rings") return "/category/engagement-cat.jpg";
+      if (slug === "wedding-rings") return "/category/wedding-band-cat.jpg";
+      return "/category/ring-cat.jpg";
+    }
+    if (categorySlug === "earrings") return "/category/earring-cat.jpg";
+    if (categorySlug === "bracelets") return "/category/bracelet-cat.jpg";
+    if (categorySlug === "necklaces-pendants")
+      return "/category/necklace-cat.jpg";
+    return "/category/ring-cat.jpg";
+  };
+
   return (
     <div className="subcategory-page">
       <Head>
@@ -384,6 +416,21 @@ export default function SubcategoryPage({
           {subcategoryLabel}
         </h1>
       </div>
+
+      {/* 🆕 Subcategory navigation row (sibling list) */}
+      {subcategories.length > 0 && (
+        <div className="mt-4 px-4 sm:px-6">
+          <SubcategoryCards
+            category={categorySlug}
+            subcategories={subcategories.map((s) => ({
+              key: s.slug,
+              label: s.label,
+              image: subcatImage(s.slug),
+            }))}
+          />
+          <div className="h-6 sm:h-10" />
+        </div>
+      )}
 
       {/* Anchor for scroll=true */}
       <div id="subcategory-header" className="sr-only" aria-hidden="true" />
