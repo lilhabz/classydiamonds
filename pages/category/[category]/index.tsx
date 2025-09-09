@@ -14,6 +14,7 @@ import {
   CATEGORY_LABELS,
   SUBCATEGORY_MAP,
   canonicalizeCategory,
+  categoryCandidatesFor, // ⬅️ centralized candidates for DB match
 } from "@/data/taxonomy";
 
 /* ------------------------------ Types ------------------------------ */
@@ -47,24 +48,6 @@ type PageProps = {
 const titleCase = (s: string) =>
   s.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 
-const canonicalCandidates = (cat: string) => {
-  // Accept singular/plural and common variants in DB
-  const v = cat.toLowerCase();
-  const set = new Set<string>([v]);
-  if (v === "rings") set.add("ring");
-  if (v === "ring") set.add("rings");
-  if (v === "earrings") set.add("earring");
-  if (v === "earring") set.add("earrings");
-  if (v === "bracelets") set.add("bracelet");
-  if (v === "bracelet") set.add("bracelets");
-  if (v === "necklaces" || v === "necklace") set.add("necklaces-pendants");
-  if (v === "necklaces-pendants") {
-    set.add("necklaces");
-    set.add("necklace");
-  }
-  return Array.from(set);
-};
-
 const prettySub = (slug: string) =>
   slug.endsWith("-rings")
     ? titleCase(slug.replace(/-rings$/, "")) + " Rings"
@@ -74,7 +57,7 @@ const prettySub = (slug: string) =>
 export const getServerSideProps: GetServerSideProps<PageProps> = async (
   ctx
 ) => {
-  const categoryUi = String(ctx.params?.category || "").toLowerCase();
+  const categoryUi = String((ctx.params as any)?.category || "").toLowerCase();
   if (!categoryUi) return { notFound: true };
 
   // ✅ Canonical key for taxonomy lookups
@@ -117,8 +100,9 @@ export const getServerSideProps: GetServerSideProps<PageProps> = async (
   const caratMin = ctx.query.caratMin ? Number(ctx.query.caratMin) : undefined;
   const caratMax = ctx.query.caratMax ? Number(ctx.query.caratMax) : undefined;
 
-  // Query products for the WHOLE category (no sub filter here)
-  const catCandidates = canonicalCandidates(categoryUi);
+  // ✅ Query products for the WHOLE category (no sub filter here)
+  //    Use centralized tolerant candidates (plural/singular/legacy)
+  const catCandidates = categoryCandidatesFor(categoryUi);
 
   let products: Product[] = [];
   try {
@@ -152,6 +136,7 @@ export const getServerSideProps: GetServerSideProps<PageProps> = async (
         imageUrl: 1,
         category: 1,
         subcategory: 1,
+        subCategory: 1, // legacy
         metal: 1,
         stone: 1,
         shape: 1,
@@ -362,8 +347,11 @@ export default function CategoryLanding({
                 "
               >
                 {products.map((p) => {
-                  // product details route (matches your app)
-                  const href = `/product/${encodeURIComponent(p.slug)}`;
+                  // Route aligned with subcategory page style:
+                  // /category/[category]/[slug]
+                  const href = `/category/${encodeURIComponent(
+                    categoryUi
+                  )}/${encodeURIComponent(p.slug)}`;
                   return (
                     <ProductCard
                       key={p.slug}

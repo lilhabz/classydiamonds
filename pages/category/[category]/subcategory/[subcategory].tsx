@@ -14,7 +14,12 @@ import { CATEGORY_LABELS } from "@/data/taxonomy";
 
 // 🆕 Imports for subcategory nav (added)
 import SubcategoryCards from "@/components/SubcategoryCards";
-import { SUBCATEGORY_MAP, canonicalizeCategory } from "@/data/taxonomy";
+// 🆕 bring in the converters
+import {
+  SUBCATEGORY_MAP,
+  canonicalizeCategory,
+  toBaseSubcategory, // ⬅️ use this to strip "-rings" etc.
+} from "@/data/taxonomy";
 
 /* ------------------------------ Types ------------------------------ */
 type Product = {
@@ -181,8 +186,33 @@ export const getServerSideProps: GetServerSideProps<PageProps> = async (
     const client = await clientPromise;
     const db = client.db(process.env.MONGODB_DB || "classydiamonds");
 
-    // STRICT match on category + subcategory so edited/admin values show up
-    const q: any = { category: categorySlug, subcategory: subcategorySlug };
+    // 🆕 Normalize category + subcategory for DB
+    //    - canonicalizeCategory handles ring(s), necklaces→necklaces-pendants, etc.
+    //    - toBaseSubcategory converts route slugs ("mens-rings", "wedding-rings")
+    //      to DB base slugs ("mens", "wedding-bands"), using category context.
+    const catCanon = canonicalizeCategory(categorySlug) || categorySlug;
+    const subBase =
+      toBaseSubcategory?.(subcategorySlug, catCanon) || subcategorySlug;
+
+    // Candidates cover both canonical + route forms so edited/admin values still match
+    const categoryCandidates = Array.from(
+      new Set([catCanon, categorySlug])
+    ).filter(Boolean);
+
+    // Match both DB shapes: "subcategory" and legacy "subCategory"
+    const subcategoryCandidates = Array.from(
+      new Set([subBase, subcategorySlug])
+    ).filter(Boolean);
+
+    // 🆕 Query built to be strict on intent but tolerant to storage variants
+    const q: any = {
+      category: { $in: categoryCandidates },
+      $or: [
+        { subcategory: { $in: subcategoryCandidates } },
+        { subCategory: { $in: subcategoryCandidates } }, // legacy field
+      ],
+    };
+
     if (metal.length) q.metal = { $in: metal };
     if (stone.length) q.stone = { $in: stone };
     if (shape.length) q.shape = { $in: shape };
@@ -209,6 +239,7 @@ export const getServerSideProps: GetServerSideProps<PageProps> = async (
         imageUrl: 1,
         category: 1,
         subcategory: 1,
+        subCategory: 1, // legacy
         metal: 1,
         stone: 1,
         shape: 1,
