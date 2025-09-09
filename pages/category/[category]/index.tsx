@@ -3,12 +3,13 @@
 
 import Head from "next/head";
 import { GetServerSideProps } from "next";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import clientPromise from "@/lib/mongodb";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import ProductCard from "@/components/ProductCard";
 import SubcategoryCards from "@/components/SubcategoryCards";
+import FiltersSidebar from "@/components/FiltersSidebar";
 import {
   CATEGORY_LABELS,
   SUBCATEGORY_MAP,
@@ -193,6 +194,32 @@ export const getServerSideProps: GetServerSideProps<PageProps> = async (
   };
 };
 
+/* --------------------------- Icons (inline) --------------------------- */
+function IconHamburger(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" {...props}>
+      <path
+        d="M3 6h18M3 12h18M3 18h18"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+function IconClose(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" {...props}>
+      <path
+        d="M6 6l12 12M18 6L6 18"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
 /* ---------------------------------- PAGE --------------------------------- */
 export default function CategoryLanding({
   categoryUi,
@@ -201,6 +228,7 @@ export default function CategoryLanding({
   subcategories,
 }: PageProps) {
   const router = useRouter();
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
   // honor ?scroll=true like elsewhere
   useEffect(() => {
@@ -221,6 +249,17 @@ export default function CategoryLanding({
       });
     }
   }, [router]);
+
+  // Lock body scroll when drawer is open
+  useEffect(() => {
+    if (mobileFiltersOpen) {
+      const original = document.body.style.overflow;
+      document.body.style.overflow = "hidden";
+      return () => {
+        document.body.style.overflow = original;
+      };
+    }
+  }, [mobileFiltersOpen]);
 
   const subcatImage = (slug: string) => {
     if (categoryUi === "rings" || categoryUi === "ring") {
@@ -285,49 +324,120 @@ export default function CategoryLanding({
       {/* Anchor for scroll=true */}
       <div id="category-header" className="sr-only" aria-hidden="true" />
 
-      {/* Product grid */}
-      <section className="mt-6 sm:mt-10 px-4 sm:px-6 lg:px-8 pb-12">
-        <div className="mx-auto max-w-screen-2xl">
-          {products.length === 0 ? (
-            <p className="text-white/80">No products found.</p>
-          ) : (
-            <div
-              className="
-                grid gap-x-6 gap-y-10
-                grid-cols-[repeat(2,minmax(var(--card-w),1fr))]
-                md:grid-cols-[repeat(3,minmax(var(--card-w),1fr))]
-                lg:grid-cols-[repeat(4,minmax(var(--card-w),1fr))]
-              "
-            >
-              {products.map((p) => {
-                // product details route (matches your app)
-                const href = `/product/${encodeURIComponent(p.slug)}`;
-                return (
-                  <ProductCard
-                    key={p.slug}
-                    slug={p.slug}
-                    image={p.image}
-                    name={p.name}
-                    price={p.price}
-                    salePrice={p.salePrice ?? null}
-                    href={href}
-                    inStock={p.inStock}
-                    typeLabel={
-                      p.subcategory
-                        ? p.subcategory
-                            .replace(/-/g, " ")
-                            .replace(/\b\w/g, (m) => m.toUpperCase())
-                        : categoryLabel.replace(/& Pendants/i, "Necklace")
-                    }
-                    categorySlug={categoryUi}
-                    subcategorySlug={p.subcategory || null}
-                  />
-                );
-              })}
-            </div>
-          )}
+      {/* Main content: Sidebar + Grid */}
+      <section className="mt-6 px-4 sm:px-6 lg:px-8 max-w-screen-2xl mx-auto pb-12">
+        {/* Mobile: count + Filters button */}
+        <div className="flex items-center justify-between mb-4 lg:hidden">
+          <div className="text-sm text-white/80">
+            {products.length} {products.length === 1 ? "item" : "items"}
+          </div>
+          <button
+            onClick={() => setMobileFiltersOpen(true)}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-sm font-medium transition-colors"
+            aria-haspopup="dialog"
+            aria-controls="filters-drawer"
+          >
+            <IconHamburger className="w-5 h-5" />
+            Filters
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-6">
+          {/* Desktop Filters */}
+          <div className="hidden lg:block">
+            <FiltersSidebar mode="desktop" />
+          </div>
+
+          {/* Product grid */}
+          <div>
+            {products.length === 0 ? (
+              <p className="text-white/80">No products found.</p>
+            ) : (
+              <div
+                className="
+                  grid gap-x-6 gap-y-10
+                  grid-cols-[repeat(2,minmax(var(--card-w),1fr))]
+                  md:grid-cols-[repeat(3,minmax(var(--card-w),1fr))]
+                  lg:grid-cols-[repeat(4,minmax(var(--card-w),1fr))]
+                "
+              >
+                {products.map((p) => {
+                  // product details route (matches your app)
+                  const href = `/product/${encodeURIComponent(p.slug)}`;
+                  return (
+                    <ProductCard
+                      key={p.slug}
+                      slug={p.slug}
+                      image={p.image}
+                      name={p.name}
+                      price={p.price}
+                      salePrice={p.salePrice ?? null}
+                      href={href}
+                      inStock={p.inStock}
+                      typeLabel={
+                        p.subcategory
+                          ? p.subcategory
+                              .replace(/-/g, " ")
+                              .replace(/\b\w/g, (m) => m.toUpperCase())
+                          : categoryLabel.replace(/& Pendants/i, "Necklace")
+                      }
+                      categorySlug={categoryUi}
+                      subcategorySlug={p.subcategory || null}
+                    />
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </div>
       </section>
+
+      {/* 📱 Mobile Filters Drawer */}
+      {mobileFiltersOpen && (
+        <div
+          id="filters-drawer"
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-[100] lg:hidden"
+        >
+          {/* Backdrop */}
+          <button
+            className="absolute inset-0 bg-black/60"
+            onClick={() => setMobileFiltersOpen(false)}
+            aria-label="Close filters"
+          />
+          {/* Panel */}
+          <div className="absolute right-0 top-0 h-full w-80 max-w-[90vw] bg-[var(--bg-page)] shadow-xl border-l border-white/10 flex flex-col">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
+              <h3 className="text-base font-semibold">Filters</h3>
+              <button
+                onClick={() => setMobileFiltersOpen(false)}
+                className="p-2 rounded-md hover:bg-white/10"
+                aria-label="Close"
+              >
+                <IconClose className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto px-4 pt-3 pb-24">
+              <FiltersSidebar
+                mode="drawer"
+                open={mobileFiltersOpen}
+                onClose={() => setMobileFiltersOpen(false)}
+              />
+            </div>
+
+            <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-white/10 bg-[var(--bg-page)]">
+              <button
+                onClick={() => setMobileFiltersOpen(false)}
+                className="w-full px-4 py-3 rounded-lg bg-[var(--foreground)] text-[var(--bg-nav)] font-medium"
+              >
+                Apply Filters
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
