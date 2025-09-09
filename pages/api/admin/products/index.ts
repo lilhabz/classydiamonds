@@ -717,14 +717,17 @@ export default async function handler(
         // 🆕 persist featured
         featured,
         skuNumber, // 👈 store the sequence
-        createdAt: now,
+        // ❌ createdAt intentionally omitted from $set to avoid path conflict
         updatedAt: now,
       };
 
       // Upsert by slug (so repeat migrations don’t duplicate)
       const { value } = await products.findOneAndUpdate(
         { slug },
-        { $set: doc, $setOnInsert: { createdAt: now } },
+        {
+          $set: doc, // includes updatedAt only
+          $setOnInsert: { createdAt: now }, // createdAt set once on insert
+        },
         { upsert: true, returnDocument: "after" }
       );
 
