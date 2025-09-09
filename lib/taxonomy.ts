@@ -31,8 +31,16 @@ export const SUBCATEGORIES: Record<string, string[]> = {
   "jewelry:earring": ["studs", "hoops", "drops", "huggies", "climbers"],
   // BRACELETS
   "jewelry:bracelet": ["tennis", "bangle", "chain", "cuff"],
-  // NECKLACES & PENDANTS — no subs yet
-  "jewelry:necklace-pendant": [],
+
+  // ✅ NECKLACES & PENDANTS — now populated (matches storefront)
+  //    Route-style on storefront uses these same slugs.
+  "jewelry:necklace-pendant": [
+    "pendants",
+    "chains",
+    "solitaire",
+    "nameplate",
+    "lockets",
+  ],
 
   // Watches (placeholders)
   "watch:watch": [],
@@ -53,9 +61,26 @@ type SpecField =
   | { type: "boolean"; label?: string };
 
 /** IMPORTANT: Keep these slugs in sync with FiltersSidebar */
-const METAL_OPTIONS = ["yellow-gold", "white-gold", "rose-gold", "platinum"] as const;
-const STONE_OPTIONS = ["diamond", "lab-grown", "moissanite", "gemstone"] as const;
-const SHAPE_OPTIONS = ["round", "oval", "princess", "emerald", "cushion", "pear"] as const;
+const METAL_OPTIONS = [
+  "yellow-gold",
+  "white-gold",
+  "rose-gold",
+  "platinum",
+] as const;
+const STONE_OPTIONS = [
+  "diamond",
+  "lab-grown",
+  "moissanite",
+  "gemstone",
+] as const;
+const SHAPE_OPTIONS = [
+  "round",
+  "oval",
+  "princess",
+  "emerald",
+  "cushion",
+  "pear",
+] as const;
 
 export const BASE_SPECS: Record<string, SpecField> = {
   // Match FiltersSidebar facets exactly:
@@ -65,7 +90,12 @@ export const BASE_SPECS: Record<string, SpecField> = {
 
   // Additional detail (optional)
   karat: { type: "select", options: ["10k", "14k", "18k", "22k", "24k"] },
-  carat: { type: "number", unit: "ct", step: 0.01, label: "Carat (total/primary)" },
+  carat: {
+    type: "number",
+    unit: "ct",
+    step: 0.01,
+    label: "Carat (total/primary)",
+  },
   size: { type: "text", label: "Size (ring) / Length label" },
   length: { type: "number", unit: "in", step: 0.5, label: "Length" },
   width: { type: "number", unit: "mm", step: 0.1, label: "Width" },
@@ -74,7 +104,19 @@ export const BASE_SPECS: Record<string, SpecField> = {
   color: { type: "text", label: "Color" },
   clarity: {
     type: "select",
-    options: ["fl", "if", "vvs1", "vvs2", "vs1", "vs2", "si1", "si2", "i1", "i2", "i3"],
+    options: [
+      "fl",
+      "if",
+      "vvs1",
+      "vvs2",
+      "vs1",
+      "vs2",
+      "si1",
+      "si2",
+      "i1",
+      "i2",
+      "i3",
+    ],
   },
 
   custom: { type: "boolean", label: "Custom work" },
@@ -83,10 +125,34 @@ export const BASE_SPECS: Record<string, SpecField> = {
 /** Which spec fields to show by (dept:category[:sub]?) */
 export const SPEC_CONFIG: Record<string, (keyof typeof BASE_SPECS)[]> = {
   // Jewelry
-  "jewelry:ring": ["metal", "karat", "stone", "carat", "clarity", "shape", "size", "custom"],
+  "jewelry:ring": [
+    "metal",
+    "karat",
+    "stone",
+    "carat",
+    "clarity",
+    "shape",
+    "size",
+    "custom",
+  ],
   "jewelry:earring": ["metal", "karat", "stone", "carat", "shape", "custom"],
-  "jewelry:bracelet": ["metal", "karat", "stone", "carat", "length", "width", "custom"],
-  "jewelry:necklace-pendant": ["metal", "karat", "stone", "carat", "length", "custom"],
+  "jewelry:bracelet": [
+    "metal",
+    "karat",
+    "stone",
+    "carat",
+    "length",
+    "width",
+    "custom",
+  ],
+  "jewelry:necklace-pendant": [
+    "metal",
+    "karat",
+    "stone",
+    "carat",
+    "length",
+    "custom",
+  ],
 
   // Watch (basic placeholders)
   "watch:watch": ["metal", "color", "custom"],
@@ -143,8 +209,8 @@ const JEWELRY_SUB_TO_PARENT: Record<
 
   // rings
   add("wedding-bands", "ring", ["wedding"]); // ✅ canonical + legacy alias
-  ["engagement", "promise", "eternity", "birthstone", "signet", "mens"].forEach((s) =>
-    add(s, "ring")
+  ["engagement", "promise", "eternity", "birthstone", "signet", "mens"].forEach(
+    (s) => add(s, "ring")
   );
 
   // earrings (singular/plural)
@@ -157,11 +223,20 @@ const JEWELRY_SUB_TO_PARENT: Record<
   // bracelets
   ["tennis", "bangle", "chain", "cuff"].forEach((s) => add(s, "bracelet"));
 
-  // (no subs yet for necklace-pendant)
-  return map as Record<string, "ring" | "earring" | "bracelet" | "necklace-pendant">;
+  // ✅ necklaces & pendants (support both plural + singular variants)
+  add("pendants", "necklace-pendant", ["pendant"]);
+  add("chains", "necklace-pendant", ["chain"]);
+  add("lockets", "necklace-pendant", ["locket"]);
+  add("nameplate", "necklace-pendant"); // same singular form
+  add("solitaire", "necklace-pendant"); // same singular form
+
+  return map as Record<
+    string,
+    "ring" | "earring" | "bracelet" | "necklace-pendant"
+  >;
 })();
 
-/** ---------- Storefront route vs admin base helpers for ring subs ---------- */
+/** ---------- Storefront route vs admin base helpers ---------- */
 // Subcats that get a "-rings" route on the storefront
 export const RING_SUFFIXABLE_SUBS = new Set([
   "engagement",
@@ -173,27 +248,46 @@ export const RING_SUFFIXABLE_SUBS = new Set([
   "solitaire",
   "three-stone",
   "bridal-set",
-  "signet"
+  "signet",
 ]);
 
 /** Convert an admin base sub to the storefront route sub (e.g., "engagement" → "engagement-rings"). */
-export function toRouteSubcategory(category?: string, sub?: string | null): string | null {
+export function toRouteSubcategory(
+  category?: string,
+  sub?: string | null
+): string | null {
   const c = (category || "").toLowerCase().trim();
   let s = (sub || "").toLowerCase().trim();
   if (!s) return s || null;
 
   if (c === "ring" || c === "rings") {
     if (s === "wedding") s = "wedding-bands";
-    if (s === "wedding-bands") return "wedding-rings"; // ⬅️ CHANGED: storefront slug
-    if (s === "mens") return s;                        // keep as-is (no -rings)
+    if (s === "wedding-bands") return "wedding-rings"; // storefront slug
+    if (s === "mens") return s; // keep as-is (no -rings)
     return RING_SUFFIXABLE_SUBS.has(s) ? `${s}-rings` : s;
   }
+
+  // ✅ Normalize necklace/pendant base → storefront route slugs (plural where applicable)
+  if (
+    c === "necklace-pendant" ||
+    c === "necklaces" ||
+    c === "necklaces-pendants"
+  ) {
+    if (s === "pendant") return "pendants";
+    if (s === "chain") return "chains";
+    if (s === "locket") return "lockets";
+    // nameplate / solitaire already match route slugs
+    return s;
+  }
+
   return s;
 }
 
-
 /** Convert a storefront route sub back to the admin base sub (e.g., "engagement-rings" → "engagement"). */
-export function toBaseSubcategory(category?: string, sub?: string | null): string | null {
+export function toBaseSubcategory(
+  category?: string,
+  sub?: string | null
+): string | null {
   const c = (category || "").toLowerCase().trim();
   let s = (sub || "").toLowerCase().trim();
   if (!s) return s || null;
@@ -203,6 +297,20 @@ export function toBaseSubcategory(category?: string, sub?: string | null): strin
     if (s === "wedding") s = "wedding-bands";
     return s;
   }
+
+  // ✅ Make necklace/pendant inputs consistent with our admin base list (pluralized where needed)
+  if (
+    c === "necklace-pendant" ||
+    c === "necklaces" ||
+    c === "necklaces-pendants"
+  ) {
+    if (s === "pendant") return "pendants";
+    if (s === "chain") return "chains";
+    if (s === "locket") return "lockets";
+    // nameplate / solitaire already canonical
+    return s;
+  }
+
   return s;
 }
 
@@ -212,6 +320,15 @@ export function normalizeJewelryCategoryPair(
 ): { category?: string; subCategory?: string } {
   let cat = (category || "").toLowerCase().trim();
   let sub = (subCategory || "").toLowerCase().trim();
+
+  // 🔧 Accept common variants/legacy for necklaces to our admin canonical
+  if (
+    cat === "necklaces" ||
+    cat === "necklaces-pendants" ||
+    cat === "necklace"
+  ) {
+    cat = "necklace-pendant";
+  }
 
   // Accept route-style ring subs (e.g., "engagement-rings") and normalize to base.
   if (cat === "ring" || cat === "rings") {
@@ -226,6 +343,11 @@ export function normalizeJewelryCategoryPair(
       cat = "ring";
       sub = base;
     }
+  }
+
+  // Also normalize necklaces route-style/singular inputs
+  if (cat === "necklace-pendant") {
+    sub = toBaseSubcategory(cat, sub) || sub;
   }
 
   const isValidCategory = CATEGORIES.jewelry.includes(cat as any);
@@ -249,11 +371,14 @@ export function normalizeJewelryCategoryPair(
 
   // subCategory is valid under some jewelry parent → infer parent
   if (sub) {
-    // also tolerate route-style input here
-    const baseSub = toBaseSubcategory("ring", sub) || sub;
-    if (JEWELRY_SUB_TO_PARENT[baseSub]) {
-      const parent = JEWELRY_SUB_TO_PARENT[baseSub];
-      return { category: parent, subCategory: baseSub };
+    // tolerate route-style input for rings and singular necklace inputs
+    const ringBase = toBaseSubcategory("ring", sub) || sub;
+    const neckBase = toBaseSubcategory("necklace-pendant", sub) || sub;
+    const candidate = JEWELRY_SUB_TO_PARENT[ringBase] ? ringBase : neckBase;
+
+    if (JEWELRY_SUB_TO_PARENT[candidate]) {
+      const parent = JEWELRY_SUB_TO_PARENT[candidate];
+      return { category: parent, subCategory: candidate };
     }
   }
 

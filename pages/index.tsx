@@ -205,7 +205,7 @@ export default function Home({ products }: HomeProps) {
           title="Shop by Category"
           fullBleedDesktop
           className="mt-12 md:mt-16"
-          routeTo="/jewelry" // ✅ added: keeps navigation on jewelry.tsx (e.g., /jewelry?category=rings)
+          routeTo="/category"
         />
 
         {/* 💎 Featured – Mobile (uses same grid recipe as Jewelry) */}
