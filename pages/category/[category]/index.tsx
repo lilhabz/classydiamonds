@@ -27,12 +27,15 @@ type Product = {
   image: string;
   category: string;
   subcategory?: string;
+  subCategory?: string; // legacy
   metal?: string;
   stone?: string;
   shape?: string;
   carat?: number;
   slug: string;
   inStock?: boolean;
+  stock?: boolean;
+  quantity?: number;
 };
 
 type SubItem = { label: string; slug: string };
@@ -76,7 +79,7 @@ export const getServerSideProps: GetServerSideProps<PageProps> = async (
     label: prettySub(slug),
   }));
 
-  // Optional filters via querystring (same keys as on [sub].tsx)
+  // Optional filters via querystring
   const metal = ctx.query.metal
     ? (Array.isArray(ctx.query.metal)
         ? ctx.query.metal
@@ -101,7 +104,7 @@ export const getServerSideProps: GetServerSideProps<PageProps> = async (
   const caratMax = ctx.query.caratMax ? Number(ctx.query.caratMax) : undefined;
 
   // ✅ Query products for the WHOLE category (no sub filter here)
-  //    Use centralized tolerant candidates (plural/singular/legacy)
+  //    Use tolerant candidates (plural/singular/legacy/admin)
   const catCandidates = categoryCandidatesFor(categoryUi);
 
   let products: Product[] = [];
@@ -109,7 +112,15 @@ export const getServerSideProps: GetServerSideProps<PageProps> = async (
     const client = await clientPromise;
     const db = client.db(process.env.MONGODB_DB || "classydiamonds");
 
-    const q: any = { category: { $in: catCandidates } };
+    // Also include legacy rows where category field actually holds a sub under this category
+    const allowedSubs = subSlugs || [];
+    const legacySubAsCategory =
+      allowedSubs.length > 0 ? [{ category: { $in: allowedSubs } }] : [];
+
+    const q: any = {
+      $or: [{ category: { $in: catCandidates } }, ...legacySubAsCategory],
+    };
+
     if (metal.length) q.metal = { $in: metal };
     if (stone.length) q.stone = { $in: stone };
     if (shape.length) q.shape = { $in: shape };
@@ -136,7 +147,7 @@ export const getServerSideProps: GetServerSideProps<PageProps> = async (
         imageUrl: 1,
         category: 1,
         subcategory: 1,
-        subCategory: 1, // legacy
+        subCategory: 1,
         metal: 1,
         stone: 1,
         shape: 1,
@@ -347,8 +358,6 @@ export default function CategoryLanding({
                 "
               >
                 {products.map((p) => {
-                  // Route aligned with subcategory page style:
-                  // /category/[category]/[slug]
                   const href = `/category/${encodeURIComponent(
                     categoryUi
                   )}/${encodeURIComponent(p.slug)}`;
@@ -361,16 +370,26 @@ export default function CategoryLanding({
                       price={p.price}
                       salePrice={p.salePrice ?? null}
                       href={href}
-                      inStock={p.inStock}
+                      inStock={
+                        typeof p.inStock === "boolean"
+                          ? p.inStock
+                          : typeof p.stock === "boolean"
+                          ? p.stock
+                          : typeof p.quantity === "number"
+                          ? p.quantity > 0
+                          : true
+                      }
                       typeLabel={
-                        p.subcategory
-                          ? p.subcategory
+                        p.subcategory || p.subCategory
+                          ? (p.subcategory || p.subCategory)!
                               .replace(/-/g, " ")
                               .replace(/\b\w/g, (m) => m.toUpperCase())
                           : categoryLabel.replace(/& Pendants/i, "Necklace")
                       }
                       categorySlug={categoryUi}
-                      subcategorySlug={p.subcategory || null}
+                      subcategorySlug={
+                        (p.subcategory || p.subCategory || null) as any
+                      }
                     />
                   );
                 })}

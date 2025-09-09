@@ -10,15 +10,14 @@ import FiltersSidebar from "@/components/FiltersSidebar";
 import HeroBanner from "@/components/HeroBanner";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import ProductCard from "@/components/ProductCard";
-import { CATEGORY_LABELS } from "@/data/taxonomy";
-
-// 🆕 Imports for subcategory nav (added)
 import SubcategoryCards from "@/components/SubcategoryCards";
-// 🆕 bring in the converters
+
 import {
+  CATEGORY_LABELS,
   SUBCATEGORY_MAP,
   canonicalizeCategory,
-  toBaseSubcategory, // ⬅️ use this to strip "-rings" etc.
+  categoryCandidatesFor, // ⬅️ use tolerant category candidates
+  toBaseSubcategory, // ⬅️ normalize route sub ("pendants"→"pendant")
 } from "@/data/taxonomy";
 
 /* ------------------------------ Types ------------------------------ */
@@ -31,12 +30,15 @@ type Product = {
   image: string;
   category: string;
   subcategory?: string;
+  subCategory?: string; // legacy
   metal?: string;
   stone?: string;
   shape?: string;
   carat?: number;
   slug: string;
   inStock?: boolean; // ✅ real stock flag
+  stock?: boolean;
+  quantity?: number;
 };
 
 type PageProps = {
@@ -47,7 +49,6 @@ type PageProps = {
   heroImage: string;
   heroSubtitle?: string;
   products: Product[];
-  // 🆕 Sibling subcategories for the nav row
   subcategories: { slug: string; label: string }[];
 };
 
@@ -65,73 +66,31 @@ const HERO_BY_CATEGORY: Record<string, { image: string }> = {
   earrings: { image: "/category-hero/earring-hero.jpg" },
 };
 
-/** Professional subheaders by category + common subcategories */
 const SUBHEADERS: Record<
   string,
   { default: string; subs?: Record<string, string> }
 > = {
-  engagement: {
-    default: "Expertly crafted settings to showcase your center stone.",
-    subs: {
-      solitaire: "Minimalist elegance for maximum brilliance.",
-      halo: "A ring of light to amplify sparkle and presence.",
-      "three-stone": "Past, present, future—perfectly balanced.",
-      eternity: "Unbroken sparkle, timeless devotion.",
-    },
-  },
-  "wedding-bands": {
-    default: "Classic profiles, comfort-fit designs, precision detailing.",
-    subs: {
-      mens: "Refined profiles built for everyday wear.",
-      eternity: "Full-circle diamonds for uninterrupted fire.",
-      pave: "Fine pavé for delicate, continuous shimmer.",
-    },
-  },
-  rings: {
-    default: "Signature silhouettes designed for daily sophistication.",
-    subs: {
-      solitaire: "Clean lines, iconic shape, enduring style.",
-      halo: "A luminous frame that intensifies your center stone.",
-      "three-stone": "A trio of facets—symbolic and striking.",
-      eternity: "Infinite brilliance in a continuous circle.",
-      mens: "Understated strength with elevated finish.",
-    },
-  },
-  bracelets: {
-    default: "Impeccable craftsmanship—made to move with you.",
-    subs: {
-      tennis: "Hand-set diamonds in a fluid, flexible line.",
-      bangles: "Sculptural forms with a polished finish.",
-      cuffs: "Bold contours, effortless statement.",
-      chains: "Substantial links with smooth articulation.",
-    },
-  },
   "necklaces-pendants": {
     default: "Elevate every neckline with fine balance and proportion.",
     subs: {
       pendants: "Perfectly scaled focal points—delicate to dramatic.",
       solitaire: "A singular diamond, precisely suspended.",
-      station: "Evenly spaced brilliance for modern symmetry.",
-      nameplates: "Personalized lettering, crisp and refined.",
-      pearl: "Lustrous gems with timeless grace.",
+      chains: "Substantial links with smooth articulation.",
+      nameplate: "Personalized lettering, crisp and refined.",
+      lockets: "A keepsake close to the heart.",
     },
   },
-  earrings: {
-    default: "Balanced pairs with impeccable set and finish.",
-    subs: {
-      studs: "Everyday brilliance—secure, bright, essential.",
-      hoops: "Sleek curvature with a flawless mirror polish.",
-      drops: "Elongated lines for graceful movement.",
-      huggies: "Close-fitting sparkle with easy wear.",
-    },
+  rings: {
+    default: "Signature silhouettes designed for daily sophistication.",
   },
+  bracelets: { default: "Impeccable craftsmanship—made to move with you." },
+  earrings: { default: "Balanced pairs with impeccable set and finish." },
 };
 
 const resolveSubheader = (category: string, sub: string): string => {
   const cat = SUBHEADERS[category];
   if (!cat) return "Thoughtfully designed and beautifully finished.";
-  const key = (sub || "").toLowerCase().trim().replace(/\s+/g, "-");
-  const specific = cat.subs?.[key];
+  const specific = cat.subs?.[sub.toLowerCase()];
   return specific || cat.default;
 };
 
@@ -143,15 +102,15 @@ export const getServerSideProps: GetServerSideProps<PageProps> = async (
   const subcategorySlug = String(ctx.params?.subcategory || "").toLowerCase();
   if (!categorySlug || !subcategorySlug) return { notFound: true };
 
+  const catCanon = canonicalizeCategory(categorySlug) || categorySlug;
   const categoryLabel =
-    CATEGORY_LABELS[categorySlug as keyof typeof CATEGORY_LABELS] ??
-    titleCase(categorySlug);
+    CATEGORY_LABELS[catCanon as keyof typeof CATEGORY_LABELS] ??
+    titleCase(catCanon);
   const subcategoryLabel = titleCase(subcategorySlug);
 
-  // 🆕 Build sibling subcategory list from taxonomy (canonical key)
-  const catKey = canonicalizeCategory(categorySlug) || (categorySlug as any);
+  // Build sibling subcategory list from canonical taxonomy
   const siblingSlugs =
-    SUBCATEGORY_MAP[catKey as keyof typeof SUBCATEGORY_MAP] || [];
+    SUBCATEGORY_MAP[catCanon as keyof typeof SUBCATEGORY_MAP] || [];
   const subcategories = siblingSlugs.map((slug) => ({
     slug,
     label: titleCase(slug),
@@ -163,53 +122,54 @@ export const getServerSideProps: GetServerSideProps<PageProps> = async (
       ? ctx.query.metal.map((m) => String(m).toLowerCase())
       : [String(ctx.query.metal).toLowerCase()]
     : [];
-
   const stone = ctx.query.stone
     ? Array.isArray(ctx.query.stone)
       ? ctx.query.stone.map((s) => String(s).toLowerCase())
       : [String(ctx.query.stone).toLowerCase()]
     : [];
-
   const shape = ctx.query.shape
     ? Array.isArray(ctx.query.shape)
       ? ctx.query.shape.map((s) => String(s).toLowerCase())
       : [String(ctx.query.shape).toLowerCase()]
     : [];
-
   const priceMin = ctx.query.priceMin ? Number(ctx.query.priceMin) : undefined;
   const priceMax = ctx.query.priceMax ? Number(ctx.query.priceMax) : undefined;
   const caratMin = ctx.query.caratMin ? Number(ctx.query.caratMin) : undefined;
   const caratMax = ctx.query.caratMax ? Number(ctx.query.caratMax) : undefined;
+
+  // ✅ Normalize category & sub for DB matching
+  const catCandidates = categoryCandidatesFor(categorySlug);
+  const baseSub =
+    toBaseSubcategory(subcategorySlug, catCanon) || subcategorySlug;
+
+  // Include plural + singular variants for necklace family
+  const subCandidatesSet = new Set<string>([baseSub, subcategorySlug]);
+  if (catCanon === "necklaces-pendants") {
+    if (baseSub === "pendant") subCandidatesSet.add("pendants");
+    if (baseSub === "chain") subCandidatesSet.add("chains");
+    if (baseSub === "locket") subCandidatesSet.add("lockets");
+    if (baseSub === "nameplate") subCandidatesSet.add("nameplates"); // tolerate plural
+  }
+  const subCandidates = Array.from(subCandidatesSet);
 
   let products: Product[] = [];
   try {
     const client = await clientPromise;
     const db = client.db(process.env.MONGODB_DB || "classydiamonds");
 
-    // 🆕 Normalize category + subcategory for DB
-    //    - canonicalizeCategory handles ring(s), necklaces→necklaces-pendants, etc.
-    //    - toBaseSubcategory converts route slugs ("mens-rings", "wedding-rings")
-    //      to DB base slugs ("mens", "wedding-bands"), using category context.
-    const catCanon = canonicalizeCategory(categorySlug) || categorySlug;
-    const subBase =
-      toBaseSubcategory?.(subcategorySlug, catCanon) || subcategorySlug;
-
-    // Candidates cover both canonical + route forms so edited/admin values still match
-    const categoryCandidates = Array.from(
-      new Set([catCanon, categorySlug])
-    ).filter(Boolean);
-
-    // Match both DB shapes: "subcategory" and legacy "subCategory"
-    const subcategoryCandidates = Array.from(
-      new Set([subBase, subcategorySlug])
-    ).filter(Boolean);
-
-    // 🆕 Query built to be strict on intent but tolerant to storage variants
+    // Tolerant query:
+    // 1) category is one of the candidates AND sub matches in subcategory/subCategory
+    // 2) legacy: category itself equals the sub (e.g., "pendant"/"pendants")
     const q: any = {
-      category: { $in: categoryCandidates },
       $or: [
-        { subcategory: { $in: subcategoryCandidates } },
-        { subCategory: { $in: subcategoryCandidates } }, // legacy field
+        {
+          category: { $in: catCandidates },
+          $or: [
+            { subcategory: { $in: subCandidates } },
+            { subCategory: { $in: subCandidates } },
+          ],
+        },
+        { category: { $in: subCandidates } }, // legacy shape
       ],
     };
 
@@ -239,15 +199,15 @@ export const getServerSideProps: GetServerSideProps<PageProps> = async (
         imageUrl: 1,
         category: 1,
         subcategory: 1,
-        subCategory: 1, // legacy
+        subCategory: 1,
         metal: 1,
         stone: 1,
         shape: 1,
         carat: 1,
         slug: 1,
-        inStock: 1, // ✅ may exist
-        stock: 1, // legacy boolean?
-        quantity: 1, // legacy numeric?
+        inStock: 1,
+        stock: 1,
+        quantity: 1,
       })
       .toArray();
 
@@ -264,7 +224,6 @@ export const getServerSideProps: GetServerSideProps<PageProps> = async (
       shape: (d.shape || "").toLowerCase(),
       carat: typeof d.carat === "number" ? d.carat : undefined,
       slug: d.slug,
-      // ✅ derive real stock robustly
       inStock:
         typeof d.inStock === "boolean"
           ? d.inStock
@@ -278,20 +237,18 @@ export const getServerSideProps: GetServerSideProps<PageProps> = async (
     products = [];
   }
 
-  const heroImage =
-    HERO_BY_CATEGORY[categorySlug]?.image ?? "/hero-jewelry.jpg";
-  const heroSubtitle = resolveSubheader(categorySlug, subcategorySlug);
+  const heroImage = HERO_BY_CATEGORY[catCanon]?.image ?? "/hero-jewelry.jpg";
+  const heroSubtitle = resolveSubheader(catCanon, subcategorySlug);
 
   return {
     props: {
-      categorySlug,
+      categorySlug: catCanon,
       categoryLabel,
       subcategorySlug,
       subcategoryLabel,
       heroImage,
       heroSubtitle,
       products,
-      // 🆕 pass sibling subcategories to the page
       subcategories,
     },
   };
@@ -327,18 +284,18 @@ function IconClose(props: React.SVGProps<SVGSVGElement>) {
 export default function SubcategoryPage({
   categorySlug,
   categoryLabel,
-  subcategorySlug, // ✅ include this from SSR
+  subcategorySlug,
   subcategoryLabel,
   heroImage,
   heroSubtitle,
   products,
-  subcategories, // ✅ siblings for nav row
+  subcategories,
 }: PageProps) {
   const router = useRouter();
   const [visibleCount, setVisibleCount] = useState(8);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
-  /* 🔝 Force open-from-top (unless ?scroll=true is set intentionally) */
+  // Force open-from-top (unless ?scroll=true is set intentionally)
   useEffect(() => {
     if (typeof window === "undefined") return;
     const { scroll } = router.query as { scroll?: string };
@@ -377,7 +334,7 @@ export default function SubcategoryPage({
     }
   }, [router]);
 
-  // reset visible when route changes (matches jewelry behavior)
+  // reset visible when route changes
   useEffect(() => setVisibleCount(8), [categorySlug, subcategoryLabel]);
 
   // Lock body scroll when drawer is open
@@ -391,14 +348,12 @@ export default function SubcategoryPage({
     }
   }, [mobileFiltersOpen]);
 
-  // Derive type label: prefer product subcategory; else use the page's category label
   const typeLabelFrom = (p: Product) =>
     (p.subcategory && p.subcategory !== "all"
       ? titleCase(p.subcategory)
       : categoryLabel.replace(/& Pendants/i, "Necklace")
     ).trim();
 
-  // 🆕 Local helper for subcategory thumbnail selection (mirrors category landing)
   const subcatImage = (slug: string) => {
     if (categorySlug === "rings") {
       if (slug === "engagement-rings") return "/category/engagement-cat.jpg";
@@ -436,19 +391,19 @@ export default function SubcategoryPage({
         overlay="solid"
       />
 
-      {/* Breadcrumbs — same left-edge wrapper as Jewelry */}
+      {/* Breadcrumbs */}
       <div className="pl-4 pr-4 sm:pl-8 sm:pr-8 mt-8 mb-6">
         <Breadcrumbs />
       </div>
 
-      {/* Centered title matching other pages */}
+      {/* Centered title */}
       <div className="text-center mt-2 px-4 sm:px-6">
         <h1 className="text-2xl sm:text-3xl font-serif font-semibold tracking-wider leading-snug">
           {subcategoryLabel}
         </h1>
       </div>
 
-      {/* 🆕 Subcategory navigation row (sibling list) */}
+      {/* Subcategory navigation row (siblings) */}
       {subcategories.length > 0 && (
         <div className="mt-4 px-4 sm:px-6">
           <SubcategoryCards
@@ -490,7 +445,7 @@ export default function SubcategoryPage({
             <FiltersSidebar mode="desktop" />
           </div>
 
-          {/* Product grid — explicit 2/3/4 columns; no `.product-grid` class */}
+          {/* Product grid */}
           <div>
             {products.length === 0 ? (
               <p className="text-white/80">No products found.</p>
@@ -509,11 +464,22 @@ export default function SubcategoryPage({
                       price={p.price}
                       salePrice={p.salePrice ?? null}
                       href={href}
-                      inStock={p.inStock} // ✅ real stock to card
+                      inStock={
+                        typeof p.inStock === "boolean"
+                          ? p.inStock
+                          : typeof p.stock === "boolean"
+                          ? p.stock
+                          : typeof p.quantity === "number"
+                          ? p.quantity > 0
+                          : true
+                      }
                       typeLabel={typeLabelFrom(p)}
-                      /* 🆕 provide context so the card can render a color swatch if no image */
                       categorySlug={categorySlug}
-                      subcategorySlug={p.subcategory || subcategorySlug}
+                      subcategorySlug={
+                        (p.subcategory ||
+                          p.subCategory ||
+                          subcategorySlug) as any
+                      }
                     />
                   );
                 })}
