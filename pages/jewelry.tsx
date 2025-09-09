@@ -584,7 +584,7 @@ export default function JewelryPage({
           title="Shop by Category"
           fullBleedDesktop
           desktopCols={4}
-          routeTo="/jewelry" // ✅ keeps navigation on jewelry.tsx
+          routeTo="/category" // ✅ open dedicated /category/<slug> pages (bac9e6d behavior)
           // When you're ready, we can pass activeSlug/onSelect once CategoryGrid accepts them.
         />
       </section>
