@@ -116,51 +116,86 @@ export function categoryCandidatesFor(raw: string): string[] {
 /**
  * 🔧 toBaseSubcategory
  * Converts route-style subcategory slugs into DB "base" slugs.
+ * Handles common typos/variants, plural→singular, and category-specific suffixes.
+ *
  * Examples:
  * - rings:
  *    mens-rings         → mens
  *    wedding-rings      → wedding-bands
+ *    weddings-rings     → wedding-bands (typo)
  *    engagement-rings   → engagement
  *    eternity-rings     → eternity
+ *    eterity-rings      → eternity (typo)
  *    promise-rings      → promise
+ *    birthstone-rings   → birthstone
+ *    signet-rings       → signet
+ *    signant-rings      → signet (typo)
  * - bracelets:
  *    tennis-bracelets   → tennis
  *    chain-bracelets    → chains
  *    bangle             → bangle  (pass-through)
  *    cuff               → cuff    (pass-through)
- * Other categories usually pass through unchanged.
+ * - necklaces & pendants:
+ *    pendants           → pendant
+ *    chains             → chain
+ *    nameplates         → nameplate
+ *    lockets            → locket
  */
 export function toBaseSubcategory(subSlug: string, category: string): string {
-  const s0 = String(subSlug || "")
+  let s = String(subSlug || "")
     .toLowerCase()
     .trim();
   const catCanon =
     canonicalizeCategory(String(category || "").toLowerCase()) ??
     String(category || "").toLowerCase();
 
-  // Fast path for known special cases
-  const specials: Record<string, string> = {
+  // ✅ Hard corrections for known typos & variants you mentioned
+  const corrections: Record<string, string> = {
+    // rings
+    "weddings-rings": "wedding-bands", // typo plural
     "wedding-rings": "wedding-bands",
     "engagement-rings": "engagement",
+    "eterity-rings": "eternity", // typo
+    "eternity-rings": "eternity",
+    "signant-rings": "signet", // typo
+    "signet-rings": "signet",
+    "promise-rings": "promise",
+    "birthstone-rings": "birthstone",
+    "mens-rings": "mens",
+
+    // bracelets
     "tennis-bracelets": "tennis",
     "chain-bracelets": "chains",
+    bangle: "bangle",
+    cuff: "cuff",
+
+    // necklaces & pendants (normalize to singular bases)
+    pendants: "pendant",
+    chains: "chain",
+    solitaire: "solitaire",
+    nameplate: "nameplate",
+    nameplates: "nameplate",
+    lockets: "locket",
+    locket: "locket",
   };
-  if (specials[s0]) return specials[s0];
+  if (corrections[s]) return corrections[s];
 
-  // Generic suffix trimming by category family
-  let s = s0;
-
+  // ✅ Generic suffix trimming by family
   if (catCanon === "rings") {
-    if (s.endsWith("-rings")) s = s.slice(0, -6); // "-rings"
-    if (s.endsWith("-ring")) s = s.slice(0, -5); // "-ring"
+    if (s.endsWith("-rings")) s = s.slice(0, -6); // remove "-rings"
+    if (s.endsWith("-ring")) s = s.slice(0, -5); // remove "-ring"
     if (s === "wedding") s = "wedding-bands";
   }
 
   if (catCanon === "bracelets") {
-    if (s.endsWith("-bracelets")) s = s.slice(0, -11); // "-bracelets"
-    if (s.endsWith("-bracelet")) s = s.slice(0, -10); // "-bracelet"
+    if (s.endsWith("-bracelets")) s = s.slice(0, -11);
+    if (s.endsWith("-bracelet")) s = s.slice(0, -10);
   }
 
-  // Other categories typically store base = route (studs, hoops, pendants, etc.)
+  if (catCanon === "necklaces-pendants") {
+    // normalize plurals → singular bases
+    if (s.endsWith("s")) s = s.slice(0, -1); // pendants→pendant, chains→chain, lockets→locket, nameplates→nameplate
+  }
+
   return s;
 }
