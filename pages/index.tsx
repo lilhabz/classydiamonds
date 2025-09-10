@@ -209,7 +209,8 @@ export default function Home({ products }: HomeProps) {
 
         {/* 💎 Featured – Mobile (uses same grid recipe as Jewelry) */}
         <section className="sm:hidden py-16 sm:py-20 px-4 sm:px-10 w-full">
-          <h2 className="w-full text-center text-2xl font-serif font-semibold tracking-wide mb-4">
+          {/* ⬇️ spacing-only change: mb-4 → mb-12 sm:mb-16 */}
+          <h2 className="w-full text-center text-2xl font-serif font-semibold tracking-wide mb-12 sm:mb-16">
             Featured Pieces
           </h2>
           <FeaturedGrid items={featured} />
@@ -217,7 +218,8 @@ export default function Home({ products }: HomeProps) {
 
         {/* 💎 Featured – Desktop (same grid recipe, 4-up at lg) */}
         <section className="hidden sm:block py-16 sm:py-20 px-4 sm:px-10 max-w-7xl mx-auto w-full">
-          <h2 className="w-full text-center text-2xl font-serif font-semibold tracking-wide mb-4">
+          {/* ⬇️ spacing-only change: mb-4 → mb-12 sm:mb-16 */}
+          <h2 className="w-full text-center text-2xl font-serif font-semibold tracking-wide mb-12 sm:mb-16">
             Featured Pieces
           </h2>
           <FeaturedGrid items={featured} />
