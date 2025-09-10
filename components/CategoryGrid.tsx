@@ -98,16 +98,19 @@ export default function CategoryGrid({
   };
 
   return (
-    <section className={clsx("pt-6 pb-6", className)}>
+    // ⬇️ Match Gifts section spacing: py-16 sm:py-20 px-4 sm:px-10 w-full
+    <section className={clsx("py-16 sm:py-20 px-4 sm:px-10 w-full", className)}>
       {/* Title */}
-      <div className="text-center mb-4 px-4 sm:px-6">
+      {/* ⬇️ Give the title the same breathing room as Gifts: mb-12 sm:mb-16 */}
+      <div className="text-center mb-12 sm:mb-16">
         <h2 className="text-2xl sm:text-3xl font-serif font-semibold tracking-wider leading-snug">
           {title}
         </h2>
       </div>
 
       {/* Mobile */}
-      <div className="sm:hidden px-0 mt-2">
+      {/* ⬇️ Remove tight top margin; keep content aligned */}
+      <div className="sm:hidden px-0">
         <div
           className="overflow-x-auto show-scrollbar"
           style={{ WebkitOverflowScrolling: "touch", scrollbarWidth: "thin" }}
