@@ -1,4 +1,6 @@
-// 📄 pages/account.tsx – Account Page 💎 + Full Profile Display + Collapsible Orders/Messages + Mobile/Desktop Safe
+// 📄 pages/account.tsx – Account Page 💎
+// Dashboard with unified "Recent Orders" cards matching /account/orders styling
+// (omits full shipping address intentionally), mobile/desktop safe.
 
 import { useSession, signOut } from "next-auth/react";
 import { GetServerSideProps } from "next";
@@ -10,6 +12,38 @@ import { useRouter } from "next/router";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import Image from "next/image";
 
+/* ------------------------ Helpers (match orders.tsx) ------------------------ */
+const PLACEHOLDER = "/gray-placeholder.jpg"; // ensure this exists in /public
+
+const toNum = (v: any): number => {
+  if (typeof v === "number" && !Number.isNaN(v)) return v;
+  if (typeof v === "string") {
+    const n = parseFloat(v.replace(/[^\d.-]/g, ""));
+    return Number.isNaN(n) ? 0 : n;
+  }
+  return 0;
+};
+
+const fmt = (n: number, currency?: string) =>
+  new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: (currency || "USD").toUpperCase(),
+    maximumFractionDigits: 2,
+    minimumFractionDigits: 2,
+  }).format(toNum(n));
+
+const fmtDate = (d: any) => {
+  const t = d ? new Date(d) : null;
+  return t && !isNaN(t.valueOf())
+    ? t.toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      })
+    : "—";
+};
+
+/* -------------------------- Server-side data fetch -------------------------- */
 export const getServerSideProps: GetServerSideProps = async (context) => {
   const session = await getSession(context);
   if (!session) {
@@ -44,7 +78,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
   const orders = await db
     .collection("orders")
     .find({ customerEmail: session.user?.email })
-    .sort({ createdAt: -1 })
+    .sort({ createdAt: -1, _id: -1 })
     .toArray();
 
   return {
@@ -55,6 +89,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
   };
 };
 
+/* --------------------------------- Component -------------------------------- */
 export default function AccountPage({ user, orders }: any) {
   const { data: session } = useSession();
   const router = useRouter();
@@ -85,6 +120,7 @@ export default function AccountPage({ user, orders }: any) {
       <div className="pl-4 pr-4 sm:pl-8 sm:pr-8 mb-6 -mt-2">
         <Breadcrumbs />
       </div>
+
       <div className="max-w-5xl mx-auto space-y-10">
         {/* 👤 Profile Info */}
         <div className="bg-white/10 backdrop-blur p-6 rounded-2xl shadow-lg">
@@ -143,7 +179,7 @@ export default function AccountPage({ user, orders }: any) {
               🔑 Change Password
             </button>
 
-            {/* 🆕 Favorites entry (spans full width on small; fits grid cleanly) */}
+            {/* 🆕 Favorites entry */}
             <Link
               href="/account/favorites"
               className="sm:col-span-2 w-full bg-[#2a374f] hover:bg-[#364763] rounded-lg px-4 py-3 text-left"
@@ -168,7 +204,7 @@ export default function AccountPage({ user, orders }: any) {
           </div>
         </div>
 
-        {/* 📦 Recent Orders (Collapsible) */}
+        {/* 📦 Recent Orders (Collapsible) — unified with /account/orders */}
         <div className="bg-white/10 backdrop-blur p-6 rounded-2xl shadow-lg">
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-xl font-bold">Recent Orders 📦</h3>
@@ -179,6 +215,7 @@ export default function AccountPage({ user, orders }: any) {
               {showOrders ? "Hide" : "Show"} Orders
             </button>
           </div>
+
           {showOrders && (
             <>
               {orders.length === 0 ? (
@@ -187,83 +224,155 @@ export default function AccountPage({ user, orders }: any) {
                 </p>
               ) : (
                 <div className="space-y-6">
-                  {orders.slice(0, 3).map((order: any) => (
-                    <div
-                      key={order._id}
-                      className="border border-gray-600 rounded-lg p-4 bg-[#2a374f]"
-                    >
-                      <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-2">
-                        <div>
-                          <p className="text-sm text-gray-400">Order #:</p>
-                          <p className="text-sm font-semibold break-all">
-                            #{order.orderNumber ?? "N/A"}
+                  {orders.slice(0, 3).map((order: any) => {
+                    const currency = (order?.currency || "USD").toUpperCase();
+                    const created = fmtDate(order?.createdAt);
+
+                    return (
+                      <div
+                        key={order._id}
+                        className="border border-[var(--bg-nav)] rounded-lg p-4 bg-[var(--bg-nav)]"
+                      >
+                        {/* ─── Header (matches orders page) ─── */}
+                        <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-2">
+                          <p className="text-sm text-[#cfd2d6]">
+                            🔢 Order #: {order.orderNumber ?? "N/A"} | 🆔{" "}
+                            {order.stripeSessionId
+                              ? String(order.stripeSessionId).slice(-8)
+                              : "N/A"}
                           </p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-gray-400">Order ID:</p>
-                          <p className="text-sm font-semibold break-all">
-                            {order.stripeSessionId}
+
+                          <p className="text-sm text-[#cfd2d6]">
+                            Placed on:{" "}
+                            <span className="font-medium text-[var(--foreground)]">
+                              {created}
+                            </span>
                           </p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-gray-400">Total:</p>
-                          <p className="text-sm font-semibold">
-                            ${order.amount?.toFixed(2)}{" "}
-                            {order.currency?.toUpperCase()}
+
+                          <p className="text-sm text-[#cfd2d6]">
+                            Total:{" "}
+                            <span className="font-semibold">
+                              {fmt(order.amount ?? 0, currency)}
+                            </span>{" "}
+                            <span className="opacity-70">{currency}</span>
                           </p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-gray-400">Status:</p>
+
                           <span
                             className={`text-xs font-bold px-3 py-1 rounded-full inline-block ${
-                              order.shipped
-                                ? "bg-green-500 text-white"
+                              order?.delivered
+                                ? "bg-blue-500 text-[var(--bg-page)]"
+                                : order?.shipped
+                                ? "bg-green-500 text-[var(--bg-page)]"
                                 : "bg-yellow-500 text-black"
                             }`}
                           >
-                            {order.shipped ? "Shipped" : "Processing"}
+                            {order?.delivered
+                              ? "Delivered"
+                              : order?.shipped
+                              ? "Shipped"
+                              : "Processing"}
                           </span>
                         </div>
-                      </div>
 
-                      {/* 🖼 Items List with Images */}
-                      <div className="mt-4 text-sm text-gray-300">
-                        <p className="font-medium text-white mb-2">Items:</p>
-                        <ul className="space-y-2">
-                          {order.items?.map((item: any, idx: number) => (
-                            <li
-                              key={idx}
-                              className="flex items-center gap-3 border-b border-gray-600 pb-2 last:border-b-0"
-                            >
-                              {/* Product Image */}
-                              {item.image ? (
-                                <div className="w-12 h-12 relative flex-shrink-0">
+                        {/* ─── Items (ring size + sale pricing logic) ─── */}
+                        <div className="mt-4 text-sm text-[#cfd2d6]">
+                          <p className="font-medium text-[var(--foreground)] mb-2">
+                            Items:
+                          </p>
+                          <ul className="space-y-3">
+                            {order.items?.map((item: any, idx: number) => {
+                              const sizeValue =
+                                item?.size ??
+                                item?.ringSize ??
+                                item?.variant?.size ??
+                                null;
+
+                              const thumb =
+                                (typeof item?.image === "string" &&
+                                  item.image.trim()) ||
+                                PLACEHOLDER;
+
+                              const qty = Math.max(
+                                1,
+                                toNum(item?.quantity) || 1
+                              );
+                              const originalUnit = toNum(
+                                item?.originalPrice ??
+                                  item?.price ??
+                                  item?.unitPrice ??
+                                  0
+                              );
+                              const saleUnitRaw =
+                                item?.salePrice ??
+                                item?.discountedPrice ??
+                                undefined;
+                              const hasSale = saleUnitRaw !== undefined;
+                              const saleUnit = toNum(saleUnitRaw);
+                              const useSale =
+                                hasSale && saleUnit < originalUnit;
+
+                              const unit = useSale
+                                ? saleUnit
+                                : originalUnit || toNum(item?.price);
+                              const subTotal = unit * qty;
+                              const wasSubTotal = originalUnit * qty;
+
+                              return (
+                                <li
+                                  key={idx}
+                                  className="flex items-center gap-4"
+                                >
                                   <Image
-                                    src={item.image}
-                                    alt={item.name}
-                                    fill
-                                    className="object-cover rounded"
+                                    src={thumb}
+                                    alt={item?.name || "Item"}
+                                    width={48}
+                                    height={48}
+                                    className="rounded object-cover"
                                   />
-                                </div>
-                              ) : (
-                                <div className="w-12 h-12 bg-gray-500 flex items-center justify-center text-xs text-white rounded">
-                                  No Img
-                                </div>
-                              )}
+                                  <div>
+                                    <p className="font-medium text-[var(--foreground)]">
+                                      {item?.name || "Item"}
+                                    </p>
 
-                              {/* Product Details */}
-                              <div className="flex flex-col">
-                                <span className="text-white">{item.name}</span>
-                                <span className="text-gray-400">
-                                  x{item.quantity} – ${item.price * item.quantity}
-                                </span>
-                              </div>
-                            </li>
-                          ))}
-                        </ul>
+                                    {sizeValue && (
+                                      <p className="text-xs text-gray-300">
+                                        Size:{" "}
+                                        <span className="font-medium">
+                                          {String(sizeValue)}
+                                        </span>
+                                      </p>
+                                    )}
+
+                                    {useSale ? (
+                                      <p className="text-sm text-[#cfd2d6]">
+                                        x{qty} — {fmt(unit, currency)} ea •{" "}
+                                        <span className="line-through text-gray-400 mr-1">
+                                          {fmt(wasSubTotal, currency)}
+                                        </span>
+                                        <span className="text-green-400 font-semibold">
+                                          {fmt(subTotal, currency)}
+                                        </span>
+                                      </p>
+                                    ) : (
+                                      <p className="text-sm text-[#cfd2d6]">
+                                        x{qty} — {fmt(unit, currency)} ea •{" "}
+                                        <span className="font-semibold">
+                                          {fmt(subTotal, currency)}
+                                        </span>
+                                      </p>
+                                    )}
+                                  </div>
+                                </li>
+                              );
+                            })}
+                          </ul>
+                        </div>
+
+                        {/* (Intentionally omitting full shipping address on dashboard) */}
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
+
                   <div className="text-right pt-2">
                     <Link
                       href="/account/orders"
