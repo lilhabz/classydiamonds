@@ -132,6 +132,17 @@ export default function FavoritesPage() {
     };
   }, [rehydrated, slugs]);
 
+  // ⛔️ Prevent a single/dual item from stretching to full width:
+  //  - 1 item  → clamp to ~1 card wide
+  //  - 2 items → clamp to ~2 cards wide
+  //  - 3+     → use the normal max container
+  const gridClampClass =
+    products.length <= 1
+      ? "max-w-[240px]" // ~ one card width (adjust if your --card-w differs)
+      : products.length === 2
+      ? "max-w-[520px]" // ~ two cards with gap
+      : "max-w-7xl";
+
   return (
     <div className="min-h-screen px-4 py-10 bg-[var(--bg-page)] text-[var(--foreground)]">
       <div className="pl-4 pr-4 sm:pl-8 sm:pr-8 mb-6 -mt-2">
@@ -178,25 +189,27 @@ export default function FavoritesPage() {
           </div>
         ) : (
           <>
-            {/* ✅ Uniform card sizing via shared grid; use card’s built-in ♡ to remove */}
-            <ProductGrid
-              items={products.map((p) => ({
-                slug: p.slug,
-                image: p.image ?? undefined,
-                name: p.name,
-                price: p.price,
-                salePrice: p.salePrice ?? null,
-                href: p.href,
-                stockLabel:
-                  typeof p.inStock === "boolean"
-                    ? p.inStock
-                      ? "In Stock"
-                      : "Out of Stock"
-                    : "In Stock",
-                typeLabel: p.typeLabel,
-              }))}
-              className=""
-            />
+            {/* ✅ Clamp width to avoid oversized single/dual cards; center the grid */}
+            <div className={`${gridClampClass} mx-auto w-full`}>
+              <ProductGrid
+                items={products.map((p) => ({
+                  slug: p.slug,
+                  image: p.image ?? undefined,
+                  name: p.name,
+                  price: p.price,
+                  salePrice: p.salePrice ?? null,
+                  href: p.href,
+                  stockLabel:
+                    typeof p.inStock === "boolean"
+                      ? p.inStock
+                        ? "In Stock"
+                        : "Out of Stock"
+                      : "In Stock",
+                  typeLabel: p.typeLabel,
+                }))}
+                className="justify-center place-items-start"
+              />
+            </div>
 
             {/* Little count summary */}
             <div className="mt-6 text-sm text-gray-300">
