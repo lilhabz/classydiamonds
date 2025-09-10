@@ -182,11 +182,17 @@ function adaptApiProduct(p: ApiProduct): AdminProduct {
 }
 
 /* ----------------------------- Quick-create helpers ----------------------------- */
-function normalizeAudience(aud: "all" | "him" | "her" | "unisex"): "him" | "her" | "unisex" {
+function normalizeAudience(
+  aud: "all" | "him" | "her" | "unisex"
+): "him" | "her" | "unisex" {
   return aud === "all" ? "unisex" : aud;
 }
 
-function baseNameFor(dept: Department, category?: string | null, sub?: string | null): string {
+function baseNameFor(
+  dept: Department,
+  category?: string | null,
+  sub?: string | null
+): string {
   const c = (category || "").toLowerCase();
   const s = (sub || "").toLowerCase();
 
@@ -246,11 +252,17 @@ export default function AdminProductsList() {
 
   // 🆕 bulk delete modal state
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const [delScope, setDelScope] = useState<"primary" | "both" | "products" | "all">("primary");
+  const [delScope, setDelScope] = useState<
+    "primary" | "both" | "products" | "all"
+  >("primary");
   const [includeLegacy, setIncludeLegacy] = useState(false);
-  const [dryPreview, setDryPreview] = useState<Record<string, number> | null>(null);
+  const [dryPreview, setDryPreview] = useState<Record<string, number> | null>(
+    null
+  );
   const [confirmText, setConfirmText] = useState("");
-  const [bulkBusy, setBulkBusy] = useState<"idle" | "preview" | "delete">("idle");
+  const [bulkBusy, setBulkBusy] = useState<"idle" | "preview" | "delete">(
+    "idle"
+  );
 
   // 🆕 quick-create busy flags
   const [creatingKey, setCreatingKey] = useState<string | null>(null);
@@ -327,9 +339,19 @@ export default function AdminProductsList() {
         if (aud === "unisex") {
           if (!auds.includes("unisex")) return false;
         } else if (aud === "him") {
-          if (!auds.includes("him") && !auds.includes("men") && !auds.includes("male")) return false;
+          if (
+            !auds.includes("him") &&
+            !auds.includes("men") &&
+            !auds.includes("male")
+          )
+            return false;
         } else if (aud === "her") {
-          if (!auds.includes("her") && !auds.includes("women") && !auds.includes("female")) return false;
+          if (
+            !auds.includes("her") &&
+            !auds.includes("women") &&
+            !auds.includes("female")
+          )
+            return false;
         }
       }
 
@@ -425,88 +447,100 @@ export default function AdminProductsList() {
   }
 
   // --- Bulk delete helpers (modal handlers) ---
-async function doDryRun() {
-  try {
-    setBulkBusy("preview");
-    setDryPreview(null);
-    const url = `/api/admin/products?all=1&dryRun=1&scope=${encodeURIComponent(
-      delScope
-    )}${includeLegacy ? "&includeLegacy=1" : ""}`;
-    const res = await fetch(url, { method: "DELETE" });
-    const data = await res.json();
-    if (!res.ok || data?.ok === false) throw new Error(data?.error || "Dry run failed");
-    setDryPreview(data.deleted || {});
-  } catch (e: any) {
-    alert("❌ " + (e?.message || "Dry run failed"));
-  } finally {
-    setBulkBusy("idle");
+  async function doDryRun() {
+    try {
+      setBulkBusy("preview");
+      setDryPreview(null);
+      const url = `/api/admin/products?all=1&dryRun=1&scope=${encodeURIComponent(
+        delScope
+      )}${includeLegacy ? "&includeLegacy=1" : ""}`;
+      const res = await fetch(url, { method: "DELETE" });
+      const data = await res.json();
+      if (!res.ok || data?.ok === false)
+        throw new Error(data?.error || "Dry run failed");
+      setDryPreview(data.deleted || {});
+    } catch (e: any) {
+      alert("❌ " + (e?.message || "Dry run failed"));
+    } finally {
+      setBulkBusy("idle");
+    }
   }
-}
 
-async function confirmBulkDelete() {
-  if (confirmText !== "DELETE") return;
-  try {
-    setBulkBusy("delete");
-    const url = `/api/admin/products?all=1&scope=${encodeURIComponent(
-      delScope
-    )}${includeLegacy ? "&includeLegacy=1" : ""}`;
-    const res = await fetch(url, { method: "DELETE" });
-    const data = await res.json();
-    if (!res.ok || data?.ok === false) throw new Error(data?.error || "Bulk delete failed");
+  async function confirmBulkDelete() {
+    if (confirmText !== "DELETE") return;
+    try {
+      setBulkBusy("delete");
+      const url = `/api/admin/products?all=1&scope=${encodeURIComponent(
+        delScope
+      )}${includeLegacy ? "&includeLegacy=1" : ""}`;
+      const res = await fetch(url, { method: "DELETE" });
+      const data = await res.json();
+      if (!res.ok || data?.ok === false)
+        throw new Error(data?.error || "Bulk delete failed");
 
-    const reload = await fetch("/api/admin/products?includeLegacy=1").then((r) => r.json());
-    const reList: ApiProduct[] = Array.isArray(reload.items) ? reload.items : [];
-    setAllItems(reList.map(adaptApiProduct));
+      const reload = await fetch("/api/admin/products?includeLegacy=1").then(
+        (r) => r.json()
+      );
+      const reList: ApiProduct[] = Array.isArray(reload.items)
+        ? reload.items
+        : [];
+      setAllItems(reList.map(adaptApiProduct));
 
-    setDeleteOpen(false);
-    setDryPreview(null);
-    setConfirmText("");
-    setDelScope("primary");
-    setIncludeLegacy(false);
-    alert("✅ Bulk deletion complete.");
-  } catch (e: any) {
-    alert("❌ " + (e?.message || "Bulk delete failed"));
-  } finally {
-    setBulkBusy("idle");
+      setDeleteOpen(false);
+      setDryPreview(null);
+      setConfirmText("");
+      setDelScope("primary");
+      setIncludeLegacy(false);
+      alert("✅ Bulk deletion complete.");
+    } catch (e: any) {
+      alert("❌ " + (e?.message || "Bulk delete failed"));
+    } finally {
+      setBulkBusy("idle");
+    }
   }
-}
 
-// --- Migrate legacy → DB ---
-async function onMigrate(p: AdminProduct) {
-  try {
-    const res = await fetch("/api/admin/products/migrate", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        name: p.name ?? p.title ?? "Untitled",
-        slug: p.slug,
-        price: Number(p.unitPrice ?? p.price ?? 0),
-        salePrice: p.salePrice ?? null,
-        category: p.category || (inferDept(p) === "watch" ? "watch" : "jewelry"),
-        subcategory: (p.subcategory ?? p.subCategory) || null,
-        imageUrl: pickImage(p),
-        archived: Boolean(p.archived),
-        specs: p.specs ?? {},
-        audience: p.audience ?? ["unisex"],
-        // keep stock true by default when migrating legacy
-        inStock: p.inStock !== false,
-        // pass through featured if present
-        featured: p.featured === true,
-      }),
-    });
-    const data = await res.json();
-    if (!res.ok || !data?.ok) throw new Error(data?.error || "Migration failed");
+  // --- Migrate legacy → DB ---
+  async function onMigrate(p: AdminProduct) {
+    try {
+      const res = await fetch("/api/admin/products/migrate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: p.name ?? p.title ?? "Untitled",
+          slug: p.slug,
+          price: Number(p.unitPrice ?? p.price ?? 0),
+          salePrice: p.salePrice ?? null,
+          category:
+            p.category || (inferDept(p) === "watch" ? "watch" : "jewelry"),
+          subcategory: (p.subcategory ?? p.subCategory) || null,
+          imageUrl: pickImage(p),
+          archived: Boolean(p.archived),
+          specs: p.specs ?? {},
+          audience: p.audience ?? ["unisex"],
+          // keep stock true by default when migrating legacy
+          inStock: p.inStock !== false,
+          // pass through featured if present
+          featured: p.featured === true,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data?.ok)
+        throw new Error(data?.error || "Migration failed");
 
-    // refresh list
-    const reload = await fetch("/api/admin/products?includeLegacy=1").then((r) => r.json());
-    const reList: ApiProduct[] = Array.isArray(reload.items) ? reload.items : [];
-    setAllItems(reList.map(adaptApiProduct));
+      // refresh list
+      const reload = await fetch("/api/admin/products?includeLegacy=1").then(
+        (r) => r.json()
+      );
+      const reList: ApiProduct[] = Array.isArray(reload.items)
+        ? reload.items
+        : [];
+      setAllItems(reList.map(adaptApiProduct));
 
-    alert(`Migrated "${p.name ?? p.title}" into DB.`);
-  } catch (e: any) {
-    alert("❌ " + (e?.message || "Migration failed"));
+      alert(`Migrated "${p.name ?? p.title}" into DB.`);
+    } catch (e: any) {
+      alert("❌ " + (e?.message || "Migration failed"));
+    }
   }
-}
 
   /* ----------------------------- Instant quick-create ----------------------------- */
   async function quickCreate(opts: {
@@ -525,7 +559,10 @@ async function onMigrate(p: AdminProduct) {
       return;
     }
     const subcategory = (opts.subcategory || sub || "").trim() || undefined;
-    const audience = opts.audience || normalizeAudience(aud);
+
+    // ⬇️ take audience verbatim; omit when "All" is selected (undefined)
+    const audience = opts.audience;
+
     const baseName = baseNameFor(dept, category, subcategory);
 
     try {
@@ -537,6 +574,7 @@ async function onMigrate(p: AdminProduct) {
           department: dept,
           category,
           subcategory: subcategory ?? null,
+          // audience only when explicitly chosen
           audience,
           baseName,
           quantity: qty, // ✅ allow multi-create
@@ -658,10 +696,18 @@ async function onMigrate(p: AdminProduct) {
         {/* Audience chips control BOTH filter and quick-create */}
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-sm opacity-75 mr-1">Audience:</span>
-          <Chip active={aud === "all"} onClick={() => setAud("all")}>All</Chip>
-          <Chip active={aud === "him"} onClick={() => setAud("him")}>Him</Chip>
-          <Chip active={aud === "her"} onClick={() => setAud("her")}>Her</Chip>
-          <Chip active={aud === "unisex"} onClick={() => setAud("unisex")}>Unisex</Chip>
+          <Chip active={aud === "all"} onClick={() => setAud("all")}>
+            All
+          </Chip>
+          <Chip active={aud === "him"} onClick={() => setAud("him")}>
+            Him
+          </Chip>
+          <Chip active={aud === "her"} onClick={() => setAud("her")}>
+            Her
+          </Chip>
+          <Chip active={aud === "unisex"} onClick={() => setAud("unisex")}>
+            Unisex
+          </Chip>
 
           <span className="opacity-50 mx-2">|</span>
 
@@ -686,7 +732,9 @@ async function onMigrate(p: AdminProduct) {
             type="button"
             onClick={() =>
               quickCreate({
-                audience: normalizeAudience(aud),
+                // ⬇️ audience only when explicitly chosen
+                audience:
+                  aud !== "all" ? (aud as "him" | "her" | "unisex") : undefined,
                 category: cat || undefined,
                 subcategory: sub || undefined,
                 key: "aud:new",
@@ -694,7 +742,13 @@ async function onMigrate(p: AdminProduct) {
             }
             className="text-xs px-3 py-1 rounded bg-emerald-700 hover:bg-emerald-600 disabled:opacity-50"
             disabled={!cat || creatingKey === "aud:new"}
-            title={cat ? `Create ${capitalize(normalizeAudience(aud))} in ${cat}${sub ? ` → ${sub}` : ""}` : "Pick a category first"}
+            title={
+              cat
+                ? `Create ${capitalize(normalizeAudience(aud))} in ${cat}${
+                    sub ? ` → ${sub}` : ""
+                  }`
+                : "Pick a category first"
+            }
           >
             {creatingKey === "aud:new"
               ? "Creating…"
@@ -725,14 +779,20 @@ async function onMigrate(p: AdminProduct) {
             type="button"
             onClick={() =>
               quickCreate({
-                audience: normalizeAudience(aud),
+                // ⬇️ audience only when explicitly chosen
+                audience:
+                  aud !== "all" ? (aud as "him" | "her" | "unisex") : undefined,
                 category: cat || undefined,
                 key: "cat:new",
               })
             }
             className="text-xs px-3 py-1 rounded bg-blue-700 hover:bg-blue-600 disabled:opacity-50"
             disabled={!cat || creatingKey === "cat:new"}
-            title={cat ? "Instantly create in this category" : "Pick a category first"}
+            title={
+              cat
+                ? "Instantly create in this category"
+                : "Pick a category first"
+            }
           >
             {creatingKey === "cat:new"
               ? "Creating…"
@@ -776,7 +836,11 @@ async function onMigrate(p: AdminProduct) {
               type="button"
               onClick={() =>
                 quickCreate({
-                  audience: normalizeAudience(aud),
+                  // ⬇️ audience only when explicitly chosen
+                  audience:
+                    aud !== "all"
+                      ? (aud as "him" | "her" | "unisex")
+                      : undefined,
                   category: cat,
                   subcategory: sub || undefined,
                   key: "sub:new",
@@ -957,7 +1021,9 @@ async function onMigrate(p: AdminProduct) {
                           }))
                         }
                       />
-                      <span className="text-sm">{(def as any).label || key}</span>
+                      <span className="text-sm">
+                        {(def as any).label || key}
+                      </span>
                     </label>
                   );
                 }
@@ -1222,8 +1288,9 @@ async function onMigrate(p: AdminProduct) {
           <div className="absolute left-1/2 top-1/2 w-[min(640px,95vw)] -translate-x-1/2 -translate-y-1/2 rounded-xl border border-red-800 bg-[#1b2238] p-5 shadow-2xl">
             <h2 className="text-xl font-semibold mb-2">Delete ALL products</h2>
             <p className="text-sm text-red-200 mb-3">
-              This will permanently remove items from the selected collections. You can
-              run a <b>Dry Run</b> first to see counts. Type <code>DELETE</code> to enable the button.
+              This will permanently remove items from the selected collections.
+              You can run a <b>Dry Run</b> first to see counts. Type{" "}
+              <code>DELETE</code> to enable the button.
             </p>
 
             <div className="grid sm:grid-cols-2 gap-3 mb-4">
@@ -1232,7 +1299,9 @@ async function onMigrate(p: AdminProduct) {
                 <select
                   value={delScope}
                   onChange={(e) =>
-                    setDelScope(e.target.value as "primary" | "both" | "products" | "all")
+                    setDelScope(
+                      e.target.value as "primary" | "both" | "products" | "all"
+                    )
                   }
                   className="w-full px-3 py-2 rounded bg-[var(--bg-nav)]"
                 >
@@ -1259,7 +1328,9 @@ async function onMigrate(p: AdminProduct) {
                 disabled={bulkBusy !== "idle"}
                 className="px-3 py-2 rounded bg-[var(--bg-nav)] hover:bg-blue-600 disabled:opacity-50"
               >
-                {bulkBusy === "preview" ? "Running Dry Run…" : "Dry Run (preview counts)"}
+                {bulkBusy === "preview"
+                  ? "Running Dry Run…"
+                  : "Dry Run (preview counts)"}
               </button>
 
               <div className="flex-1" />

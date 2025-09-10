@@ -81,9 +81,10 @@ const RING_SUBCATS = new Set([
  * - already-suffixed (e.g., "engagement-rings") stays as route and base trims "-rings"
  * - categories like "mens" remain as-is (no "-rings")
  */
-function normalizeRingSubcategory(
-  sub: string | null
-): { route: string | null; base: string | null } {
+function normalizeRingSubcategory(sub: string | null): {
+  route: string | null;
+  base: string | null;
+} {
   if (!sub) return { route: null, base: null };
   let s = sub.trim().toLowerCase();
   if (!s) return { route: null, base: null };
@@ -124,9 +125,8 @@ function canonicalizeCategoryAndSubcategory(
 ): { category: string; subcategory: string | null } {
   const c = String(rawCategory || "").toLowerCase();
   const s =
-    (rawSubcategory == null
-      ? null
-      : String(rawSubcategory).toLowerCase()) || null;
+    (rawSubcategory == null ? null : String(rawSubcategory).toLowerCase()) ||
+    null;
 
   // If admin passed a ring *subcategory* as "category", treat it as rings/<sub>
   if (RING_SUBCATS.has(c)) {
@@ -139,10 +139,14 @@ function canonicalizeCategoryAndSubcategory(
     const { route } = normalizeRingSubcategory(s);
     return { category: "rings", subcategory: route };
   }
-  if (c === "earring" || c === "earrings") return { category: "earrings", subcategory: s };
-  if (c === "bracelet" || c === "bracelets") return { category: "bracelets", subcategory: s };
-  if (c === "watch" || c === "watches") return { category: "watches", subcategory: s };
-  if (c === "chain" || c === "chains") return { category: "chains", subcategory: s };
+  if (c === "earring" || c === "earrings")
+    return { category: "earrings", subcategory: s };
+  if (c === "bracelet" || c === "bracelets")
+    return { category: "bracelets", subcategory: s };
+  if (c === "watch" || c === "watches")
+    return { category: "watches", subcategory: s };
+  if (c === "chain" || c === "chains")
+    return { category: "chains", subcategory: s };
 
   // Necklaces + pendants are merged on storefront
   if (
@@ -257,10 +261,16 @@ export default async function handler(
 
     // Normalize dept after canonicalization
     const dept: Department =
-      category === "watches" ? "watch" : department === "watch" ? "watch" : "jewelry";
+      category === "watches"
+        ? "watch"
+        : department === "watch"
+        ? "watch"
+        : "jewelry";
 
     // Compute base name (prefer client’s, else infer)
-    const base = (clientBaseName || baseNameFor(dept, category, subcategoryRoute))
+    const base = (
+      clientBaseName || baseNameFor(dept, category, subcategoryRoute)
+    )
       .toString()
       .trim();
     const baseName = base.length ? base : dept === "watch" ? "Watch" : "Item";
@@ -335,15 +345,18 @@ export default async function handler(
         salePrice: null as number | null,
 
         // ✅ Storefront-canonical fields
-        category,                             // e.g., "rings", "necklaces-pendants"
-        subcategory: subcategoryRoute,        // e.g., "engagement-rings"
-        subCategory: subcategoryBase,         // e.g., "engagement" (back-compat alias)
+        category, // e.g., "rings", "necklaces-pendants"
+        subcategory: subcategoryRoute, // e.g., "engagement-rings"
+        subCategory: subcategoryBase, // e.g., "engagement" (back-compat alias)
 
         imageUrl: null as string | null,
         images: [] as string[],
         archived: false,
         specs: {} as Record<string, any>,
-        audience: [audience || "unisex"],
+
+        // ⬇️ CHANGED: respect selection; only set when provided
+        audience: audience ? [audience] : [],
+
         description: "",
         department: dept,
         inStock: true,
