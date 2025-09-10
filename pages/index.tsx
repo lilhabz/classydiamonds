@@ -210,7 +210,7 @@ export default function Home({ products }: HomeProps) {
 
         {/* 💎 Featured – Mobile (uses same grid recipe as Jewelry) */}
         <section className="sm:hidden px-4 mt-2 mb-8">
-          <h2 className="text-2xl font-serif font-semibold tracking-wide mb-4 text-center">
+          <h2 className="w-full text-center text-2xl font-serif font-semibold tracking-wide mb-4">
             Featured Pieces
           </h2>
           <FeaturedGrid items={featured} />
