@@ -218,7 +218,7 @@ export default function Home({ products }: HomeProps) {
 
         {/* 💎 Featured – Desktop (same grid recipe, 4-up at lg) */}
         <section className="hidden sm:block py-16 sm:py-20 px-4 sm:px-6 max-w-7xl mx-auto">
-          <h2 className="text-3xl font-serif font-semibold tracking-wide mb-8">
+          <h2 className="w-full text-center text-2xl font-serif font-semibold tracking-wide mb-4">
             Featured Pieces
           </h2>
           <FeaturedGrid items={featured} />
