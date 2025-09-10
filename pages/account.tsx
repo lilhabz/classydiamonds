@@ -174,7 +174,7 @@ export default function AccountPage({ user, orders }: any) {
             </button>
             <button
               onClick={() => router.push("/account/password")}
-              className="w-full bg-[#2a374f] hover:bg-[#364763] rounded-lg px-4 py-3 text-left"
+              className="w-full bg-[var(--bg-nav)] hover:bg-[#364763] rounded-lg px-4 py-3 text-left"
             >
               🔑 Change Password
             </button>
@@ -182,7 +182,7 @@ export default function AccountPage({ user, orders }: any) {
             {/* 🆕 Favorites entry */}
             <Link
               href="/account/favorites"
-              className="sm:col-span-2 w-full bg-[#2a374f] hover:bg-[#364763] rounded-lg px-4 py-3 text-left"
+              className="sm:col-span-2 w-full bg-[var(--bg-nav)] hover:bg-[#364763] rounded-lg px-4 py-3 text-left"
             >
               ❤️ View Favorites
             </Link>
@@ -190,13 +190,13 @@ export default function AccountPage({ user, orders }: any) {
             <div className="sm:col-span-2 flex flex-col sm:flex-row gap-4">
               <Link
                 href="/contact?open=custom#custom-form"
-                className="flex-1 block bg-[#2a374f] hover:bg-[#364763] rounded-lg px-4 py-3 text-left"
+                className="flex-1 block bg-[var(--bg-nav)] hover:bg-[#364763] rounded-lg px-4 py-3 text-left"
               >
                 💍 Start a Custom Jewelry Request
               </Link>
               <Link
                 href="/contact?open=message#message-form"
-                className="flex-1 block bg-[#2a374f] hover:bg-[#364763] rounded-lg px-4 py-3 text-left"
+                className="flex-1 block bg-[var(--bg-nav)] hover:bg-[#364763] rounded-lg px-4 py-3 text-left"
               >
                 📨 Submit a Message
               </Link>
