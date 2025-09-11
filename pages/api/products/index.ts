@@ -3,12 +3,21 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { listProducts } from "@/lib/products";
 import { categoryCandidatesFor } from "@/data/taxonomy";
 
-type Audience = "him" | "her";
+type AudCore = "him" | "her";
 
+/**
+ * Normalize incoming audience-like params from multiple sources into a set of
+ * core values ("him" | "her"). Accepts:
+ *  - "men", "male", "him"  -> "him"
+ *  - "women", "female", "her" -> "her"
+ *  - "unisex" -> both "him" and "her"
+ *
+ * Supports comma-separated lists in either 'audience' or legacy 'gender'.
+ */
 function normalizeAudienceParam(
   aud?: string,
   gen?: string
-): Audience[] | undefined {
+): AudCore[] | undefined {
   const vals = [
     ...(aud ? aud.split(",") : []),
     ...(gen ? gen.split(",") : []), // legacy gender support
@@ -18,11 +27,20 @@ function normalizeAudienceParam(
 
   if (!vals.length) return undefined;
 
-  const mapped = vals
-    .map((v) => (v === "male" ? "him" : v === "female" ? "her" : v))
-    .filter((v): v is Audience => v === "him" || v === "her");
+  const out = new Set<AudCore>();
 
-  return Array.from(new Set(mapped));
+  for (const v of vals) {
+    if (v === "him" || v === "male" || v === "men") out.add("him");
+    else if (v === "her" || v === "female" || v === "women") out.add("her");
+    else if (v === "unisex") {
+      // unisex means: show in both For Him and For Her (storefront intent)
+      out.add("him");
+      out.add("her");
+    }
+    // ignore anything else
+  }
+
+  return out.size ? Array.from(out) : undefined;
 }
 
 export default async function handler(
@@ -34,13 +52,13 @@ export default async function handler(
 
   const filter: any = {};
 
-  // ✅ Category: tolerant matching (fixes "necklace-pendant" vs "necklaces-pendants")
+  // ✅ Category: tolerant matching (e.g., "necklace-pendant" vs "necklaces-pendants")
   if (category) {
     const candidates = categoryCandidatesFor(category);
     filter.category = { $in: candidates };
   }
 
-  // accept both spellings of subcategory key
+  // Accept both spellings of subcategory key
   const sub = subcategory ?? subCategory;
   if (typeof sub === "string" && sub) {
     filter.$or = [
@@ -61,11 +79,25 @@ export default async function handler(
     ];
   }
 
-  // Audience (with legacy gender fallback). We match docs whose `audience` intersects
-  // selected values OR whose legacy `gender` matches the mapped values.
-  const wanted = normalizeAudienceParam(audience, gender);
-  if (wanted?.length) {
-    const legacyMap = wanted.map((a) => (a === "him" ? "male" : "female"));
+  /**
+   * Audience filtering
+   *
+   * - Normalize inputs from 'audience' or legacy 'gender'
+   * - Build an intersection against product.audience, **always** including "unisex"
+   *   when any audience filter is applied, so that unisex items appear in "Him"
+   *   and "Her" filtered views.
+   * - Keep legacy gender fallback ("male"/"female") to match older docs.
+   */
+  const wantedCore = normalizeAudienceParam(audience, gender); // -> ["him"], ["her"], or ["him","her"]
+  if (wantedCore?.length) {
+    // Always include "unisex" when filtering by audience
+    const intersectionValues = Array.from(
+      new Set<string>([...wantedCore, "unisex"])
+    );
+
+    // For legacy docs with 'gender' field
+    const legacyMap = wantedCore.map((a) => (a === "him" ? "male" : "female"));
+
     filter.$or = [
       ...(filter.$or ?? []),
       {
@@ -73,7 +105,10 @@ export default async function handler(
           $gt: [
             {
               $size: {
-                $setIntersection: [{ $ifNull: ["$audience", []] }, wanted],
+                $setIntersection: [
+                  { $ifNull: ["$audience", []] },
+                  intersectionValues,
+                ],
               },
             },
             0,

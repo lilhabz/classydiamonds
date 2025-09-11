@@ -181,13 +181,6 @@ function adaptApiProduct(p: ApiProduct): AdminProduct {
   };
 }
 
-/* ----------------------------- Quick-create helpers ----------------------------- */
-function normalizeAudience(
-  aud: "all" | "him" | "her" | "unisex"
-): "him" | "her" | "unisex" {
-  return aud === "all" ? "unisex" : aud;
-}
-
 function baseNameFor(
   dept: Department,
   category?: string | null,
@@ -219,7 +212,8 @@ function baseNameFor(
   return "Item";
 }
 
-const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+const capitalize = (s: string) =>
+  s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
 
 export default function AdminProductsList() {
   const { data: session, status: authStatus } = useSession();
@@ -241,8 +235,8 @@ export default function AdminProductsList() {
   // 🆕 stock filter
   const [stock, setStock] = useState<"all" | "in" | "out">("all");
 
-  // 🆕 audience filter (also feeds quick-create)
-  const [aud, setAud] = useState<"all" | "him" | "her" | "unisex">("all");
+  // 🆕 audience filter ('' = All)
+  const [aud, setAud] = useState<"" | "him" | "her" | "unisex">("");
 
   // paging
   const [page, setPage] = useState(1);
@@ -333,25 +327,24 @@ export default function AdminProductsList() {
       if (stock === "in" && p.inStock === false) return false;
       if (stock === "out" && (p.inStock ?? true) === true) return false;
 
-      // 🆕 audience filter
-      if (aud !== "all") {
+      // 🆕 audience filter ('' means All). Treat "unisex" as matching "him" or "her".
+      if (aud) {
         const auds = (p.audience || []).map((a) => String(a).toLowerCase());
+        const hasUnisex = auds.includes("unisex");
         if (aud === "unisex") {
-          if (!auds.includes("unisex")) return false;
+          if (!hasUnisex) return false;
         } else if (aud === "him") {
-          if (
-            !auds.includes("him") &&
-            !auds.includes("men") &&
-            !auds.includes("male")
-          )
-            return false;
+          const matchesMale =
+            auds.includes("him") ||
+            auds.includes("men") ||
+            auds.includes("male");
+          if (!matchesMale && !hasUnisex) return false;
         } else if (aud === "her") {
-          if (
-            !auds.includes("her") &&
-            !auds.includes("women") &&
-            !auds.includes("female")
-          )
-            return false;
+          const matchesFemale =
+            auds.includes("her") ||
+            auds.includes("women") ||
+            auds.includes("female");
+          if (!matchesFemale && !hasUnisex) return false;
         }
       }
 
@@ -560,7 +553,7 @@ export default function AdminProductsList() {
     }
     const subcategory = (opts.subcategory || sub || "").trim() || undefined;
 
-    // ⬇️ take audience verbatim; omit when "All" is selected (undefined)
+    // ⬇️ take audience verbatim; omit when no selection
     const audience = opts.audience;
 
     const baseName = baseNameFor(dept, category, subcategory);
@@ -696,16 +689,23 @@ export default function AdminProductsList() {
         {/* Audience chips control BOTH filter and quick-create */}
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-sm opacity-75 mr-1">Audience:</span>
-          <Chip active={aud === "all"} onClick={() => setAud("all")}>
-            All
-          </Chip>
-          <Chip active={aud === "him"} onClick={() => setAud("him")}>
+          {/* Chips without “All”; clicking active clears (toggle) */}
+          <Chip
+            active={aud === "him"}
+            onClick={() => setAud((v) => (v === "him" ? "" : "him"))}
+          >
             Him
           </Chip>
-          <Chip active={aud === "her"} onClick={() => setAud("her")}>
+          <Chip
+            active={aud === "her"}
+            onClick={() => setAud((v) => (v === "her" ? "" : "her"))}
+          >
             Her
           </Chip>
-          <Chip active={aud === "unisex"} onClick={() => setAud("unisex")}>
+          <Chip
+            active={aud === "unisex"}
+            onClick={() => setAud((v) => (v === "unisex" ? "" : "unisex"))}
+          >
             Unisex
           </Chip>
 
@@ -733,8 +733,7 @@ export default function AdminProductsList() {
             onClick={() =>
               quickCreate({
                 // ⬇️ audience only when explicitly chosen
-                audience:
-                  aud !== "all" ? (aud as "him" | "her" | "unisex") : undefined,
+                audience: aud ? (aud as "him" | "her" | "unisex") : undefined,
                 category: cat || undefined,
                 subcategory: sub || undefined,
                 key: "aud:new",
@@ -744,7 +743,7 @@ export default function AdminProductsList() {
             disabled={!cat || creatingKey === "aud:new"}
             title={
               cat
-                ? `Create ${capitalize(normalizeAudience(aud))} in ${cat}${
+                ? `Create ${aud ? capitalize(aud) : "All"} in ${cat}${
                     sub ? ` → ${sub}` : ""
                   }`
                 : "Pick a category first"
@@ -752,7 +751,7 @@ export default function AdminProductsList() {
           >
             {creatingKey === "aud:new"
               ? "Creating…"
-              : `+ New (${capitalize(normalizeAudience(aud))})`}
+              : `+ New (${aud ? capitalize(aud) : "All"})`}
           </button>
         </div>
 
@@ -779,9 +778,7 @@ export default function AdminProductsList() {
             type="button"
             onClick={() =>
               quickCreate({
-                // ⬇️ audience only when explicitly chosen
-                audience:
-                  aud !== "all" ? (aud as "him" | "her" | "unisex") : undefined,
+                audience: aud ? (aud as "him" | "her" | "unisex") : undefined,
                 category: cat || undefined,
                 key: "cat:new",
               })
@@ -836,11 +833,7 @@ export default function AdminProductsList() {
               type="button"
               onClick={() =>
                 quickCreate({
-                  // ⬇️ audience only when explicitly chosen
-                  audience:
-                    aud !== "all"
-                      ? (aud as "him" | "her" | "unisex")
-                      : undefined,
+                  audience: aud ? (aud as "him" | "her" | "unisex") : undefined,
                   category: cat,
                   subcategory: sub || undefined,
                   key: "sub:new",
@@ -898,13 +891,13 @@ export default function AdminProductsList() {
           <option value="out">Out of Stock</option>
         </select>
 
-        {/* 🆕 Audience filter mirror */}
+        {/* 🆕 Audience filter mirror ("" = All) */}
         <select
           value={aud}
           onChange={(e) => setAud(e.target.value as any)}
           className="px-3 py-2 rounded bg-[var(--bg-nav)]"
         >
-          <option value="all">All Audiences</option>
+          <option value="">All Audiences</option>
           <option value="him">Him</option>
           <option value="her">Her</option>
           <option value="unisex">Unisex</option>

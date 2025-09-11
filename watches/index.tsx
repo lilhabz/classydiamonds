@@ -5,14 +5,14 @@ import Link from "next/link";
 import type { Product } from "@/types/product";
 
 export default function WatchesPage() {
-  const [aud, setAud] = useState<string>("");
+  const [aud, setAud] = useState<string>(""); // "" = All
   const [q, setQ] = useState("");
   const [items, setItems] = useState<Product[]>([]);
 
   useEffect(() => {
     (async () => {
       const params = new URLSearchParams({ category: "watch", limit: "60" });
-      if (aud) params.set("audience", aud);
+      if (aud) params.set("audience", aud); // "him" | "her" | "unisex"
       if (q) params.set("q", q);
       const res = await fetch("/api/products?" + params.toString());
       const data = await res.json();
@@ -22,16 +22,21 @@ export default function WatchesPage() {
 
   return (
     <div className="p-6 min-h-screen bg-[var(--bg-page)] text-[var(--foreground)]">
-      <Head><title>Watches | Classy Diamonds</title></Head>
+      <Head>
+        <title>Watches | Classy Diamonds</title>
+      </Head>
       <h1 className="text-3xl font-serif font-bold mb-4">Watches</h1>
 
       <div className="flex flex-wrap gap-3 mb-6">
-        <select value={aud} onChange={(e) => setAud(e.target.value)} className="px-3 py-2 rounded bg-[var(--bg-nav)]">
+        <select
+          value={aud}
+          onChange={(e) => setAud(e.target.value)}
+          className="px-3 py-2 rounded bg-[var(--bg-nav)]"
+        >
           <option value="">For: All</option>
-          <option value="women,unisex">Women (incl. Unisex)</option>
-          <option value="men,unisex">Men (incl. Unisex)</option>
+          <option value="him">For Him</option>
+          <option value="her">For Her</option>
           <option value="unisex">Unisex</option>
-          <option value="kids">Kids</option>
         </select>
         <input
           value={q}
@@ -48,8 +53,12 @@ export default function WatchesPage() {
           {items.map((p) => (
             <div key={p._id} className="p-4 rounded bg-[var(--bg-nav)]">
               <h3 className="font-semibold mb-1">{p.title}</h3>
-              <p className="text-xs opacity-80 mb-2">For: {(p.audience?.length ? p.audience.join(", ") : "unisex")}</p>
-              <Link href={`/product/${p._id}`} className="text-sm underline">View</Link>
+              <p className="text-xs opacity-80 mb-2">
+                For: {p.audience?.length ? p.audience.join(", ") : "unisex"}
+              </p>
+              <Link href={`/product/${p._id}`} className="text-sm underline">
+                View
+              </Link>
             </div>
           ))}
         </div>
