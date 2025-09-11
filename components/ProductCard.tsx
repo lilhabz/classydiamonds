@@ -27,8 +27,8 @@ export type ProductCardProps = {
   /** 🆕 Color to use for the fallback swatch when no image is available */
   fallbackColor?: string;
   /** 🆕 Canonical slugs to auto-pick swatch colors */
-  categorySlug?: string | null;     // e.g. "rings", "necklaces-pendants", "bracelets"
-  subcategorySlug?: string | null;  // e.g. "engagement", "halo", "tennis"
+  categorySlug?: string | null; // e.g. "rings", "necklaces-pendants", "bracelets"
+  subcategorySlug?: string | null; // e.g. "engagement", "halo", "tennis"
   className?: string;
   style?: React.CSSProperties;
 };
@@ -61,22 +61,20 @@ function resolveImageSrc(raw?: string | null) {
 ------------------------------------------------------- */
 const CATEGORY_COLORS: Record<string, string> = {
   // primary categories
-  rings: "#DBEAFE",                // light cornflower
-  "necklaces-pendants": "#FEF3C7", // light amber
-  bracelets: "#FCE7F3",            // light pink
-  earrings: "#EDE9FE",             // light violet
-  watches: "#E5E7EB",              // neutral
-  chains: "#E9E3D2",               // soft khaki
-  "for-him": "#E5E7EB",            // neutral
-  "for-her": "#F5F3FF",            // lavender
-  // some folks link directly to these rails as “categories”
+  rings: "#DBEAFE",
+  "necklaces-pendants": "#FEF3C7",
+  bracelets: "#FCE7F3",
+  earrings: "#EDE9FE",
+  watches: "#E5E7EB",
+  chains: "#E9E3D2",
+  "for-him": "#E5E7EB",
+  "for-her": "#F5F3FF",
+  // rails sometimes used as categories
   engagement: "#E0F2FE",
   "wedding-bands": "#FDE68A",
 };
 
 const SUBCATEGORY_COLORS: Record<string, string> = {
-  // format: "<category>:<subcategory>"
-
   /* ---------- Rings family ---------- */
   "rings:engagement": "#C7D2FE",
   "rings:wedding": "#FDE68A",
@@ -203,7 +201,7 @@ export default function ProductCard({
       const key = `${cat}:${sub}`;
       if (SUBCATEGORY_COLORS[key]) return SUBCATEGORY_COLORS[key];
 
-      // 🪄 light plural→singular fallback (drops trailing "s")
+      // 🪄 plural→singular fallback (drops trailing "s")
       if (sub.endsWith("s")) {
         const altKey = `${cat}:${sub.replace(/s$/, "")}`;
         if (SUBCATEGORY_COLORS[altKey]) return SUBCATEGORY_COLORS[altKey];
@@ -238,6 +236,21 @@ export default function ProductCard({
         {children}
       </div>
     );
+
+  /* -------------------- EXACT LABEL OVERRIDE -------------------- */
+  // If this card represents Rings → Mens, force "Mens Rings".
+  // (Covers: page passes typeLabel="Mens", or subcategorySlug "mens"/"mens-rings")
+  const baseSub = String(subcategorySlug ?? "").toLowerCase();
+  let displayTypeLabel = typeLabel ?? "";
+  if (
+    (categorySlug === "rings" || categorySlug === "ring") &&
+    (baseSub === "mens" ||
+      baseSub === "mens-rings" ||
+      String(typeLabel ?? "").toLowerCase() === "mens")
+  ) {
+    displayTypeLabel = "Mens Rings";
+  }
+  /* -------------------------------------------------------------- */
 
   return (
     <div
@@ -362,9 +375,9 @@ export default function ProductCard({
               fontSize: "var(--fs-type)",
               lineHeight: "var(--row-h-type)",
             }}
-            title={typeLabel}
+            title={displayTypeLabel}
           >
-            {typeLabel ?? ""}
+            {displayTypeLabel ?? ""}
           </p>
 
           <p
@@ -378,7 +391,9 @@ export default function ProductCard({
             }}
             title={
               salePrice
-                ? `$${price.toLocaleString()} → $${(salePrice ?? price).toLocaleString()}`
+                ? `$${price.toLocaleString()} → $${(
+                    salePrice ?? price
+                  ).toLocaleString()}`
                 : `$${price.toLocaleString()}`
             }
           >
