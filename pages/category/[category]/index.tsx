@@ -311,7 +311,7 @@ export default function CategoryLanding({
 
       {/* Title */}
       <div className="text-center mt-2 px-4 sm:px-6">
-        <h1 className="text-2xl sm:text-3xl font-serif font-semibold tracking-wide">
+        <h1 className="text-2xl sm:text-3xl font-serif font-semibold leading-snug tracking-wider">
           {categoryLabel}
         </h1>
         <p className="text-sm opacity-70 mt-1">

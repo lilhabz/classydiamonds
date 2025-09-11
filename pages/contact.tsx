@@ -206,7 +206,7 @@ export default function ContactPage() {
               />
             </div>
             <div className="text-center md:text-left">
-              <h2 className="text-2xl sm:text-3xl font-serif font-semibold tracking-wide leading-snug mb-6 sm:mb-8">
+              <h2 className="text-2xl sm:text-3xl font-serif font-semibold leading-snug tracking-wider mb-6 sm:mb-8">
                 About Us
               </h2>
               <p className="text-base sm:text-lg text-[#cfd2d6] leading-relaxed">
@@ -300,7 +300,7 @@ export default function ContactPage() {
               {/* 📩 Form Body */}
               <div className={`w-full ${showCustom ? "block" : "hidden"}`}>
                 <div className="bg-[var(--bg-nav)] p-6 sm:p-10 border-b border-[var(--bg-nav)] rounded-b-xl">
-                  <h2 className="text-2xl sm:text-3xl font-serif font-semibold tracking-wide mb-6 text-center">
+                  <h2 className="text-2xl sm:text-3xl font-serif font-semibold leading-snug tracking-wider mb-6 text-center">
                     Start Your Custom Jewelry Creation
                   </h2>
                   <form
@@ -420,7 +420,7 @@ export default function ContactPage() {
               {/* 📩 Form Body */}
               <div className={`w-full ${showMessage ? "block" : "hidden"}`}>
                 <div className="bg-[var(--bg-nav)] p-6 sm:p-10 border-b border-[var(--bg-nav)] rounded-b-xl">
-                  <h2 className="text-2xl sm:text-3xl font-serif font-semibold tracking-wide mb-6 text-center">
+                  <h2 className="text-2xl sm:text-3xl font-serif font-semibold leading-snug tracking-wider mb-6 text-center">
                     Send Us a Message
                   </h2>
                   <form

@@ -210,7 +210,7 @@ export default function Home({ products }: HomeProps) {
         {/* 💎 Featured – Mobile (uses same grid recipe as Jewelry) */}
         <section className="sm:hidden py-16 sm:py-20 px-4 sm:px-10 w-full">
           {/* ⬇️ spacing-only change: mb-4 → mb-12 sm:mb-16 */}
-          <h2 className="w-full text-center text-2xl font-serif font-semibold tracking-wide mb-12 sm:mb-16">
+          <h2 className="w-full text-center text-2xl sm:text-3xl font-serif font-semibold leading-snug tracking-wider mb-12 sm:mb-16">
             Featured Pieces
           </h2>
           <FeaturedGrid items={featured} />
@@ -219,7 +219,7 @@ export default function Home({ products }: HomeProps) {
         {/* 💎 Featured – Desktop (same grid recipe, 4-up at lg) */}
         <section className="hidden sm:block py-16 sm:py-20 px-4 sm:px-10 max-w-7xl mx-auto w-full">
           {/* ⬇️ spacing-only change: mb-4 → mb-12 sm:mb-16 */}
-          <h2 className="w-full text-center text-2xl font-serif font-semibold tracking-wide mb-12 sm:mb-16">
+          <h2 className="w-full text-center text-2xl sm:text-3xl font-serif font-semibold leading-snug tracking-wider mb-12 sm:mb-16">
             Featured Pieces
           </h2>
           <FeaturedGrid items={featured} />
@@ -227,7 +227,7 @@ export default function Home({ products }: HomeProps) {
 
         {/* 🎁 Gifts for Him & Her */}
         <section className="py-16 sm:py-20 px-4 sm:px-10 w-full">
-          <h2 className="text-2xl sm:text-3xl font-serif font-semibold tracking-wide text-center mb-12 sm:mb-16">
+          <h2 className="text-2xl sm:text-3xl font-serif font-semibold leading-snug tracking-wider text-center mb-12 sm:mb-16">
             Gifts for Him & Her
           </h2>
           <div className="grid grid-cols-2 gap-4 justify-center max-w-2xl mx-auto">
@@ -243,7 +243,7 @@ export default function Home({ products }: HomeProps) {
         {/* 🛠️ About Section */}
         <section className="py-16 sm:py-20 px-4 sm:px-6 --bg-page">
           <div className="max-w-4xl mx-auto text-center">
-            <h2 className="text-2xl sm:text-3xl font-serif font-semibold mb-6 sm:mb-8 tracking-wide">
+            <h2 className="text-2xl sm:text-3xl font-serif font-semibold leading-snug tracking-wider mb-6 sm:mb-8">
               Craftsmanship You Can Trust
             </h2>
             <p className="text-base sm:text-lg text-[#cfd2d6] leading-relaxed">
@@ -259,7 +259,7 @@ export default function Home({ products }: HomeProps) {
         {/* 💎 Why Choose Us Section */}
         <section className="py-16 sm:py-20 px-4 sm:px-6 --bg-page">
           <div className="max-w-4xl mx-auto text-center">
-            <h2 className="text-3xl sm:text-4xl font-serif font-bold mb-8 sm:mb-10 tracking-wide">
+            <h2 className="text-3xl sm:text-4xl font-serif font-bold mb-8 sm:mb-10 tracking-wider">
               Why Choose Classy Diamonds?
             </h2>
             <p className="text-base sm:text-lg text-[#cfd2d6] leading-relaxed">
@@ -275,7 +275,7 @@ export default function Home({ products }: HomeProps) {
         {/* ✍️ Custom Jewelry CTA */}
         <section className="--bg-page py-16 sm:py-20 px-4 sm:px-6">
           <div className="max-w-5xl mx-auto text-center">
-            <h2 className="text-3xl sm:text-4xl font-serif font-bold mb-8 tracking-wide">
+            <h2 className="text-3xl sm:text-4xl font-serif font-bold mb-8 tracking-wider">
               Bring Your Vision to Life
             </h2>
             <p className="text-base sm:text-lg text-[#cfd2d6] mb-8 leading-relaxed">
