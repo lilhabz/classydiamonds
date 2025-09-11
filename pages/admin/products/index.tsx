@@ -115,6 +115,18 @@ function pickImage(p: AdminProduct): string {
   return thumb;
 }
 
+// 🆕 Derive audience flags for display badges
+function deriveAudienceFlags(audience?: string[] | null) {
+  const arr = Array.isArray(audience) ? audience : [];
+  const low = arr.map((a) => String(a).toLowerCase());
+  const him =
+    low.includes("him") || low.includes("male") || low.includes("men");
+  const her =
+    low.includes("her") || low.includes("female") || low.includes("women");
+  const unisex = low.includes("unisex");
+  return { him, her, unisex };
+}
+
 type ApiProduct = {
   _id?: string;
   id?: string;
@@ -181,6 +193,7 @@ function adaptApiProduct(p: ApiProduct): AdminProduct {
   };
 }
 
+// 🆕 Base name helper (restored)
 function baseNameFor(
   dept: Department,
   category?: string | null,
@@ -1083,6 +1096,9 @@ export default function AdminProductsList() {
                   : ""}
               </th>
 
+              {/* 🆕 Audience column */}
+              <th className="py-2 px-3">Audience</th>
+
               {/* 🆕 Stock column */}
               <th className="py-2 px-3">Stock</th>
 
@@ -1118,19 +1134,19 @@ export default function AdminProductsList() {
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={11} className="py-6 text-center">
+                <td colSpan={12} className="py-6 text-center">
                   Loading…
                 </td>
               </tr>
             ) : err ? (
               <tr>
-                <td colSpan={11} className="py-6 text-center text-red-300">
+                <td colSpan={12} className="py-6 text-center text-red-300">
                   Error: {err}
                 </td>
               </tr>
             ) : current.length === 0 ? (
               <tr>
-                <td colSpan={11} className="py-6 text-center">
+                <td colSpan={12} className="py-6 text-center">
                   No products.
                 </td>
               </tr>
@@ -1149,6 +1165,8 @@ export default function AdminProductsList() {
                   (p._id || "").slice(-6) ||
                   (p.id || "").slice(-6) ||
                   (p.slug || "").slice(-6);
+
+                const { him, her, unisex } = deriveAudienceFlags(p.audience);
 
                 return (
                   <tr key={key} className="border-b border-[var(--bg-nav)]">
@@ -1175,6 +1193,32 @@ export default function AdminProductsList() {
                     </td>
                     <td className="py-2 px-3">{p.category || "-"}</td>
                     <td className="py-2 px-3">{subCat || "-"}</td>
+
+                    {/* 🆕 Audience badges */}
+                    <td className="py-2 px-3">
+                      <div className="flex flex-wrap gap-1">
+                        {him && (
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-200 border border-blue-500/40">
+                            Him
+                          </span>
+                        )}
+                        {her && (
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-pink-500/20 text-pink-200 border border-pink-500/40">
+                            Her
+                          </span>
+                        )}
+                        {unisex && (
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-200 border border-emerald-500/40">
+                            Unisex
+                          </span>
+                        )}
+                        {!him && !her && !unisex && (
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-slate-500/20 text-slate-200 border border-slate-500/40">
+                            (none)
+                          </span>
+                        )}
+                      </div>
+                    </td>
 
                     {/* 🆕 Stock badge */}
                     <td className="py-2 px-3">
