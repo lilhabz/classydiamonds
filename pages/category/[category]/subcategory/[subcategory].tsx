@@ -348,11 +348,28 @@ export default function SubcategoryPage({
     }
   }, [mobileFiltersOpen]);
 
-  const typeLabelFrom = (p: Product) =>
-    (p.subcategory && p.subcategory !== "all"
-      ? titleCase(p.subcategory)
-      : categoryLabel.replace(/& Pendants/i, "Necklace")
+  // ⭐ EXACT REQUEST: Only override label for Mens Rings (no changes to womens/her/etc.)
+  const typeLabelFrom = (p: Product) => {
+    const base = (p.subcategory || p.subCategory || "").toLowerCase();
+    const pageSub = (subcategorySlug || "").toLowerCase();
+
+    if (
+      (categorySlug === "rings" || categorySlug === "ring") &&
+      (base === "mens" ||
+        base === "mens-rings" ||
+        pageSub === "mens" ||
+        pageSub === "mens-rings")
+    ) {
+      return "Mens Rings";
+    }
+
+    // Default logic unchanged
+    return (
+      base && base !== "all"
+        ? titleCase(base)
+        : categoryLabel.replace(/& Pendants/i, "Necklace")
     ).trim();
+  };
 
   const subcatImage = (slug: string) => {
     if (categorySlug === "rings") {
@@ -372,8 +389,7 @@ export default function SubcategoryPage({
       <Head>
         <title>
           {subcategoryLabel}
-          {categoryLabel !== subcategoryLabel ? ` | ${categoryLabel}` : ""} |
-          Classy Diamonds
+          {categorySlug ? ` | ${categoryLabel}` : ""} | Classy Diamonds
         </title>
         <meta
           name="description"

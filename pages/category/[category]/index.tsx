@@ -272,6 +272,25 @@ export default function CategoryLanding({
     return "/category/ring-cat.jpg";
   };
 
+  // 🔒 EXACT REQUEST: Only override label for Mens Rings subcategory under Rings
+  const computeTypeLabel = (p: Product) => {
+    const base = (p.subcategory || p.subCategory || "").toLowerCase();
+
+    // ✅ If this card is in Rings AND the normalized subcategory is "mens" (or legacy "mens-rings"),
+    //    force the label to "Mens Rings". This does NOT touch womens/her/anything else.
+    if (
+      (categoryUi === "rings" || categoryUi === "ring") &&
+      (base === "mens" || base === "mens-rings")
+    ) {
+      return "Mens Rings";
+    }
+
+    // default behavior unchanged
+    return base
+      ? base.replace(/-/g, " ").replace(/\b\w/g, (m) => m.toUpperCase())
+      : categoryLabel.replace(/& Pendants/i, "Necklace");
+  };
+
   return (
     <>
       <Head>
@@ -329,7 +348,7 @@ export default function CategoryLanding({
           </div>
           <button
             onClick={() => setMobileFiltersOpen(true)}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-sm font-medium transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 hover:bg白/10 text-sm font-medium transition-colors"
             aria-haspopup="dialog"
             aria-controls="filters-drawer"
           >
@@ -379,13 +398,7 @@ export default function CategoryLanding({
                           ? p.quantity > 0
                           : true
                       }
-                      typeLabel={
-                        p.subcategory || p.subCategory
-                          ? (p.subcategory || p.subCategory)!
-                              .replace(/-/g, " ")
-                              .replace(/\b\w/g, (m) => m.toUpperCase())
-                          : categoryLabel.replace(/& Pendants/i, "Necklace")
-                      }
+                      typeLabel={computeTypeLabel(p)}
                       categorySlug={categoryUi}
                       subcategorySlug={
                         (p.subcategory || p.subCategory || null) as any
