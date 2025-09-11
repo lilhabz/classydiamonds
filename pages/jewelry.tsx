@@ -623,7 +623,7 @@ export default function JewelryPage({
 
       {/* 🏷️ Dynamic heading */}
       <div className="text-center mt-2 px-4 sm:px-6">
-        <h2 className="text-2xl sm:text-3xl font-serif font-semibold tracking-wider leading-snug">
+        <h2 className="text-2xl sm:text-3xl font-serif font-semibold leading-snug tracking-wider mb-12 sm:mb-16">
           {heading}
         </h2>
       </div>
