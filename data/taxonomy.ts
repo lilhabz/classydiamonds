@@ -168,7 +168,7 @@ export function toBaseSubcategory(subSlug: string, category: string): string {
     "signet-rings": "signet",
     "promise-rings": "promise",
     "birthstone-rings": "birthstone",
-    "mens-rings": "mens rings",
+    "mens-rings": "mens",
 
     // bracelets
     "tennis-bracelets": "tennis",
