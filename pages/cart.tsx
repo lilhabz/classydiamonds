@@ -6,7 +6,7 @@
 import Head from "next/head";
 import Link from "next/link";
 import { useCart } from "@/context/CartContext";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react"; // 👈 added useRef
 import { useSession } from "next-auth/react";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import { FiEye, FiEyeOff } from "react-icons/fi"; // 👈 NEW
@@ -77,6 +77,17 @@ export default function CartPage() {
   const [accountExistsEmail, setAccountExistsEmail] = useState<string | null>(
     null
   );
+
+  // 🔔 NEW: Scroll to the account-exists notice when it appears
+  const accountExistsRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (accountExistsEmail) {
+      accountExistsRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }
+  }, [accountExistsEmail]);
 
   // 📥 Prefill from session (if available) but do not require login
   useEffect(() => {
@@ -266,7 +277,7 @@ export default function CartPage() {
         body: JSON.stringify(payload),
       });
 
-      // 👇 NEW: Handle duplicate account cleanly
+      // 👇 Handle duplicate account cleanly
       if (response.status === 409) {
         setIsLoading(false);
         setAccountExistsEmail(email.trim());
@@ -453,16 +464,19 @@ export default function CartPage() {
 
           {/* 🔔 Account exists notice (409) */}
           {accountExistsEmail && (
-            <div className="rounded-lg border border-amber-400/40 bg-amber-500/10 px-4 py-3 text-sm">
+            <div
+              ref={accountExistsRef} // 👈 NEW: attach ref for auto-scroll
+              className="rounded-lg border border-amber-400/40 bg-amber-500/10 px-4 py-3 text-sm"
+            >
               <p className="mb-2">
                 An account already exists for{" "}
                 <span className="font-medium">{accountExistsEmail}</span>.
               </p>
               <div className="flex flex-wrap gap-3">
                 <Link
-                  href={`/account/password?email=${encodeURIComponent(
+                  href={`/account/forgot-password?email=${encodeURIComponent(
                     accountExistsEmail
-                  )}`}
+                  )}`} // 👈 NEW: point to forgot-password
                   className="underline underline-offset-4 hover:opacity-90"
                 >
                   Reset your password
