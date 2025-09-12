@@ -1,4 +1,5 @@
 // 📤 pages/cart.tsx – Guest Checkout Enabled: Shipping Form + Prefill + Unified Payload 💎
+// + Password Guidance, Eye Toggles, and Duplicate-Account Handling
 
 "use client";
 
@@ -8,6 +9,30 @@ import { useCart } from "@/context/CartContext";
 import { useEffect, useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
 import Breadcrumbs from "@/components/Breadcrumbs";
+import { FiEye, FiEyeOff } from "react-icons/fi"; // 👈 NEW
+
+// 🔒 Centralized password policy (match pages/auth.tsx)
+const PASSWORD_RULES = {
+  minLength: 8,
+  requireUpper: true,
+  requireLower: true,
+  requireNumber: true,
+  requireSymbol: true,
+};
+
+const hasUpper = (v: string) => /[A-Z]/.test(v);
+const hasLower = (v: string) => /[a-z]/.test(v);
+const hasNumber = (v: string) => /\d/.test(v);
+const hasSymbol = (v: string) => /[^A-Za-z0-9]/.test(v);
+
+const passwordMeetsRules = (v: string) => {
+  if (v.length < PASSWORD_RULES.minLength) return false;
+  if (PASSWORD_RULES.requireUpper && !hasUpper(v)) return false;
+  if (PASSWORD_RULES.requireLower && !hasLower(v)) return false;
+  if (PASSWORD_RULES.requireNumber && !hasNumber(v)) return false;
+  if (PASSWORD_RULES.requireSymbol && !hasSymbol(v)) return false;
+  return true;
+};
 
 export default function CartPage() {
   const { cartItems, removeFromCart, increaseQty, decreaseQty } = useCart();
@@ -41,8 +66,17 @@ export default function CartPage() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
+  // 👁️ Show/hide toggles
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+
   // 🧯 Inline errors (per-field)
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // 👤 If the email already has an account (409), show targeted guidance + reset link
+  const [accountExistsEmail, setAccountExistsEmail] = useState<string | null>(
+    null
+  );
 
   // 📥 Prefill from session (if available) but do not require login
   useEffect(() => {
@@ -94,8 +128,10 @@ export default function CartPage() {
       case "password":
         if (createAccount) {
           if (!required(value)) msg = "Password is required.";
-          else if (value.length < 8)
-            msg = "Use at least 8 characters for your password.";
+          else if (!passwordMeetsRules(value)) {
+            msg =
+              "Use at least 8 characters with upper & lower case letters, a number, and a symbol.";
+          }
         }
         break;
       case "confirmPassword":
@@ -135,7 +171,7 @@ export default function CartPage() {
 
     // account path checks
     if (createAccount) {
-      if (!required(password) || password.length < 8) return false;
+      if (!required(password) || !passwordMeetsRules(password)) return false;
       if (!required(confirmPassword) || confirmPassword !== password)
         return false;
     }
@@ -185,6 +221,9 @@ export default function CartPage() {
     if (!validateAll()) return;
 
     setIsLoading(true);
+    setAccountExistsEmail(null);
+    setErrors((prev) => ({ ...prev, submit: "" }));
+
     try {
       const payload: any = {
         items: cartItems.map((i) => ({
@@ -227,6 +266,13 @@ export default function CartPage() {
         body: JSON.stringify(payload),
       });
 
+      // 👇 NEW: Handle duplicate account cleanly
+      if (response.status === 409) {
+        setIsLoading(false);
+        setAccountExistsEmail(email.trim());
+        return;
+      }
+
       const text = await response.text();
       try {
         const data = JSON.parse(text);
@@ -262,6 +308,19 @@ export default function CartPage() {
   const inputClass =
     "w-full rounded-lg px-3 py-2 bg-[var(--bg-page)] text-white placeholder-gray-400 border border-transparent focus:outline-none focus:ring-2 focus:ring-white/20";
   const errorClass = "text-xs text-red-400 mt-1";
+
+  // Small helper for password checklist
+  const Rule = ({
+    ok,
+    children,
+  }: {
+    ok: boolean;
+    children: React.ReactNode;
+  }) => (
+    <li className={`text-xs ${ok ? "text-emerald-300" : "text-gray-300"}`}>
+      {ok ? "✓" : "•"} {children}
+    </li>
+  );
 
   return (
     <div className="min-h-screen flex flex-col bg-[var(--bg-page)] text-[var(--foreground)]">
@@ -392,6 +451,35 @@ export default function CartPage() {
             ← Continue Shopping
           </Link>
 
+          {/* 🔔 Account exists notice (409) */}
+          {accountExistsEmail && (
+            <div className="rounded-lg border border-amber-400/40 bg-amber-500/10 px-4 py-3 text-sm">
+              <p className="mb-2">
+                An account already exists for{" "}
+                <span className="font-medium">{accountExistsEmail}</span>.
+              </p>
+              <div className="flex flex-wrap gap-3">
+                <Link
+                  href={`/account/password?email=${encodeURIComponent(
+                    accountExistsEmail
+                  )}`}
+                  className="underline underline-offset-4 hover:opacity-90"
+                >
+                  Reset your password
+                </Link>
+                <span className="opacity-80">or</span>
+                <Link
+                  href={`/auth?mode=login&email=${encodeURIComponent(
+                    accountExistsEmail
+                  )}`}
+                  className="underline underline-offset-4 hover:opacity-90"
+                >
+                  Log in instead
+                </Link>
+              </div>
+            </div>
+          )}
+
           {/* 🚚 Shipping Details (works for guests & logged-in users) */}
           <div className="mt-2">
             <h3 className="text-lg font-semibold mb-3">Shipping Details</h3>
@@ -508,7 +596,7 @@ export default function CartPage() {
                 checked={createAccount}
                 onChange={(e) => {
                   setCreateAccount(e.target.checked);
-                  // Clear password errors when toggling off
+                  // Clear password fields + errors when toggling off
                   if (!e.target.checked) {
                     setPassword("");
                     setConfirmPassword("");
@@ -531,34 +619,80 @@ export default function CartPage() {
             {/* Reveal password fields if checked */}
             {createAccount && (
               <div className="grid grid-cols-1 gap-3">
-                <div>
+                {/* Password with eye toggle */}
+                <div className="relative">
                   <input
-                    type="password"
+                    type={showPassword ? "text" : "password"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     onBlur={onBlur("password")}
-                    placeholder="Password (min 8 characters) *"
-                    className={inputClass}
+                    placeholder="Password *"
+                    className={`${inputClass} pr-10`}
                     autoComplete="new-password"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((s) => !s)}
+                    aria-label={
+                      showPassword ? "Hide password" : "Show password"
+                    }
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded hover:bg-white/10"
+                  >
+                    {showPassword ? <FiEyeOff /> : <FiEye />}
+                  </button>
                   {errors.password && (
                     <p className={errorClass}>{errors.password}</p>
                   )}
                 </div>
-                <div>
+
+                {/* Confirm with eye toggle */}
+                <div className="relative">
                   <input
-                    type="password"
+                    type={showConfirm ? "text" : "password"}
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     onBlur={onBlur("confirmPassword")}
                     placeholder="Confirm Password *"
-                    className={inputClass}
+                    className={`${inputClass} pr-10`}
                     autoComplete="new-password"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirm((s) => !s)}
+                    aria-label={
+                      showConfirm ? "Hide confirmation" : "Show confirmation"
+                    }
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded hover:bg-white/10"
+                  >
+                    {showConfirm ? <FiEyeOff /> : <FiEye />}
+                  </button>
                   {errors.confirmPassword && (
                     <p className={errorClass}>{errors.confirmPassword}</p>
                   )}
                 </div>
+
+                {/* 📋 Password rules (live) */}
+                <ul className="mt-1 space-y-1">
+                  <Rule ok={password.length >= PASSWORD_RULES.minLength}>
+                    At least {PASSWORD_RULES.minLength} characters
+                  </Rule>
+                  <Rule ok={!PASSWORD_RULES.requireUpper || hasUpper(password)}>
+                    Uppercase letter (A-Z)
+                  </Rule>
+                  <Rule ok={!PASSWORD_RULES.requireLower || hasLower(password)}>
+                    Lowercase letter (a-z)
+                  </Rule>
+                  <Rule
+                    ok={!PASSWORD_RULES.requireNumber || hasNumber(password)}
+                  >
+                    Number (0-9)
+                  </Rule>
+                  <Rule
+                    ok={!PASSWORD_RULES.requireSymbol || hasSymbol(password)}
+                  >
+                    Symbol (!@#$…)
+                  </Rule>
+                </ul>
               </div>
             )}
 

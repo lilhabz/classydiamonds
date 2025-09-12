@@ -1,5 +1,6 @@
 // 📦 pages/api/checkout.ts – Guest-friendly Stripe Checkout (size + slug metadata, flexible payload)
-// + Optional account creation + marketing opt-in (best-effort, non-blocking)
+// + Optional account creation + marketing opt-in
+// + ✅ Short-circuit on duplicate account (409) or registration failure (400)
 
 import type { NextApiRequest, NextApiResponse } from "next";
 import Stripe from "stripe";
@@ -93,13 +94,7 @@ export default async function handler(
     const notes: string = body.notes ?? "";
     const paymentMethod: string = body.paymentMethod ?? "stripe";
 
-    // 🆕 Engagement flags from payload
-    const createAccount: boolean = !!body.createAccount;
-    const password: string | undefined =
-      typeof body.password === "string" ? body.password : undefined;
-    const marketingOptIn: boolean = !!body.marketingOptIn;
-
-    // Determine origin (used below for /api/register + redirect URLs)
+    // 🧭 Determine origin (used below for /api/register + redirect URLs)
     const origin =
       (req.headers["x-forwarded-proto"] && req.headers["x-forwarded-host"]
         ? `${req.headers["x-forwarded-proto"]}://${req.headers["x-forwarded-host"]}`
@@ -107,7 +102,7 @@ export default async function handler(
       process.env.NEXT_PUBLIC_SITE_URL ||
       "http://localhost:3000";
 
-    // Compute each line item's unit amount (prefer sale/discounted if provided)
+    // 🧮 Normalize prices for Stripe (prefer discount/sale if provided)
     // Priority: discountedPrice → salePrice → price → originalPrice
     const normalized = items.map((i) => {
       const unit =
@@ -123,7 +118,70 @@ export default async function handler(
       };
     });
 
-    // Create a pre-checkout order stub in MongoDB (guest-safe)
+    // 🆕 Engagement flags from payload
+    const createAccount: boolean = !!body.createAccount;
+    const password: string | undefined =
+      typeof body.password === "string" ? body.password : undefined;
+    const marketingOptIn: boolean = !!body.marketingOptIn;
+
+    // ───────────────────────────────────────────────────────────
+    // 🔐 EARLY account-creation check (short-circuit on 409/400)
+    // ───────────────────────────────────────────────────────────
+    if (createAccount) {
+      if (!email || !password) {
+        // If caller asked to create an account but didn't send credentials, fail cleanly
+        return res
+          .status(400)
+          .json({
+            error: "Account creation requested but missing email/password.",
+          });
+      }
+
+      try {
+        const regRes = await fetch(`${origin}/api/register`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: name || "",
+            email,
+            password,
+            phone: phone || "",
+            address,
+            marketingOptIn,
+          }),
+        });
+
+        let regJson: any = null;
+        try {
+          regJson = await regRes.json();
+        } catch {
+          // ignore parse error (treat as non-ok below if needed)
+        }
+
+        // If register endpoint reports an existing account or explicitly sends 409 → stop with 409
+        if (regRes.status === 409 || regJson?.alreadyExists === true) {
+          return res.status(409).json({ error: "Account already exists" });
+        }
+
+        // Any other non-OK from register: stop with 400 (do not proceed to Stripe)
+        if (!regRes.ok || regJson?.ok === false) {
+          return res
+            .status(400)
+            .json({ error: regJson?.error || "Account creation failed" });
+        }
+      } catch (e) {
+        // Network error contacting /api/register → safer to stop and let user retry
+        return res
+          .status(400)
+          .json({
+            error: "Could not create account at this time. Please try again.",
+          });
+      }
+    }
+
+    // ───────────────────────────────────────────────────────────
+    // 🗄️ Create a pre-checkout order stub in MongoDB (guest-safe)
+    // ───────────────────────────────────────────────────────────
     const client = await clientPromise;
     const db = client.db();
     const orders = db.collection("orders");
@@ -161,33 +219,13 @@ export default async function handler(
       createdAt: new Date(),
       shipped: false,
       archived: false,
-      isGuest: true,
+      isGuest: !createAccount, // if they requested an account, this will flip later in webhook/fulfillment
       // 🆕 engagement flags stored on the order record for reference
       createAccountRequested: createAccount || undefined,
       marketingOptIn: marketingOptIn || undefined,
     };
 
     const { insertedId } = await orders.insertOne(orderDoc);
-
-    // 🆕 Best-effort: if customer opted to create an account, try to register now
-    if (createAccount && email && password) {
-      try {
-        await fetch(`${origin}/api/register`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            name: name || "",
-            email,
-            password,
-            phone: phone || "",
-            address,
-          }),
-        });
-        // Swallow any errors; checkout continues regardless
-      } catch (e) {
-        console.error("register-during-checkout failed", e);
-      }
-    }
 
     // 🆕 Best-effort: if marketing opt-in, upsert email into a simple list
     if (marketingOptIn && email) {
@@ -211,7 +249,7 @@ export default async function handler(
       }
     }
 
-    // Build Stripe line_items (with metadata: id, slug, size)
+    // 🧾 Build Stripe line_items (with metadata: id, slug, size)
     const line_items: Stripe.Checkout.SessionCreateParams.LineItem[] =
       normalized.map((i) => ({
         price_data: {
@@ -231,7 +269,7 @@ export default async function handler(
         quantity: i.quantity,
       }));
 
-    // Create Stripe Checkout Session
+    // 🧾 Create Stripe Checkout Session
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       payment_method_types: ["card"],
