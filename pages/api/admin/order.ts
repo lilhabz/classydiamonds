@@ -64,6 +64,9 @@ interface RawOrder {
   shipped?: boolean;
   archived?: boolean;
 
+  // 🆕 guest flag
+  isGuest?: boolean;
+
   // refunds
   refundedTotal?: number; // cents
   refunds?: RefundEntry[];
@@ -105,6 +108,9 @@ type OrderResponse =
       createdAt: string; // ISO
       shipped: boolean;
       archived: boolean;
+
+      // 🆕 expose guest status for success page prompt
+      isGuest?: boolean;
     }
   | { error: string };
 
@@ -251,6 +257,9 @@ export default async function handler(
       createdAt: createdAtIso,
       shipped: !!o.shipped,
       archived: !!o.archived,
+
+      // 🆕 expose guest flag
+      isGuest: !!o.isGuest,
     });
   } catch (err: any) {
     console.error("❌ Failed to fetch order:", err?.message || err);

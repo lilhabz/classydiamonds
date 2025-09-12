@@ -1,4 +1,5 @@
 // 📦 pages/api/checkout.ts – Guest-friendly Stripe Checkout (size + slug metadata, flexible payload)
+// + Optional account creation + marketing opt-in (best-effort, non-blocking)
 
 import type { NextApiRequest, NextApiResponse } from "next";
 import Stripe from "stripe";
@@ -60,7 +61,7 @@ export default async function handler(
 
   try {
     // Accept BOTH payload styles:
-    //  - new: { items, customer: { name, email, phone, address: { line1, ... } }, notes, paymentMethod }
+    //  - new: { items, customer: { name, email, phone, address: { line1, ... } }, notes, paymentMethod, createAccount?, password?, marketingOptIn? }
     //  - old: { items, name, email, phone, address: { street1, ... }, notes, paymentMethod }
     const body = req.body || {};
 
@@ -91,6 +92,20 @@ export default async function handler(
 
     const notes: string = body.notes ?? "";
     const paymentMethod: string = body.paymentMethod ?? "stripe";
+
+    // 🆕 Engagement flags from payload
+    const createAccount: boolean = !!body.createAccount;
+    const password: string | undefined =
+      typeof body.password === "string" ? body.password : undefined;
+    const marketingOptIn: boolean = !!body.marketingOptIn;
+
+    // Determine origin (used below for /api/register + redirect URLs)
+    const origin =
+      (req.headers["x-forwarded-proto"] && req.headers["x-forwarded-host"]
+        ? `${req.headers["x-forwarded-proto"]}://${req.headers["x-forwarded-host"]}`
+        : (req.headers.origin as string)) ||
+      process.env.NEXT_PUBLIC_SITE_URL ||
+      "http://localhost:3000";
 
     // Compute each line item's unit amount (prefer sale/discounted if provided)
     // Priority: discountedPrice → salePrice → price → originalPrice
@@ -147,9 +162,54 @@ export default async function handler(
       shipped: false,
       archived: false,
       isGuest: true,
+      // 🆕 engagement flags stored on the order record for reference
+      createAccountRequested: createAccount || undefined,
+      marketingOptIn: marketingOptIn || undefined,
     };
 
     const { insertedId } = await orders.insertOne(orderDoc);
+
+    // 🆕 Best-effort: if customer opted to create an account, try to register now
+    if (createAccount && email && password) {
+      try {
+        await fetch(`${origin}/api/register`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: name || "",
+            email,
+            password,
+            phone: phone || "",
+            address,
+          }),
+        });
+        // Swallow any errors; checkout continues regardless
+      } catch (e) {
+        console.error("register-during-checkout failed", e);
+      }
+    }
+
+    // 🆕 Best-effort: if marketing opt-in, upsert email into a simple list
+    if (marketingOptIn && email) {
+      try {
+        const list = db.collection("marketing_list");
+        await list.updateOne(
+          { email: email.toLowerCase() },
+          {
+            $set: {
+              email: email.toLowerCase(),
+              name: name || "",
+              source: "checkout",
+              lastOptInAt: new Date(),
+            },
+            $setOnInsert: { createdAt: new Date() },
+          },
+          { upsert: true }
+        );
+      } catch (e) {
+        console.error("marketing opt-in upsert failed", e);
+      }
+    }
 
     // Build Stripe line_items (with metadata: id, slug, size)
     const line_items: Stripe.Checkout.SessionCreateParams.LineItem[] =
@@ -172,13 +232,6 @@ export default async function handler(
       }));
 
     // Create Stripe Checkout Session
-    const origin =
-      req.headers["x-forwarded-proto"] && req.headers["x-forwarded-host"]
-        ? `${req.headers["x-forwarded-proto"]}://${req.headers["x-forwarded-host"]}`
-        : (req.headers.origin as string) ||
-          process.env.NEXT_PUBLIC_SITE_URL ||
-          "http://localhost:3000";
-
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       payment_method_types: ["card"],

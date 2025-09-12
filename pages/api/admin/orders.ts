@@ -51,6 +51,9 @@ interface RawOrder {
   orderNumber?: number;
   shipped?: boolean;
   archived?: boolean;
+
+  // 🆕 guest flag (added)
+  isGuest?: boolean;
 }
 
 interface OrderItem {
@@ -96,6 +99,9 @@ interface Order {
   orderNumber: number | null;
   shipped: boolean;
   archived: boolean;
+
+  // 🆕 expose guest status
+  isGuest?: boolean;
 }
 
 type OrdersResponse = {
@@ -220,6 +226,9 @@ export default async function handler(
         orderNumber: typeof o.orderNumber === "number" ? o.orderNumber : null,
         shipped: !!o.shipped,
         archived: !!o.archived,
+
+        // 🆕 pass through guest flag
+        isGuest: !!o.isGuest,
       };
     });
 

@@ -5,7 +5,7 @@
 import Head from "next/head";
 import Link from "next/link";
 import { useCart } from "@/context/CartContext";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
 import Breadcrumbs from "@/components/Breadcrumbs";
 
@@ -33,6 +33,17 @@ export default function CartPage() {
   const [zip, setZip] = useState("");
   const [country, setCountry] = useState("US");
 
+  // 🆕 Toggles
+  const [createAccount, setCreateAccount] = useState(false);
+  const [marketingOptIn, setMarketingOptIn] = useState(false);
+
+  // 🆕 Account fields (revealed only when createAccount is checked)
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+
+  // 🧯 Inline errors (per-field)
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
   // 📥 Prefill from session (if available) but do not require login
   useEffect(() => {
     if (!session?.user) return;
@@ -51,40 +62,131 @@ export default function CartPage() {
     setCountry((prev) => prev || addr?.country || "US");
   }, [session]);
 
-  const validate = () => {
-    if (cartItems.length === 0) {
-      alert("Your cart is empty.");
-      return false;
+  /* ------------------------------ Validation ------------------------------ */
+  const isEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+  const required = (v: string) => v.trim().length > 0;
+
+  const validateField = (key: string, value: string) => {
+    let msg = "";
+    switch (key) {
+      case "name":
+        if (!required(value)) msg = "Please enter your full name.";
+        break;
+      case "email":
+        if (!required(value)) msg = "Email is required.";
+        else if (!isEmail(value)) msg = "Please enter a valid email.";
+        break;
+      case "line1":
+        if (!required(value)) msg = "Street address is required.";
+        break;
+      case "city":
+        if (!required(value)) msg = "City is required.";
+        break;
+      case "state":
+        if (!required(value)) msg = "State is required.";
+        break;
+      case "zip":
+        if (!required(value)) msg = "ZIP / Postal Code is required.";
+        break;
+      case "country":
+        if (!required(value)) msg = "Country is required.";
+        break;
+      case "password":
+        if (createAccount) {
+          if (!required(value)) msg = "Password is required.";
+          else if (value.length < 8)
+            msg = "Use at least 8 characters for your password.";
+        }
+        break;
+      case "confirmPassword":
+        if (createAccount) {
+          if (!required(value)) msg = "Please confirm your password.";
+          else if (value !== password) msg = "Passwords do not match.";
+        }
+        break;
+      default:
+        break;
     }
-    if (!name.trim()) {
-      alert("Please enter your full name.");
-      return false;
-    }
-    if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      alert("Please enter a valid email.");
-      return false;
-    }
-    if (
-      !line1.trim() ||
-      !city.trim() ||
-      !state.trim() ||
-      !zip.trim() ||
-      !country.trim()
-    ) {
-      alert(
-        "Please complete your shipping address (street, city, state, ZIP, country)."
-      );
-      return false;
-    }
-    return true;
+    setErrors((prev) => ({ ...prev, [key]: msg }));
+    return msg === "";
   };
 
-  const handleCheckout = async () => {
-    if (!validate()) return;
-    setIsLoading(true);
+  // Validate on blur to show inline messages
+  const onBlur =
+    (key: string) =>
+    (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+      validateField(key, e.target.value);
+    };
 
+  // Overall form validity (disables button)
+  const formValid = useMemo(() => {
+    // basic requireds
+    const basicsOk =
+      cartItems.length > 0 &&
+      required(name) &&
+      isEmail(email) &&
+      required(line1) &&
+      required(city) &&
+      required(state) &&
+      required(zip) &&
+      required(country);
+
+    if (!basicsOk) return false;
+
+    // account path checks
+    if (createAccount) {
+      if (!required(password) || password.length < 8) return false;
+      if (!required(confirmPassword) || confirmPassword !== password)
+        return false;
+    }
+    return true;
+  }, [
+    cartItems.length,
+    name,
+    email,
+    line1,
+    city,
+    state,
+    zip,
+    country,
+    createAccount,
+    password,
+    confirmPassword,
+  ]);
+
+  const validateAll = () => {
+    const keys = ["name", "email", "line1", "city", "state", "zip", "country"];
+    if (createAccount) {
+      keys.push("password", "confirmPassword");
+    }
+    let ok = true;
+    for (const k of keys) {
+      const v =
+        {
+          name,
+          email,
+          line1,
+          city,
+          state,
+          zip,
+          country,
+          password,
+          confirmPassword,
+        }[k] ?? "";
+      const thisOk = validateField(k, String(v));
+      if (!thisOk) ok = false;
+    }
+    return ok;
+  };
+
+  /* ------------------------------ Submit ------------------------------ */
+  const handleCheckout = async () => {
+    // We rely on disabled button, but also guard here to populate errors if clicked
+    if (!validateAll()) return;
+
+    setIsLoading(true);
     try {
-      const payload = {
+      const payload: any = {
         items: cartItems.map((i) => ({
           id: i.id,
           slug: i.slug,
@@ -109,7 +211,15 @@ export default function CartPage() {
         },
         notes: "", // keep for future order notes if needed
         paymentMethod: "stripe",
+        // 🆕 Flags
+        createAccount,
+        marketingOptIn,
       };
+
+      // Only include password when an account is requested and provided
+      if (createAccount && password) {
+        payload.password = password;
+      }
 
       const response = await fetch("/api/checkout", {
         method: "POST",
@@ -123,20 +233,35 @@ export default function CartPage() {
         if (data?.url) {
           window.location.href = data.url;
         } else {
-          alert("❌ Checkout failed. No URL returned.");
           console.error("❌ Raw response:", text);
+          setErrors((prev) => ({
+            ...prev,
+            submit: "Checkout failed. Please try again.",
+          }));
         }
       } catch (err) {
-        alert("❌ Checkout failed. Server response was not valid JSON.");
         console.error("❌ Could not parse response:", text);
+        setErrors((prev) => ({
+          ...prev,
+          submit:
+            "Checkout failed due to a server response error. Please try again.",
+        }));
       }
     } catch (error) {
       console.error("❌ Checkout fetch error:", error);
-      alert("Checkout failed. See console for details.");
+      setErrors((prev) => ({
+        ...prev,
+        submit: "Network error during checkout. Please try again.",
+      }));
     } finally {
       setIsLoading(false);
     }
   };
+
+  // Shared input style
+  const inputClass =
+    "w-full rounded-lg px-3 py-2 bg-[var(--bg-page)] text-white placeholder-gray-400 border border-transparent focus:outline-none focus:ring-2 focus:ring-white/20";
+  const errorClass = "text-xs text-red-400 mt-1";
 
   return (
     <div className="min-h-screen flex flex-col bg-[var(--bg-page)] text-[var(--foreground)]">
@@ -272,76 +397,198 @@ export default function CartPage() {
             <h3 className="text-lg font-semibold mb-3">Shipping Details</h3>
 
             <div className="grid grid-cols-1 gap-3">
-              <input
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Full Name *"
-                className="w-full rounded-lg px-3 py-2 bg-[var(--bg-page)] text-white placeholder-gray-400 border border-transparent focus:outline-none focus:ring-2 focus:ring-white/20"
-              />
-              <input
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Email *"
-                type="email"
-                className="w-full rounded-lg px-3 py-2 bg-[var(--bg-page)] text-white placeholder-gray-400 border border-transparent focus:outline-none focus:ring-2 focus:ring-white/20"
-              />
-              <input
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="Phone (optional)"
-                className="w-full rounded-lg px-3 py-2 bg-[var(--bg-page)] text-white placeholder-gray-400 border border-transparent focus:outline-none focus:ring-2 focus:ring-white/20"
-              />
-
-              <input
-                value={line1}
-                onChange={(e) => setLine1(e.target.value)}
-                placeholder="Street Address *"
-                className="w-full rounded-lg px-3 py-2 bg-[var(--bg-page)] text-white placeholder-gray-400 border border-transparent focus:outline-none focus:ring-2 focus:ring-white/20"
-              />
-              <input
-                value={line2}
-                onChange={(e) => setLine2(e.target.value)}
-                placeholder="Apt, Suite, etc. (optional)"
-                className="w-full rounded-lg px-3 py-2 bg-[var(--bg-page)] text-white placeholder-gray-400 border border-transparent focus:outline-none focus:ring-2 focus:ring-white/20"
-              />
-
-              <div className="grid grid-cols-2 gap-3">
+              <div>
                 <input
-                  value={city}
-                  onChange={(e) => setCity(e.target.value)}
-                  placeholder="City *"
-                  className="w-full rounded-lg px-3 py-2 bg-[var(--bg-page)] text-white placeholder-gray-400 border border-transparent focus:outline-none focus:ring-2 focus:ring-white/20"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  onBlur={onBlur("name")}
+                  placeholder="Full Name *"
+                  className={inputClass}
                 />
+                {errors.name && <p className={errorClass}>{errors.name}</p>}
+              </div>
+
+              <div>
                 <input
-                  value={state}
-                  onChange={(e) => setState(e.target.value)}
-                  placeholder="State *"
-                  className="w-full rounded-lg px-3 py-2 bg-[var(--bg-page)] text-white placeholder-gray-400 border border-transparent focus:outline-none focus:ring-2 focus:ring-white/20"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  onBlur={onBlur("email")}
+                  placeholder="Email *"
+                  type="email"
+                  className={inputClass}
+                />
+                {errors.email && <p className={errorClass}>{errors.email}</p>}
+              </div>
+
+              <div>
+                <input
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="Phone (optional)"
+                  className={inputClass}
+                />
+              </div>
+
+              <div>
+                <input
+                  value={line1}
+                  onChange={(e) => setLine1(e.target.value)}
+                  onBlur={onBlur("line1")}
+                  placeholder="Street Address *"
+                  className={inputClass}
+                />
+                {errors.line1 && <p className={errorClass}>{errors.line1}</p>}
+              </div>
+
+              <div>
+                <input
+                  value={line2}
+                  onChange={(e) => setLine2(e.target.value)}
+                  placeholder="Apt, Suite, etc. (optional)"
+                  className={inputClass}
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
-                <input
-                  value={zip}
-                  onChange={(e) => setZip(e.target.value)}
-                  placeholder="ZIP / Postal Code *"
-                  className="w-full rounded-lg px-3 py-2 bg-[var(--bg-page)] text-white placeholder-gray-400 border border-transparent focus:outline-none focus:ring-2 focus:ring-white/20"
-                />
-                <input
-                  value={country}
-                  onChange={(e) => setCountry(e.target.value)}
-                  placeholder="Country *"
-                  className="w-full rounded-lg px-3 py-2 bg-[var(--bg-page)] text-white placeholder-gray-400 border border-transparent focus:outline-none focus:ring-2 focus:ring-white/20"
-                />
+                <div>
+                  <input
+                    value={city}
+                    onChange={(e) => setCity(e.target.value)}
+                    onBlur={onBlur("city")}
+                    placeholder="City *"
+                    className={inputClass}
+                  />
+                  {errors.city && <p className={errorClass}>{errors.city}</p>}
+                </div>
+                <div>
+                  <input
+                    value={state}
+                    onChange={(e) => setState(e.target.value)}
+                    onBlur={onBlur("state")}
+                    placeholder="State *"
+                    className={inputClass}
+                  />
+                  {errors.state && <p className={errorClass}>{errors.state}</p>}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <input
+                    value={zip}
+                    onChange={(e) => setZip(e.target.value)}
+                    onBlur={onBlur("zip")}
+                    placeholder="ZIP / Postal Code *"
+                    className={inputClass}
+                  />
+                  {errors.zip && <p className={errorClass}>{errors.zip}</p>}
+                </div>
+                <div>
+                  <input
+                    value={country}
+                    onChange={(e) => setCountry(e.target.value)}
+                    onBlur={onBlur("country")}
+                    placeholder="Country *"
+                    className={inputClass}
+                  />
+                  {errors.country && (
+                    <p className={errorClass}>{errors.country}</p>
+                  )}
+                </div>
               </div>
             </div>
           </div>
 
+          {/* 🆕 Engagement options */}
+          <div className="space-y-3">
+            {/* Create account checkbox */}
+            <label className="flex items-start gap-3 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={createAccount}
+                onChange={(e) => {
+                  setCreateAccount(e.target.checked);
+                  // Clear password errors when toggling off
+                  if (!e.target.checked) {
+                    setPassword("");
+                    setConfirmPassword("");
+                    setErrors((prev) => {
+                      const { password, confirmPassword, ...rest } = prev;
+                      return rest;
+                    });
+                  }
+                }}
+                className="mt-1 h-4 w-4"
+              />
+              <span className="text-sm">
+                <span className="font-semibold">Create an account</span>{" "}
+                <span className="opacity-80">
+                  (optional — faster checkout next time)
+                </span>
+              </span>
+            </label>
+
+            {/* Reveal password fields if checked */}
+            {createAccount && (
+              <div className="grid grid-cols-1 gap-3">
+                <div>
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    onBlur={onBlur("password")}
+                    placeholder="Password (min 8 characters) *"
+                    className={inputClass}
+                    autoComplete="new-password"
+                  />
+                  {errors.password && (
+                    <p className={errorClass}>{errors.password}</p>
+                  )}
+                </div>
+                <div>
+                  <input
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    onBlur={onBlur("confirmPassword")}
+                    placeholder="Confirm Password *"
+                    className={inputClass}
+                    autoComplete="new-password"
+                  />
+                  {errors.confirmPassword && (
+                    <p className={errorClass}>{errors.confirmPassword}</p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Marketing opt-in */}
+            <label className="flex items-start gap-3 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={marketingOptIn}
+                onChange={(e) => setMarketingOptIn(e.target.checked)}
+                className="mt-1 h-4 w-4"
+              />
+              <span className="text-sm">
+                <span className="font-semibold">
+                  Email me deals and updates
+                </span>{" "}
+                <span className="opacity-80">(optional)</span>
+              </span>
+            </label>
+          </div>
+
           {/* 🔒 Checkout Button */}
           <div className="mt-2">
+            {/* Submit-level error (e.g., network/API issues) */}
+            {errors.submit && (
+              <p className="mb-3 text-sm text-red-300">{errors.submit}</p>
+            )}
+
             <button
               onClick={handleCheckout}
-              disabled={isLoading || cartItems.length === 0}
+              disabled={isLoading || !formValid}
               className="w-full px-6 py-3 bg-white text-[#1f2a44] rounded-full font-semibold flex items-center justify-center gap-2 hover:bg-gray-100 transition hover:scale-105 disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {isLoading ? (

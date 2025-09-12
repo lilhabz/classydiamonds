@@ -2,7 +2,7 @@
 
 import Head from "next/head";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/router";
 import { useCart } from "@/context/CartContext";
 import Breadcrumbs from "@/components/Breadcrumbs";
@@ -13,6 +13,11 @@ interface SingleOrder {
   items: { name: string; quantity: number; price: number }[];
   amount: number;
   customerAddress: string;
+
+  // 🆕 Optional fields (return these from /api/admin/order when possible)
+  isGuest?: boolean;
+  customerEmail?: string;
+
   createdAt: string;
 }
 
@@ -63,6 +68,16 @@ export default function SuccessPage() {
       });
   }, [session_id]);
 
+  // 🆕 Prefill email in signup link if we have it
+  const signupHref = useMemo(() => {
+    const email = orderData?.customerEmail?.trim();
+    const base = "/auth?mode=signup";
+    if (email) {
+      return `${base}&email=${encodeURIComponent(email)}&next=/account`;
+    }
+    return `${base}&next=/account`;
+  }, [orderData?.customerEmail]);
+
   return (
     <div className="min-h-screen flex flex-col bg-[var(--bg-page)] text-[var(--foreground)]">
       <Head>
@@ -79,7 +94,7 @@ export default function SuccessPage() {
 
       {/* ✅ Confirmation Section */}
       <main className="flex flex-col items-center justify-center flex-grow px-4 pt-28 pb-20 text-center">
-        <div className="bg-[var(--bg-nav)] rounded-2xl shadow-xl p-8 sm:p-12 max-w-xl">
+        <div className="bg-[var(--bg-nav)] rounded-2xl shadow-xl p-8 sm:p-12 max-w-xl w-full">
           <h1 className="text-3xl sm:text-4xl font-bold text-[#d4af37] mb-4">
             Thank you for your purchase!
           </h1>
@@ -126,17 +141,42 @@ export default function SuccessPage() {
               </button>
             </Link>
           )}
-          {/*
-            📝 Tailwind Explanation:
-              - mt-4: adds top margin to separate from “Continue Shopping”
-              - w-full inline-flex items-center justify-center: full-width, centered content
-              - px-6 py-3: comfortable padding
-              - bg-[var(--foreground)], text-[var(--bg-nav)]: matches your existing color scheme
-              - font-semibold: slightly bolder text
-              - rounded-full: pill‐shaped button
-              - shadow: subtle drop shadow
-              - hover:bg-gray-100 transition hover:scale-105: hover state styling
-              - cursor-pointer: pointer cursor on hover
+
+          {/* 🆕 Invite guest to create an account (only if order is marked guest) */}
+          {!loadingOrder && !orderError && orderData?.isGuest === true && (
+            <div className="mt-6 p-4 rounded-xl bg-[#25304f] border border-white/10 text-left">
+              <h2 className="text-lg font-semibold mb-1">
+                Create an account to track your order
+              </h2>
+              <p className="text-sm text-gray-300 mb-3">
+                Save your receipt, track shipping, and view your order history.
+                Use the same email you just checked out with
+                {orderData?.customerEmail ? (
+                  <>
+                    :{" "}
+                    <span className="font-medium text-white">
+                      {orderData.customerEmail}
+                    </span>
+                  </>
+                ) : (
+                  "."
+                )}
+              </p>
+
+              <Link href={signupHref}>
+                <button
+                  type="button"
+                  className="w-full inline-flex items-center justify-center px-6 py-3 bg-white text-[#1f2a44] font-semibold rounded-full shadow hover:bg-gray-100 transition hover:scale-105 cursor-pointer"
+                >
+                  ✨ Create Account
+                </button>
+              </Link>
+            </div>
+          )}
+          {/* 
+            Note: If your /api/admin/order doesn't yet return isGuest/customerEmail,
+            this invite will simply stay hidden. When you add those fields to the API
+            (isGuest true for guest orders, plus customerEmail), the block appears.
           */}
         </div>
       </main>

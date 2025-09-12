@@ -12,7 +12,13 @@ import Breadcrumbs from "@/components/Breadcrumbs";
 
 export default function AuthPage() {
   const router = useRouter();
-  const { confirmed, needsConfirmation, email: queryEmail } = router.query;
+  const {
+    confirmed,
+    needsConfirmation,
+    email: queryEmail,
+    mode,
+    next,
+  } = router.query;
 
   // 🔄 Toggle login/signup
   const [isLogin, setIsLogin] = useState(true);
@@ -31,6 +37,12 @@ export default function AuthPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [passwordFocused, setPasswordFocused] = useState(false);
+
+  // 🔗 next redirect (optional)
+  const [nextPath, setNextPath] = useState<string | null>(null);
+
+  // Focus refs
+  const passwordRef = useRef<HTMLInputElement | null>(null);
 
   // 🎯 Password criteria
   const hasLength = formData.password.length >= 8;
@@ -55,6 +67,19 @@ export default function AuthPage() {
 
   // Handle query flags and polling
   useEffect(() => {
+    // mode=signup from success-page CTA: open in signup mode, prefill email, remember next
+    if (mode === "signup") {
+      setIsLogin(false);
+      if (typeof queryEmail === "string") {
+        setFormData((prev) => ({ ...prev, email: queryEmail }));
+      }
+      if (typeof next === "string" && next) {
+        setNextPath(next);
+      }
+      // focus password shortly after mount
+      setTimeout(() => passwordRef.current?.focus(), 50);
+    }
+
     if (needsConfirmation === "true" && typeof queryEmail === "string") {
       setShowCheckEmailBanner(true);
       setIsLogin(false);
@@ -88,7 +113,7 @@ export default function AuthPage() {
     return () => {
       if (pollRef.current) clearInterval(pollRef.current);
     };
-  }, [needsConfirmation, confirmed, queryEmail]);
+  }, [needsConfirmation, confirmed, queryEmail, mode, next]);
 
   // Handle input changes
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -119,6 +144,48 @@ export default function AuthPage() {
       if (res?.ok) router.push("/");
       else alert("Login failed");
     } else {
+      // Decide which signup flow to use:
+      // - If arriving from success CTA (mode=signup) and next present -> immediate register + sign-in
+      // - Else -> keep existing email-confirmation flow via /api/signup
+      const useImmediateRegister =
+        mode === "signup" && typeof nextPath === "string" && !!nextPath;
+
+      if (useImmediateRegister) {
+        try {
+          const r = await fetch("/api/register", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              name: formData.name,
+              email: formData.email,
+              password: formData.password,
+            }),
+          });
+          const data = await r.json();
+          if (!r.ok || data?.ok === false) {
+            alert(data?.error || "Signup failed");
+            return;
+          }
+
+          // Sign in immediately, then redirect to next
+          const res = await signIn("credentials", {
+            redirect: false,
+            email: formData.email,
+            password: formData.password,
+          });
+          if (res?.ok) {
+            router.push(nextPath || "/");
+          } else {
+            alert("Account created, but auto-login failed. Please log in.");
+          }
+          return;
+        } catch {
+          alert("An error occurred during signup");
+          return;
+        }
+      }
+
+      // Fallback: existing confirmation workflow
       try {
         const response = await fetch("/api/signup", {
           method: "POST",
@@ -192,6 +259,7 @@ export default function AuthPage() {
           />
           <div className="relative">
             <input
+              ref={passwordRef}
               name="password"
               type={showPassword ? "text" : "password"}
               placeholder="Password"
