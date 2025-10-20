@@ -44,7 +44,11 @@ if (uri) {
   }
   clientPromise = global._mongoClientPromise!;
 } else {
-  clientPromise = Promise.resolve(null as unknown as MongoClient);
+  clientPromise = Promise.reject(
+    new Error(
+      "MONGODB_URI is not set. Add it to your environment to use the database at runtime."
+    )
+  );
 }
 
 /* ------------------------------ DB name utils ------------------------------ */
