@@ -85,8 +85,12 @@ export const authOptions: AuthOptions = {
   // 🔄 Callbacks to modify token & session
   callbacks: {
     // 🚫 Block sign-in for any account whose email hasn't been confirmed yet
-    async signIn({ user }) {
+    async signIn({ user, account }) {
       if (!user?.email) return false;
+
+      if (account?.provider !== "credentials") {
+        return true;
+      }
 
       // If the calling code already flagged them as unconfirmed, reuse that
       if ((user as any).emailConfirmed === false) {
