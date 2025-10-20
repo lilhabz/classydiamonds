@@ -1,12 +1,28 @@
 // 📂 lib/mongodb.ts
 // ✅ Single Mongo client across server hot reloads
-// ✅ Shared helpers: getDb() and getCollection() so all readers/writers resolve the SAME DB
+// ✅ Fast fail timeouts to avoid Vercel 504s
+// ✅ Shared helpers: getDb() / getCollection()
 // ✅ Keeps default export `clientPromise` for backward compatibility
 
-import { MongoClient, type Collection, type Document, Db } from "mongodb";
+import {
+  MongoClient,
+  type MongoClientOptions,
+  type Collection,
+  type Document,
+  Db,
+} from "mongodb";
 
 const uri = process.env.MONGODB_URI as string | undefined;
-const options = {}; // add poolSize, retryWrites, etc., if needed
+
+// ⚙️ Serverless-friendly driver options: fail fast instead of hanging to 504
+const options: MongoClientOptions = {
+  serverSelectionTimeoutMS: 5000, // find a node in 5s or throw
+  connectTimeoutMS: 5000,         // TCP connect cap
+  socketTimeoutMS: 15000,         // per-socket I/O cap
+  maxPoolSize: 5,                 // small pool for serverless
+  retryWrites: true,
+  appName: "classydiamonds",
+};
 
 let client: MongoClient;
 // Default export for existing imports
@@ -31,15 +47,7 @@ if (uri) {
   clientPromise = Promise.resolve(null as unknown as MongoClient);
 }
 
-/**
- * 🧠 Resolve the database name consistently.
- * Priority:
- * 1) Explicit dbName arg
- * 2) MONGODB_DB env
- * 3) Derive from MONGODB_URI path (…/<db>?…)
- * 4) Fallback to app default ("classydiamonds")
- */
-// lib/mongodb.ts
+/* ------------------------------ DB name utils ------------------------------ */
 
 function parseDbFromUri(u?: string) {
   try {
@@ -51,22 +59,27 @@ function parseDbFromUri(u?: string) {
 }
 
 /**
- * Priority to pick the DB name reliably:
+ * Priority:
  * 1) explicit arg
  * 2) MONGODB_DB
- * 3) DB name from MONGODB_URI path (e.g. ".../classydiamonds?...")
+ * 3) DB from MONGODB_URI path
+ * 4) fallback "classydiamonds"
  */
-function resolveDbName(explicit?: string): string | undefined {
-  return explicit || process.env.MONGODB_DB || parseDbFromUri(uri);
+function resolveDbName(explicit?: string): string {
+  return (
+    explicit ||
+    process.env.MONGODB_DB ||
+    parseDbFromUri(uri) ||
+    "classydiamonds"
+  );
 }
 
-/**
- * 📦 Get a Mongo DB instance, ensuring URI exists at runtime.
- */
+/* ------------------------------- Public API -------------------------------- */
+
 export async function getDb(dbName?: string) {
   if (!uri) {
     throw new Error(
-      "MONGODB_URI is not set. Add it to your .env.local to use the database at runtime."
+      "MONGODB_URI is not set. Add it to your environment to use the database at runtime."
     );
   }
   if (_db) return _db;
