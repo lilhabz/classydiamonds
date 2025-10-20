@@ -23,6 +23,7 @@ export const authOptions: AuthOptions = {
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      allowDangerousEmailAccountLinking: true,
     }),
     // 🔑 Email & Password Credentials Provider
     CredentialsProvider({
@@ -87,6 +88,64 @@ export const authOptions: AuthOptions = {
     // 🚫 Block sign-in for any account whose email hasn't been confirmed yet
     async signIn({ user, account }) {
       if (!user?.email) return false;
+
+      if (account?.provider === "google") {
+        try {
+          const client = await clientPromise;
+          const db = client.db("classydiamonds");
+          const existingUser = await db.collection("users").findOne({ email: user.email });
+
+          if (existingUser) {
+            const existingUserId = existingUser._id.toString();
+
+            if (account?.providerAccountId) {
+              const adapterInstance = adapter as any;
+              if (
+                adapterInstance?.getUserByAccount &&
+                adapterInstance?.linkAccount &&
+                typeof adapterInstance.getUserByAccount === "function" &&
+                typeof adapterInstance.linkAccount === "function"
+              ) {
+                const linkedUser = await adapterInstance.getUserByAccount({
+                  provider: account.provider,
+                  providerAccountId: account.providerAccountId,
+                });
+
+                if (!linkedUser) {
+                  await adapterInstance.linkAccount({
+                    ...account,
+                    userId: existingUserId,
+                  });
+                }
+              }
+            }
+
+            const fullName = `${existingUser.firstName || ""} ${existingUser.lastName || ""}`.trim();
+
+            Object.assign(user as any, {
+              id: existingUserId,
+              email: existingUser.email,
+              name: fullName || user.name,
+              isAdmin: existingUser.isAdmin || false,
+              firstName: existingUser.firstName || "",
+              lastName: existingUser.lastName || "",
+              phone: existingUser.phone || "",
+              address: existingUser.address || "",
+              city: existingUser.city || "",
+              state: existingUser.state || "",
+              zip: existingUser.zip || "",
+              country: existingUser.country || "",
+              favorites: Array.isArray(existingUser.favorites) ? existingUser.favorites : [],
+              emailConfirmed: existingUser.emailConfirmed ?? true,
+            });
+          }
+        } catch (error) {
+          console.error("Failed to link Google account to existing credentials user", error);
+          return false;
+        }
+
+        return true;
+      }
 
       if (account?.provider !== "credentials") {
         return true;
