@@ -3,6 +3,9 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { listProducts } from "@/lib/products";
 import { categoryCandidatesFor } from "@/data/taxonomy";
 
+
+export const runtime = "nodejs";
+
 type AudCore = "him" | "her";
 
 /**

@@ -5,6 +5,8 @@ import { getSession } from "next-auth/react";
 import clientPromise from "@/lib/mongodb";
 import { hash } from "bcryptjs";
 
+export const runtime = "nodejs";
+
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse

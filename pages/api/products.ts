@@ -2,6 +2,10 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import clientPromise from "@/lib/mongodb";
 
+
+export const runtime = "nodejs";
+
+
 type Audience = "him" | "her";
 
 function mapGenderToAudience(g: string): Audience | null {

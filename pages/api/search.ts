@@ -3,6 +3,7 @@ import clientPromise from "@/lib/mongodb";
 import { promises as fs } from "fs";
 import path from "path";
 
+export const runtime = "nodejs";
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse

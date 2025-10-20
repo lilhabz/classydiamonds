@@ -13,6 +13,7 @@ import {
   resetSkuCounter, // 👈 NEW
 } from "@/lib/sku";
 
+export const runtime = "nodejs";
 export const config = { api: { bodyParser: false } };
 
 type Source = "db" | "legacy";

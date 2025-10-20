@@ -4,10 +4,7 @@ import crypto from "crypto";
 import bcrypt from "bcryptjs";
 import clientPromise from "@/lib/mongodb";
 
-/**
- * Accepts: { token, newPassword }
- * Verifies token via sha256 hash + expiry; updates password (bcrypt 12), clears reset fields.
- */
+export const runtime = "nodejs";
 
 export default async function handler(
   req: NextApiRequest,

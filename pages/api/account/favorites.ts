@@ -4,6 +4,8 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "../auth/[...nextauth]";
 import clientPromise from "@/lib/mongodb";
 
+export const runtime = "nodejs";
+
 /** Normalize & dedupe an arbitrary input into an array of clean string IDs */
 function sanitizeIds(input: unknown, max = 1000): string[] {
   if (!Array.isArray(input)) return [];

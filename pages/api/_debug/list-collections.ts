@@ -1,6 +1,9 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { getDb } from "@/lib/mongodb";
 
+
+export const runtime = "nodejs";
+
 type Row = {
   name: string;
   count: number;

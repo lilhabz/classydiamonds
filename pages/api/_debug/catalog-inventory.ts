@@ -2,6 +2,9 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { getDb } from "@/lib/mongodb"; // ✅ fixed import
 
+export const runtime = "nodejs";
+
+
 type Row = {
   collection: string;
   exists: boolean;

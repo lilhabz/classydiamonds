@@ -4,6 +4,8 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import clientPromise from "@/lib/mongodb";
 import { getToken } from "next-auth/jwt";
 
+export const runtime = "nodejs";
+
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse

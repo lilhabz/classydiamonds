@@ -5,6 +5,7 @@ import clientPromise from "@/lib/mongodb";
 import { IncomingForm } from "formidable";
 import { ObjectId } from "mongodb";
 
+export const runtime = "nodejs";
 export const config = { api: { bodyParser: false } };
 
 type CustomPhoto = {

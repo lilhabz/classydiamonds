@@ -4,15 +4,8 @@ import crypto from "crypto";
 import clientPromise from "@/lib/mongodb";
 import nodemailer from "nodemailer";
 
-/**
- * Uses:
- * - EMAIL_USER, EMAIL_PASS (Gmail transport, same as signup.ts)
- * - NEXTAUTH_URL (falls back to req.headers.origin)
- *
- * Behavior:
- * - Always returns 200 to avoid email enumeration.
- * - Stores resetTokenHash (sha256) and resetTokenExpires (Date) on the user.
- */
+export const runtime = "nodejs";
+
 
 export default async function handler(
   req: NextApiRequest,

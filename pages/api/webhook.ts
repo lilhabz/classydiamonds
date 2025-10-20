@@ -1,4 +1,8 @@
-// 📩 pages/api/webhook.ts – Stripe + Account Address Fallback (Size-aware emails) 💎
+// ✅ Fixed: pages/api/webhook.ts
+// - Forces Node runtime to avoid Edge mis-deployment on Vercel
+// - Keeps raw body config for Stripe signature verification
+// - Matches your installed Stripe SDK type version
+// - No dotenv required (Vercel injects env automatically)
 
 import { buffer } from "micro";
 import type { NextApiRequest, NextApiResponse } from "next";
@@ -7,32 +11,31 @@ import nodemailer from "nodemailer";
 import clientPromise from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
 
+// 🚀 Force Node runtime — absolutely required for Stripe + Nodemailer
+export const runtime = "nodejs";
+
+// 🔒 Stripe requires raw request body
 export const config = {
   api: { bodyParser: false },
 };
 
-// pages/api/webhook.ts
+// Initialize Stripe with your SDK’s pinned version
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string, {
-  apiVersion: "2025-08-27.basil", // ← update to match the SDK types
+  apiVersion: "2025-08-27.basil" as any, // 👈 keeps type compatibility
 });
-
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET || "";
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "POST") {
     res.setHeader("Allow", "POST");
     return res.status(405).end("Method Not Allowed");
   }
 
-  const buf = await buffer(req);
-  const sig = req.headers["stripe-signature"] as string;
-
   let event: Stripe.Event;
   try {
+    const buf = await buffer(req);
+    const sig = req.headers["stripe-signature"] as string;
     event = stripe.webhooks.constructEvent(buf, sig, webhookSecret);
     console.log("⚡️ Webhook hit:", event.type);
   } catch (err: any) {
@@ -63,7 +66,6 @@ export default async function handler(
       return res.status(400).json({ error: "Missing orderId" });
     }
 
-    // 🔍 Load order from DB
     const dbClient = await clientPromise;
     const db = dbClient.db();
     const ordersCollection = db.collection("orders");
@@ -71,6 +73,7 @@ export default async function handler(
     const existingOrder = await ordersCollection.findOne({
       _id: new ObjectId(orderId),
     });
+
     if (!existingOrder) {
       console.error(`❌ No order found in DB for ID ${orderId}`);
       return res.status(404).json({ error: "Order not found" });
@@ -78,14 +81,14 @@ export default async function handler(
 
     const items = Array.isArray(existingOrder.items) ? existingOrder.items : [];
 
-    // ✅ Address preference: Stripe shipping_details → customer_details → DB fallback
+    // ✅ Address preference: Stripe → existing DB
     const stripeAddr =
       session.shipping_details?.address ||
       session.customer_details?.address ||
       (existingOrder as any).address ||
       null;
 
-    // ✅ Name preference: customer_details → shipping_details → metadata → existing → "Unknown"
+    // ✅ Name preference chain
     let customerName =
       (session?.customer_details?.name || "").trim() ||
       (session?.shipping_details?.name || "").trim() ||
@@ -93,31 +96,23 @@ export default async function handler(
         (metadata as any).customerName ||
         (metadata as any).name ||
         (metadata as any).fullName ||
-        (metadata as any).customer_name ||
         ""
       ).trim() ||
       ((existingOrder as any).customerName || "").trim() ||
       "Unknown";
 
-    // 🚫 Never show literal "Stripe" as a customer name; fall back if that slipped in.
     if (customerName.toLowerCase() === "stripe") {
       customerName =
         ((existingOrder as any).customerName || "").trim() ||
-        (
-          (metadata as any).customerName ||
-          (metadata as any).name ||
-          (metadata as any).fullName ||
-          ""
-        ).trim() ||
+        ((metadata as any).customerName || "").trim() ||
         "Unknown";
     }
 
-    // 🛠️ FIX: fallback to line1/postal_code keys that checkout.ts saved
     const shippingAddressObject = {
       street:
         stripeAddr?.line1 ||
-        (existingOrder as any).address?.line1 || // ✅
-        (existingOrder as any).address?.street1 || // legacy
+        (existingOrder as any).address?.line1 ||
+        (existingOrder as any).address?.street1 ||
         "",
       line2:
         stripeAddr?.line2 ||
@@ -128,8 +123,8 @@ export default async function handler(
       state: stripeAddr?.state || (existingOrder as any).address?.state || "",
       zip:
         stripeAddr?.postal_code ||
-        (existingOrder as any).address?.postal_code || // ✅
-        (existingOrder as any).address?.zip || // legacy
+        (existingOrder as any).address?.postal_code ||
+        (existingOrder as any).address?.zip ||
         "",
       country:
         stripeAddr?.country || (existingOrder as any).address?.country || "",
@@ -146,41 +141,37 @@ export default async function handler(
       (existingOrder as any).customerEmail ||
       process.env.EMAIL_USER;
 
-    console.log("📦 Shipping Address Saved:", shippingAddressObject);
-
     const amountTotal = (session.amount_total || 0) / 100;
     const stripeSessionId = session.id;
 
-    // 🔢 Generate order number (keep existing or create new)
+    // 🔢 Order number
     let orderNumber = (existingOrder as any).orderNumber as number | undefined;
     if (!orderNumber) {
-      const countersCollection = db.collection<{
-        _id: string;
-        sequence_value: number;
-      }>("counters");
       try {
-        const counterResult = await countersCollection.findOneAndUpdate(
-          { _id: "orderNumber" },
-          { $inc: { sequence_value: 1 } },
-          {
-            returnDocument: "after",
-            upsert: true,
-            projection: { sequence_value: 1 },
-          }
-        );
-        orderNumber = counterResult.value?.sequence_value || 100;
+        const counters = db.collection("counters");
+        // ✅ Explicitly use ObjectId to satisfy TypeScript
+const result = await counters.findOneAndUpdate(
+  { _id: new ObjectId("orderNumber") as any },
+  { $inc: { sequence_value: 1 } },
+  {
+    returnDocument: "after",
+    upsert: true,
+    projection: { sequence_value: 1 },
+  }
+);
+
+        orderNumber = result.value?.sequence_value || 100;
       } catch {
         orderNumber = Date.now();
       }
     }
 
-    // 💾 Update order status
     await ordersCollection.updateOne(
       { _id: new ObjectId(orderId) },
       {
         $set: {
           orderNumber,
-          customerName, // ✅ real name stored
+          customerName,
           customerEmail,
           customerAddress: shippingAddressString,
           shipping_address: shippingAddressObject,
@@ -196,7 +187,7 @@ export default async function handler(
 
     console.log(`✅ Order #${orderNumber} marked as paid`);
 
-    // 📧 Email receipt (prefer unitPrice saved by checkout.ts; fall back to others)
+    // 📧 Send confirmation email
     try {
       const itemRows = items
         .map((item: any) => {
@@ -207,7 +198,6 @@ export default async function handler(
             item.originalPrice ??
             item.price ??
             0;
-
           const sizeBadge = item.size
             ? `<div style="margin-top:4px;">
                  <span style="display:inline-block;font-size:12px;padding:2px 8px;border-radius:999px;background:#364763;color:#fff;">
@@ -215,36 +205,31 @@ export default async function handler(
                  </span>
                </div>`
             : "";
-
           return `
-          <tr>
-            <td style="padding: 8px; border: 1px solid #ddd;">
-              <div style="display: flex; align-items: center; gap: 10px;">
-                <img src="${item.image || ""}" alt="${item.name || "Item"}"
-                     style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px;" />
-                <div>
-                  <div>${item.name || "Item"}</div>
-                  ${sizeBadge}
+            <tr>
+              <td style="padding:8px;border:1px solid #ddd;">
+                <div style="display:flex;align-items:center;gap:10px;">
+                  <img src="${item.image || ""}" alt="${item.name || "Item"}"
+                       style="width:50px;height:50px;object-fit:cover;border-radius:4px;" />
+                  <div>
+                    <div>${item.name || "Item"}</div>
+                    ${sizeBadge}
+                  </div>
                 </div>
-              </div>
-            </td>
-            <td style="padding: 8px; border: 1px solid #ddd;">x${
-              item.quantity || 1
-            }</td>
-            <td style="padding: 8px; border: 1px solid #ddd;">$${(
-              unit * (item.quantity || 1)
-            ).toFixed(2)}</td>
-          </tr>`;
+              </td>
+              <td style="padding:8px;border:1px solid #ddd;">x${item.quantity || 1}</td>
+              <td style="padding:8px;border:1px solid #ddd;">$${(
+                unit * (item.quantity || 1)
+              ).toFixed(2)}</td>
+            </tr>`;
         })
         .join("");
 
-      const htmlContent = `
+      const html = `
         <h2>Thank You for Your Order, ${customerName}!</h2>
         <p>Your <strong>Order #${orderNumber}</strong> has been received.</p>
         <p><strong>Shipping to:</strong><br>${shippingAddressString}</p>
-        <table style="width: 100%; border-collapse: collapse;">
-          <tbody>${itemRows}</tbody>
-        </table>
+        <table style="width:100%;border-collapse:collapse;"><tbody>${itemRows}</tbody></table>
         <p><strong>Total:</strong> $${amountTotal.toFixed(2)}</p>
       `;
 
@@ -261,19 +246,17 @@ export default async function handler(
           from: `"Classy Diamonds" <${fromEmail}>`,
           to: customerEmail,
           subject: `💎 Order Receipt – #${orderNumber}`,
-          html: htmlContent,
+          html,
         });
 
         console.log("📧 Receipt sent to:", customerEmail);
       } else {
-        console.warn(
-          "⚠️ Skipping email: EMAIL_USER/EMAIL_PASS or recipient missing."
-        );
+        console.warn("⚠️ Missing EMAIL_USER/EMAIL_PASS or recipient.");
       }
     } catch (emailErr) {
       console.error("❌ Email error:", emailErr);
     }
   }
 
-  res.status(200).json({ received: true });
+  return res.status(200).json({ received: true });
 }

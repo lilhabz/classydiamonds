@@ -6,6 +6,7 @@ import clientPromise from "@/lib/mongodb";
 import crypto from "crypto";
 import nodemailer from "nodemailer";
 
+export const runtime = "nodejs";
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse

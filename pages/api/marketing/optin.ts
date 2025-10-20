@@ -3,6 +3,9 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import clientPromise from "@/lib/mongodb";
 
+export const runtime = "nodejs";
+
+
 type Ok = { ok: true } | { ok: false; error: string };
 
 function isValidEmail(email = ""): boolean {

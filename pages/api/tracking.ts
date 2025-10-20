@@ -5,6 +5,7 @@ import { authOptions } from "./auth/[...nextauth]";
 import clientPromise from "@/lib/mongodb";
 import { buildOrderDetailsHtml } from "@/lib/emailUtils";
 
+export const runtime = "nodejs";
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse

@@ -3,6 +3,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import clientPromise from "@/lib/mongodb";
 
+export const runtime = "nodejs";
 export default async function confirmHandler(
   req: NextApiRequest,
   res: NextApiResponse

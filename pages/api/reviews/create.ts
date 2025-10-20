@@ -5,6 +5,9 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import clientPromise from "@/lib/mongodb"; // Your existing MongoDB connection helper
 
+
+export const runtime = "nodejs";
+
 type Data =
   | { success: true; reviewId: string }
   | { success: false; error: string };

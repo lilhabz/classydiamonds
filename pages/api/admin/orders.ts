@@ -3,6 +3,8 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { ObjectId } from "mongodb";
 import clientPromise from "@/lib/mongodb";
 
+export const runtime = "nodejs";
+
 interface RawOrder {
   _id: ObjectId;
   customerName?: string;

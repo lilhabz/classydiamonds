@@ -4,6 +4,7 @@ import clientPromise from "@/lib/mongodb";
 
 type ApiPhoto = { _id: string; imageUrl: string; createdAt: string };
 
+export const runtime = "nodejs";
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<{ photos?: ApiPhoto[]; error?: string }>

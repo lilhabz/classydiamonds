@@ -4,6 +4,9 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import clientPromise from "@/lib/mongodb";
 
+
+export const runtime = "nodejs";
+
 type RawLog = {
   _id?: any;
   action?: string;

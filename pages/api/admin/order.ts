@@ -5,6 +5,8 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import clientPromise from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
 
+export const runtime = "nodejs";
+
 /* ---------- Raw DB Shapes ---------- */
 interface RawOrderItem {
   name?: string;

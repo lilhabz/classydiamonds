@@ -1,7 +1,13 @@
-// pages/api/register.ts
+// ✅ Fixed: pages/api/register.ts
+// - Forces Node runtime (bcrypt + MongoDB need Node)
+// - Keeps your full logic 100% intact
+
 import type { NextApiRequest, NextApiResponse } from "next";
 import { getDb } from "@/lib/mongodb";
 import bcrypt from "bcryptjs";
+
+// 🚀 Force Node runtime to avoid Vercel Edge crash
+export const runtime = "nodejs";
 
 type Ok =
   | {
@@ -54,7 +60,7 @@ export default async function handler(
     const cleanEmail = safeStr(email).toLowerCase();
     const cleanPassword = safeStr(password);
 
-    // Basic validation (keep strict but simple)
+    // Basic validation
     if (!cleanName) {
       return res.status(400).json({ ok: false, error: "Name is required." });
     }
@@ -73,7 +79,7 @@ export default async function handler(
     const db = await getDb();
     const users = db.collection("users");
 
-    // Check if a user already exists for this email
+    // Check if user already exists
     const existing = await users.findOne<{
       _id: any;
       password?: string;
@@ -83,7 +89,7 @@ export default async function handler(
     const passwordHash = await bcrypt.hash(cleanPassword, 12);
 
     if (existing) {
-      // If user already has a password, treat as already registered (non-fatal)
+      // Already registered
       if (existing.password && typeof existing.password === "string") {
         return res.status(200).json({
           ok: true,
@@ -92,8 +98,7 @@ export default async function handler(
         });
       }
 
-      // If user exists (e.g., via social login) but no password is set,
-      // upgrade account to also support credentials.
+      // Upgrade existing social login to include password
       await users.updateOne(
         { _id: existing._id },
         {
@@ -124,11 +129,11 @@ export default async function handler(
       });
     }
 
-    // Create a brand-new credentials user
+    // New credentials user
     const insert = await users.insertOne({
       name: cleanName,
       email: cleanEmail,
-      password: passwordHash, // keep consistent with your existing users schema
+      password: passwordHash,
       phone: safeStr(phone) || undefined,
       address: address
         ? {
@@ -145,17 +150,19 @@ export default async function handler(
       updatedAt: new Date(),
     });
 
-    return res
-      .status(200)
-      .json({ ok: true, userId: String(insert.insertedId) });
+    return res.status(200).json({ ok: true, userId: String(insert.insertedId) });
   } catch (err: any) {
     console.error("[/api/register] error:", err);
-    // Duplicate key safety (if unique index on email exists)
+
+    // Handle duplicate key (email)
     if (err?.code === 11000) {
-      return res
-        .status(200)
-        .json({ ok: true, userId: "", alreadyExists: true });
+      return res.status(200).json({
+        ok: true,
+        userId: "",
+        alreadyExists: true,
+      });
     }
+
     return res.status(500).json({ ok: false, error: "Internal server error." });
   }
 }

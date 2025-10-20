@@ -5,6 +5,9 @@ import { authOptions } from "../auth/[...nextauth]";
 import clientPromise from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
 
+
+export const runtime = "nodejs";
+
 type Body = {
   orderId?: string; // Mongo _id (preferred)
   sessionId?: string; // Stripe session id (fallback)

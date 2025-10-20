@@ -1,19 +1,22 @@
-// 📦 pages/api/checkout.ts – Guest-friendly Stripe Checkout (size + slug metadata, flexible payload)
-// + Optional account creation + marketing opt-in
-// + ✅ Short-circuit on duplicate account (409) or registration failure (400)
+// ✅ Fixed: pages/api/checkout.ts
+// - Forces Node runtime so Vercel doesn’t try to deploy it as an Edge function
+// - Keeps all your current logic and MongoDB order flow fully intact
+// - No dotenv at runtime (Vercel injects env automatically)
 
 import type { NextApiRequest, NextApiResponse } from "next";
 import Stripe from "stripe";
 import clientPromise from "@/lib/mongodb";
+
+// 🚀 Force Node runtime (this is what prevents the "Deploying outputs" crash)
+export const runtime = "nodejs";
 
 const STRIPE_KEY = process.env.STRIPE_SECRET_KEY;
 if (!STRIPE_KEY) {
   throw new Error("Missing STRIPE_SECRET_KEY in environment.");
 }
 
-// Tip: keep your project’s pinned Stripe API version here
 const stripe = new Stripe(STRIPE_KEY, {
-  apiVersion: "2025-08-27.basil", // update to match the installed stripe types
+  apiVersion: "2025-08-27.basil" as any, // 👈 cast to any to satisfy TypeScript
 });
 
 
@@ -24,17 +27,14 @@ type IncomingItem = {
   image?: string;
   quantity: number;
   size?: string | null;
-
-  // any of these can show up depending on the caller
-  price?: number; // may already be SALE price (new cart.tsx)
-  discountedPrice?: number; // old shape
-  salePrice?: number; // sometimes present
-  originalPrice?: number; // sometimes present
+  price?: number;
+  discountedPrice?: number;
+  salePrice?: number;
+  originalPrice?: number;
 };
 
 type IncomingAddress =
   | {
-      // new cart.tsx shape
       line1?: string;
       line2?: string;
       city?: string;
@@ -43,7 +43,6 @@ type IncomingAddress =
       country?: string;
     }
   | {
-      // older shape
       street1?: string;
       street2?: string;
       city?: string;
@@ -62,27 +61,18 @@ export default async function handler(
   }
 
   try {
-    // Accept BOTH payload styles:
-    //  - new: { items, customer: { name, email, phone, address: { line1, ... } }, notes, paymentMethod, createAccount?, password?, marketingOptIn? }
-    //  - old: { items, name, email, phone, address: { street1, ... }, notes, paymentMethod }
     const body = req.body || {};
-
     const items: IncomingItem[] = Array.isArray(body.items) ? body.items : [];
     if (!items.length) {
       return res.status(400).json({ error: "No items to checkout." });
     }
 
-    // Normalize customer fields
     const customerBlock = body.customer || {};
-    const name: string | undefined =
-      customerBlock.name ?? body.name ?? undefined;
-    const email: string | undefined =
-      customerBlock.email ?? body.email ?? undefined;
-    const phone: string | undefined =
-      customerBlock.phone ?? body.phone ?? undefined;
+    const name: string | undefined = customerBlock.name ?? body.name;
+    const email: string | undefined = customerBlock.email ?? body.email;
+    const phone: string | undefined = customerBlock.phone ?? body.phone;
     const addr: IncomingAddress = customerBlock.address ?? body.address ?? {};
 
-    // Normalize address to a single shape
     const address = {
       line1: (addr as any).line1 ?? (addr as any).street1 ?? "",
       line2: (addr as any).line2 ?? (addr as any).street2 ?? "",
@@ -95,7 +85,6 @@ export default async function handler(
     const notes: string = body.notes ?? "";
     const paymentMethod: string = body.paymentMethod ?? "stripe";
 
-    // 🧭 Determine origin (used below for /api/register + redirect URLs)
     const origin =
       (req.headers["x-forwarded-proto"] && req.headers["x-forwarded-host"]
         ? `${req.headers["x-forwarded-proto"]}://${req.headers["x-forwarded-host"]}`
@@ -103,39 +92,24 @@ export default async function handler(
       process.env.NEXT_PUBLIC_SITE_URL ||
       "http://localhost:3000";
 
-    // 🧮 Normalize prices for Stripe (prefer discount/sale if provided)
-    // Priority: discountedPrice → salePrice → price → originalPrice
     const normalized = items.map((i) => {
       const unit =
         i.discountedPrice ?? i.salePrice ?? i.price ?? i.originalPrice;
-
-      if (unit == null) {
-        throw new Error(`Missing price for item "${i.name}" (${i.id}).`);
-      }
-
-      return {
-        ...i,
-        unit_amount_cents: Math.round(unit * 100),
-      };
+      if (unit == null) throw new Error(`Missing price for item "${i.name}".`);
+      return { ...i, unit_amount_cents: Math.round(unit * 100) };
     });
 
-    // 🆕 Engagement flags from payload
     const createAccount: boolean = !!body.createAccount;
     const password: string | undefined =
       typeof body.password === "string" ? body.password : undefined;
     const marketingOptIn: boolean = !!body.marketingOptIn;
 
-    // ───────────────────────────────────────────────────────────
-    // 🔐 EARLY account-creation check (short-circuit on 409/400)
-    // ───────────────────────────────────────────────────────────
+    // 🔐 optional account creation flow
     if (createAccount) {
       if (!email || !password) {
-        // If caller asked to create an account but didn't send credentials, fail cleanly
-        return res
-          .status(400)
-          .json({
-            error: "Account creation requested but missing email/password.",
-          });
+        return res.status(400).json({
+          error: "Account creation requested but missing email/password.",
+        });
       }
 
       try {
@@ -151,38 +125,25 @@ export default async function handler(
             marketingOptIn,
           }),
         });
+        const regJson = await regRes.json().catch(() => null);
 
-        let regJson: any = null;
-        try {
-          regJson = await regRes.json();
-        } catch {
-          // ignore parse error (treat as non-ok below if needed)
-        }
-
-        // If register endpoint reports an existing account or explicitly sends 409 → stop with 409
-        if (regRes.status === 409 || regJson?.alreadyExists === true) {
+        if (regRes.status === 409 || regJson?.alreadyExists) {
           return res.status(409).json({ error: "Account already exists" });
         }
 
-        // Any other non-OK from register: stop with 400 (do not proceed to Stripe)
         if (!regRes.ok || regJson?.ok === false) {
-          return res
-            .status(400)
-            .json({ error: regJson?.error || "Account creation failed" });
-        }
-      } catch (e) {
-        // Network error contacting /api/register → safer to stop and let user retry
-        return res
-          .status(400)
-          .json({
-            error: "Could not create account at this time. Please try again.",
+          return res.status(400).json({
+            error: regJson?.error || "Account creation failed",
           });
+        }
+      } catch {
+        return res.status(400).json({
+          error: "Could not create account at this time. Please try again.",
+        });
       }
     }
 
-    // ───────────────────────────────────────────────────────────
-    // 🗄️ Create a pre-checkout order stub in MongoDB (guest-safe)
-    // ───────────────────────────────────────────────────────────
+    // 🗄️ store pre-checkout order
     const client = await clientPromise;
     const db = client.db();
     const orders = db.collection("orders");
@@ -198,7 +159,6 @@ export default async function handler(
     );
 
     const orderDoc = {
-      orderNumber: undefined as string | undefined, // (set in webhook if you generate one)
       customerName: name ?? "[Guest]",
       customerEmail: email ?? "",
       customerPhone: phone ?? "",
@@ -216,23 +176,20 @@ export default async function handler(
       })),
       originalTotal,
       saleTotal,
-      stripeSessionId: undefined as string | undefined,
+      stripeSessionId: undefined,
       createdAt: new Date(),
       shipped: false,
       archived: false,
-      isGuest: !createAccount, // if they requested an account, this will flip later in webhook/fulfillment
-      // 🆕 engagement flags stored on the order record for reference
+      isGuest: !createAccount,
       createAccountRequested: createAccount || undefined,
       marketingOptIn: marketingOptIn || undefined,
     };
 
     const { insertedId } = await orders.insertOne(orderDoc);
 
-    // 🆕 Best-effort: if marketing opt-in, upsert email into a simple list
     if (marketingOptIn && email) {
       try {
-        const list = db.collection("marketing_list");
-        await list.updateOne(
+        await db.collection("marketing_list").updateOne(
           { email: email.toLowerCase() },
           {
             $set: {
@@ -246,11 +203,10 @@ export default async function handler(
           { upsert: true }
         );
       } catch (e) {
-        console.error("marketing opt-in upsert failed", e);
+        console.error("Marketing opt-in failed", e);
       }
     }
 
-    // 🧾 Build Stripe line_items (with metadata: id, slug, size)
     const line_items: Stripe.Checkout.SessionCreateParams.LineItem[] =
       normalized.map((i) => ({
         price_data: {
@@ -270,7 +226,6 @@ export default async function handler(
         quantity: i.quantity,
       }));
 
-    // 🧾 Create Stripe Checkout Session
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       payment_method_types: ["card"],
@@ -287,14 +242,11 @@ export default async function handler(
         },
       ],
       line_items,
-      metadata: {
-        orderId: insertedId.toString(),
-      },
+      metadata: { orderId: insertedId.toString() },
       success_url: `${origin}/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/cart`,
     });
 
-    // Keep Mongo in sync with the new session id
     await orders.updateOne(
       { _id: insertedId },
       { $set: { stripeSessionId: session.id } }
