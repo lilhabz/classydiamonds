@@ -24,6 +24,13 @@ export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
   const [showCheckEmailBanner, setShowCheckEmailBanner] = useState(false);
   const [showConfirmedBanner, setShowConfirmedBanner] = useState(false);
+  const [formMessage, setFormMessage] = useState<
+    | {
+        type: "error" | "success";
+        text: string;
+      }
+    | null
+  >(null);
 
   // 📝 Form data
   const [formData, setFormData] = useState({
@@ -82,6 +89,7 @@ export default function AuthPage() {
 
     if (needsConfirmation === "true" && typeof queryEmail === "string") {
       setShowCheckEmailBanner(true);
+      setFormMessage(null);
       setIsLogin(false);
       setFormData((prev) => ({ ...prev, email: queryEmail }));
 
@@ -106,6 +114,10 @@ export default function AuthPage() {
 
     if (confirmed === "true" && typeof queryEmail === "string") {
       setShowConfirmedBanner(true);
+      setFormMessage({
+        type: "success",
+        text: "Your email is confirmed. Please log in with your credentials.",
+      });
       setIsLogin(true);
       setFormData((prev) => ({ ...prev, email: queryEmail }));
     }
@@ -119,18 +131,28 @@ export default function AuthPage() {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+    if (formMessage) setFormMessage(null);
   };
 
   // Handle form submit
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setFormMessage(null);
+
     if (!isLogin) {
       if (formData.password !== formData.confirmPassword) {
-        alert("Passwords do not match");
+        setFormMessage({
+          type: "error",
+          text: "Passwords do not match.",
+        });
         return;
       }
       if (!passwordValid) {
-        alert("Password does not meet requirements.");
+        setFormMessage({
+          type: "error",
+          text:
+            "Password does not meet the minimum security requirements shown above.",
+        });
         return;
       }
     }
@@ -141,8 +163,37 @@ export default function AuthPage() {
         email: formData.email,
         password: formData.password,
       });
-      if (res?.ok) router.push("/");
-      else alert("Login failed");
+      if (res?.ok) {
+        router.push("/");
+        return;
+      }
+
+      const errorMessage = res?.error ?? "Login failed";
+      if (
+        errorMessage.includes("confirm your email") ||
+        errorMessage.includes("confirm your account")
+      ) {
+        setShowCheckEmailBanner(true);
+        setFormMessage({
+          type: "error",
+          text:
+            "Please confirm your email before logging in. Open the confirmation email we sent when you registered, click the link to activate your account, then return here to sign in. If you can’t find the email, check your spam folder or request a new confirmation message.",
+        });
+        return;
+      }
+
+      if (errorMessage === "CredentialsSignin") {
+        setFormMessage({
+          type: "error",
+          text: "The email or password you entered is incorrect.",
+        });
+        return;
+      }
+
+      setFormMessage({
+        type: "error",
+        text: errorMessage || "Login failed.",
+      });
     } else {
       // Decide which signup flow to use:
       // - If arriving from success CTA (mode=signup) and next present -> immediate register + sign-in
@@ -163,7 +214,10 @@ export default function AuthPage() {
           });
           const data = await r.json();
           if (!r.ok || data?.ok === false) {
-            alert(data?.error || "Signup failed");
+            setFormMessage({
+              type: "error",
+              text: data?.error || "Signup failed.",
+            });
             return;
           }
 
@@ -176,11 +230,18 @@ export default function AuthPage() {
           if (res?.ok) {
             router.push(nextPath || "/");
           } else {
-            alert("Account created, but auto-login failed. Please log in.");
+            setFormMessage({
+              type: "error",
+              text:
+                "Your account was created, but we couldn’t log you in automatically. Please sign in manually.",
+            });
           }
           return;
         } catch {
-          alert("An error occurred during signup");
+          setFormMessage({
+            type: "error",
+            text: "An error occurred during signup.",
+          });
           return;
         }
       }
@@ -196,12 +257,23 @@ export default function AuthPage() {
           // Show banner and keep on signup page for polling
           setShowCheckEmailBanner(true);
           setIsLogin(false);
+          setFormMessage({
+            type: "success",
+            text:
+              "Account created! Check your inbox for a confirmation email. Follow the link in that email to activate your account before logging in.",
+          });
           return;
         }
         const result = await response.json();
-        alert(result.error || "Signup failed");
+        setFormMessage({
+          type: "error",
+          text: result.error || "Signup failed.",
+        });
       } catch {
-        alert("An error occurred during signup");
+        setFormMessage({
+          type: "error",
+          text: "An error occurred during signup.",
+        });
       }
     }
   };
@@ -225,13 +297,25 @@ export default function AuthPage() {
         {/* Banners */}
         {showCheckEmailBanner && (
           <div className="mb-4 p-3 bg-yellow-100 text-yellow-800 rounded">
-            Check your email to confirm your address (opens a new tab to log
-            in).
+            We sent a confirmation email to {formData.email || "your inbox"}.
+            Open it in a new tab, click the confirmation link, then return here
+            to log in.
           </div>
         )}
         {showConfirmedBanner && (
           <div className="mb-4 p-3 bg-green-100 text-green-800 rounded">
             Your email has been confirmed! You can now log in.
+          </div>
+        )}
+        {formMessage && (
+          <div
+            className={`mb-4 p-3 rounded text-sm ${
+              formMessage.type === "error"
+                ? "bg-red-100 text-red-800"
+                : "bg-green-100 text-green-800"
+            }`}
+          >
+            {formMessage.text}
           </div>
         )}
 
@@ -362,7 +446,10 @@ export default function AuthPage() {
             <>
               Don’t have an account?{" "}
               <button
-                onClick={() => setIsLogin(false)}
+                onClick={() => {
+                  setIsLogin(false);
+                  setFormMessage(null);
+                }}
                 className="underline text-[#f7c59f]"
               >
                 Sign up
@@ -372,7 +459,10 @@ export default function AuthPage() {
             <>
               Already have an account?{" "}
               <button
-                onClick={() => setIsLogin(true)}
+                onClick={() => {
+                  setIsLogin(true);
+                  setFormMessage(null);
+                }}
                 className="underline text-[#f7c59f]"
               >
                 Login

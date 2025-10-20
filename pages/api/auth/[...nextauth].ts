@@ -9,6 +9,9 @@ import { compare } from "bcryptjs";
 import { JWT } from "next-auth/jwt";
 import { Session, User } from "next-auth";
 
+const CONFIRM_EMAIL_ERROR =
+  "Please confirm your email before logging in. Open the confirmation email we sent when you registered, click the link to activate your account, then return to sign in. If you can’t find the email, check your spam folder or request another confirmation.";
+
 // 🚀 Force Node runtime (NextAuth + bcrypt + MongoDB require Node on Vercel)
 export const runtime = "nodejs";
 
@@ -37,7 +40,7 @@ export const authOptions: AuthOptions = {
         if (!user || !user.password) return null;
         // 📧 Enforce email confirmation
         if (!user.emailConfirmed) {
-          throw new Error("Please confirm your email before logging in.");
+          throw new Error(CONFIRM_EMAIL_ERROR);
         }
         // 🔒 Verify password
         const isValid = await compare(credentials!.password, user.password);
@@ -87,7 +90,7 @@ export const authOptions: AuthOptions = {
 
       // If the calling code already flagged them as unconfirmed, reuse that
       if ((user as any).emailConfirmed === false) {
-        throw new Error("Please confirm your email before logging in.");
+        throw new Error(CONFIRM_EMAIL_ERROR);
       }
 
       const client = await clientPromise;
@@ -97,7 +100,7 @@ export const authOptions: AuthOptions = {
         .findOne({ email: user.email }, { projection: { emailConfirmed: 1 } });
 
       if (!existingUser?.emailConfirmed) {
-        throw new Error("Please confirm your email before logging in.");
+        throw new Error(CONFIRM_EMAIL_ERROR);
       }
 
       return true;
