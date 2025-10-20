@@ -11,9 +11,11 @@ export const config = {
   api: { bodyParser: false },
 };
 
+// pages/api/webhook.ts
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string, {
-  apiVersion: "2025-04-30.basil",
+  apiVersion: "2025-08-27.basil", // ← update to match the SDK types
 });
+
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET || "";
 
