@@ -13,8 +13,9 @@ if (!STRIPE_KEY) {
 
 // Tip: keep your project’s pinned Stripe API version here
 const stripe = new Stripe(STRIPE_KEY, {
-  apiVersion: "2025-04-30.basil",
+  apiVersion: "2025-08-27.basil", // update to match the installed stripe types
 });
+
 
 type IncomingItem = {
   id: string;
