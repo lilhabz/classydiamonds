@@ -81,6 +81,28 @@ export const authOptions: AuthOptions = {
 
   // 🔄 Callbacks to modify token & session
   callbacks: {
+    // 🚫 Block sign-in for any account whose email hasn't been confirmed yet
+    async signIn({ user }) {
+      if (!user?.email) return false;
+
+      // If the calling code already flagged them as unconfirmed, reuse that
+      if ((user as any).emailConfirmed === false) {
+        throw new Error("Please confirm your email before logging in.");
+      }
+
+      const client = await clientPromise;
+      const db = client.db("classydiamonds");
+      const existingUser = await db
+        .collection("users")
+        .findOne({ email: user.email }, { projection: { emailConfirmed: 1 } });
+
+      if (!existingUser?.emailConfirmed) {
+        throw new Error("Please confirm your email before logging in.");
+      }
+
+      return true;
+    },
+
     // 🔐 Populate JWT token with custom fields
     async jwt({
       token,
