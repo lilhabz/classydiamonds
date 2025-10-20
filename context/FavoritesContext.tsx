@@ -6,7 +6,6 @@ import React, {
   useContext,
   useEffect,
   useMemo,
-  useRef,
   useState,
   ReactNode,
 } from "react";
@@ -47,7 +46,6 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
 
   const [favorites, setFavorites] = useState<string[]>([]);
   const [rehydrated, setRehydrated] = useState(false);
-  const isMounted = useRef(false);
 
   // Helpers
   const dedupe = (list: string[]) => Array.from(new Set(list.filter(Boolean)));
@@ -97,32 +95,33 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
 
   // Initial rehydrate: localStorage for guests, API (+ merge) for signed-in users
   useEffect(() => {
-    if (isMounted.current) return;
-    isMounted.current = true;
+    let cancelled = false;
 
     const hydrate = async () => {
       const local = readLocal();
 
-      // If not authenticated (or still loading), start with local and finish
       if (status !== "authenticated" || !userId) {
+        if (cancelled) return;
         setFavorites(dedupe(local));
         setRehydrated(true);
         return;
       }
 
-      // Authenticated: merge server + local, dedupe, push back to server (merge)
       const server = (await fetchServerFavorites()) ?? [];
       const merged = dedupe([...server, ...local]);
 
+      if (cancelled) return;
       setFavorites(merged);
       setRehydrated(true);
-
-      // Persist merged list back to both places
       writeLocal(merged);
       pushServerFavorites(merged);
     };
 
     hydrate();
+
+    return () => {
+      cancelled = true;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, userId]);
 

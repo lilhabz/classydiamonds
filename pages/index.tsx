@@ -32,26 +32,31 @@ interface HomeProps {
 }
 
 export const getServerSideProps: GetServerSideProps<HomeProps> = async () => {
-  const client = await clientPromise;
-  const db = client.db();
-  const featuredDocs = await db
-    .collection("products")
-    .find({ featured: true })
-    .limit(4) // ⬅️ exactly four
-    .toArray();
+  try {
+    const client = await clientPromise;
+    const db = client.db();
+    const featuredDocs = await db
+      .collection("products")
+      .find({ featured: true })
+      .limit(4) // ⬅️ exactly four
+      .toArray();
 
-  const products: Product[] = featuredDocs.map((doc: any) => ({
-    _id: doc._id.toString(),
-    name: doc.name,
-    price: doc.price,
-    salePrice: doc.salePrice ?? null,
-    image: doc.imageUrl || doc.image,
-    // ✅ normalize to canonical slugs so links don't break
-    category: canonicalizeCategory(String(doc.category || "")),
-    slug: doc.slug,
-  }));
+    const products: Product[] = featuredDocs.map((doc: any) => ({
+      _id: doc._id.toString(),
+      name: doc.name,
+      price: doc.price,
+      salePrice: doc.salePrice ?? null,
+      image: doc.imageUrl || doc.image,
+      // ✅ normalize to canonical slugs so links don't break
+      category: canonicalizeCategory(String(doc.category || "")),
+      slug: doc.slug,
+    }));
 
-  return { props: { products } };
+    return { props: { products } };
+  } catch (error) {
+    console.error("Failed to load featured products", error);
+    return { props: { products: [] } };
+  }
 };
 
 export default function Home({ products }: HomeProps) {
