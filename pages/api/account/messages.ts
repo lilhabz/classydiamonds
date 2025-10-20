@@ -1,8 +1,9 @@
 // 📄 pages/api/account/messages.ts – Fetch Contact + Custom Form Messages for Account Page 💎
 
-import { getSession } from "next-auth/react";
+import { getServerSession } from "next-auth/next";
 import type { NextApiRequest, NextApiResponse } from "next";
 import clientPromise from "@/lib/mongodb";
+import { authOptions } from "../auth/[...nextauth]";
 
 export const runtime = "nodejs";
 
@@ -10,7 +11,7 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
-  const session = await getSession({ req });
+  const session = await getServerSession(req, res, authOptions);
 
   if (!session) {
     return res.status(401).json({ error: "Unauthorized" });
