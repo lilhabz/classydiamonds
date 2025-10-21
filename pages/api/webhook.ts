@@ -235,23 +235,70 @@ const result = await counters.findOneAndUpdate(
 
       const fromEmail = process.env.EMAIL_USER;
       const pass = process.env.EMAIL_PASS;
+      const fulfillmentEnv = process.env.ORDER_NOTIFICATION_EMAILS;
+      const fulfillmentRecipients =
+        fulfillmentEnv
+          ?.split(/[,\n;]/)
+          .map((email) => email.trim())
+          .filter(Boolean) || [];
 
-      if (fromEmail && pass && customerEmail) {
+      if (!fulfillmentEnv) {
+        console.warn(
+          "⚠️ ORDER_NOTIFICATION_EMAILS environment variable is not set."
+        );
+      } else if (fulfillmentRecipients.length === 0) {
+        console.warn(
+          "⚠️ ORDER_NOTIFICATION_EMAILS did not contain any valid recipients."
+        );
+      }
+
+      if (fromEmail && pass) {
         const transporter = nodemailer.createTransport({
           service: "gmail",
           auth: { user: fromEmail, pass },
         });
 
-        await transporter.sendMail({
-          from: `"Classy Diamonds" <${fromEmail}>`,
-          to: customerEmail,
-          subject: `💎 Order Receipt – #${orderNumber}`,
-          html,
-        });
+        if (customerEmail) {
+          await transporter.sendMail({
+            from: `"Classy Diamonds" <${fromEmail}>`,
+            to: customerEmail,
+            subject: `💎 Order Receipt – #${orderNumber}`,
+            html,
+          });
 
-        console.log("📧 Receipt sent to:", customerEmail);
+          console.log("📧 Receipt sent to:", customerEmail);
+        } else {
+          console.warn("⚠️ Missing customer email address.");
+        }
+
+        if (fulfillmentRecipients.length > 0) {
+          const fulfillmentHtml = `
+            <h2>New Order #${orderNumber}</h2>
+            <p><strong>Customer:</strong> ${customerName}</p>
+            <p><strong>Customer Email:</strong> ${customerEmail || "N/A"}</p>
+            <p><strong>Customer Phone:</strong> ${
+              session.customer_details?.phone || "N/A"
+            }</p>
+            <p><strong>Shipping Address:</strong><br>${shippingAddressString}</p>
+            <p><strong>Total:</strong> $${amountTotal.toFixed(2)}</p>
+            <h3>Items</h3>
+            <table style="width:100%;border-collapse:collapse;"><tbody>${itemRows}</tbody></table>
+          `;
+
+          await transporter.sendMail({
+            from: `"Classy Diamonds" <${fromEmail}>`,
+            to: fulfillmentRecipients,
+            subject: `New Order #${orderNumber}`,
+            html: fulfillmentHtml,
+          });
+
+          console.log(
+            "📦 Fulfillment notification sent to:",
+            fulfillmentRecipients.join(", ")
+          );
+        }
       } else {
-        console.warn("⚠️ Missing EMAIL_USER/EMAIL_PASS or recipient.");
+        console.warn("⚠️ Missing EMAIL_USER and/or EMAIL_PASS for email delivery.");
       }
     } catch (emailErr) {
       console.error("❌ Email error:", emailErr);
