@@ -123,6 +123,7 @@ export default function AdminUnifiedPage() {
   // orders data (for order tabs)
   const [orders, setOrders] = useState<BaseOrder[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshNonce, setRefreshNonce] = useState(0);
 
   // filters (orders tabs)
   const [search, setSearch] = useState("");
@@ -191,7 +192,7 @@ export default function AdminUnifiedPage() {
         setLoading(false);
       }
     })();
-  }, [tab, session?.user?.isAdmin]);
+  }, [tab, session?.user?.isAdmin, refreshNonce]);
 
   // fetch logs ONCE per visit to any orders-like tab; map latest log per orderId
   useEffect(() => {
@@ -357,7 +358,7 @@ async function saveTracking(sessionId: string) {
 
   function reload() {
     setLoading(true);
-    setTimeout(() => setTab((t) => t), 0);
+    setRefreshNonce((n) => n + 1);
   }
 
   /* --------------------------- filtering/paging ---------------------- */
