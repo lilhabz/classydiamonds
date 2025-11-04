@@ -15,8 +15,8 @@ export default function ProductGrid({ items, className = "" }: GridProps) {
   return (
     <div
       className={
-        // ✅ Use shared CSS grid + keep Tailwind as a harmless fallback
-        `product-grid grid gap-x-6 gap-y-10 grid-cols-2 md:grid-cols-3 lg:grid-cols-4 ${className}`
+        // ✅ Use shared CSS grid sizing without forcing fixed column counts
+        `product-grid grid gap-x-6 gap-y-10 ${className}`
       }
     >
       {items.map((p) => (
