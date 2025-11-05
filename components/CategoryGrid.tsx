@@ -185,13 +185,15 @@ export default function CategoryGrid({
         className={clsx(
           "hidden sm:block",
           fullBleedDesktop &&
-            "w-screen relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw]"
+            "lg:w-screen lg:relative lg:left-1/2 lg:right-1/2 lg:-ml-[50vw] lg:-mr-[50vw]"
         )}
       >
         <div
           className={clsx(
             "mx-auto",
-            fullBleedDesktop ? "max-w-[1440px] px-2" : "max-w-7xl px-4 sm:px-6"
+            fullBleedDesktop
+              ? "max-w-[1440px] px-6 lg:px-2"
+              : "max-w-7xl px-4 sm:px-6"
           )}
         >
           <div
